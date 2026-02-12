@@ -1,15 +1,19 @@
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 
+// 👉 URL DEL BACKEND EN PRODUCCIÓN
+const API = 'https://erp-proyecto-production.up.railway.app'
+
 function Clientes() {
   const [clientes, setClientes] = useState([])
   const [busqueda, setBusqueda] = useState('')
   const navigate = useNavigate()
 
   useEffect(() => {
-    fetch('http://localhost:3001/clientes')
+    fetch(`${API}/clientes`)
       .then(res => res.json())
       .then(data => setClientes(data))
+      .catch(err => console.error('Error cargando clientes:', err))
   }, [])
 
   // 🔎 FILTRO DE CLIENTES
@@ -67,6 +71,7 @@ function Clientes() {
             <th>Saldo</th>
           </tr>
         </thead>
+
         <tbody>
           {clientesFiltrados.map(c => (
             <tr key={c.id_cliente}>
