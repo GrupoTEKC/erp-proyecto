@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 
-// 👉 URL DEL BACKEND EN PRODUCCIÓN
+// 👉 URL DEL BACKEND EN PRODUCCIÓN (Railway)
 const API = 'https://erp-proyecto-production.up.railway.app'
 
 function Clientes() {
@@ -9,22 +9,47 @@ function Clientes() {
   const [busqueda, setBusqueda] = useState('')
   const navigate = useNavigate()
 
+  // =========================
+  // 🔄 CARGAR CLIENTES
+  // =========================
   useEffect(() => {
-    fetch(`${API}/clientes`)
-      .then(res => res.json())
-      .then(data => setClientes(data))
-      .catch(err => console.error('Error cargando clientes:', err))
+    const cargarClientes = async () => {
+      try {
+        const res = await fetch(`${API}/clientes`)
+
+        if (!res.ok) {
+          throw new Error('Error al obtener clientes')
+        }
+
+        const data = await res.json()
+
+        // Seguridad por si la API falla
+        setClientes(Array.isArray(data) ? data : [])
+
+      } catch (error) {
+        console.error('❌ Error cargando clientes:', error)
+        setClientes([])
+      }
+    }
+
+    cargarClientes()
   }, [])
 
+  // =========================
   // 🔎 FILTRO DE CLIENTES
+  // =========================
   const clientesFiltrados = clientes.filter(c =>
-    `${c.nombre} ${c.nombre_tienda} ${c.telefono} ${c.rfc}`
+    `${c.nombre || ''} ${c.nombre_tienda || ''} ${c.telefono || ''} ${c.rfc || ''}`
       .toLowerCase()
       .includes(busqueda.toLowerCase())
   )
 
+  // =========================
+  // 🎨 UI
+  // =========================
   return (
     <div>
+
       {/* HEADER */}
       <div
         style={{
@@ -45,7 +70,7 @@ function Clientes() {
         </button>
       </div>
 
-      {/* 🔎 BUSCADOR */}
+      {/* BUSCADOR */}
       <input
         type="text"
         placeholder="Buscar cliente..."
@@ -86,6 +111,7 @@ function Clientes() {
           ))}
         </tbody>
       </table>
+
     </div>
   )
 }
