@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import ModalEntrega from './ModalEntrega'
 import ModalCancelar from './ModalCancelar'
 
+const API = 'https://erp-proyecto-production.up.railway.app'
+
 function ConsultarPedidos() {
   const [pedidos, setPedidos] = useState([])
   const [detallePedido, setDetallePedido] = useState([])
@@ -10,18 +12,15 @@ function ConsultarPedidos() {
   const [mostrarCancelar, setMostrarCancelar] = useState(false)
   const [pedidoSeleccionado, setPedidoSeleccionado] = useState(null)
   const [busqueda, setBusqueda] = useState('')
-
   const navigate = useNavigate()
 
   // =========================
   // OBTENER PEDIDOS
   // =========================
   useEffect(() => {
-    fetch('http://localhost:3001/pedidos')
+    fetch(`${API}/pedidos`)
       .then(res => res.json())
-      .then(data => {
-        setPedidos(Array.isArray(data) ? data : [])
-      })
+      .then(data => setPedidos(Array.isArray(data) ? data : []))
       .catch(err => {
         console.error('Error al cargar pedidos', err)
         setPedidos([])
@@ -37,14 +36,14 @@ function ConsultarPedidos() {
   )
 
   const cargarDetallePedido = async id_pedido => {
-    const res = await fetch(`http://localhost:3001/pedidos/${id_pedido}/detalle`)
+    const res = await fetch(`${API}/pedidos/${id_pedido}/detalle`)
     const data = await res.json()
     setDetallePedido(Array.isArray(data) ? data : [])
   }
 
   const confirmarEntrega = async dataEntrega => {
     const res = await fetch(
-      `http://localhost:3001/pedidos/${pedidoSeleccionado.id_pedido}/entregar`,
+      `${API}/pedidos/${pedidoSeleccionado.id_pedido}/entregar`,
       {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -57,7 +56,7 @@ function ConsultarPedidos() {
       return
     }
 
-    const nuevos = await fetch('http://localhost:3001/pedidos')
+    const nuevos = await fetch(`${API}/pedidos`)
     setPedidos(await nuevos.json())
 
     setMostrarModal(false)
@@ -67,7 +66,7 @@ function ConsultarPedidos() {
 
   const confirmarCancelacion = async ({ comentario }) => {
     const res = await fetch(
-      `http://localhost:3001/pedidos/${pedidoSeleccionado.id_pedido}/cancelar`,
+      `${API}/pedidos/${pedidoSeleccionado.id_pedido}/cancelar`,
       {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -80,7 +79,7 @@ function ConsultarPedidos() {
       return
     }
 
-    const nuevos = await fetch('http://localhost:3001/pedidos')
+    const nuevos = await fetch(`${API}/pedidos`)
     setPedidos(await nuevos.json())
 
     setMostrarCancelar(false)
@@ -90,12 +89,11 @@ function ConsultarPedidos() {
   return (
     <div>
       <button onClick={() => navigate('/')}>⬅ Volver</button>
-
       <h2>Consultar pedidos</h2>
 
       <input
         type="text"
-        placeholder="Buscar por número de pedido o cliente..."
+        placeholder="Buscar..."
         value={busqueda}
         onChange={e => setBusqueda(e.target.value)}
         style={{ marginBottom: '10px', width: '100%', padding: '6px' }}
@@ -107,7 +105,7 @@ function ConsultarPedidos() {
             <th>Pedido #</th>
             <th>Cliente</th>
             <th>Fecha pedido</th>
-            <th>Fecha entrega / cancelación</th>
+            <th>Fecha entrega/cancelación</th>
             <th>Estado</th>
             <th>Acciones</th>
           </tr>
@@ -119,10 +117,8 @@ function ConsultarPedidos() {
               <td>{p.id_pedido}</td>
               <td>{p.cliente}</td>
 
-              {/* Fecha de creación */}
               <td>{new Date(p.fecha).toLocaleDateString()}</td>
 
-              {/* Fecha según estado */}
               <td>
                 {p.estado === 'entregado' && p.fecha_entrega
                   ? new Date(p.fecha_entrega).toLocaleDateString()
