@@ -1,24 +1,37 @@
- import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { API_URL } from '../config'
 
 function CuentasPorCobrar() {
   const [cuentas, setCuentas] = useState([])
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    fetch('http://localhost:3001/CuentasPorCobrar')
-      .then(res => res.json())
-      .then(data => {
+    const cargarCuentas = async () => {
+      try {
+        const res = await fetch(`${API_URL}/CuentasPorCobrar`)
+
+        if (!res.ok) {
+          throw new Error('Respuesta del servidor inválida')
+        }
+
+        const data = await res.json()
+
         if (Array.isArray(data)) {
           setCuentas(data)
+          setError(null)
         } else {
           console.error('❌ Respuesta inválida:', data)
           setError('Error al cargar cuentas')
         }
-      })
-      .catch(err => {
-        console.error(err)
-        setError('Error de conexión')
-      })
+
+      } catch (err) {
+        console.error('❌ Error:', err)
+        setError('Error de conexión con el servidor')
+        setCuentas([])
+      }
+    }
+
+    cargarCuentas()
   }, [])
 
   if (error) {
@@ -40,6 +53,7 @@ function CuentasPorCobrar() {
             <th>Saldo</th>
           </tr>
         </thead>
+
         <tbody>
           {cuentas.map(c => (
             <tr key={c.id_pedido}>
