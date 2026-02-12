@@ -4,7 +4,7 @@ import logo from '../assets/TRANSPARENTE.png'
 import Buscador from "../components/Buscador"
 import ProductosPedido from '../components/ProductosPedido'
 
-// ✅ URL DEL BACKEND (NO rompe funcionalidad)
+// ✅ URL DEL BACKEND
 const API = import.meta.env.VITE_API_URL
 
 // =========================
@@ -44,8 +44,7 @@ const styles = {
   label: {
     fontSize: '14px',
     marginBottom: '4px',
-    display: 'block',
-    fontWeight: 'normal'
+    display: 'block'
   },
   field: {
     width: '260px',
@@ -85,21 +84,39 @@ function Pedidos() {
   const [diasCredito, setDiasCredito] = useState(0)
   const [total, setTotal] = useState(0)
   const [productos, setProductos] = useState([])
-
   const [rutas, setRutas] = useState([])
   const [idRuta, setIdRuta] = useState('')
   const [vendedores, setVendedores] = useState([])
   const [idVendedor, setIdVendedor] = useState('')
 
-  // 🔹 CARGAR RUTAS Y VENDEDORES
+  // =========================
+  // 🔄 CARGAR DATOS INICIALES
+  // =========================
   useEffect(() => {
-    fetch(`${API}/rutas`)
-      .then(res => res.json())
-      .then(setRutas)
+    if (!API) {
+      console.error('❌ API no definida')
+      return
+    }
 
-    fetch(`${API}/vendedores`)
-      .then(res => res.json())
-      .then(setVendedores)
+    const cargarDatos = async () => {
+      try {
+        const [resRutas, resVendedores] = await Promise.all([
+          fetch(`${API}/rutas`),
+          fetch(`${API}/vendedores`)
+        ])
+
+        const rutasData = await resRutas.json()
+        const vendedoresData = await resVendedores.json()
+
+        setRutas(Array.isArray(rutasData) ? rutasData : [])
+        setVendedores(Array.isArray(vendedoresData) ? vendedoresData : [])
+
+      } catch (error) {
+        console.error('Error cargando datos:', error)
+      }
+    }
+
+    cargarDatos()
   }, [])
 
   // =========================
@@ -132,36 +149,42 @@ function Pedidos() {
       productos
     }
 
-    const res = await fetch(`${API}/pedidos`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(pedido)
-    })
+    try {
+      const res = await fetch(`${API}/pedidos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(pedido)
+      })
 
-    if (!res.ok) {
-      alert('Error al guardar pedido')
-      return
+      if (!res.ok) throw new Error()
+
+      alert('✅ Pedido guardado correctamente')
+
+      // RESET
+      setCliente(null)
+      setFecha('')
+      setTipoPedido('')
+      setDiasCredito(0)
+      setProductos([])
+      setTotal(0)
+      setIdVendedor('')
+      setIdRuta('')
+
+    } catch {
+      alert('❌ Error al guardar pedido')
     }
-
-    alert('✅ Pedido guardado correctamente')
-
-    // RESET
-    setCliente(null)
-    setFecha('')
-    setTipoPedido('')
-    setDiasCredito(0)
-    setProductos([])
-    setTotal(0)
-    setIdVendedor('')
-    setIdRuta('')
   }
 
+  // =========================
+  // 🧩 UI
+  // =========================
   return (
     <div style={styles.page}>
       <div style={styles.header}>
         <Link to="/">
           <button style={styles.backButton}>⬅ Volver al menú</button>
         </Link>
+
         <img src={logo} alt="Logo" style={styles.logo} />
       </div>
 
