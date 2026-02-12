@@ -1,17 +1,17 @@
- import { useState } from 'react'
+import { useState } from 'react'
 import Buscador from './Buscador'
 import ProductosPedido from './ProductosPedido'
+import { API_URL } from '../config'
 
 function NuevoPedido() {
   const [folio, setFolio] = useState('')
   const [cliente, setCliente] = useState(null)
   const [productos, setProductos] = useState([])
   const [total, setTotal] = useState(0)
-
   const [tipoPedido, setTipoPedido] = useState('contado')
   const [diasCredito, setDiasCredito] = useState(0)
 
-  const guardarPedido = () => {
+  const guardarPedido = async () => {
     if (!/^\d{4}$/.test(folio)) {
       alert('El folio debe tener exactamente 4 números')
       return
@@ -27,29 +27,36 @@ function NuevoPedido() {
       return
     }
 
-    fetch('http://localhost:3001/pedidos', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        folio,
-        id_cliente: cliente.id_cliente,
-        fecha: new Date().toISOString().slice(0, 10),
-        total,
-        tipo_pedido: tipoPedido,
-        dias_credito: tipoPedido === 'credito' ? diasCredito : 0,
-        productos
+    try {
+      const res = await fetch(`${API_URL}/pedidos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          folio,
+          id_cliente: cliente.id_cliente,
+          fecha: new Date().toISOString().slice(0, 10),
+          total,
+          tipo_pedido: tipoPedido,
+          dias_credito: tipoPedido === 'credito' ? diasCredito : 0,
+          productos
+        })
       })
-    })
-      .then(res => res.json())
-      .then(() => {
-        alert('Pedido guardado')
-        setFolio('')
-        setProductos([])
-        setTotal(0)
-        setTipoPedido('contado')
-        setDiasCredito(0)
-      })
-      .catch(() => alert('Error al guardar'))
+
+      if (!res.ok) throw new Error()
+
+      alert('✅ Pedido guardado')
+
+      // RESET
+      setFolio('')
+      setCliente(null)
+      setProductos([])
+      setTotal(0)
+      setTipoPedido('contado')
+      setDiasCredito(0)
+
+    } catch {
+      alert('Error al guardar pedido')
+    }
   }
 
   return (
@@ -62,13 +69,16 @@ function NuevoPedido() {
           type="text"
           value={folio}
           maxLength={4}
-          onChange={e => /^\d*$/.test(e.target.value) && setFolio(e.target.value)}
+          onChange={e =>
+            /^\d*$/.test(e.target.value) && setFolio(e.target.value)
+          }
         />
       </label>
 
       <br /><br />
 
       <Buscador onSelectCliente={setCliente} />
+
       {cliente && <p>Cliente: {cliente.nombre}</p>}
 
       <ProductosPedido
@@ -110,7 +120,9 @@ function NuevoPedido() {
               min="1"
               max="30"
               value={diasCredito}
-              onChange={e => setDiasCredito(Number(e.target.value))}
+              onChange={e =>
+                setDiasCredito(Number(e.target.value))
+              }
             />
           </label>
         </div>
@@ -118,7 +130,9 @@ function NuevoPedido() {
 
       <br />
 
-      <button onClick={guardarPedido}>Guardar Pedido</button>
+      <button onClick={guardarPedido}>
+        Guardar Pedido
+      </button>
     </div>
   )
 }
