@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+// 👉 URL DEL BACKEND EN PRODUCCIÓN
+const API = 'https://erp-proyecto-production.up.railway.app'
+
 function NuevoCliente() {
   const navigate = useNavigate()
 
@@ -15,23 +18,34 @@ function NuevoCliente() {
   })
 
   const handleChange = e => {
-    setForm({ ...form, [e.target.name]: e.target.value })
+    const { name, value } = e.target
+
+    setForm({
+      ...form,
+      [name]: name === 'saldo_actual' ? Number(value) : value
+    })
   }
 
   const guardarCliente = async () => {
-    const res = await fetch('http://localhost:3001/clientes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form)
-    })
+    try {
+      const res = await fetch(`${API}/clientes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form)
+      })
 
-    if (!res.ok) {
-      alert('Error al guardar cliente')
-      return
+      if (!res.ok) {
+        alert('Error al guardar cliente')
+        return
+      }
+
+      alert('✅ Cliente guardado correctamente')
+      navigate('/clientes')
+
+    } catch (error) {
+      console.error('Error:', error)
+      alert('No se pudo conectar con el servidor')
     }
-
-    alert('✅ Cliente guardado')
-    navigate('/clientes')
   }
 
   return (
@@ -44,10 +58,19 @@ function NuevoCliente() {
       <input name="rfc" placeholder="RFC" onChange={handleChange} /><br />
       <input name="email" placeholder="Email" onChange={handleChange} /><br />
       <input name="direccion" placeholder="Dirección" onChange={handleChange} /><br />
-      <input name="saldo_actual" type="number" placeholder="Saldo" onChange={handleChange} /><br /><br />
+      <input
+        name="saldo_actual"
+        type="number"
+        placeholder="Saldo"
+        onChange={handleChange}
+      /><br /><br />
 
       <button onClick={guardarCliente}>Guardar</button>
-      <button onClick={() => navigate('/clientes')} style={{ marginLeft: 10 }}>
+
+      <button
+        onClick={() => navigate('/clientes')}
+        style={{ marginLeft: 10 }}
+      >
         Cancelar
       </button>
     </div>
