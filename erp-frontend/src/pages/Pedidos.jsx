@@ -4,6 +4,9 @@ import logo from '../assets/TRANSPARENTE.png'
 import Buscador from "../components/Buscador"
 import ProductosPedido from '../components/ProductosPedido'
 
+// ✅ URL DEL BACKEND (NO rompe funcionalidad)
+const API = import.meta.env.VITE_API_URL
+
 // =========================
 // 🎨 ESTILOS
 // =========================
@@ -90,11 +93,11 @@ function Pedidos() {
 
   // 🔹 CARGAR RUTAS Y VENDEDORES
   useEffect(() => {
-    fetch('http://localhost:3001/rutas')
+    fetch(`${API}/rutas`)
       .then(res => res.json())
       .then(setRutas)
 
-    fetch('http://localhost:3001/vendedores')
+    fetch(`${API}/vendedores`)
       .then(res => res.json())
       .then(setVendedores)
   }, [])
@@ -129,7 +132,7 @@ function Pedidos() {
       productos
     }
 
-    const res = await fetch('http://localhost:3001/pedidos', {
+    const res = await fetch(`${API}/pedidos`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(pedido)
