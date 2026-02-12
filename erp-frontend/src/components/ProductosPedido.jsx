@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { API_URL } from '../config'
 
 function ProductosPedido({ onTotalChange, onProductosChange }) {
   const [catalogo, setCatalogo] = useState([])
@@ -8,19 +9,24 @@ function ProductosPedido({ onTotalChange, onProductosChange }) {
   const [openBoquillas, setOpenBoquillas] = useState(false)
 
   useEffect(() => {
-    fetch('http://localhost:3001/productos')
+    fetch(`${API_URL}/productos`)
       .then(res => res.json())
       .then(data => {
-        setCatalogo(
-          data.map(p => ({
-            ...p,
-            precio: Number(p.precio)
-          }))
-        )
+        if (Array.isArray(data)) {
+          setCatalogo(
+            data.map(p => ({
+              ...p,
+              precio: Number(p.precio)
+            }))
+          )
+        } else {
+          console.error('Respuesta inválida:', data)
+        }
       })
+      .catch(err => console.error('Error cargando productos:', err))
   }, [])
 
-  const recalcular = (lista) => {
+  const recalcular = lista => {
     const total = lista.reduce(
       (sum, p) => sum + p.precio * p.cantidad,
       0
@@ -29,8 +35,11 @@ function ProductosPedido({ onTotalChange, onProductosChange }) {
     onProductosChange(lista)
   }
 
-  const agregarProducto = (p) => {
-    const existe = productos.find(x => x.id_producto === p.id_producto)
+  const agregarProducto = p => {
+    const existe = productos.find(
+      x => x.id_producto === p.id_producto
+    )
+
     let lista
 
     if (existe) {
@@ -45,14 +54,16 @@ function ProductosPedido({ onTotalChange, onProductosChange }) {
 
     setProductos(lista)
     recalcular(lista)
+
     setOpen(false)
     setOpenJuntas(false)
     setOpenBoquillas(false)
   }
 
   const normales = catalogo.filter(
-    p => !p.nombre.toLowerCase().includes('junta') &&
-         !p.nombre.toLowerCase().includes('boquilla')
+    p =>
+      !p.nombre.toLowerCase().includes('junta') &&
+      !p.nombre.toLowerCase().includes('boquilla')
   )
 
   const juntas = catalogo.filter(p =>
@@ -77,15 +88,13 @@ function ProductosPedido({ onTotalChange, onProductosChange }) {
 
   return (
     <div>
-      <h3 style={{ fontWeight: 'normal' }}>Agregar productos</h3>
+      <h3 style={{ fontWeight: 'normal' }}>
+        Agregar productos
+      </h3>
 
-      {/* 🔴 ÚNICO CONTENEDOR */}
       <div style={menuStyle}>
         <div
-          style={{
-            ...itemStyle,
-            color: '#8B1E1E'
-          }}
+          style={{ ...itemStyle, color: '#8B1E1E' }}
           onClick={() => setOpen(!open)}
         >
           + Agregar producto ▾
@@ -103,7 +112,6 @@ function ProductosPedido({ onTotalChange, onProductosChange }) {
               </div>
             ))}
 
-            {/* JUNTAS */}
             <div
               style={itemStyle}
               onClick={() => setOpenJuntas(!openJuntas)}
@@ -111,40 +119,46 @@ function ProductosPedido({ onTotalChange, onProductosChange }) {
               Juntas ▸
             </div>
 
-            {openJuntas && juntas.map(p => (
-              <div
-                key={p.id_producto}
-                style={{ ...itemStyle, paddingLeft: 25 }}
-                onClick={() => agregarProducto(p)}
-              >
-                {p.nombre}
-              </div>
-            ))}
+            {openJuntas &&
+              juntas.map(p => (
+                <div
+                  key={p.id_producto}
+                  style={{ ...itemStyle, paddingLeft: 25 }}
+                  onClick={() => agregarProducto(p)}
+                >
+                  {p.nombre}
+                </div>
+              ))}
 
-            {/* BOQUILLAS */}
             <div
               style={itemStyle}
-              onClick={() => setOpenBoquillas(!openBoquillas)}
+              onClick={() =>
+                setOpenBoquillas(!openBoquillas)
+              }
             >
               Boquillas ▸
             </div>
 
-            {openBoquillas && boquillas.map(p => (
-              <div
-                key={p.id_producto}
-                style={{ ...itemStyle, paddingLeft: 25 }}
-                onClick={() => agregarProducto(p)}
-              >
-                {p.nombre}
-              </div>
-            ))}
+            {openBoquillas &&
+              boquillas.map(p => (
+                <div
+                  key={p.id_producto}
+                  style={{ ...itemStyle, paddingLeft: 25 }}
+                  onClick={() => agregarProducto(p)}
+                >
+                  {p.nombre}
+                </div>
+              ))}
           </div>
         )}
       </div>
 
-      {/* TABLA */}
       {productos.length > 0 && (
-        <table border="1" cellPadding="6" style={{ marginTop: 15 }}>
+        <table
+          border="1"
+          cellPadding="6"
+          style={{ marginTop: 15 }}
+        >
           <thead style={{ backgroundColor: '#f3d6d6' }}>
             <tr>
               <th>Producto</th>
@@ -153,22 +167,27 @@ function ProductosPedido({ onTotalChange, onProductosChange }) {
               <th>Subtotal</th>
             </tr>
           </thead>
+
           <tbody>
             {productos.map((p, i) => (
               <tr key={p.id_producto}>
                 <td>{p.nombre}</td>
+
                 <td>
                   <input
                     type="number"
                     value={p.precio}
                     onChange={e => {
                       const lista = [...productos]
-                      lista[i].precio = Number(e.target.value)
+                      lista[i].precio = Number(
+                        e.target.value
+                      )
                       setProductos(lista)
                       recalcular(lista)
                     }}
                   />
                 </td>
+
                 <td>
                   <input
                     type="number"
@@ -176,13 +195,18 @@ function ProductosPedido({ onTotalChange, onProductosChange }) {
                     value={p.cantidad}
                     onChange={e => {
                       const lista = [...productos]
-                      lista[i].cantidad = Number(e.target.value)
+                      lista[i].cantidad = Number(
+                        e.target.value
+                      )
                       setProductos(lista)
                       recalcular(lista)
                     }}
                   />
                 </td>
-                <td>${p.precio * p.cantidad}</td>
+
+                <td>
+                  ${p.precio * p.cantidad}
+                </td>
               </tr>
             ))}
           </tbody>
