@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { API_URL } from '../config'
 
 // 🎨 ESTILOS (solo visual)
 const styles = {
@@ -12,12 +13,10 @@ const styles = {
     outline: 'none',
     width: '220px'
   },
-
   lista: {
     marginTop: '8px',
     width: '220px'
   },
-
   item: {
     padding: '6px 4px',
     cursor: 'pointer',
@@ -26,7 +25,6 @@ const styles = {
     fontWeight: 'normal',
     color: '#000000'
   },
-
   error: {
     color: 'red',
     fontSize: '13px'
@@ -39,7 +37,7 @@ function Buscador({ onSelectCliente }) {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    fetch('http://localhost:3001/clientes')
+    fetch(`${API_URL}/clientes`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -58,7 +56,7 @@ function Buscador({ onSelectCliente }) {
 
   const clientesFiltrados = clientes.filter(c =>
     c.nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
-    c.tienda?.toLowerCase().includes(busqueda.toLowerCase()) ||
+    c.nombre_tienda?.toLowerCase().includes(busqueda.toLowerCase()) ||
     c.email?.toLowerCase().includes(busqueda.toLowerCase())
   )
 
@@ -81,7 +79,7 @@ function Buscador({ onSelectCliente }) {
             onClick={() => onSelectCliente(c)}
             style={styles.item}
           >
-            {c.nombre} — {c.tienda}
+            {c.nombre} — {c.nombre_tienda}
           </div>
         ))}
       </div>
