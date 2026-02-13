@@ -15,7 +15,7 @@ app.use(express.json())
 // =========================
 ;(async () => {
   try {
-    await db.query('SELECT 1')
+    const [rows] = await db.query('SELECT 1')
     console.log('✅ MySQL conectado')
   } catch (error) {
     console.error('❌ Error MySQL:', error)
@@ -34,7 +34,7 @@ app.get('/', (req, res) => {
 // =========================
 app.get('/clientes', async (req, res) => {
   try {
-    const [rows] = await db.query(`
+    const [results] = await db.query(`
       SELECT
         id_cliente,
         nombre,
@@ -47,7 +47,8 @@ app.get('/clientes', async (req, res) => {
       FROM clientes
     `)
 
-    res.json(rows)
+    res.json(results)
+
   } catch (err) {
     console.error('🔥 ERROR CLIENTES:', err)
     res.status(500).json({
@@ -62,11 +63,12 @@ app.get('/clientes', async (req, res) => {
 // =========================
 app.get('/vendedores', async (req, res) => {
   try {
-    const [rows] = await db.query(
-      'SELECT id_vendedor, nombre FROM vendedores'
+    const [results] = await db.query(
+      `SELECT id_vendedor, nombre FROM vendedores`
     )
 
-    res.json(rows)
+    res.json(results)
+
   } catch (err) {
     console.error('🔥 ERROR VENDEDORES:', err)
     res.status(500).json(err)
@@ -78,13 +80,14 @@ app.get('/vendedores', async (req, res) => {
 // =========================
 app.get('/productos', async (req, res) => {
   try {
-    const [rows] = await db.query(`
+    const [results] = await db.query(`
       SELECT id_producto, nombre, precio
       FROM productos
       ORDER BY nombre
     `)
 
-    res.json(rows)
+    res.json(results)
+
   } catch (err) {
     console.error('🔥 ERROR PRODUCTOS:', err)
     res.status(500).json(err)
@@ -96,11 +99,12 @@ app.get('/productos', async (req, res) => {
 // =========================
 app.get('/rutas', async (req, res) => {
   try {
-    const [rows] = await db.query(
-      'SELECT id_ruta, nombre FROM rutas'
+    const [results] = await db.query(
+      `SELECT id_ruta, nombre FROM rutas`
     )
 
-    res.json(rows)
+    res.json(results)
+
   } catch (err) {
     console.error('🔥 ERROR RUTAS:', err)
     res.status(500).json(err)
@@ -112,7 +116,7 @@ app.get('/rutas', async (req, res) => {
 // =========================
 app.get('/pedidos', async (req, res) => {
   try {
-    const [rows] = await db.query(`
+    const [results] = await db.query(`
       SELECT
         p.id_pedido,
         c.nombre AS cliente,
@@ -123,7 +127,8 @@ app.get('/pedidos', async (req, res) => {
       ORDER BY p.fecha DESC
     `)
 
-    res.json(rows)
+    res.json(results)
+
   } catch (err) {
     console.error('🔥 ERROR PEDIDOS:', err)
     res.status(500).json(err)
