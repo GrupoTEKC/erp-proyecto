@@ -13,13 +13,14 @@ app.use(express.json())
 // =========================
 // 🔥 TEST MYSQL
 // =========================
-db.query('SELECT 1', err => {
-  if (err) {
-    console.error('🔥 ERROR MYSQL:', err)
-  } else {
-    console.log('✅ MySQL conectado correctamente')
+;(async () => {
+  try {
+    const [rows] = await pool.query("SELECT 1")
+    console.log("✅ MySQL conectado")
+  } catch (error) {
+    console.error("❌ Error MySQL:", error)
   }
-})
+})()
 
 // =========================
 // 🔹 RUTA RAÍZ
