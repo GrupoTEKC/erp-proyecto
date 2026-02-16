@@ -56,6 +56,46 @@ app.get('/vendedores', async (_, res) => {
 })
 
 // =========================
+// 🔹 CREAR CLIENTE
+// =========================
+app.post('/clientes', async (req, res) => {
+  try {
+    console.log('👤 Cliente recibido:', req.body)
+
+    const {
+      nombre,
+      nombre_tienda,
+      direccion,
+      telefono,
+      email,
+      rfc
+    } = req.body
+
+    if (!nombre) {
+      return res.status(400).json({
+        error: 'Nombre requerido'
+      })
+    }
+
+    const [result] = await db.query(
+      `INSERT INTO clientes
+       (nombre, nombre_tienda, direccion, telefono, email, rfc)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [nombre, nombre_tienda, direccion, telefono, email, rfc]
+    )
+
+    res.json({
+      success: true,
+      id_cliente: result.insertId
+    })
+
+  } catch (err) {
+    console.error('🔥 ERROR GUARDAR CLIENTE:', err)
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// =========================
 // RUTAS
 // =========================
 app.get('/rutas', async (_, res) => {
