@@ -15,10 +15,10 @@ app.use(express.json())
 // =========================
 ;(async () => {
   try {
-    const [rows] = await db.query('SELECT 1')
+    await db.query('SELECT 1')
     console.log('✅ MySQL conectado')
   } catch (error) {
-    console.error('❌ Error MySQL:', error)
+    console.error('❌ Error MySQL:', error.message)
   }
 })()
 
@@ -50,11 +50,8 @@ app.get('/clientes', async (req, res) => {
     res.json(results)
 
   } catch (err) {
-    console.error('🔥 ERROR CLIENTES:', err)
-    res.status(500).json({
-      error: 'Error consultando clientes',
-      detalle: err.message
-    })
+    console.error('🔥 ERROR CLIENTES:', err.message)
+    res.status(500).json({ error: err.message })
   }
 })
 
@@ -63,15 +60,15 @@ app.get('/clientes', async (req, res) => {
 // =========================
 app.get('/vendedores', async (req, res) => {
   try {
-    const [results] = await db.query(
-      `SELECT id_vendedor, nombre FROM vendedores`
-    )
+    const [results] = await db.query(`
+      SELECT id_vendedor, nombre FROM vendedores
+    `)
 
     res.json(results)
 
   } catch (err) {
-    console.error('🔥 ERROR VENDEDORES:', err)
-    res.status(500).json(err)
+    console.error('🔥 ERROR VENDEDORES:', err.message)
+    res.status(500).json({ error: err.message })
   }
 })
 
@@ -89,8 +86,8 @@ app.get('/productos', async (req, res) => {
     res.json(results)
 
   } catch (err) {
-    console.error('🔥 ERROR PRODUCTOS:', err)
-    res.status(500).json(err)
+    console.error('🔥 ERROR PRODUCTOS:', err.message)
+    res.status(500).json({ error: err.message })
   }
 })
 
@@ -99,20 +96,20 @@ app.get('/productos', async (req, res) => {
 // =========================
 app.get('/rutas', async (req, res) => {
   try {
-    const [results] = await db.query(
-      `SELECT id_ruta, nombre FROM rutas`
-    )
+    const [results] = await db.query(`
+      SELECT id_ruta, nombre FROM rutas
+    `)
 
     res.json(results)
 
   } catch (err) {
-    console.error('🔥 ERROR RUTAS:', err)
-    res.status(500).json(err)
+    console.error('🔥 ERROR RUTAS:', err.message)
+    res.status(500).json({ error: err.message })
   }
 })
 
 // =========================
-// 🔹 PEDIDOS
+// 🔹 LISTAR PEDIDOS
 // =========================
 app.get('/pedidos', async (req, res) => {
   try {
@@ -130,8 +127,37 @@ app.get('/pedidos', async (req, res) => {
     res.json(results)
 
   } catch (err) {
-    console.error('🔥 ERROR PEDIDOS:', err)
-    res.status(500).json(err)
+    console.error('🔥 ERROR PEDIDOS:', err.message)
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// =========================
+// 🔹 CREAR PEDIDO
+// =========================
+app.post('/pedidos', async (req, res) => {
+  try {
+    const { id_cliente, fecha, estado } = req.body
+
+    if (!id_cliente || !fecha || !estado) {
+      return res.status(400).json({
+        error: 'Faltan datos del pedido'
+      })
+    }
+
+    const [result] = await db.query(`
+      INSERT INTO pedidos (id_cliente, fecha, estado)
+      VALUES (?, ?, ?)
+    `, [id_cliente, fecha, estado])
+
+    res.json({
+      success: true,
+      id_pedido: result.insertId
+    })
+
+  } catch (err) {
+    console.error('🔥 ERROR GUARDAR PEDIDO:', err.message)
+    res.status(500).json({ error: err.message })
   }
 })
 
