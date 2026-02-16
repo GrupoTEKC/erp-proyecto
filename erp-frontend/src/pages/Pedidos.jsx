@@ -133,8 +133,8 @@ function Pedidos() {
       return
     }
 
-    if (tipoPedido === 'credito' && diasCredito > 15) {
-      alert('El crédito máximo es de 15 días')
+    if (tipoPedido === 'credito' && diasCredito > 31) {
+      alert('El crédito máximo es de 31 días')
       return
     }
 
