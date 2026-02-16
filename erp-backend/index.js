@@ -23,147 +23,160 @@ app.use(express.json())
 })()
 
 // =========================
-// 🔹 RUTA RAÍZ
+// ROOT
 // =========================
-app.get('/', (req, res) => {
+app.get('/', (_, res) => {
   res.send('✅ Backend ERP funcionando')
 })
 
 // =========================
-// 🔹 CLIENTES
+// CLIENTES
 // =========================
-app.get('/clientes', async (req, res) => {
+app.get('/clientes', async (_, res) => {
   try {
-    const [rows] = await db.query(`
-      SELECT id_cliente, nombre, nombre_tienda,
-             direccion, telefono, email,
-             rfc, saldo_actual
-      FROM clientes
-    `)
-
+    const [rows] = await db.query('SELECT * FROM clientes')
     res.json(rows)
-
   } catch (err) {
-    console.error('🔥 ERROR CLIENTES:', err.message)
-    res.status(500).json({ error: err.message })
+    console.error('🔥 CLIENTES:', err)
+    res.status(500).json(err)
   }
 })
 
 // =========================
-// 🔹 VENDEDORES
+// VENDEDORES
 // =========================
-app.get('/vendedores', async (req, res) => {
+app.get('/vendedores', async (_, res) => {
   try {
-    const [rows] = await db.query(`
-      SELECT id_vendedor, nombre
-      FROM vendedores
-    `)
-
+    const [rows] = await db.query('SELECT * FROM vendedores')
     res.json(rows)
-
   } catch (err) {
-    console.error('🔥 ERROR VENDEDORES:', err.message)
-    res.status(500).json({ error: err.message })
+    console.error('🔥 VENDEDORES:', err)
+    res.status(500).json(err)
   }
 })
 
 // =========================
-// 🔹 PRODUCTOS
+// RUTAS
 // =========================
-app.get('/productos', async (req, res) => {
+app.get('/rutas', async (_, res) => {
   try {
-    const [rows] = await db.query(`
-      SELECT id_producto, nombre, precio
-      FROM productos
-      ORDER BY nombre
-    `)
-
+    const [rows] = await db.query('SELECT * FROM rutas')
     res.json(rows)
-
   } catch (err) {
-    console.error('🔥 ERROR PRODUCTOS:', err.message)
-    res.status(500).json({ error: err.message })
+    console.error('🔥 RUTAS:', err)
+    res.status(500).json(err)
   }
 })
 
 // =========================
-// 🔹 RUTAS
+// PRODUCTOS
 // =========================
-app.get('/rutas', async (req, res) => {
+app.get('/productos', async (_, res) => {
   try {
-    const [rows] = await db.query(`
-      SELECT id_ruta, nombre
-      FROM rutas
-    `)
-
+    const [rows] = await db.query('SELECT * FROM productos')
     res.json(rows)
-
   } catch (err) {
-    console.error('🔥 ERROR RUTAS:', err.message)
-    res.status(500).json({ error: err.message })
+    console.error('🔥 PRODUCTOS:', err)
+    res.status(500).json(err)
   }
 })
 
 // =========================
-// 🔹 LISTAR PEDIDOS
+// LISTAR PEDIDOS
 // =========================
-app.get('/pedidos', async (req, res) => {
+app.get('/pedidos', async (_, res) => {
   try {
     const [rows] = await db.query(`
-      SELECT
-        p.id_pedido,
-        c.nombre AS cliente,
-        p.fecha,
-        p.estado
+      SELECT p.*, c.nombre cliente
       FROM pedidos p
       JOIN clientes c ON c.id_cliente = p.id_cliente
-      ORDER BY p.fecha DESC
+      ORDER BY p.id_pedido DESC
     `)
-
     res.json(rows)
-
   } catch (err) {
-    console.error('🔥 ERROR PEDIDOS:', err.message)
-    res.status(500).json({ error: err.message })
+    console.error('🔥 LISTAR PEDIDOS:', err)
+    res.status(500).json(err)
   }
 })
 
 // =========================
-// 🔹 CREAR PEDIDO
+// CREAR PEDIDO COMPLETO
 // =========================
 app.post('/pedidos', async (req, res) => {
-  try {
+  const conn = await db.getConnection()
 
+  try {
     console.log('📦 Pedido recibido:', req.body)
 
-    const { id_cliente, fecha, estado } = req.body
+    const {
+      id_cliente,
+      id_vendedor,
+      id_ruta,
+      fecha,
+      total,
+      tipo_pedido,
+      dias_credito,
+      productos
+    } = req.body
 
-    // VALIDACIÓN
-    if (!id_cliente || !fecha || !estado) {
+    if (!id_cliente || !productos?.length) {
       return res.status(400).json({
         error: 'Datos incompletos'
       })
     }
 
-    const [result] = await db.query(
-      `INSERT INTO pedidos (id_cliente, fecha, estado)
-       VALUES (?, ?, ?)`,
-      [id_cliente, fecha, estado]
-    )
+    await conn.beginTransaction()
+
+    // Insert pedido
+    const [pedido] = await conn.query(`
+      INSERT INTO pedidos
+      (id_cliente, id_vendedor, id_ruta, fecha, total, tipo_pedido, dias_credito)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `, [
+      id_cliente,
+      id_vendedor,
+      id_ruta,
+      fecha,
+      total,
+      tipo_pedido,
+      dias_credito
+    ])
+
+    const idPedido = pedido.insertId
+
+    // Insert productos
+    for (const prod of productos) {
+      await conn.query(`
+        INSERT INTO pedido_detalle
+        (id_pedido, id_producto, precio, cantidad)
+        VALUES (?, ?, ?, ?)
+      `, [
+        idPedido,
+        prod.id_producto,
+        prod.precio,
+        prod.cantidad
+      ])
+    }
+
+    await conn.commit()
 
     res.json({
       success: true,
-      id_pedido: result.insertId
+      id_pedido: idPedido
     })
 
   } catch (err) {
-    console.error('🔥 ERROR CREAR PEDIDO:', err.message)
-    res.status(500).json({ error: err.message })
+    await conn.rollback()
+    console.error('🔥 ERROR PEDIDO:', err)
+    res.status(500).json(err)
+
+  } finally {
+    conn.release()
   }
 })
 
 // =========================
-// 🔹 SERVIDOR
+// SERVIDOR
 // =========================
 app.listen(PORT, () => {
   console.log(`✅ Backend corriendo en puerto ${PORT}`)
