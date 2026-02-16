@@ -85,7 +85,7 @@ function Pedidos() {
   const [idRuta, setIdRuta] = useState('')
   const [vendedores, setVendedores] = useState([])
   const [idVendedor, setIdVendedor] = useState('')
-  const [guardando, setGuardando] = useState(false)
+ 
   // =========================
   // 🔄 CARGAR DATOS INICIALES
   // =========================
@@ -157,21 +157,7 @@ function Pedidos() {
       alert('❌ Error al guardar pedido')
     }
   }
-  const guardarPedido = async () => {
-  try {
-    setGuardando(true)
-    await fetch('/pedidos', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(datos)
-    })
-    alert('Pedido guardado')
-  } catch (err) {
-    alert('Error al guardar')
-  } finally {
-    setGuardando(false)
-  }
-}
+  
   // =========================
   // 🧩 UI
   // =========================
@@ -274,7 +260,5 @@ function Pedidos() {
     </div>
   )
 }
-<button onClick={guardarPedido} disabled={guardando}>
-  {guardando ? 'Guardando...' : 'Guardar pedido'}
-</button>
+
 export default Pedidos
