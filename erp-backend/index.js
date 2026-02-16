@@ -43,20 +43,7 @@ app.get('/clientes', async (_, res) => {
 })
 
 // =========================
-// VENDEDORES
-// =========================
-app.get('/vendedores', async (_, res) => {
-  try {
-    const [rows] = await db.query('SELECT * FROM vendedores')
-    res.json(rows)
-  } catch (err) {
-    console.error('🔥 VENDEDORES:', err)
-    res.status(500).json(err)
-  }
-})
-
-// =========================
-// 🔹 CREAR CLIENTE
+// CREAR CLIENTE
 // =========================
 app.post('/clientes', async (req, res) => {
   try {
@@ -90,8 +77,21 @@ app.post('/clientes', async (req, res) => {
     })
 
   } catch (err) {
-    console.error('🔥 ERROR GUARDAR CLIENTE:', err)
+    console.error('🔥 ERROR CLIENTE:', err)
     res.status(500).json({ error: err.message })
+  }
+})
+
+// =========================
+// VENDEDORES
+// =========================
+app.get('/vendedores', async (_, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM vendedores')
+    res.json(rows)
+  } catch (err) {
+    console.error('🔥 VENDEDORES:', err)
+    res.status(500).json(err)
   }
 })
 
@@ -122,31 +122,34 @@ app.get('/productos', async (_, res) => {
 })
 
 // =========================
-// LISTAR PEDIDOS
+// 📦 LISTAR PEDIDOS (CORREGIDO)
 // =========================
 app.get('/pedidos', async (_, res) => {
   try {
     const [rows] = await db.query(`
-  SELECT 
-    p.id_pedido,
-    p.fecha,
-    p.estado,
-    p.fecha_entrega,
-    p.fecha_cancelacion,
-    c.nombre AS cliente
-  FROM pedidos p
-  JOIN clientes c ON c.id_cliente = p.id_cliente
-  ORDER BY p.id_pedido DESC
-`)
+      SELECT 
+        p.id_pedido,
+        p.fecha,
+        p.estado,
+        p.fecha_entrega,
+        p.fecha_cancelacion,
+        c.nombre AS cliente
+      FROM pedidos p
+      JOIN clientes c 
+        ON c.id_cliente = p.id_cliente
+      ORDER BY p.id_pedido DESC
+    `)
+
     res.json(rows)
+
   } catch (err) {
-    console.error('🔥 LISTAR PEDIDOS:', err)
+    console.error('🔥 PEDIDOS:', err)
     res.status(500).json(err)
   }
 })
 
 // =========================
-// CREAR PEDIDO COMPLETO
+// CREAR PEDIDO
 // =========================
 app.post('/pedidos', async (req, res) => {
   const conn = await db.getConnection()
@@ -190,7 +193,7 @@ app.post('/pedidos', async (req, res) => {
 
     const idPedido = pedido.insertId
 
-    // Insert productos
+    // Insert detalle
     for (const prod of productos) {
       await conn.query(`
         INSERT INTO pedido_detalle
