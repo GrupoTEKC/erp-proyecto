@@ -111,44 +111,23 @@ app.get('/rutas', async (req, res) => {
 // =========================
 // 🔹 LISTAR PEDIDOS
 // =========================
-app.get('/pedidos', async (req, res) => {
-  try {
-    const [results] = await db.query(`
-      SELECT
-        p.id_pedido,
-        c.nombre AS cliente,
-        p.fecha,
-        p.estado
-      FROM pedidos p
-      JOIN clientes c ON c.id_cliente = p.id_cliente
-      ORDER BY p.fecha DESC
-    `)
-
-    res.json(results)
-
-  } catch (err) {
-    console.error('🔥 ERROR PEDIDOS:', err.message)
-    res.status(500).json({ error: err.message })
-  }
-})
-
-// =========================
-// 🔹 CREAR PEDIDO
-// =========================
 app.post('/pedidos', async (req, res) => {
   try {
+    console.log('📦 Datos recibidos:', req.body)
+
     const { id_cliente, fecha, estado } = req.body
 
     if (!id_cliente || !fecha || !estado) {
       return res.status(400).json({
-        error: 'Faltan datos del pedido'
+        error: 'Datos incompletos'
       })
     }
 
-    const [result] = await db.query(`
-      INSERT INTO pedidos (id_cliente, fecha, estado)
-      VALUES (?, ?, ?)
-    `, [id_cliente, fecha, estado])
+    const [result] = await db.query(
+      `INSERT INTO pedidos (id_cliente, fecha, estado)
+       VALUES (?, ?, ?)`,
+      [id_cliente, fecha, estado]
+    )
 
     res.json({
       success: true,
@@ -156,8 +135,8 @@ app.post('/pedidos', async (req, res) => {
     })
 
   } catch (err) {
-    console.error('🔥 ERROR GUARDAR PEDIDO:', err.message)
-    res.status(500).json({ error: err.message })
+    console.error('🔥 ERROR GUARDAR PEDIDO:', err)
+    res.status(500).json(err)
   }
 })
 
