@@ -127,11 +127,17 @@ app.get('/productos', async (_, res) => {
 app.get('/pedidos', async (_, res) => {
   try {
     const [rows] = await db.query(`
-      SELECT p.*, c.nombre cliente
-      FROM pedidos p
-      JOIN clientes c ON c.id_cliente = p.id_cliente
-      ORDER BY p.id_pedido DESC
-    `)
+  SELECT 
+    p.id_pedido,
+    p.fecha,
+    p.estado,
+    p.fecha_entrega,
+    p.fecha_cancelacion,
+    c.nombre AS cliente
+  FROM pedidos p
+  JOIN clientes c ON c.id_cliente = p.id_cliente
+  ORDER BY p.id_pedido DESC
+`)
     res.json(rows)
   } catch (err) {
     console.error('🔥 LISTAR PEDIDOS:', err)
