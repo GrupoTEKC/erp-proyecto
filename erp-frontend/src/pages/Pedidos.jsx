@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react'
+ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import logo from '../assets/TRANSPARENTE.png'
 import Buscador from "../components/Buscador"
 import ProductosPedido from '../components/ProductosPedido'
-
+// ✅ URL DEL BACKEND
 const API = import.meta.env.VITE_API_URL
-
+// =========================
+// 🎨 ESTILOS
+// =========================
 const styles = {
   page: {
     backgroundColor: '#ffffff',
@@ -47,10 +49,17 @@ const styles = {
     padding: '8px 10px',
     fontSize: '14px',
     borderRadius: '6px',
-    border: '1px solid #8B1E1E'
+    border: '1px solid #8B1E1E',
+    boxSizing: 'border-box'
   },
-  clienteTexto: { fontSize: '14px', marginBottom: '15px' },
-  total: { marginTop: '15px', color: '#071849' },
+  clienteTexto: {
+    fontSize: '14px',
+    marginBottom: '15px'
+  },
+  total: {
+    marginTop: '15px',
+    color: '#071849'
+  },
   guardar: {
     marginTop: '10px',
     padding: '10px 16px',
@@ -62,9 +71,10 @@ const styles = {
     cursor: 'pointer'
   }
 }
-
+// =========================
+// 📋 COMPONENTE
+// =========================
 function Pedidos() {
-
   const [cliente, setCliente] = useState(null)
   const [fecha, setFecha] = useState('')
   const [tipoPedido, setTipoPedido] = useState('')
@@ -76,44 +86,46 @@ function Pedidos() {
   const [vendedores, setVendedores] = useState([])
   const [idVendedor, setIdVendedor] = useState('')
   const [guardando, setGuardando] = useState(false)
-
+  // =========================
+  // 🔄 CARGAR DATOS INICIALES
+  // =========================
   useEffect(() => {
+    if (!API) {
+      console.error('❌ API no definida')
+      return
+    }
     const cargarDatos = async () => {
       try {
         const [resRutas, resVendedores] = await Promise.all([
           fetch(`${API}/rutas`),
           fetch(`${API}/vendedores`)
         ])
-
-        setRutas(await resRutas.json())
-        setVendedores(await resVendedores.json())
-
+        const rutasData = await resRutas.json()
+        const vendedoresData = await resVendedores.json()
+        setRutas(Array.isArray(rutasData) ? rutasData : [])
+        setVendedores(Array.isArray(vendedoresData) ? vendedoresData : [])
       } catch (error) {
         console.error('Error cargando datos:', error)
       }
     }
-
     cargarDatos()
   }, [])
-
-  // ✅ GUARDAR PEDIDO CON SPINNER
+  // =========================
+  // 💾 GUARDAR PEDIDO
+  // =========================
   const guardarPedido = async () => {
-
     if (!cliente || !fecha || !tipoPedido || productos.length === 0) {
       alert('Todos los campos son obligatorios')
       return
     }
-
     if (!idVendedor || !idRuta) {
       alert('Seleccione vendedor y ruta')
       return
     }
-
     if (tipoPedido === 'credito' && diasCredito > 31) {
-      alert('Máximo 31 días de crédito')
+      alert('El crédito máximo es de 31 días')
       return
     }
-
     const pedido = {
       id_cliente: cliente.id_cliente,
       id_vendedor: idVendedor,
@@ -124,21 +136,14 @@ function Pedidos() {
       dias_credito: tipoPedido === 'credito' ? diasCredito : 0,
       productos
     }
-
     try {
-
-      setGuardando(true)
-
       const res = await fetch(`${API}/pedidos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(pedido)
       })
-
       if (!res.ok) throw new Error()
-
-      alert('✅ Pedido guardado')
-
+      alert('✅ Pedido guardado correctamente')
       // RESET
       setCliente(null)
       setFecha('')
@@ -148,46 +153,45 @@ function Pedidos() {
       setTotal(0)
       setIdVendedor('')
       setIdRuta('')
-
     } catch {
-
-      alert('❌ Error al guardar')
-
-    } finally {
-
-      setGuardando(false)
-
+      alert('❌ Error al guardar pedido')
     }
   }
-
+  const guardarPedido = async () => {
+  try {
+    setGuardando(true)
+    await fetch('/pedidos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(datos)
+    })
+    alert('Pedido guardado')
+  } catch (err) {
+    alert('Error al guardar')
+  } finally {
+    setGuardando(false)
+  }
+}
+  // =========================
+  // 🧩 UI
+  // =========================
   return (
-
     <div style={styles.page}>
-
       <div style={styles.header}>
         <Link to="/">
-          <button style={styles.backButton}>
-            ⬅ Volver al menú
-          </button>
+          <button style={styles.backButton}>⬅ Volver al menú</button>
         </Link>
         <img src={logo} alt="Logo" style={styles.logo} />
       </div>
-
       <h2 style={styles.title}>NUEVO PEDIDO</h2>
-
       {!cliente ? (
-
         <Buscador onSelectCliente={setCliente} />
-
       ) : (
-
         <>
-
           <p style={styles.clienteTexto}>
             Cliente: {cliente.nombre}
           </p>
-
-          {/* vendedor */}
+          {/* VENDEDOR */}
           <div style={styles.section}>
             <label style={styles.label}>Vendedor</label>
             <select
@@ -195,7 +199,7 @@ function Pedidos() {
               value={idVendedor}
               onChange={e => setIdVendedor(e.target.value)}
             >
-              <option value="">Seleccione</option>
+              <option value="">Seleccione vendedor</option>
               {vendedores.map(v => (
                 <option key={v.id_vendedor} value={v.id_vendedor}>
                   {v.nombre}
@@ -203,8 +207,7 @@ function Pedidos() {
               ))}
             </select>
           </div>
-
-          {/* ruta */}
+          {/* RUTA */}
           <div style={styles.section}>
             <label style={styles.label}>Ruta</label>
             <select
@@ -212,7 +215,7 @@ function Pedidos() {
               value={idRuta}
               onChange={e => setIdRuta(e.target.value)}
             >
-              <option value="">Seleccione</option>
+              <option value="">Seleccione ruta</option>
               {rutas.map(r => (
                 <option key={r.id_ruta} value={r.id_ruta}>
                   {r.nombre}
@@ -220,8 +223,7 @@ function Pedidos() {
               ))}
             </select>
           </div>
-
-          {/* fecha */}
+          {/* FECHA */}
           <div style={styles.section}>
             <label style={styles.label}>Fecha</label>
             <input
@@ -231,10 +233,9 @@ function Pedidos() {
               onChange={e => setFecha(e.target.value)}
             />
           </div>
-
-          {/* tipo */}
+          {/* TIPO PEDIDO */}
           <div style={styles.section}>
-            <label style={styles.label}>Tipo pedido</label>
+            <label style={styles.label}>Tipo de pedido</label>
             <select
               style={styles.field}
               value={tipoPedido}
@@ -245,45 +246,35 @@ function Pedidos() {
               <option value="credito">Crédito</option>
             </select>
           </div>
-
-          {/* crédito */}
+          {/* CRÉDITO */}
           {tipoPedido === 'credito' && (
             <div style={styles.section}>
-              <label style={styles.label}>Días crédito</label>
+              <label style={styles.label}>Días de crédito</label>
               <input
                 type="number"
                 min="1"
-                max="31"
+                max="15"
                 style={styles.field}
                 value={diasCredito}
                 onChange={e => setDiasCredito(Number(e.target.value))}
               />
             </div>
           )}
-
+          {/* PRODUCTOS */}
           <ProductosPedido
             onTotalChange={setTotal}
             onProductosChange={setProductos}
           />
-
-          <h3 style={styles.total}>
-            Total: ${total}
-          </h3>
-
-          {/* ✅ BOTÓN CON SPINNER */}
-          <button
-            style={styles.guardar}
-            onClick={guardarPedido}
-            disabled={guardando}
-          >
-            {guardando ? 'Guardando...' : 'Guardar Pedido'}
+          <h3 style={styles.total}>Total: ${total}</h3>
+          <button style={styles.guardar} onClick={guardarPedido}>
+            Guardar Pedido
           </button>
-
         </>
       )}
-
     </div>
   )
 }
-
+<button onClick={guardarPedido} disabled={guardando}>
+  {guardando ? 'Guardando...' : 'Guardar pedido'}
+</button>
 export default Pedidos
