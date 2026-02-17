@@ -3,9 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import ModalEntrega from './ModalEntrega'
 import ModalCancelar from './ModalCancelar'
 
-// 👉 Cambia aquí si quieres local o producción
 const API = 'https://erp-proyecto-production.up.railway.app'
-// const API = 'http://localhost:3001'
 
 function ConsultarPedidos() {
   const [pedidos, setPedidos] = useState([])
@@ -14,20 +12,25 @@ function ConsultarPedidos() {
   const [mostrarCancelar, setMostrarCancelar] = useState(false)
   const [pedidoSeleccionado, setPedidoSeleccionado] = useState(null)
   const [busqueda, setBusqueda] = useState('')
-
   const navigate = useNavigate()
 
   // =========================
   // 🔄 CARGAR PEDIDOS
   // =========================
- const detalleAdaptado = (Array.isArray(data) ? data : []).map(p => ({
-  id_producto: p.id_producto,
-  nombre: p.nombre,
-  cantidad_pedida: Number(p.cantidad),
-  cantidad_entregada: Number(p.cantidad),
-  precio: Number(p.precio)
-}))
+  const cargarPedidos = async () => {
+    try {
+      const res = await fetch(`${API}/pedidos`)
+      const data = await res.json()
+      setPedidos(Array.isArray(data) ? data : [])
+    } catch (err) {
+      console.error('Error al cargar pedidos:', err)
+      setPedidos([])
+    }
+  }
 
+  useEffect(() => {
+    cargarPedidos()
+  }, [])
 
   // =========================
   // 🔍 FILTRO
@@ -41,20 +44,29 @@ function ConsultarPedidos() {
   // 📦 CARGAR DETALLE
   // =========================
   const cargarDetallePedido = async id => {
-  try {
-    const res = await fetch(`${API}/pedidos/${id}/detalle`)
-    if (!res.ok) throw new Error('Detalle no disponible')
+    try {
+      const res = await fetch(`${API}/pedidos/${id}/detalle`)
+      if (!res.ok) throw new Error()
 
-    const data = await res.json()
+      const data = await res.json()
 
-    // 👉 Adaptar datos al formato del modal
-   const detalleAdaptado = (Array.isArray(data) ? data : []).map(p => ({
-  id_producto: p.id_producto,
-  nombre: p.nombre,
-  cantidad_pedida: Number(p.cantidad),
-  cantidad_entregada: Number(p.cantidad),
-  precio: Number(p.precio)
-}))
+      const detalleAdaptado = (Array.isArray(data) ? data : []).map(p => ({
+        id_producto: p.id_producto,
+        nombre: p.nombre,
+        cantidad_pedida: Number(p.cantidad),
+        cantidad_entregada: Number(p.cantidad),
+        precio: Number(p.precio)
+      }))
+
+      setDetallePedido(detalleAdaptado)
+
+      return true
+    } catch (err) {
+      console.error('Error detalle:', err)
+      alert('Error cargando detalle')
+      return false
+    }
+  }
 
   // =========================
   // 🚚 ENTREGAR
@@ -77,7 +89,6 @@ function ConsultarPedidos() {
       setMostrarModal(false)
       setPedidoSeleccionado(null)
       setDetallePedido([])
-
     } catch (err) {
       console.error(err)
       alert('Error al confirmar entrega')
@@ -104,7 +115,6 @@ function ConsultarPedidos() {
 
       setMostrarCancelar(false)
       setPedidoSeleccionado(null)
-
     } catch (err) {
       console.error(err)
       alert('Error al cancelar pedido')
@@ -116,7 +126,6 @@ function ConsultarPedidos() {
   // =========================
   return (
     <div>
-
       <button onClick={() => navigate('/')}>⬅ Volver</button>
 
       <h2>Consultar pedidos</h2>
@@ -143,17 +152,10 @@ function ConsultarPedidos() {
 
         <tbody>
           {pedidosFiltrados.map(p => (
-
             <tr key={p.id_pedido}>
               <td>{p.id_pedido}</td>
               <td>{p.cliente}</td>
-
-              <td>
-                {p.fecha
-                  ? new Date(p.fecha).toLocaleDateString()
-                  : '-'}
-              </td>
-
+              <td>{p.fecha ? new Date(p.fecha).toLocaleDateString() : '-'}</td>
               <td>
                 {p.estado === 'entregado' && p.fecha_entrega
                   ? new Date(p.fecha_entrega).toLocaleDateString()
@@ -161,24 +163,18 @@ function ConsultarPedidos() {
                   ? new Date(p.fecha_cancelacion).toLocaleDateString()
                   : '-'}
               </td>
-
               <td>{p.estado}</td>
-
               <td>
                 <button
                   disabled={p.estado !== 'pendiente'}
                   onClick={async () => {
                     setPedidoSeleccionado(p)
-
                     const ok = await cargarDetallePedido(p.id_pedido)
-
                     if (ok) setMostrarModal(true)
                   }}
                 >
                   Entregar
                 </button>
-
-                {' '}
 
                 <button
                   disabled={p.estado !== 'pendiente'}
@@ -190,14 +186,11 @@ function ConsultarPedidos() {
                   Cancelar
                 </button>
               </td>
-
             </tr>
-
           ))}
         </tbody>
       </table>
 
-      {/* MODAL ENTREGA */}
       {mostrarModal && pedidoSeleccionado && (
         <ModalEntrega
           pedido={pedidoSeleccionado}
@@ -207,18 +200,13 @@ function ConsultarPedidos() {
         />
       )}
 
-      {/* MODAL CANCELAR */}
       {mostrarCancelar && pedidoSeleccionado && (
         <ModalCancelar
           pedido={pedidoSeleccionado}
-          onClose={() => {
-            setMostrarCancelar(false)
-            setPedidoSeleccionado(null)
-          }}
+          onClose={() => setMostrarCancelar(false)}
           onConfirmar={confirmarCancelacion}
         />
       )}
-
     </div>
   )
 }
