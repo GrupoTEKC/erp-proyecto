@@ -225,6 +225,33 @@ app.post('/pedidos', async (req, res) => {
 })
 
 // =========================
+// 📦 DETALLE PEDIDO (NUEVO)
+// =========================
+app.get('/pedidos/:id/detalle', async (req, res) => {
+  try {
+    const { id } = req.params
+
+    const [rows] = await db.query(`
+      SELECT 
+        d.id_producto,
+        p.nombre,
+        d.precio,
+        d.cantidad
+      FROM pedido_detalle d
+      JOIN productos p 
+        ON p.id_producto = d.id_producto
+      WHERE d.id_pedido = ?
+    `, [id])
+
+    res.json(rows)
+
+  } catch (err) {
+    console.error('🔥 DETALLE PEDIDO:', err)
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// =========================
 // SERVIDOR
 // =========================
 app.listen(PORT, () => {
