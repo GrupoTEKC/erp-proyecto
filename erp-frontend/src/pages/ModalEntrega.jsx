@@ -7,19 +7,18 @@ function ModalEntrega({ pedido, productos = [], onClose, onConfirmar }) {
   // =========================
   // CARGAR PRODUCTOS
   // =========================
- useEffect(() => {
+useEffect(() => {
   if (productos.length > 0) {
     setEntregas(
       productos.map(p => ({
         id_producto: p.id_producto,
         nombre: p.nombre,
-        cantidad_pedida: Number(p.cantidad), // ← viene del backend
+        cantidad_pedida: Number(p.cantidad), // ← AQUÍ EL FIX
         cantidad_entregada: Number(p.cantidad)
       }))
     )
   }
 }, [productos])
-
   // =========================
   // VALIDAR DIFERENCIAS
   // =========================
