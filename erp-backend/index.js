@@ -223,6 +223,31 @@ app.post('/pedidos', async (req, res) => {
     conn.release()
   }
 })
+// =========================
+// DETALLE PEDIDO
+// =========================
+app.get('/pedidos/:id/detalle', async (req, res) => {
+  try {
+    const { id } = req.params
+
+    const [rows] = await db.query(`
+      SELECT 
+        d.id_producto,
+        pr.nombre,
+        d.precio,
+        d.cantidad
+      FROM pedido_detalle d
+      JOIN productos pr ON pr.id_producto = d.id_producto
+      WHERE d.id_pedido = ?
+    `, [id])
+
+    res.json(rows)
+
+  } catch (err) {
+    console.error('🔥 ERROR DETALLE PEDIDO:', err)
+    res.status(500).json({ error: err.message })
+  }
+})
 
 // =========================
 // SERVIDOR
