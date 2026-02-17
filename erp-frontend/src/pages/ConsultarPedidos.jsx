@@ -47,23 +47,32 @@ function ConsultarPedidos() {
   // 📦 CARGAR DETALLE
   // =========================
   const cargarDetallePedido = async id => {
-    try {
-      const res = await fetch(`${API}/pedidos/${id}/detalle`)
+  try {
+    const res = await fetch(`${API}/pedidos/${id}/detalle`)
+    if (!res.ok) throw new Error('Detalle no disponible')
 
-      if (!res.ok) throw new Error('Detalle no disponible')
+    const data = await res.json()
 
-      const data = await res.json()
+    // 👉 Adaptar datos al formato del modal
+    const detalleAdaptado = (Array.isArray(data) ? data : []).map(p => ({
+      id_producto: p.id_producto,
+      nombre: p.nombre,
+      cantidadPedida: Number(p.cantidad) || 0,
+      cantidadEntregada: Number(p.cantidad) || 0,
+      precio: Number(p.precio) || 0
+    }))
 
-      setDetallePedido(Array.isArray(data) ? data : [])
+    setDetallePedido(detalleAdaptado)
 
-      return true
-    } catch (err) {
-      console.error('Error detalle:', err)
-      alert('Error cargando detalle del pedido')
-      return false
-    }
+    console.log('📦 Detalle cargado:', detalleAdaptado)
+
+    return true
+  } catch (err) {
+    console.error('Error detalle:', err)
+    alert('Error cargando detalle del pedido')
+    return false
   }
-
+}
   // =========================
   // 🚚 ENTREGAR
   // =========================
