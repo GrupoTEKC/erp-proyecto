@@ -8,18 +8,17 @@ function ModalEntrega({ pedido, productos = [], onClose, onConfirmar }) {
   // CARGAR PRODUCTOS
   // =========================
 useEffect(() => {
-  if (productos.length > 0) {
-    setEntregas(
-      productos.map(p => ({
-        id_producto: p.id_producto,
-        nombre: p.nombre,
-        cantidad: p.cantidad, // ← AQUÍ ESTÁ EL FIX
-        cantidad_entregada: Number(p.cantidad)
-      }))
-    )
-  }
-}, [productos])
+  if (!productos?.length) return
 
+  setEntregas(
+    productos.map(p => ({
+      id_producto: p.id_producto,
+      nombre: p.nombre,
+      cantidad_pedida: Number(p.cantidad) || 0,
+      cantidad_entregada: Number(p.cantidad) || 0
+    }))
+  )
+}, [productos])
 
   // =========================
   // VALIDAR DIFERENCIAS
