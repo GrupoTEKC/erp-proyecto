@@ -223,9 +223,8 @@ app.post('/pedidos', async (req, res) => {
     conn.release()
   }
 })
-
 // =========================
-// 📦 DETALLE PEDIDO (NUEVO)
+// 📦 DETALLE PEDIDO (FALTABA)
 // =========================
 app.get('/pedidos/:id/detalle', async (req, res) => {
   try {
@@ -233,14 +232,14 @@ app.get('/pedidos/:id/detalle', async (req, res) => {
 
     const [rows] = await db.query(`
       SELECT 
-        d.id_producto,
-        p.nombre,
-        d.precio,
-        d.cantidad
-      FROM pedido_detalle d
-      JOIN productos p 
-        ON p.id_producto = d.id_producto
-      WHERE d.id_pedido = ?
+        pd.id_producto,
+        pr.nombre,
+        pd.cantidad,
+        pd.precio
+      FROM pedido_detalle pd
+      JOIN productos pr 
+        ON pr.id_producto = pd.id_producto
+      WHERE pd.id_pedido = ?
     `, [id])
 
     res.json(rows)
