@@ -15,13 +15,10 @@ function Clientes() {
       try {
         setLoading(true)
         setError(null)
-
         const res = await fetch(`${API}/clientes`)
         if (!res.ok) throw new Error(`Error servidor: ${res.status}`)
-
         const data = await res.json()
         if (!Array.isArray(data)) throw new Error('Respuesta inválida')
-
         setClientes(data)
       } catch (err) {
         setError(err.message)
@@ -30,7 +27,6 @@ function Clientes() {
         setLoading(false)
       }
     }
-
     cargarClientes()
   }, [])
 
@@ -75,9 +71,11 @@ function Clientes() {
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
       {!loading && !error && (
-        <div style={tablaWrapper}>
-          <table style={tabla}>
-            <thead style={thead}>
+        <div style={tablaContainer}>
+
+          {/* 👉 TABLA — NO TOCADA */}
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead style={{ background: '#007bff', color: 'white' }}>
               <tr>
                 <th style={th}>Nombre</th>
                 <th style={th}>Tienda</th>
@@ -92,7 +90,7 @@ function Clientes() {
             <tbody>
               {clientesFiltrados.length === 0 ? (
                 <tr>
-                  <td colSpan="7" style={sinDatos}>
+                  <td colSpan="7" style={{ padding: 15, textAlign: 'center' }}>
                     No hay clientes
                   </td>
                 </tr>
@@ -116,6 +114,7 @@ function Clientes() {
               )}
             </tbody>
           </table>
+
         </div>
       )}
     </div>
@@ -125,8 +124,6 @@ function Clientes() {
 /* =========================
    🎨 ESTILOS
 ========================= */
-
-const vino = '#7b1e3a'
 
 const container = {
   padding: 20,
@@ -140,19 +137,8 @@ const header = {
   justifyContent: 'space-between',
   alignItems: 'center',
   marginBottom: 20,
-  gap: 10,
-  flexWrap: 'wrap'
-}
-
-const btnVino = {
-  background: 'white',
-  color: vino,
-  border: `2px solid ${vino}`,
-  padding: '10px 16px',
-  borderRadius: 6,
-  cursor: 'pointer',
-  fontWeight: '600',
-  fontFamily: 'Segoe UI, sans-serif'
+  flexWrap: 'wrap',
+  gap: 10
 }
 
 const buscador = {
@@ -160,26 +146,26 @@ const buscador = {
   padding: 12,
   borderRadius: 6,
   border: '1px solid #ccc',
-  marginBottom: 20,
-  fontFamily: 'Segoe UI, sans-serif'
+  marginBottom: 20
 }
 
-const tablaWrapper = {
+const tablaContainer = {
   background: 'white',
   borderRadius: 10,
-  overflowX: 'auto',
+  overflow: 'auto',
   boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
 }
 
-const tabla = {
-  width: '100%',
-  borderCollapse: 'collapse',
-  minWidth: 700
-}
-
-const thead = {
-  background: vino,
-  color: 'white'
+const btnVino = {
+  background: 'white',
+  color: '#7b1e2b',
+  border: '2px solid #7b1e2b',
+  padding: '10px 16px',
+  borderRadius: 8,
+  cursor: 'pointer',
+  fontWeight: 'bold',
+  fontSize: 14,
+  transition: 'all 0.2s ease'
 }
 
 const th = {
@@ -190,11 +176,6 @@ const th = {
 const td = {
   padding: 12,
   borderBottom: '1px solid #eee'
-}
-
-const sinDatos = {
-  padding: 15,
-  textAlign: 'center'
 }
 
 export default Clientes
