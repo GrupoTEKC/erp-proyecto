@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 
-// 👉 URL BACKEND
 const API = 'https://erp-proyecto-production.up.railway.app'
 
 function Clientes() {
@@ -25,8 +24,7 @@ function Clientes() {
         if (!res.ok) throw new Error(`Error servidor: ${res.status}`)
 
         const data = await res.json()
-        if (!Array.isArray(data))
-          throw new Error('Respuesta inválida del servidor')
+        if (!Array.isArray(data)) throw new Error('Respuesta inválida')
 
         setClientes(data)
       } catch (err) {
@@ -42,7 +40,7 @@ function Clientes() {
   }, [])
 
   // =========================
-  // 🔍 FILTRO
+  // 🔎 FILTRO
   // =========================
   const clientesFiltrados = clientes.filter(c =>
     `${c.nombre || ''} ${c.nombre_tienda || ''} ${c.telefono || ''} ${c.rfc || ''}`
@@ -55,20 +53,16 @@ function Clientes() {
   // =========================
   return (
     <div style={container}>
-
       {/* HEADER */}
       <div style={header}>
-        <button style={btnSecundario} onClick={() => navigate('/')}>
+        <button style={btn} onClick={() => navigate('/')}>
           ⬅ Volver
         </button>
 
-        <h2 style={{ margin: 0 }}>Clientes</h2>
+        <h2>Clientes</h2>
 
-        <button
-          style={btnPrimario}
-          onClick={() => navigate('/clientes/nuevo')}
-        >
-          + Nuevo Cliente
+        <button style={btnPrimary} onClick={() => navigate('/clientes/nuevo')}>
+          + Nuevo
         </button>
       </div>
 
@@ -78,17 +72,18 @@ function Clientes() {
         placeholder="Buscar cliente..."
         value={busqueda}
         onChange={e => setBusqueda(e.target.value)}
-        style={buscador}
+        style={input}
       />
 
       {/* ESTADOS */}
       {loading && <p>Cargando clientes...</p>}
+
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
       {/* TABLA */}
       {!loading && !error && (
-        <div style={tablaWrapper}>
-          <table style={tabla}>
+        <div style={card}>
+          <table style={table}>
             <thead>
               <tr>
                 <th>Nombre</th>
@@ -105,7 +100,9 @@ function Clientes() {
             <tbody>
               {clientesFiltrados.length === 0 ? (
                 <tr>
-                  <td colSpan="8">No hay clientes</td>
+                  <td colSpan="8" style={{ textAlign: 'center' }}>
+                    No hay clientes
+                  </td>
                 </tr>
               ) : (
                 clientesFiltrados.map(c => (
@@ -121,7 +118,7 @@ function Clientes() {
                     {/* 👉 BOTÓN EDITAR */}
                     <td>
                       <button
-                        style={btnEditar}
+                        style={btnEdit}
                         onClick={() =>
                           navigate(`/clientes/editar/${c.id_cliente}`)
                         }
@@ -148,7 +145,8 @@ export default Clientes
 
 const container = {
   padding: '20px',
-  fontFamily: 'Arial'
+  maxWidth: '1200px',
+  margin: 'auto'
 }
 
 const header = {
@@ -158,48 +156,41 @@ const header = {
   marginBottom: '15px'
 }
 
-const buscador = {
-  width: '100%',
-  padding: '10px',
-  marginBottom: '15px',
-  fontSize: '14px'
-}
-
-const tablaWrapper = {
-  overflowX: 'auto',
+const card = {
   background: '#fff',
   borderRadius: '6px',
-  boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
+  boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+  overflowX: 'auto'
 }
 
-const tabla = {
+const table = {
   width: '100%',
   borderCollapse: 'collapse'
 }
 
-const btnPrimario = {
-  padding: '8px 14px',
-  background: '#007bff',
-  color: '#fff',
-  border: 'none',
+const input = {
+  width: '100%',
+  padding: '8px',
+  marginBottom: '10px',
   borderRadius: '4px',
+  border: '1px solid #ccc'
+}
+
+const btn = {
+  padding: '6px 12px',
+  borderRadius: '4px',
+  border: 'none',
   cursor: 'pointer'
 }
 
-const btnSecundario = {
-  padding: '8px 14px',
-  background: '#6c757d',
-  color: '#fff',
-  border: 'none',
-  borderRadius: '4px',
-  cursor: 'pointer'
+const btnPrimary = {
+  ...btn,
+  background: '#2d7ef7',
+  color: '#fff'
 }
 
-const btnEditar = {
-  padding: '6px 10px',
-  background: '#28a745',
-  color: '#fff',
-  border: 'none',
-  borderRadius: '4px',
-  cursor: 'pointer'
+const btnEdit = {
+  ...btn,
+  background: '#f0ad4e',
+  color: '#fff'
 }
