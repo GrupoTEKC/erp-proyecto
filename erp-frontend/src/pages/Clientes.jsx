@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 
-// 👉 URL DEL BACKEND EN PRODUCCIÓN
 const API = 'https://erp-proyecto-production.up.railway.app'
 
 function Clientes() {
@@ -13,7 +12,7 @@ function Clientes() {
   const [error, setError] = useState(null)
 
   // =========================
-  // 🔄 CARGAR CLIENTES
+  // CARGAR CLIENTES
   // =========================
   useEffect(() => {
     const cargarClientes = async () => {
@@ -22,17 +21,14 @@ function Clientes() {
         setError(null)
 
         const res = await fetch(`${API}/clientes`)
-        if (!res.ok) throw new Error(`Error servidor: ${res.status}`)
+        if (!res.ok) throw new Error('Error servidor')
 
         const data = await res.json()
-        if (!Array.isArray(data))
-          throw new Error('Respuesta inválida del servidor')
+        setClientes(Array.isArray(data) ? data : [])
 
-        setClientes(data)
       } catch (err) {
-        console.error('Error cargando clientes:', err)
-        setError(err.message)
-        setClientes([])
+        console.error(err)
+        setError('Error cargando clientes')
       } finally {
         setLoading(false)
       }
@@ -42,7 +38,7 @@ function Clientes() {
   }, [])
 
   // =========================
-  // 🔎 FILTRO
+  // FILTRO
   // =========================
   const clientesFiltrados = clientes.filter(c =>
     `${c.nombre || ''} ${c.nombre_tienda || ''} ${c.telefono || ''} ${c.rfc || ''}`
@@ -51,23 +47,24 @@ function Clientes() {
   )
 
   // =========================
-  // 🎨 UI
+  // UI
   // =========================
   return (
-    <div style={page}>
+    <div style={styles.container}>
+
       {/* HEADER */}
-      <div style={header}>
-        <button style={btnVolver} onClick={() => navigate('/')}>
-          ⬅ Volver
+      <div style={styles.header}>
+        <button style={styles.btnVolver} onClick={() => navigate('/')}>
+          ← Volver
         </button>
 
-        <h2 style={titulo}>Clientes</h2>
+        <h2 style={styles.titulo}>Clientes</h2>
 
         <button
-          style={btnPrincipal}
+          style={styles.btnNuevo}
           onClick={() => navigate('/clientes/nuevo')}
         >
-          + Nuevo cliente
+          + Nuevo
         </button>
       </div>
 
@@ -77,7 +74,7 @@ function Clientes() {
         placeholder="Buscar cliente..."
         value={busqueda}
         onChange={e => setBusqueda(e.target.value)}
-        style={input}
+        style={styles.search}
       />
 
       {/* ESTADOS */}
@@ -86,8 +83,8 @@ function Clientes() {
 
       {/* TABLA */}
       {!loading && !error && (
-        <div style={panel}>
-          <table style={tabla}>
+        <div style={styles.tableContainer}>
+          <table style={styles.table}>
             <thead>
               <tr>
                 <th>Nombre</th>
@@ -104,13 +101,11 @@ function Clientes() {
             <tbody>
               {clientesFiltrados.length === 0 ? (
                 <tr>
-                  <td colSpan="8" style={{ textAlign: 'center' }}>
-                    No hay clientes
-                  </td>
+                  <td colSpan="8">No hay clientes</td>
                 </tr>
               ) : (
                 clientesFiltrados.map(c => (
-                  <tr key={c.id_cliente}>
+                  <tr key={c.id_cliente} style={styles.row}>
                     <td>{c.nombre}</td>
                     <td>{c.nombre_tienda}</td>
                     <td>{c.telefono}</td>
@@ -121,7 +116,7 @@ function Clientes() {
 
                     <td>
                       <button
-                        style={btnEditar}
+                        style={styles.btnEditar}
                         onClick={() =>
                           navigate(`/clientes/editar/${c.id_cliente}`)
                         }
@@ -136,80 +131,87 @@ function Clientes() {
           </table>
         </div>
       )}
+
     </div>
   )
 }
+
+export default Clientes
 
 // =========================
 // 🎨 ESTILOS
 // =========================
 
-const page = {
-  background: '#f4f6f9',
-  minHeight: '100vh',
-  padding: 25,
-  fontFamily: 'Segoe UI, sans-serif'
-}
+const styles = {
 
-const header = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  marginBottom: 20
-}
+  container: {
+    padding: 20,
+    fontFamily: 'Segoe UI, sans-serif',
+    background: '#f4f6f9',
+    minHeight: '100vh'
+  },
 
-const titulo = {
-  margin: 0,
-  fontWeight: 600
-}
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20
+  },
 
-const panel = {
-  background: '#fff',
-  borderRadius: 6,
-  padding: 15,
-  boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
-  overflowX: 'auto'
-}
+  titulo: {
+    margin: 0,
+    fontWeight: 600
+  },
 
-const tabla = {
-  width: '100%',
-  borderCollapse: 'collapse'
-}
+  btnVolver: {
+    background: '#555',
+    color: '#fff',
+    border: 'none',
+    padding: '8px 14px',
+    borderRadius: 6,
+    cursor: 'pointer'
+  },
 
-const input = {
-  width: '100%',
-  padding: 10,
-  marginBottom: 15,
-  borderRadius: 4,
-  border: '1px solid #ccc',
-  fontSize: 14
-}
+  btnNuevo: {
+    background: '#007bff',
+    color: '#fff',
+    border: 'none',
+    padding: '8px 14px',
+    borderRadius: 6,
+    cursor: 'pointer'
+  },
 
-const btnVolver = {
-  background: '#6c757d',
-  color: '#fff',
-  border: 'none',
-  padding: '8px 14px',
-  borderRadius: 4,
-  cursor: 'pointer'
-}
+  btnEditar: {
+    background: '#28a745',
+    color: '#fff',
+    border: 'none',
+    padding: '6px 10px',
+    borderRadius: 5,
+    cursor: 'pointer'
+  },
 
-const btnPrincipal = {
-  background: '#007bff',
-  color: '#fff',
-  border: 'none',
-  padding: '8px 14px',
-  borderRadius: 4,
-  cursor: 'pointer'
-}
+  search: {
+    width: '100%',
+    padding: 10,
+    marginBottom: 15,
+    borderRadius: 6,
+    border: '1px solid #ccc'
+  },
 
-const btnEditar = {
-  background: '#f0ad4e',
-  color: '#fff',
-  border: 'none',
-  padding: '6px 10px',
-  borderRadius: 4,
-  cursor: 'pointer'
-}
+  tableContainer: {
+    background: '#fff',
+    borderRadius: 8,
+    boxShadow: '0 3px 10px rgba(0,0,0,0.1)',
+    overflow: 'hidden'
+  },
 
-export default Clientes
+  table: {
+    width: '100%',
+    borderCollapse: 'collapse'
+  },
+
+  row: {
+    transition: 'background 0.2s'
+  }
+
+}
