@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import ModalEntrega from './ModalEntrega'
 import ModalCancelar from './ModalCancelar'
 
+// 👉 Cambia aquí si quieres local o producción
 const API = 'https://erp-proyecto-production.up.railway.app'
+// const API = 'http://localhost:3001'
 
 function ConsultarPedidos() {
   const [pedidos, setPedidos] = useState([])
@@ -24,7 +26,7 @@ function ConsultarPedidos() {
       const data = await res.json()
       setPedidos(Array.isArray(data) ? data : [])
     } catch (err) {
-      console.error('Error cargando pedidos:', err)
+      console.error('Error al cargar pedidos:', err)
       setPedidos([])
     }
   }
@@ -47,9 +49,13 @@ function ConsultarPedidos() {
   const cargarDetallePedido = async id => {
     try {
       const res = await fetch(`${API}/pedidos/${id}/detalle`)
+
+      if (!res.ok) throw new Error('Detalle no disponible')
+
       const data = await res.json()
 
       setDetallePedido(Array.isArray(data) ? data : [])
+
       return true
     } catch (err) {
       console.error('Error detalle:', err)
@@ -79,7 +85,9 @@ function ConsultarPedidos() {
       setMostrarModal(false)
       setPedidoSeleccionado(null)
       setDetallePedido([])
-    } catch {
+
+    } catch (err) {
+      console.error(err)
       alert('Error al confirmar entrega')
     }
   }
@@ -104,7 +112,9 @@ function ConsultarPedidos() {
 
       setMostrarCancelar(false)
       setPedidoSeleccionado(null)
-    } catch {
+
+    } catch (err) {
+      console.error(err)
       alert('Error al cancelar pedido')
     }
   }
@@ -114,13 +124,14 @@ function ConsultarPedidos() {
   // =========================
   return (
     <div>
+
       <button onClick={() => navigate('/')}>⬅ Volver</button>
 
       <h2>Consultar pedidos</h2>
 
       <input
         type="text"
-        placeholder="Buscar..."
+        placeholder="Buscar pedido o cliente..."
         value={busqueda}
         onChange={e => setBusqueda(e.target.value)}
         style={{ marginBottom: 10, width: '100%', padding: 6 }}
@@ -140,9 +151,9 @@ function ConsultarPedidos() {
 
         <tbody>
           {pedidosFiltrados.map(p => (
+
             <tr key={p.id_pedido}>
               <td>{p.id_pedido}</td>
-
               <td>{p.cliente}</td>
 
               <td>
@@ -187,7 +198,9 @@ function ConsultarPedidos() {
                   Cancelar
                 </button>
               </td>
+
             </tr>
+
           ))}
         </tbody>
       </table>
@@ -213,6 +226,7 @@ function ConsultarPedidos() {
           onConfirmar={confirmarCancelacion}
         />
       )}
+
     </div>
   )
 }
