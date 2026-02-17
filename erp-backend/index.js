@@ -226,30 +226,28 @@ app.post('/pedidos', async (req, res) => {
 // =========================
 // 📦 DETALLE PEDIDO (FALTABA)
 // =========================
-app.get('/pedidos/:id/detalle', async (req, res) => {
+const cargarDetallePedido = async id => {
   try {
-    const { id } = req.params
+    const res = await fetch(`${API}/pedidos/${id}/detalle`)
+    const data = await res.json()
 
-    const [rows] = await db.query(`
-      SELECT 
-        pd.id_producto,
-        pr.nombre,
-        pd.cantidad,
-        pd.precio
-      FROM pedido_detalle pd
-      JOIN productos pr 
-        ON pr.id_producto = pd.id_producto
-      WHERE pd.id_pedido = ?
-    `, [id])
+    const detalleFormateado = data.map(p => ({
+      id_producto: p.id_producto,
+      nombre: p.nombre,
+      pedida: Number(p.cantidad), // ← lo que pidió
+      entregar: Number(p.cantidad), // ← editable luego
+      precio: Number(p.precio)
+    }))
 
-    res.json(rows)
+    setDetallePedido(detalleFormateado)
 
+    return true
   } catch (err) {
-    console.error('🔥 DETALLE PEDIDO:', err)
-    res.status(500).json({ error: err.message })
+    console.error('Error detalle:', err)
+    alert('Error cargando detalle del pedido')
+    return false
   }
-})
-
+}
 // =========================
 // SERVIDOR
 // =========================
