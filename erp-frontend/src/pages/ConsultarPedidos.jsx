@@ -12,83 +12,110 @@ function ConsultarPedidos() {
   const [mostrarCancelar, setMostrarCancelar] = useState(false)
   const [pedidoSeleccionado, setPedidoSeleccionado] = useState(null)
   const [busqueda, setBusqueda] = useState('')
+
   const navigate = useNavigate()
 
   // =========================
-  // OBTENER PEDIDOS
+  // 🔄 CARGAR PEDIDOS
   // =========================
+  const cargarPedidos = async () => {
+    try {
+      const res = await fetch(`${API}/pedidos`)
+      const data = await res.json()
+      setPedidos(Array.isArray(data) ? data : [])
+    } catch (err) {
+      console.error('Error cargando pedidos:', err)
+      setPedidos([])
+    }
+  }
+
   useEffect(() => {
-    fetch(`${API}/pedidos`)
-      .then(res => res.json())
-      .then(data => setPedidos(Array.isArray(data) ? data : []))
-      .catch(err => {
-        console.error('Error al cargar pedidos', err)
-        setPedidos([])
-      })
+    cargarPedidos()
   }, [])
 
   // =========================
-  // FILTRO
+  // 🔍 FILTRO
   // =========================
   const pedidosFiltrados = pedidos.filter(p =>
-    p.id_pedido.toString().includes(busqueda) ||
-    p.cliente.toLowerCase().includes(busqueda.toLowerCase())
+    p?.id_pedido?.toString().includes(busqueda) ||
+    p?.cliente?.toLowerCase().includes(busqueda.toLowerCase())
   )
 
-  const cargarDetallePedido = async id_pedido => {
-    const res = await fetch(`${API}/pedidos/${id_pedido}/detalle`)
-    const data = await res.json()
-    setDetallePedido(Array.isArray(data) ? data : [])
+  // =========================
+  // 📦 CARGAR DETALLE
+  // =========================
+  const cargarDetallePedido = async id => {
+    try {
+      const res = await fetch(`${API}/pedidos/${id}/detalle`)
+      const data = await res.json()
+
+      setDetallePedido(Array.isArray(data) ? data : [])
+      return true
+    } catch (err) {
+      console.error('Error detalle:', err)
+      alert('Error cargando detalle del pedido')
+      return false
+    }
   }
 
+  // =========================
+  // 🚚 ENTREGAR
+  // =========================
   const confirmarEntrega = async dataEntrega => {
-    const res = await fetch(
-      `${API}/pedidos/${pedidoSeleccionado.id_pedido}/entregar`,
-      {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dataEntrega)
-      }
-    )
+    try {
+      const res = await fetch(
+        `${API}/pedidos/${pedidoSeleccionado.id_pedido}/entregar`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(dataEntrega)
+        }
+      )
 
-    if (!res.ok) {
+      if (!res.ok) throw new Error()
+
+      await cargarPedidos()
+
+      setMostrarModal(false)
+      setPedidoSeleccionado(null)
+      setDetallePedido([])
+    } catch {
       alert('Error al confirmar entrega')
-      return
     }
-
-    const nuevos = await fetch(`${API}/pedidos`)
-    setPedidos(await nuevos.json())
-
-    setMostrarModal(false)
-    setPedidoSeleccionado(null)
-    setDetallePedido([])
   }
 
+  // =========================
+  // ❌ CANCELAR
+  // =========================
   const confirmarCancelacion = async ({ comentario }) => {
-    const res = await fetch(
-      `${API}/pedidos/${pedidoSeleccionado.id_pedido}/cancelar`,
-      {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ comentario })
-      }
-    )
+    try {
+      const res = await fetch(
+        `${API}/pedidos/${pedidoSeleccionado.id_pedido}/cancelar`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ comentario })
+        }
+      )
 
-    if (!res.ok) {
-      alert('Error al cancelar')
-      return
+      if (!res.ok) throw new Error()
+
+      await cargarPedidos()
+
+      setMostrarCancelar(false)
+      setPedidoSeleccionado(null)
+    } catch {
+      alert('Error al cancelar pedido')
     }
-
-    const nuevos = await fetch(`${API}/pedidos`)
-    setPedidos(await nuevos.json())
-
-    setMostrarCancelar(false)
-    setPedidoSeleccionado(null)
   }
 
+  // =========================
+  // 🧩 UI
+  // =========================
   return (
     <div>
       <button onClick={() => navigate('/')}>⬅ Volver</button>
+
       <h2>Consultar pedidos</h2>
 
       <input
@@ -96,7 +123,7 @@ function ConsultarPedidos() {
         placeholder="Buscar..."
         value={busqueda}
         onChange={e => setBusqueda(e.target.value)}
-        style={{ marginBottom: '10px', width: '100%', padding: '6px' }}
+        style={{ marginBottom: 10, width: '100%', padding: 6 }}
       />
 
       <table border="1" cellPadding="8" width="100%">
@@ -105,7 +132,7 @@ function ConsultarPedidos() {
             <th>Pedido #</th>
             <th>Cliente</th>
             <th>Fecha pedido</th>
-            <th>Fecha entrega/cancelación</th>
+            <th>Entrega / Cancelación</th>
             <th>Estado</th>
             <th>Acciones</th>
           </tr>
@@ -115,9 +142,14 @@ function ConsultarPedidos() {
           {pedidosFiltrados.map(p => (
             <tr key={p.id_pedido}>
               <td>{p.id_pedido}</td>
+
               <td>{p.cliente}</td>
 
-              <td>{new Date(p.fecha).toLocaleDateString()}</td>
+              <td>
+                {p.fecha
+                  ? new Date(p.fecha).toLocaleDateString()
+                  : '-'}
+              </td>
 
               <td>
                 {p.estado === 'entregado' && p.fecha_entrega
@@ -134,8 +166,10 @@ function ConsultarPedidos() {
                   disabled={p.estado !== 'pendiente'}
                   onClick={async () => {
                     setPedidoSeleccionado(p)
-                    await cargarDetallePedido(p.id_pedido)
-                    setMostrarModal(true)
+
+                    const ok = await cargarDetallePedido(p.id_pedido)
+
+                    if (ok) setMostrarModal(true)
                   }}
                 >
                   Entregar
@@ -158,6 +192,7 @@ function ConsultarPedidos() {
         </tbody>
       </table>
 
+      {/* MODAL ENTREGA */}
       {mostrarModal && pedidoSeleccionado && (
         <ModalEntrega
           pedido={pedidoSeleccionado}
@@ -167,6 +202,7 @@ function ConsultarPedidos() {
         />
       )}
 
+      {/* MODAL CANCELAR */}
       {mostrarCancelar && pedidoSeleccionado && (
         <ModalCancelar
           pedido={pedidoSeleccionado}
