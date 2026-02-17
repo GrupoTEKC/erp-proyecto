@@ -54,25 +54,14 @@ function ConsultarPedidos() {
     const data = await res.json()
 
     // 👉 Adaptar datos al formato del modal
-    const detalleAdaptado = (Array.isArray(data) ? data : []).map(p => ({
-      id_producto: p.id_producto,
-      nombre: p.nombre,
-      cantidadPedida: Number(p.cantidad) || 0,
-      cantidadEntregada: Number(p.cantidad) || 0,
-      precio: Number(p.precio) || 0
-    }))
+   const detalleAdaptado = (Array.isArray(data) ? data : []).map(p => ({
+  id_producto: p.id_producto,
+  nombre: p.nombre,
+  cantidad_pedida: Number(p.cantidad),
+  cantidad_entregada: Number(p.cantidad),
+  precio: Number(p.precio)
+}))
 
-    setDetallePedido(detalleAdaptado)
-
-    console.log('📦 Detalle cargado:', detalleAdaptado)
-
-    return true
-  } catch (err) {
-    console.error('Error detalle:', err)
-    alert('Error cargando detalle del pedido')
-    return false
-  }
-}
   // =========================
   // 🚚 ENTREGAR
   // =========================
