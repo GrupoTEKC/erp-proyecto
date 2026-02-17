@@ -224,28 +224,6 @@ app.post('/pedidos', async (req, res) => {
   }
 })
 
-app.get('/pedidos/:id/detalle', async (req, res) => {
-  try {
-    const { id } = req.params
-
-    const [rows] = await db.query(`
-      SELECT
-        pr.nombre,
-        pd.cantidad AS cantidad_pedida,
-        pd.cantidad AS cantidad_entregada
-      FROM pedido_detalle pd
-      JOIN productos pr ON pr.id_producto = pd.id_producto
-      WHERE pd.id_pedido = ?
-    `, [id])
-
-    res.json(rows)
-
-  } catch (err) {
-    console.error('🔥 ERROR DETALLE PEDIDO:', err)
-    res.status(500).json({ error: err.message })
-  }
-})
-
 // =========================
 // SERVIDOR
 // =========================
