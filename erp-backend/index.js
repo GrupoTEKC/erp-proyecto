@@ -223,22 +223,19 @@ app.post('/pedidos', async (req, res) => {
     conn.release()
   }
 })
-// =========================
-// DETALLE PEDIDO
-// =========================
+
 app.get('/pedidos/:id/detalle', async (req, res) => {
   try {
     const { id } = req.params
 
     const [rows] = await db.query(`
-      SELECT 
-        d.id_producto,
+      SELECT
         pr.nombre,
-        d.precio,
-        d.cantidad
-      FROM pedido_detalle d
-      JOIN productos pr ON pr.id_producto = d.id_producto
-      WHERE d.id_pedido = ?
+        pd.cantidad AS cantidad_pedida,
+        pd.cantidad AS cantidad_entregada
+      FROM pedido_detalle pd
+      JOIN productos pr ON pr.id_producto = pd.id_producto
+      WHERE pd.id_pedido = ?
     `, [id])
 
     res.json(rows)
