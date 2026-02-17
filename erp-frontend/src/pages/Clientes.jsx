@@ -137,5 +137,6 @@ function Clientes() {
     </div>
   )
 }
+<h2 style={{color:'red'}}>CLIENTES NUEVO</h2>
 
 export default Clientes
