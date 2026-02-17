@@ -8,16 +8,22 @@ function ModalEntrega({ pedido, productos = [], onClose, onConfirmar }) {
   // CARGAR PRODUCTOS
   // =========================
 useEffect(() => {
-  if (!productos?.length) return
+  console.log("📦 Productos recibidos:", productos)
 
-  setEntregas(
-    productos.map(p => ({
+  if (!Array.isArray(productos)) return
+
+  const data = productos.map(p => {
+    const cantidad = parseFloat(p.cantidad)
+
+    return {
       id_producto: p.id_producto,
-      nombre: p.nombre,
-      cantidad_pedida: Number(p.cantidad) || 0,
-      cantidad_entregada: Number(p.cantidad) || 0
-    }))
-  )
+      nombre: p.nombre || "Sin nombre",
+      cantidad_pedida: isNaN(cantidad) ? 0 : cantidad,
+      cantidad_entregada: isNaN(cantidad) ? 0 : cantidad
+    }
+  })
+
+  setEntregas(data)
 }, [productos])
 
   // =========================
