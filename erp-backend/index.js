@@ -223,31 +223,7 @@ app.post('/pedidos', async (req, res) => {
     conn.release()
   }
 })
-// =========================
-// 📦 DETALLE PEDIDO (FALTABA)
-// =========================
-const cargarDetallePedido = async id => {
-  try {
-    const res = await fetch(`${API}/pedidos/${id}/detalle`)
-    const data = await res.json()
 
-    const detalleFormateado = data.map(p => ({
-      id_producto: p.id_producto,
-      nombre: p.nombre,
-      pedida: Number(p.cantidad), // ← lo que pidió
-      entregar: Number(p.cantidad), // ← editable luego
-      precio: Number(p.precio)
-    }))
-
-    setDetallePedido(detalleFormateado)
-
-    return true
-  } catch (err) {
-    console.error('Error detalle:', err)
-    alert('Error cargando detalle del pedido')
-    return false
-  }
-}
 // =========================
 // SERVIDOR
 // =========================
