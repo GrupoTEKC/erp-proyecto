@@ -20,20 +20,14 @@ function ConsultarPedidos() {
   // =========================
   // 🔄 CARGAR PEDIDOS
   // =========================
-  const cargarPedidos = async () => {
-    try {
-      const res = await fetch(`${API}/pedidos`)
-      const data = await res.json()
-      setPedidos(Array.isArray(data) ? data : [])
-    } catch (err) {
-      console.error('Error al cargar pedidos:', err)
-      setPedidos([])
-    }
-  }
+ const detalleAdaptado = (Array.isArray(data) ? data : []).map(p => ({
+  id_producto: p.id_producto,
+  nombre: p.nombre,
+  cantidad_pedida: Number(p.cantidad),
+  cantidad_entregada: Number(p.cantidad),
+  precio: Number(p.precio)
+}))
 
-  useEffect(() => {
-    cargarPedidos()
-  }, [])
 
   // =========================
   // 🔍 FILTRO
