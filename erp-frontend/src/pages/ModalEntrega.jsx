@@ -13,7 +13,7 @@ useEffect(() => {
       productos.map(p => ({
         id_producto: p.id_producto,
         nombre: p.nombre,
-        cantidad_pedida: Number(p.cantidad), // ← AQUÍ ESTÁ EL FIX
+        cantidad_pedida: p.cantidad, // ← AQUÍ ESTÁ EL FIX
         cantidad_entregada: Number(p.cantidad)
       }))
     )
