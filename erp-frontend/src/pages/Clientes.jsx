@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 
-// 👉 URL DEL BACKEND EN PRODUCCIÓN
+// 👉 URL BACKEND
 const API = 'https://erp-proyecto-production.up.railway.app'
 
 function Clientes() {
@@ -22,20 +22,15 @@ function Clientes() {
         setError(null)
 
         const res = await fetch(`${API}/clientes`)
-
-        if (!res.ok) {
-          throw new Error(`Error servidor: ${res.status}`)
-        }
+        if (!res.ok) throw new Error(`Error servidor: ${res.status}`)
 
         const data = await res.json()
-
-        if (!Array.isArray(data)) {
+        if (!Array.isArray(data))
           throw new Error('Respuesta inválida del servidor')
-        }
 
         setClientes(data)
       } catch (err) {
-        console.error('Error cargando clientes:', err)
+        console.error(err)
         setError(err.message)
         setClientes([])
       } finally {
@@ -47,7 +42,7 @@ function Clientes() {
   }, [])
 
   // =========================
-  // 🔎 FILTRO
+  // 🔍 FILTRO
   // =========================
   const clientesFiltrados = clientes.filter(c =>
     `${c.nombre || ''} ${c.nombre_tienda || ''} ${c.telefono || ''} ${c.rfc || ''}`
@@ -59,83 +54,152 @@ function Clientes() {
   // 🎨 UI
   // =========================
   return (
-    <div>
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '15px'
-      }}>
-        <button onClick={() => navigate('/')}>
-          Volver
+    <div style={container}>
+
+      {/* HEADER */}
+      <div style={header}>
+        <button style={btnSecundario} onClick={() => navigate('/')}>
+          ⬅ Volver
         </button>
 
-        <h2>Clientes</h2>
+        <h2 style={{ margin: 0 }}>Clientes</h2>
 
-        <button onClick={() => navigate('/clientes/nuevo')}>
-          Nuevo
+        <button
+          style={btnPrimario}
+          onClick={() => navigate('/clientes/nuevo')}
+        >
+          + Nuevo Cliente
         </button>
       </div>
 
+      {/* BUSCADOR */}
       <input
         type="text"
         placeholder="Buscar cliente..."
         value={busqueda}
         onChange={e => setBusqueda(e.target.value)}
-        style={{
-          width: '100%',
-          padding: '8px',
-          marginBottom: '10px'
-        }}
+        style={buscador}
       />
 
+      {/* ESTADOS */}
       {loading && <p>Cargando clientes...</p>}
+      {error && <p style={{ color: 'red' }}>{error}</p>}
 
-      {error && (
-        <p style={{ color: 'red' }}>
-          {error}
-        </p>
-      )}
-
+      {/* TABLA */}
       {!loading && !error && (
-        <table border="1" cellPadding="8" width="100%">
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Tienda</th>
-              <th>Teléfono</th>
-              <th>RFC</th>
-              <th>Email</th>
-              <th>Dirección</th>
-              <th>Saldo</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {clientesFiltrados.length === 0 ? (
+        <div style={tablaWrapper}>
+          <table style={tabla}>
+            <thead>
               <tr>
-                <td colSpan="7">
-                  No hay clientes
-                </td>
+                <th>Nombre</th>
+                <th>Tienda</th>
+                <th>Teléfono</th>
+                <th>RFC</th>
+                <th>Email</th>
+                <th>Dirección</th>
+                <th>Saldo</th>
+                <th>Acciones</th>
               </tr>
-            ) : (
-              clientesFiltrados.map(c => (
-                <tr key={c.id_cliente}>
-                  <td>{c.nombre}</td>
-                  <td>{c.nombre_tienda}</td>
-                  <td>{c.telefono}</td>
-                  <td>{c.rfc}</td>
-                  <td>{c.email}</td>
-                  <td>{c.direccion}</td>
-                  <td>${c.saldo_actual || 0}</td>
+            </thead>
+
+            <tbody>
+              {clientesFiltrados.length === 0 ? (
+                <tr>
+                  <td colSpan="8">No hay clientes</td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                clientesFiltrados.map(c => (
+                  <tr key={c.id_cliente}>
+                    <td>{c.nombre}</td>
+                    <td>{c.nombre_tienda}</td>
+                    <td>{c.telefono}</td>
+                    <td>{c.rfc}</td>
+                    <td>{c.email}</td>
+                    <td>{c.direccion}</td>
+                    <td>${c.saldo_actual || 0}</td>
+
+                    {/* 👉 BOTÓN EDITAR */}
+                    <td>
+                      <button
+                        style={btnEditar}
+                        onClick={() =>
+                          navigate(`/clientes/editar/${c.id_cliente}`)
+                        }
+                      >
+                        Editar
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   )
 }
 
 export default Clientes
+
+// =========================
+// 🎨 ESTILOS
+// =========================
+
+const container = {
+  padding: '20px',
+  fontFamily: 'Arial'
+}
+
+const header = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: '15px'
+}
+
+const buscador = {
+  width: '100%',
+  padding: '10px',
+  marginBottom: '15px',
+  fontSize: '14px'
+}
+
+const tablaWrapper = {
+  overflowX: 'auto',
+  background: '#fff',
+  borderRadius: '6px',
+  boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
+}
+
+const tabla = {
+  width: '100%',
+  borderCollapse: 'collapse'
+}
+
+const btnPrimario = {
+  padding: '8px 14px',
+  background: '#007bff',
+  color: '#fff',
+  border: 'none',
+  borderRadius: '4px',
+  cursor: 'pointer'
+}
+
+const btnSecundario = {
+  padding: '8px 14px',
+  background: '#6c757d',
+  color: '#fff',
+  border: 'none',
+  borderRadius: '4px',
+  cursor: 'pointer'
+}
+
+const btnEditar = {
+  padding: '6px 10px',
+  background: '#28a745',
+  color: '#fff',
+  border: 'none',
+  borderRadius: '4px',
+  cursor: 'pointer'
+}
