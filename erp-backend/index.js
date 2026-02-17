@@ -42,9 +42,6 @@ app.get('/clientes', async (_, res) => {
   }
 })
 
-// =========================
-// CREAR CLIENTE
-// =========================
 app.post('/clientes', async (req, res) => {
   try {
     console.log('👤 Cliente recibido:', req.body)
@@ -73,7 +70,6 @@ app.post('/clientes', async (req, res) => {
       success: true,
       id_cliente: result.insertId
     })
-
   } catch (err) {
     console.error('🔥 ERROR CLIENTE:', err)
     res.status(500).json({ error: err.message })
@@ -139,7 +135,6 @@ app.get('/pedidos', async (_, res) => {
     `)
 
     res.json(rows)
-
   } catch (err) {
     console.error('🔥 PEDIDOS:', err)
     res.status(500).json(err)
@@ -147,7 +142,7 @@ app.get('/pedidos', async (_, res) => {
 })
 
 // =========================
-// 📦 DETALLE PEDIDO ← ESTA ERA LA QUE FALTABA
+// 📦 DETALLE PEDIDO — CORREGIDO
 // =========================
 app.get('/pedidos/:id/detalle', async (req, res) => {
   try {
@@ -157,7 +152,7 @@ app.get('/pedidos/:id/detalle', async (req, res) => {
       SELECT 
         pd.id_producto,
         pr.nombre,
-        pd.cantidad,
+        pd.cantidad AS cantidad_pedida,
         pd.precio
       FROM pedido_detalle pd
       JOIN productos pr 
@@ -166,7 +161,6 @@ app.get('/pedidos/:id/detalle', async (req, res) => {
     `, [id])
 
     res.json(rows)
-
   } catch (err) {
     console.error('🔥 DETALLE PEDIDO:', err)
     res.status(500).json({ error: err.message })
@@ -234,12 +228,10 @@ app.post('/pedidos', async (req, res) => {
       success: true,
       id_pedido: idPedido
     })
-
   } catch (err) {
     await conn.rollback()
     console.error('🔥 ERROR PEDIDO:', err)
     res.status(500).json(err)
-
   } finally {
     conn.release()
   }
