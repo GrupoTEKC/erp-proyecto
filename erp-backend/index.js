@@ -59,9 +59,7 @@ app.post('/clientes', async (req, res) => {
     } = req.body
 
     if (!nombre) {
-      return res.status(400).json({
-        error: 'Nombre requerido'
-      })
+      return res.status(400).json({ error: 'Nombre requerido' })
     }
 
     const [result] = await db.query(
@@ -122,7 +120,7 @@ app.get('/productos', async (_, res) => {
 })
 
 // =========================
-// 📦 LISTAR PEDIDOS (CORREGIDO)
+// 📦 LISTAR PEDIDOS
 // =========================
 app.get('/pedidos', async (_, res) => {
   try {
@@ -149,6 +147,33 @@ app.get('/pedidos', async (_, res) => {
 })
 
 // =========================
+// 📦 DETALLE PEDIDO ← ESTA ERA LA QUE FALTABA
+// =========================
+app.get('/pedidos/:id/detalle', async (req, res) => {
+  try {
+    const { id } = req.params
+
+    const [rows] = await db.query(`
+      SELECT 
+        pd.id_producto,
+        pr.nombre,
+        pd.cantidad,
+        pd.precio
+      FROM pedido_detalle pd
+      JOIN productos pr 
+        ON pr.id_producto = pd.id_producto
+      WHERE pd.id_pedido = ?
+    `, [id])
+
+    res.json(rows)
+
+  } catch (err) {
+    console.error('🔥 DETALLE PEDIDO:', err)
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// =========================
 // CREAR PEDIDO
 // =========================
 app.post('/pedidos', async (req, res) => {
@@ -169,14 +194,11 @@ app.post('/pedidos', async (req, res) => {
     } = req.body
 
     if (!id_cliente || !productos?.length) {
-      return res.status(400).json({
-        error: 'Datos incompletos'
-      })
+      return res.status(400).json({ error: 'Datos incompletos' })
     }
 
     await conn.beginTransaction()
 
-    // Insert pedido
     const [pedido] = await conn.query(`
       INSERT INTO pedidos
       (id_cliente, id_vendedor, id_ruta, fecha, total, tipo_pedido, dias_credito)
@@ -193,7 +215,6 @@ app.post('/pedidos', async (req, res) => {
 
     const idPedido = pedido.insertId
 
-    // Insert detalle
     for (const prod of productos) {
       await conn.query(`
         INSERT INTO pedido_detalle
