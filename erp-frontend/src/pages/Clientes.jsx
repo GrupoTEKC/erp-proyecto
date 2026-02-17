@@ -23,7 +23,6 @@ function Clientes() {
         if (!Array.isArray(data)) throw new Error('Respuesta inválida')
 
         setClientes(data)
-
       } catch (err) {
         setError(err.message)
         setClientes([])
@@ -42,22 +41,22 @@ function Clientes() {
   )
 
   return (
-    <div style={styles.page}>
+    <div style={container}>
 
       {/* HEADER */}
-      <div style={styles.header}>
+      <div style={header}>
         <button
+          style={btnVino}
           onClick={() => navigate('/')}
-          style={styles.btnBack}
         >
           ← Volver
         </button>
 
-        <h2 style={styles.title}>Clientes</h2>
+        <h2 style={{ margin: 0 }}>Clientes</h2>
 
         <button
+          style={btnVino}
           onClick={() => navigate('/clientes/nuevo')}
-          style={styles.btnPrimary}
         >
           + Nuevo
         </button>
@@ -69,32 +68,31 @@ function Clientes() {
         placeholder="Buscar cliente..."
         value={busqueda}
         onChange={e => setBusqueda(e.target.value)}
-        style={styles.search}
+        style={buscador}
       />
 
       {loading && <p>Cargando clientes...</p>}
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
-      {/* TABLA RESPONSIVE */}
       {!loading && !error && (
-        <div style={styles.tableWrapper}>
-          <table style={styles.table}>
-            <thead>
-              <tr style={styles.tableHeader}>
-                <th>Nombre</th>
-                <th>Tienda</th>
-                <th>Teléfono</th>
-                <th>RFC</th>
-                <th>Email</th>
-                <th>Dirección</th>
-                <th>Saldo</th>
+        <div style={tablaWrapper}>
+          <table style={tabla}>
+            <thead style={thead}>
+              <tr>
+                <th style={th}>Nombre</th>
+                <th style={th}>Tienda</th>
+                <th style={th}>Teléfono</th>
+                <th style={th}>RFC</th>
+                <th style={th}>Email</th>
+                <th style={th}>Dirección</th>
+                <th style={th}>Saldo</th>
               </tr>
             </thead>
 
             <tbody>
               {clientesFiltrados.length === 0 ? (
                 <tr>
-                  <td colSpan="7" style={styles.empty}>
+                  <td colSpan="7" style={sinDatos}>
                     No hay clientes
                   </td>
                 </tr>
@@ -103,16 +101,16 @@ function Clientes() {
                   <tr
                     key={c.id_cliente}
                     style={{
-                      background: i % 2 === 0 ? '#fdf6f6' : 'white'
+                      background: i % 2 === 0 ? '#f9f9f9' : 'white'
                     }}
                   >
-                    <td>{c.nombre}</td>
-                    <td>{c.nombre_tienda}</td>
-                    <td>{c.telefono}</td>
-                    <td>{c.rfc}</td>
-                    <td>{c.email}</td>
-                    <td>{c.direccion}</td>
-                    <td>${c.saldo_actual || 0}</td>
+                    <td style={td}>{c.nombre}</td>
+                    <td style={td}>{c.nombre_tienda}</td>
+                    <td style={td}>{c.telefono}</td>
+                    <td style={td}>{c.rfc}</td>
+                    <td style={td}>{c.email}</td>
+                    <td style={td}>{c.direccion}</td>
+                    <td style={td}>${c.saldo_actual || 0}</td>
                   </tr>
                 ))
               )}
@@ -120,88 +118,83 @@ function Clientes() {
           </table>
         </div>
       )}
-
     </div>
   )
 }
 
-/* ======================
+/* =========================
    🎨 ESTILOS
-====================== */
+========================= */
 
-const styles = {
+const vino = '#7b1e3a'
 
-  page: {
-    padding: 20,
-    background: '#f6f6f6',
-    minHeight: '100vh',
-    fontFamily: 'Segoe UI, sans-serif'
-  },
+const container = {
+  padding: 20,
+  background: '#f5f7fa',
+  minHeight: '100vh',
+  fontFamily: 'Segoe UI, sans-serif'
+}
 
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 20
-  },
+const header = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: 20,
+  gap: 10,
+  flexWrap: 'wrap'
+}
 
-  title: {
-    margin: 0,
-    fontSize: 22,
-    color: '#1b2a57'
-  },
+const btnVino = {
+  background: 'white',
+  color: vino,
+  border: `2px solid ${vino}`,
+  padding: '10px 16px',
+  borderRadius: 6,
+  cursor: 'pointer',
+  fontWeight: '600',
+  fontFamily: 'Segoe UI, sans-serif'
+}
 
-  btnBack: {
-    background: '#8b1d1d',
-    color: 'white',
-    border: 'none',
-    padding: '10px 16px',
-    borderRadius: 6,
-    cursor: 'pointer'
-  },
+const buscador = {
+  width: '100%',
+  padding: 12,
+  borderRadius: 6,
+  border: '1px solid #ccc',
+  marginBottom: 20,
+  fontFamily: 'Segoe UI, sans-serif'
+}
 
-  btnPrimary: {
-    background: '#8b1d1d',
-    color: 'white',
-    border: 'none',
-    padding: '10px 16px',
-    borderRadius: 6,
-    cursor: 'pointer'
-  },
+const tablaWrapper = {
+  background: 'white',
+  borderRadius: 10,
+  overflowX: 'auto',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+}
 
-  search: {
-    width: '100%',
-    padding: 12,
-    borderRadius: 6,
-    border: '1px solid #ccc',
-    marginBottom: 20
-  },
+const tabla = {
+  width: '100%',
+  borderCollapse: 'collapse',
+  minWidth: 700
+}
 
-  tableWrapper: {
-    overflowX: 'auto',
-    background: 'white',
-    borderRadius: 8,
-    boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
-  },
+const thead = {
+  background: vino,
+  color: 'white'
+}
 
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-    minWidth: 700
-  },
+const th = {
+  padding: 12,
+  textAlign: 'left'
+}
 
-  tableHeader: {
-    background: '#d7bcbc',
-    textAlign: 'left'
-  },
+const td = {
+  padding: 12,
+  borderBottom: '1px solid #eee'
+}
 
-  empty: {
-    padding: 15,
-    textAlign: 'center'
-  }
-
+const sinDatos = {
+  padding: 15,
+  textAlign: 'center'
 }
 
 export default Clientes
