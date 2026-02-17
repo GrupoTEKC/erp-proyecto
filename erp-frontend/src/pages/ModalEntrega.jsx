@@ -7,18 +7,18 @@ function ModalEntrega({ pedido, productos = [], onClose, onConfirmar }) {
   // =========================
   // CARGAR PRODUCTOS
   // =========================
-  useEffect(() => {
-    if (productos.length > 0) {
-      setEntregas(
-        productos.map(p => ({
-          id_producto: p.id_producto,
-          nombre: p.nombre,
-          cantidad_pedida: Number(p.cantidad_pedida),
-          cantidad_entregada: Number(p.cantidad_pedida)
-        }))
-      )
-    }
-  }, [productos])
+ useEffect(() => {
+  if (productos.length > 0) {
+    setEntregas(
+      productos.map(p => ({
+        id_producto: p.id_producto,
+        nombre: p.nombre,
+        cantidad_pedida: Number(p.cantidad), // ← viene del backend
+        cantidad_entregada: Number(p.cantidad)
+      }))
+    )
+  }
+}, [productos])
 
   // =========================
   // VALIDAR DIFERENCIAS
