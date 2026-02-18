@@ -226,6 +226,38 @@ function NuevoCliente() {
   )
 }
 
+{/* CATEGORÍA DE TIENDA */}
+<div style={styles.field}>
+  <label>
+    Categoría de la tienda *
+    <span style={styles.help}>
+      {' '}— Seleccione el tipo de negocio del cliente.
+    </span>
+  </label>
+
+  <select
+    name="categoria"
+    value={form.categoria}
+    onChange={handleChange}
+  >
+    <option value="">Seleccione categoría</option>
+    <option value="FERRETERIA">FERRETERÍA</option>
+    <option value="MATERIALES">MATERIALES</option>
+    <option value="AMBOS">AMBOS</option>
+    <option value="OTROS">OTROS (ESPECIFIQUE)</option>
+  </select>
+</div>
+
+{/* SI ES "OTROS" */}
+{form.categoria === 'OTROS' && (
+  <Campo
+    label="Especifique categoría * — Describa el tipo de negocio"
+    name="categoriaOtro"
+    form={form}
+    onChange={handleChange}
+  />
+)}
+
 // =========================
 // COMPONENTE INPUT
 // =========================
@@ -290,6 +322,11 @@ const styles = {
     borderRadius: 6,
     cursor: 'pointer'
   },
+  help: {
+  fontSize: 11,
+  color: '#666',
+  fontWeight: 'normal'
+},
 
   cancel: {
     background: '#fff',
@@ -300,5 +337,6 @@ const styles = {
     cursor: 'pointer'
   }
 }
+
 
 export default NuevoCliente
