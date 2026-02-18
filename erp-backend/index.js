@@ -48,31 +48,87 @@ app.post('/clientes', async (req, res) => {
 
     const {
       nombre,
+      apellido1,
+      apellido2,
+      apodo,
+      rfc,
+      categoria,
+      categoriaOtro,
       nombre_tienda,
-      direccion,
-      telefono,
-      email,
-      rfc
+      telefono_dueno,
+      telefono_tienda,
+      calle,
+      numero,
+      cp,
+      municipio,
+      estado,
+      entre_calles,
+      referencia,
+      correo,
+      id_ruta
     } = req.body
 
-    if (!nombre) {
-      return res.status(400).json({ error: 'Nombre requerido' })
+    // Validación básica
+    if (!nombre || !nombre_tienda || !rfc) {
+      return res.status(400).json({
+        error: 'Datos obligatorios faltantes'
+      })
     }
 
-    const [result] = await db.query(
-      `INSERT INTO clientes
-       (nombre, nombre_tienda, direccion, telefono, email, rfc)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [nombre, nombre_tienda, direccion, telefono, email, rfc]
-    )
+    const [result] = await db.query(`
+      INSERT INTO clientes (
+        nombre,
+        apellido1,
+        apellido2,
+        apodo,
+        rfc,
+        categoria,
+        categoria_otro,
+        nombre_tienda,
+        telefono_dueno,
+        telefono_tienda,
+        calle,
+        numero,
+        cp,
+        municipio,
+        estado,
+        entre_calles,
+        referencia,
+        email,
+        id_ruta
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      nombre,
+      apellido1,
+      apellido2,
+      apodo,
+      rfc,
+      categoria,
+      categoriaOtro,
+      nombre_tienda,
+      telefono_dueno,
+      telefono_tienda,
+      calle,
+      numero,
+      cp,
+      municipio,
+      estado,
+      entre_calles,
+      referencia,
+      correo,
+      id_ruta
+    ])
 
     res.json({
       success: true,
       id_cliente: result.insertId
     })
+
   } catch (err) {
     console.error('🔥 ERROR CLIENTE:', err)
-    res.status(500).json({ error: err.message })
+    res.status(500).json({
+      error: err.message
+    })
   }
 })
 
