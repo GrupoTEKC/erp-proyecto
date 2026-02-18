@@ -107,8 +107,10 @@ function NuevoCliente() {
       <h2 style={styles.title}>NUEVO CLIENTE</h2>
 
       <p style={styles.aviso}>
-        EN LOS SIGUIENTES CAMPOS TODOS LOS DATOS DEBERÁN SER ESCRITOS EN MAYÚSCULAS.
-        EL NOMBRE DEBE CORRESPONDER AL DUEÑO.
+       INSTRUCCIONES DE LLENADO
+       <br> * En los siguientes campos todos los datos deberán ser escritos en MAYUSCULAS.
+       </br><br>* Todos los datos deberán corresponder únicamente al dueño y a la tienda. (no se deberán incluir datos de otras personas.)</br>
+            * todos los datos deberán corresponder únicamente al dueño y a la tienda.
       </p>
 
       <div style={styles.grid}>
