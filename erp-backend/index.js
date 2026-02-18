@@ -30,24 +30,21 @@ app.get('/', (_, res) => {
 })
 
 // =========================
-// CLIENTES
+// CLIENTES — LISTAR
 // =========================
 app.get('/clientes', async (_, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM clientes')
     res.json(rows)
-  } 
-
-  catch (err) {
-  console.error('🔥 ERROR CLIENTE:', err)
-  res.status(500).json({
-    error: err.message,
-    body: req.body
-  })
-}
-
+  } catch (err) {
+    console.error('🔥 ERROR CLIENTES:', err)
+    res.status(500).json({ error: err.message })
+  }
 })
 
+// =========================
+// CLIENTES — CREAR
+// =========================
 app.post('/clientes', async (req, res) => {
   try {
     console.log('👤 Cliente recibido:', req.body)
@@ -69,21 +66,34 @@ app.post('/clientes', async (req, res) => {
     } = req.body
 
     if (!nombre || !nombre_tienda || !rfc) {
-      return res.status(400).json({ error: 'Campos obligatorios faltantes' })
+      return res.status(400).json({
+        error: 'Nombre, tienda y RFC son obligatorios'
+      })
     }
 
-    // 👉 Construir dirección completa
-    const direccion = `${calle || ''} ${numero || ''}, ${municipio || ''}, ${estado || ''}, CP ${cp || ''}`
+    // 👉 Construir nombre completo
+    const nombreCompleto =
+      `${nombre} ${apellido1 || ''} ${apellido2 || ''}`.trim()
 
-    // 👉 Combinar teléfonos
+    // 👉 Dirección completa
+    const direccion =
+      `${calle || ''} ${numero || ''}, ${municipio || ''}, ${estado || ''}, CP ${cp || ''}`
+
+    // 👉 Teléfono prioritario
     const telefono = telefono_dueno || telefono_tienda || null
 
     const [result] = await db.query(`
-      INSERT INTO clientes
-      (nombre, nombre_tienda, direccion, telefono, email, rfc)
+      INSERT INTO clientes (
+        nombre,
+        nombre_tienda,
+        direccion,
+        telefono,
+        email,
+        rfc
+      )
       VALUES (?, ?, ?, ?, ?, ?)
     `, [
-      `${nombre} ${apellido1 || ''} ${apellido2 || ''}`,
+      nombreCompleto,
       nombre_tienda,
       direccion,
       telefono,
@@ -101,6 +111,7 @@ app.post('/clientes', async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
+
 // =========================
 // VENDEDORES
 // =========================
@@ -110,7 +121,7 @@ app.get('/vendedores', async (_, res) => {
     res.json(rows)
   } catch (err) {
     console.error('🔥 VENDEDORES:', err)
-    res.status(500).json(err)
+    res.status(500).json({ error: err.message })
   }
 })
 
@@ -123,7 +134,7 @@ app.get('/rutas', async (_, res) => {
     res.json(rows)
   } catch (err) {
     console.error('🔥 RUTAS:', err)
-    res.status(500).json(err)
+    res.status(500).json({ error: err.message })
   }
 })
 
@@ -136,12 +147,12 @@ app.get('/productos', async (_, res) => {
     res.json(rows)
   } catch (err) {
     console.error('🔥 PRODUCTOS:', err)
-    res.status(500).json(err)
+    res.status(500).json({ error: err.message })
   }
 })
 
 // =========================
-// 📦 LISTAR PEDIDOS
+// PEDIDOS — LISTAR
 // =========================
 app.get('/pedidos', async (_, res) => {
   try {
@@ -160,14 +171,15 @@ app.get('/pedidos', async (_, res) => {
     `)
 
     res.json(rows)
+
   } catch (err) {
     console.error('🔥 PEDIDOS:', err)
-    res.status(500).json(err)
+    res.status(500).json({ error: err.message })
   }
 })
 
 // =========================
-// 📦 DETALLE PEDIDO — CORREGIDO
+// PEDIDO — DETALLE
 // =========================
 app.get('/pedidos/:id/detalle', async (req, res) => {
   try {
@@ -177,7 +189,7 @@ app.get('/pedidos/:id/detalle', async (req, res) => {
       SELECT 
         pd.id_producto,
         pr.nombre,
-        pd.cantidad AS cantidad_pedida,
+        pd.cantidad,
         pd.precio
       FROM pedido_detalle pd
       JOIN productos pr 
@@ -186,6 +198,7 @@ app.get('/pedidos/:id/detalle', async (req, res) => {
     `, [id])
 
     res.json(rows)
+
   } catch (err) {
     console.error('🔥 DETALLE PEDIDO:', err)
     res.status(500).json({ error: err.message })
@@ -193,14 +206,12 @@ app.get('/pedidos/:id/detalle', async (req, res) => {
 })
 
 // =========================
-// CREAR PEDIDO
+// PEDIDO — CREAR
 // =========================
 app.post('/pedidos', async (req, res) => {
   const conn = await db.getConnection()
 
   try {
-    console.log('📦 Pedido recibido:', req.body)
-
     const {
       id_cliente,
       id_vendedor,
@@ -253,10 +264,11 @@ app.post('/pedidos', async (req, res) => {
       success: true,
       id_pedido: idPedido
     })
+
   } catch (err) {
     await conn.rollback()
     console.error('🔥 ERROR PEDIDO:', err)
-    res.status(500).json(err)
+    res.status(500).json({ error: err.message })
   } finally {
     conn.release()
   }
