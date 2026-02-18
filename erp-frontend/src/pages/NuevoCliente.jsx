@@ -40,6 +40,7 @@ function NuevoCliente() {
   // =========================
   // FORMATEO
   // =========================
+
   const upper = v => v.toUpperCase()
 
   const handleChange = e => {
@@ -48,11 +49,22 @@ function NuevoCliente() {
 
     if (name === 'rfc') {
       val = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 13)
-    } else if (name.includes('telefono') || name === 'cp') {
-      val = value.replace(/\D/g, '')
-    } else if (name === 'correo_usuario') {
+    }
+
+    // 📞 TELÉFONOS → solo números y 10 dígitos
+    else if (name.includes('telefono')) {
+      val = value.replace(/\D/g, '').slice(0, 10)
+    }
+
+    else if (name === 'cp') {
+      val = value.replace(/\D/g, '').slice(0, 5)
+    }
+
+    else if (name === 'correo_usuario') {
       val = value
-    } else {
+    }
+
+    else {
       val = upper(value)
     }
 
@@ -62,6 +74,7 @@ function NuevoCliente() {
   // =========================
   // VALIDACIONES
   // =========================
+
   const validar = () => {
     if (
       !form.nombre ||
@@ -87,6 +100,15 @@ function NuevoCliente() {
       return false
     }
 
+    // 📞 Validación estricta teléfonos
+    if (
+      (form.telefono_dueno && form.telefono_dueno.length !== 10) ||
+      (form.telefono_tienda && form.telefono_tienda.length !== 10)
+    ) {
+      alert('Los teléfonos deben tener exactamente 10 dígitos')
+      return false
+    }
+
     if (form.rfc.length < 12) {
       alert('RFC incompleto')
       return false
@@ -98,6 +120,7 @@ function NuevoCliente() {
   // =========================
   // GUARDAR
   // =========================
+
   const guardarCliente = async () => {
     if (!validar()) return
 
@@ -119,7 +142,6 @@ function NuevoCliente() {
 
       alert('✅ Cliente guardado')
       navigate('/clientes')
-
     } catch {
       alert('❌ Error al guardar')
     }
@@ -128,6 +150,7 @@ function NuevoCliente() {
   // =========================
   // UI
   // =========================
+
   return (
     <div style={styles.page}>
       <h2 style={styles.title}>NUEVO CLIENTE</h2>
@@ -140,6 +163,8 @@ function NuevoCliente() {
         * Capturar únicamente información del dueño y la tienda.
         <br /><br />
         * El RFC debe ingresarse completo (12–13 caracteres).
+        <br /><br />
+        * Teléfonos deben contener exactamente 10 dígitos.
       </p>
 
       <div style={styles.grid}>
@@ -150,7 +175,7 @@ function NuevoCliente() {
         <Campo label="Apodo" name="apodo" form={form} onChange={handleChange}/>
         <Campo label="RFC *" name="rfc" form={form} onChange={handleChange}/>
 
-        {/* CATEGORÍA */}
+        {/* Categoría */}
         <div style={styles.field}>
           <label>Categoría tienda *</label>
           <select name="categoria" value={form.categoria} onChange={handleChange}>
@@ -163,17 +188,13 @@ function NuevoCliente() {
         </div>
 
         {form.categoria === 'OTROS' && (
-          <Campo
-            label="Especifique categoría *"
-            name="categoriaOtro"
-            form={form}
-            onChange={handleChange}
-          />
+          <Campo label="Especifique categoría *" name="categoriaOtro" form={form} onChange={handleChange}/>
         )}
 
         <Campo label="Nombre negocio *" name="nombre_tienda" form={form} onChange={handleChange}/>
         <Campo label="Teléfono dueño" name="telefono_dueno" form={form} onChange={handleChange}/>
         <Campo label="Teléfono tienda" name="telefono_tienda" form={form} onChange={handleChange}/>
+
         <Campo label="Calle *" name="calle" form={form} onChange={handleChange}/>
         <Campo label="Número *" name="numero" form={form} onChange={handleChange}/>
         <Campo label="CP *" name="cp" form={form} onChange={handleChange}/>
@@ -182,20 +203,12 @@ function NuevoCliente() {
         <Campo label="Entre calles" name="entre_calles" form={form} onChange={handleChange}/>
         <Campo label="Referencia" name="referencia" form={form} onChange={handleChange}/>
 
-        {/* CORREO */}
+        {/* Correo */}
         <div style={styles.field}>
           <label>Correo</label>
           <div style={{ display: 'flex', gap: 6 }}>
-            <input
-              name="correo_usuario"
-              value={form.correo_usuario}
-              onChange={handleChange}
-            />
-            <select
-              name="correo_dominio"
-              value={form.correo_dominio}
-              onChange={handleChange}
-            >
+            <input name="correo_usuario" value={form.correo_usuario} onChange={handleChange}/>
+            <select name="correo_dominio" value={form.correo_dominio} onChange={handleChange}>
               <option>@gmail.com</option>
               <option>@hotmail.com</option>
               <option>@outlook.com</option>
@@ -203,15 +216,13 @@ function NuevoCliente() {
           </div>
         </div>
 
-        {/* RUTA */}
+        {/* Ruta */}
         <div style={styles.field}>
           <label>Ruta *</label>
           <select name="id_ruta" value={form.id_ruta} onChange={handleChange}>
             <option value="">Seleccione ruta</option>
             {rutas.map(r => (
-              <option key={r.id_ruta} value={r.id_ruta}>
-                {r.nombre}
-              </option>
+              <option key={r.id_ruta} value={r.id_ruta}>{r.nombre}</option>
             ))}
           </select>
         </div>
@@ -219,21 +230,17 @@ function NuevoCliente() {
       </div>
 
       <div style={styles.buttons}>
-        <button style={styles.save} onClick={guardarCliente}>
-          Guardar Cliente
-        </button>
-
-        <button style={styles.cancel} onClick={() => navigate('/clientes')}>
-          Cancelar
-        </button>
+        <button style={styles.save} onClick={guardarCliente}>Guardar Cliente</button>
+        <button style={styles.cancel} onClick={() => navigate('/clientes')}>Cancelar</button>
       </div>
     </div>
   )
 }
 
 // =========================
-// COMPONENTE INPUT
+// INPUT REUTILIZABLE
 // =========================
+
 function Campo({ label, name, form, onChange }) {
   return (
     <div style={styles.field}>
@@ -246,40 +253,18 @@ function Campo({ label, name, form, onChange }) {
 // =========================
 // ESTILOS
 // =========================
+
 const vino = '#8B1E1E'
 
 const styles = {
-  page: {
-    padding: 20,
-    maxWidth: 900,
-    margin: 'auto',
-    fontFamily: 'Arial'
-  },
+  page: { padding: 20, maxWidth: 900, margin: 'auto', fontFamily: 'Arial' },
   title: { color: '#071849' },
   aviso: { fontSize: 12, marginBottom: 20, color: '#444' },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))',
-    gap: 12
-  },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))', gap: 12 },
   field: { display: 'flex', flexDirection: 'column' },
   buttons: { marginTop: 20, display: 'flex', gap: 10 },
-  save: {
-    background: vino,
-    color: '#fff',
-    border: 'none',
-    padding: 10,
-    borderRadius: 6,
-    cursor: 'pointer'
-  },
-  cancel: {
-    background: '#fff',
-    color: vino,
-    border: `1px solid ${vino}`,
-    padding: 10,
-    borderRadius: 6,
-    cursor: 'pointer'
-  }
+  save: { background: vino, color: '#fff', border: 'none', padding: 10, borderRadius: 6, cursor: 'pointer' },
+  cancel: { background: '#fff', color: vino, border: `1px solid ${vino}`, padding: 10, borderRadius: 6, cursor: 'pointer' }
 }
 
 export default NuevoCliente
