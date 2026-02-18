@@ -56,10 +56,6 @@ app.post('/clientes', async (req, res) => {
       nombre,
       apellido1,
       apellido2,
-      apodo,
-      rfc,
-      categoria,
-      categoriaOtro,
       nombre_tienda,
       telefono_dueno,
       telefono_tienda,
@@ -68,61 +64,31 @@ app.post('/clientes', async (req, res) => {
       cp,
       municipio,
       estado,
-      entre_calles,
-      referencia,
       correo,
-      id_ruta
+      rfc
     } = req.body
 
-    // Validación básica
     if (!nombre || !nombre_tienda || !rfc) {
-      return res.status(400).json({
-        error: 'Datos obligatorios faltantes'
-      })
+      return res.status(400).json({ error: 'Campos obligatorios faltantes' })
     }
 
+    // 👉 Construir dirección completa
+    const direccion = `${calle || ''} ${numero || ''}, ${municipio || ''}, ${estado || ''}, CP ${cp || ''}`
+
+    // 👉 Combinar teléfonos
+    const telefono = telefono_dueno || telefono_tienda || null
+
     const [result] = await db.query(`
-      INSERT INTO clientes (
-        nombre,
-        apellido1,
-        apellido2,
-        apodo,
-        rfc,
-        categoria,
-        categoria_otro,
-        nombre_tienda,
-        telefono_dueno,
-        telefono_tienda,
-        calle,
-        numero,
-        cp,
-        municipio,
-        estado,
-        entre_calles,
-        referencia,
-        email,
-        id_ruta
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO clientes
+      (nombre, nombre_tienda, direccion, telefono, email, rfc)
+      VALUES (?, ?, ?, ?, ?, ?)
     `, [
-      nombre,
-      apellido1,
-      apellido2,
-      apodo,
-      rfc,
-      categoria,
-      categoriaOtro,
+      `${nombre} ${apellido1 || ''} ${apellido2 || ''}`,
       nombre_tienda,
-      telefono_dueno,
-      telefono_tienda,
-      calle,
-      numero,
-      cp,
-      municipio,
-      estado,
-      entre_calles,
-      referencia,
-      correo,
-      id_ruta
+      direccion,
+      telefono,
+      correo || null,
+      rfc
     ])
 
     res.json({
@@ -132,12 +98,9 @@ app.post('/clientes', async (req, res) => {
 
   } catch (err) {
     console.error('🔥 ERROR CLIENTE:', err)
-    res.status(500).json({
-      error: err.message
-    })
+    res.status(500).json({ error: err.message })
   }
 })
-
 // =========================
 // VENDEDORES
 // =========================
