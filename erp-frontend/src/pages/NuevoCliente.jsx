@@ -108,9 +108,9 @@ function NuevoCliente() {
 
      <p style={{ ...styles.aviso, textAlign: 'justify' }}>
   <strong>INSTRUCCIONES DE LLENADO</strong>
-  <br />
+  <br /><br></br>
   * En los siguientes campos todos los datos deberán ser escritos en <strong>MAYÚSCULAS</strong>. dejando como excepcion el correo electronico
-  <br />
+  <br /><br></br>
   * Todos los datos deberán corresponder únicamente al dueño y a la tienda (no se deberán incluir datos de otras personas).
   <br />
 </p>
