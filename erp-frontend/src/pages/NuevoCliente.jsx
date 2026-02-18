@@ -5,7 +5,6 @@ const API = 'https://erp-proyecto-production.up.railway.app'
 
 function NuevoCliente() {
   const navigate = useNavigate()
-
   const [rutas, setRutas] = useState([])
 
   const [form, setForm] = useState({
@@ -13,6 +12,7 @@ function NuevoCliente() {
     apellido1: '',
     apellido2: '',
     apodo: '',
+    rfc: '',
     categoria: '',
     categoriaOtro: '',
     nombre_tienda: '',
@@ -37,23 +37,48 @@ function NuevoCliente() {
       .catch(() => setRutas([]))
   }, [])
 
+  // =========================
+  // 🔠 FORMATEO EN MAYÚSCULAS
+  // =========================
   const upper = v => v.toUpperCase()
 
   const handleChange = e => {
     const { name, value } = e.target
-    setForm(prev => ({
-      ...prev,
-      [name]: name.includes('telefono') || name === 'cp'
-        ? value
-        : upper(value)
-    }))
+
+    let val = value
+
+    // RFC → solo letras/números y máximo 13
+    if (name === 'rfc') {
+      val = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 13)
+    }
+
+    // teléfonos y cp → solo números
+    else if (name.includes('telefono') || name === 'cp') {
+      val = value.replace(/\D/g, '')
+    }
+
+    // correo usuario → sin mayúsculas forzadas
+    else if (name === 'correo_usuario') {
+      val = value
+    }
+
+    // resto → mayúsculas
+    else {
+      val = upper(value)
+    }
+
+    setForm(prev => ({ ...prev, [name]: val }))
   }
 
+  // =========================
+  // ✅ VALIDACIONES
+  // =========================
   const validar = () => {
     if (
       !form.nombre ||
       !form.apellido1 ||
       !form.apellido2 ||
+      !form.rfc ||
       !form.nombre_tienda ||
       !form.categoria ||
       !form.calle ||
@@ -72,9 +97,17 @@ function NuevoCliente() {
       return false
     }
 
+    if (form.rfc.length < 12) {
+      alert('RFC incompleto')
+      return false
+    }
+
     return true
   }
 
+  // =========================
+  // 💾 GUARDAR
+  // =========================
   const guardarCliente = async () => {
     if (!validar()) return
 
@@ -101,42 +134,32 @@ function NuevoCliente() {
     }
   }
 
+  // =========================
+  // 🧩 UI
+  // =========================
   return (
     <div style={styles.page}>
-
       <h2 style={styles.title}>NUEVO CLIENTE</h2>
 
-     <p style={{ ...styles.aviso, textAlign: 'justify' }}>
-  <strong>INSTRUCCIONES DE LLENADO</strong>
-  <br /><br></br>
-  * En los siguientes campos todos los datos deberán ser escritos en <strong>MAYÚSCULAS</strong>. dejando como excepcion el correo electronico
-  <br /><br></br>
-  * Todos los datos deberán corresponder únicamente al dueño y a la tienda (no se deberán incluir datos de otras personas).
-  <br />
-</p>
-
+      <p style={{ ...styles.aviso, textAlign: 'justify' }}>
+        <strong>INSTRUCCIONES DE LLENADO</strong>
+        <br /><br />
+        * Todos los datos deben escribirse en <strong>MAYÚSCULAS</strong>
+        (excepto correo electrónico).
+        <br /><br />
+        * Capturar únicamente información del dueño y la tienda.
+        <br /><br />
+        * El RFC debe ingresarse completo (12‑13 caracteres,
+        letras y números solamente).
+      </p>
 
       <div style={styles.grid}>
 
-        <Campo label="Nombre del dueño *" name="nombre" form={form} onChange={handleChange}/>
+        <Campo label="Nombre dueño *" name="nombre" form={form} onChange={handleChange}/>
         <Campo label="Primer apellido *" name="apellido1" form={form} onChange={handleChange}/>
         <Campo label="Segundo apellido *" name="apellido2" form={form} onChange={handleChange}/>
-        <Campo label="Apodo (opcional)" name="apodo" form={form} onChange={handleChange}/>
-
-        <div style={styles.field}>
-          <label>Categoría tienda *</label>
-          <select name="categoria" value={form.categoria} onChange={handleChange}>
-            <option value="">Seleccione</option>
-            <option>FERRETERIA</option>
-            <option>MATERIALES</option>
-            <option>AMBOS</option>
-            <option>OTROS</option>
-          </select>
-        </div>
-
-        {form.categoria === 'OTROS' && (
-          <Campo label="Especifique categoría" name="categoriaOtro" form={form} onChange={handleChange}/>
-        )}
+        <Campo label="Apodo" name="apodo" form={form} onChange={handleChange}/>
+        <Campo label="RFC *" name="rfc" form={form} onChange={handleChange}/>
 
         <Campo label="Nombre completo del negocio *" name="nombre_tienda" form={form} onChange={handleChange}/>
 
@@ -146,14 +169,15 @@ function NuevoCliente() {
         <Campo label="Calle *" name="calle" form={form} onChange={handleChange}/>
         <Campo label="Número *" name="numero" form={form} onChange={handleChange}/>
         <Campo label="CP *" name="cp" form={form} onChange={handleChange}/>
-        <Campo label="Municipio/Colonia *" name="municipio" form={form} onChange={handleChange}/>
+        <Campo label="Municipio *" name="municipio" form={form} onChange={handleChange}/>
         <Campo label="Estado *" name="estado" form={form} onChange={handleChange}/>
+
         <Campo label="Entre calles" name="entre_calles" form={form} onChange={handleChange}/>
         <Campo label="Referencia" name="referencia" form={form} onChange={handleChange}/>
 
         <div style={styles.field}>
           <label>Correo</label>
-          <div style={{display:'flex', gap:5}}>
+          <div style={{ display: 'flex', gap: 6 }}>
             <input
               name="correo_usuario"
               value={form.correo_usuario}
@@ -173,7 +197,11 @@ function NuevoCliente() {
 
         <div style={styles.field}>
           <label>Ruta *</label>
-          <select name="id_ruta" value={form.id_ruta} onChange={handleChange}>
+          <select
+            name="id_ruta"
+            value={form.id_ruta}
+            onChange={handleChange}
+          >
             <option value="">Seleccione ruta</option>
             {rutas.map(r => (
               <option key={r.id_ruta} value={r.id_ruta}>
@@ -189,32 +217,42 @@ function NuevoCliente() {
         <button style={styles.save} onClick={guardarCliente}>
           Guardar Cliente
         </button>
+
         <button style={styles.cancel} onClick={() => navigate('/clientes')}>
           Cancelar
         </button>
       </div>
-
     </div>
   )
 }
 
+// =========================
+// COMPONENTE INPUT
+// =========================
 function Campo({ label, name, form, onChange }) {
   return (
     <div style={styles.field}>
       <label>{label}</label>
-      <input name={name} value={form[name]} onChange={onChange}/>
+      <input
+        name={name}
+        value={form[name]}
+        onChange={onChange}
+      />
     </div>
   )
 }
 
+// =========================
+// 🎨 ESTILOS
+// =========================
 const vino = '#8B1E1E'
 
 const styles = {
   page: {
     padding: 20,
-    fontFamily: 'Arial',
     maxWidth: 900,
-    margin: 'auto'
+    margin: 'auto',
+    fontFamily: 'Arial'
   },
 
   title: {
@@ -229,7 +267,7 @@ const styles = {
 
   grid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(240px,1fr))',
+    gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))',
     gap: 12
   },
 
