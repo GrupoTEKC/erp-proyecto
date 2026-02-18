@@ -36,10 +36,16 @@ app.get('/clientes', async (_, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM clientes')
     res.json(rows)
-  } catch (err) {
-    console.error('🔥 CLIENTES:', err)
-    res.status(500).json(err)
-  }
+  } 
+
+  catch (err) {
+  console.error('🔥 ERROR CLIENTE:', err)
+  res.status(500).json({
+    error: err.message,
+    body: req.body
+  })
+}
+
 })
 
 app.post('/clientes', async (req, res) => {
