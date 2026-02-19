@@ -5,7 +5,6 @@ const API = 'https://erp-proyecto-production.up.railway.app'
 
 function Clientes() {
   const navigate = useNavigate()
-
   const [clientes, setClientes] = useState([])
   const [busqueda, setBusqueda] = useState('')
   const [loading, setLoading] = useState(true)
@@ -35,17 +34,9 @@ function Clientes() {
     cargarClientes()
   }, [])
 
-  // =========================
-  // FILTRO
-  // =========================
+  // 🔍 búsqueda ampliada
   const clientesFiltrados = clientes.filter(c =>
-    `
-      ${c.nombre || ''}
-      ${c.nombre_tienda || ''}
-      ${c.telefono || ''}
-      ${c.rfc || ''}
-      ${c.nombre_ruta || ''}
-    `
+    JSON.stringify(c)
       .toLowerCase()
       .includes(busqueda.toLowerCase())
   )
@@ -87,48 +78,85 @@ function Clientes() {
 
             <thead style={thead}>
               <tr>
+
                 <th style={th}>Nombre</th>
-                <th style={th}>Tienda</th>
-                <th style={th}>Teléfono</th>
+                <th style={th}>Apodo</th>
                 <th style={th}>RFC</th>
+
+                <th style={th}>Categoría</th>
+
+                <th style={th}>Tienda</th>
+
+                <th style={th}>Tel. Dueño</th>
+                <th style={th}>Tel. Tienda</th>
+
+                <th style={th}>Calle</th>
+                <th style={th}>Número</th>
+                <th style={th}>CP</th>
+                <th style={th}>Municipio</th>
+                <th style={th}>Estado</th>
+
+                <th style={th}>Entre calles</th>
+                <th style={th}>Referencia</th>
+
                 <th style={th}>Email</th>
-                <th style={th}>Dirección</th>
-                <th style={th}>Ruta</th>
+
                 <th style={th}>Saldo</th>
+
                 <th style={th}>Acción</th>
+
               </tr>
             </thead>
 
             <tbody>
+
               {clientesFiltrados.length === 0 ? (
                 <tr>
-                  <td colSpan="9" style={sinDatos}>
+                  <td colSpan="17" style={sinDatos}>
                     No hay clientes
                   </td>
                 </tr>
               ) : (
+
                 clientesFiltrados.map((c, i) => (
+
                   <tr
                     key={c.id_cliente}
                     style={{
                       background: i % 2 === 0 ? '#f9f9f9' : 'white'
                     }}
                   >
-                    <td style={td}>{c.nombre}</td>
-                    <td style={td}>{c.nombre_tienda}</td>
-                    <td style={td}>{c.telefono}</td>
+
+                    <td style={td}>
+                      {c.nombre} {c.apellido1} {c.apellido2}
+                    </td>
+
+                    <td style={td}>{c.apodo}</td>
+
                     <td style={td}>{c.rfc}</td>
+
+                    <td style={td}>
+                      {c.categoria}
+                      {c.categoria_otro ? ` (${c.categoria_otro})` : ''}
+                    </td>
+
+                    <td style={td}>{c.nombre_tienda}</td>
+
+                    <td style={td}>{c.telefono_dueno}</td>
+                    <td style={td}>{c.telefono_tienda}</td>
+
+                    <td style={td}>{c.calle}</td>
+                    <td style={td}>{c.numero}</td>
+                    <td style={td}>{c.cp}</td>
+                    <td style={td}>{c.municipio}</td>
+                    <td style={td}>{c.estado}</td>
+
+                    <td style={td}>{c.entre_calles}</td>
+                    <td style={td}>{c.referencia}</td>
+
                     <td style={td}>{c.email}</td>
-                    <td style={td}>{c.direccion}</td>
 
-                    {/* 👉 NUEVA COLUMNA RUTA */}
-                    <td style={td}>
-                      {c.nombre_ruta || c.id_ruta || '—'}
-                    </td>
-
-                    <td style={td}>
-                      ${c.saldo_actual || 0}
-                    </td>
+                    <td style={td}>${c.saldo_actual || 0}</td>
 
                     <td style={td}>
                       <button
@@ -140,11 +168,14 @@ function Clientes() {
                         Editar
                       </button>
                     </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
 
+                  </tr>
+
+                ))
+
+              )}
+
+            </tbody>
           </table>
         </div>
       )}
@@ -152,9 +183,7 @@ function Clientes() {
   )
 }
 
-/* =========================
-   🎨 ESTILOS
-========================= */
+/* 🎨 ESTILOS */
 
 const vino = '#8B1E1E'
 
@@ -209,7 +238,7 @@ const tablaWrapper = {
 const tabla = {
   width: '100%',
   borderCollapse: 'collapse',
-  minWidth: 1000
+  minWidth: 1500
 }
 
 const thead = {
