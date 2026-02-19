@@ -32,36 +32,28 @@ app.get('/', (_, res) => {
 // =========================
 // CLIENTES
 // =========================
-// =========================
-// OBTENER CLIENTE POR ID
-// =========================
-app.get('/clientes/:id', async (req, res) => {
+app.put('/clientes/:id', async (req, res) => {
   try {
     const { id } = req.params
+    const { nombre, telefono, email, direccion } = req.body
 
-    const [rows] = await db.query(
+    await db.query(
       `
-      SELECT 
-        c.*,
-        r.nombre AS ruta_nombre
-      FROM clientes c
-      LEFT JOIN rutas r 
-        ON c.id_ruta = r.id_ruta
-      WHERE c.id_cliente = ?
+      UPDATE clientes
+      SET nombre = ?, telefono = ?, email = ?, direccion = ?
+      WHERE id_cliente = ?
       `,
-      [id]
+      [nombre, telefono, email, direccion, id]
     )
 
-    if (rows.length === 0) {
-      return res.status(404).json({ error: 'Cliente no encontrado' })
-    }
+    res.json({ success: true })
 
-    res.json(rows[0])
   } catch (err) {
-    console.error('🔥 ERROR CLIENTE ID:', err)
+    console.error('🔥 ERROR ACTUALIZAR CLIENTE:', err)
     res.status(500).json({ error: err.message })
   }
 })
+
 
 app.post('/clientes', async (req, res) => {
   try {
