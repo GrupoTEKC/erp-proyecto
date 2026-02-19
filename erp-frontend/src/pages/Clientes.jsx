@@ -9,30 +9,42 @@ function Clientes() {
   const [busqueda, setBusqueda] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [rutas, setRutas] = useState([])
 
   useEffect(() => {
-    const cargarClientes = async () => {
-      try {
-        setLoading(true)
-        setError(null)
+  const cargarDatos = async () => {
+    try {
+      setLoading(true)
+      setError(null)
 
-        const res = await fetch(`${API}/clientes`)
-        if (!res.ok) throw new Error(`Error servidor: ${res.status}`)
+      const [resClientes, resRutas] = await Promise.all([
+        fetch(`${API}/clientes`),
+        fetch(`${API}/rutas`)
+      ])
 
-        const data = await res.json()
-        if (!Array.isArray(data)) throw new Error('Respuesta inválida')
+      if (!resClientes.ok || !resRutas.ok)
+        throw new Error('Error cargando datos')
 
-        setClientes(data)
-      } catch (err) {
-        setError(err.message)
-        setClientes([])
-      } finally {
-        setLoading(false)
-      }
+      const dataClientes = await resClientes.json()
+      const dataRutas = await resRutas.json()
+
+      setClientes(dataClientes)
+      setRutas(dataRutas)
+
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
     }
+  }
 
-    cargarClientes()
-  }, [])
+  cargarDatos()
+}, [])
+  
+const obtenerNombreRuta = (idRuta) => {
+  const ruta = rutas.find(r => r.id_ruta === idRuta)
+  return ruta ? ruta.nombre : ''
+}
 
   // 🔍 búsqueda ampliada
   const clientesFiltrados = clientes.filter(c =>
