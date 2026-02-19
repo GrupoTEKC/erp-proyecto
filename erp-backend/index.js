@@ -34,7 +34,15 @@ app.get('/', (_, res) => {
 // =========================
 app.get('/clientes', async (_, res) => {
   try {
-    const [rows] = await db.query('SELECT * FROM clientes')
+    const [rows] = await db.query(`
+      SELECT 
+        c.*,
+        r.nombre AS nombre_ruta
+      FROM clientes c
+      LEFT JOIN rutas r 
+        ON c.id_ruta = r.id_ruta
+    `)
+
     res.json(rows)
   } catch (err) {
     console.error('🔥 ERROR CLIENTE:', err)
