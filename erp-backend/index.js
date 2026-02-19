@@ -60,28 +60,6 @@ app.get('/clientes/:id', async (req, res) => {
   }
 })
 
-app.put('/clientes/:id', async (req, res) => {
-  try {
-    const { id } = req.params
-    const { nombre, telefono, email, direccion } = req.body
-
-    await db.query(
-      `
-      UPDATE clientes
-      SET nombre = ?, telefono = ?, email = ?, direccion = ?
-      WHERE id_cliente = ?
-      `,
-      [nombre, telefono, email, direccion, id]
-    )
-
-    res.json({ success: true })
-
-  } catch (err) {
-    console.error('🔥 ERROR ACTUALIZAR CLIENTE:', err)
-    res.status(500).json({ error: err.message })
-  }
-})
-
 
 app.post('/clientes', async (req, res) => {
   try {
@@ -145,6 +123,29 @@ app.post('/clientes', async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
+
+app.put('/clientes/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+    const { nombre, telefono, email, direccion } = req.body
+
+    await db.query(
+      `
+      UPDATE clientes
+      SET nombre = ?, telefono = ?, email = ?, direccion = ?
+      WHERE id_cliente = ?
+      `,
+      [nombre, telefono, email, direccion, id]
+    )
+
+    res.json({ success: true })
+
+  } catch (err) {
+    console.error('🔥 ERROR ACTUALIZAR CLIENTE:', err)
+    res.status(500).json({ error: err.message })
+  }
+})
+
 
 app.put('/clientes/:id/ruta', async (req, res) => {
   try {
