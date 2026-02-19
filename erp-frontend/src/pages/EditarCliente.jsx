@@ -7,89 +7,28 @@ function EditarCliente() {
   const navigate = useNavigate()
   const { id } = useParams()
 
-  const [rutas, setRutas] = useState([])
+  const [cliente, setCliente] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  const [form, setForm] = useState({
-    nombre: '',
-    apellido1: '',
-    apellido2: '',
-    apodo: '',
-    rfc: '',
-    categoria: '',
-    categoriaOtro: '',
-    nombre_tienda: '',
-    telefono_dueno: '',
-    telefono_tienda: '',
-    calle: '',
-    numero: '',
-    cp: '',
-    municipio: '',
-    estado: '',
-    entre_calles: '',
-    referencia: '',
-    correo_usuario: '',
-    correo_dominio: '@gmail.com',
-    id_ruta: ''
-  })
-
   // =========================
-  // CARGAR CLIENTE + RUTAS
+  // CARGAR CLIENTE
   // =========================
-
   useEffect(() => {
-    const cargarDatos = async () => {
+    const cargarCliente = async () => {
       try {
         setLoading(true)
         setError(null)
 
-        const [resCliente, resRutas] = await Promise.all([
-          fetch(`${API}/clientes/${id}`),
-          fetch(`${API}/rutas`)
-        ])
+        const res = await fetch(`${API}/clientes/${id}`)
 
-        if (!resCliente.ok)
-          throw new Error('Cliente no encontrado')
+        if (!res.ok) throw new Error('No se pudo cargar cliente')
 
-        const cliente = await resCliente.json()
-        const rutasData = await resRutas.json()
+        const data = await res.json()
 
-        setRutas(Array.isArray(rutasData) ? rutasData : [])
+        console.log('Cliente cargado:', data)
 
-        // dividir correo
-        let correo_usuario = ''
-        let correo_dominio = '@gmail.com'
-
-        if (cliente.email) {
-          const partes = cliente.email.split('@')
-          correo_usuario = partes[0]
-          correo_dominio = '@' + partes[1]
-        }
-
-        setForm({
-          nombre: cliente.nombre || '',
-          apellido1: cliente.apellido1 || '',
-          apellido2: cliente.apellido2 || '',
-          apodo: cliente.apodo || '',
-          rfc: cliente.rfc || '',
-          categoria: cliente.categoria || '',
-          categoriaOtro: cliente.categoria_otro || '',
-          nombre_tienda: cliente.nombre_tienda || '',
-          telefono_dueno: cliente.telefono_dueno || '',
-          telefono_tienda: cliente.telefono_tienda || '',
-          calle: cliente.calle || '',
-          numero: cliente.numero || '',
-          cp: cliente.cp || '',
-          municipio: cliente.municipio || '',
-          estado: cliente.estado || '',
-          entre_calles: cliente.entre_calles || '',
-          referencia: cliente.referencia || '',
-          correo_usuario,
-          correo_dominio,
-          id_ruta: cliente.id_ruta || ''
-        })
-
+        setCliente(data)
       } catch (err) {
         console.error(err)
         setError('Error cargando cliente')
@@ -98,71 +37,18 @@ function EditarCliente() {
       }
     }
 
-    cargarDatos()
+    cargarCliente()
   }, [id])
-
-  // =========================
-  // FORMATEO INPUTS
-  // =========================
-
-  const upper = v => v.toUpperCase()
-
-  const handleChange = e => {
-    const { name, value } = e.target
-    let val = value
-
-    if (name === 'rfc')
-      val = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 13)
-
-    else if (name.includes('telefono'))
-      val = value.replace(/\D/g, '').slice(0, 10)
-
-    else if (name === 'cp')
-      val = value.replace(/\D/g, '').slice(0, 5)
-
-    else if (name !== 'correo_usuario')
-      val = upper(value)
-
-    setForm(prev => ({ ...prev, [name]: val }))
-  }
-
-  // =========================
-  // VALIDACIÓN
-  // =========================
-
-  const validar = () => {
-    if (!form.nombre || !form.apellido1 || !form.apellido2 || !form.rfc || !form.id_ruta) {
-      alert('Complete campos obligatorios')
-      return false
-    }
-
-    if (!form.telefono_dueno && !form.telefono_tienda) {
-      alert('Ingrese al menos un teléfono')
-      return false
-    }
-
-    return true
-  }
 
   // =========================
   // GUARDAR CAMBIOS
   // =========================
-
-  const guardar = async () => {
-    if (!validar()) return
-
-    const payload = {
-      ...form,
-      correo: form.correo_usuario
-        ? form.correo_usuario + form.correo_dominio
-        : ''
-    }
-
+  const guardarCambios = async () => {
     try {
       const res = await fetch(`${API}/clientes/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(cliente)
       })
 
       if (!res.ok) throw new Error()
@@ -171,74 +57,66 @@ function EditarCliente() {
       navigate('/clientes')
 
     } catch {
-      alert('❌ Error actualizando')
+      alert('❌ Error al guardar cambios')
     }
   }
 
   // =========================
-  // UI
+  // LOADING / ERROR
   // =========================
-
   if (loading) return <p>Cargando cliente...</p>
   if (error) return <p style={{ color: 'red' }}>{error}</p>
 
+  // =========================
+  // UI
+  // =========================
   return (
-    <div style={styles.page}>
+    <div style={{ padding: 20 }}>
       <h2>Editar Cliente</h2>
 
-      <div style={styles.grid}>
-        <Campo label="Nombre" name="nombre" form={form} onChange={handleChange}/>
-        <Campo label="Apellido 1" name="apellido1" form={form} onChange={handleChange}/>
-        <Campo label="Apellido 2" name="apellido2" form={form} onChange={handleChange}/>
-        <Campo label="RFC" name="rfc" form={form} onChange={handleChange}/>
-        <Campo label="Tienda" name="nombre_tienda" form={form} onChange={handleChange}/>
-        <Campo label="Teléfono dueño" name="telefono_dueno" form={form} onChange={handleChange}/>
+      <input
+        placeholder="Nombre"
+        value={cliente.nombre || ''}
+        onChange={e =>
+          setCliente({ ...cliente, nombre: e.target.value })
+        }
+      />
 
-        <div style={styles.field}>
-          <label>Ruta</label>
-          <select name="id_ruta" value={form.id_ruta} onChange={handleChange}>
-            <option value="">Seleccione</option>
-            {rutas.map(r => (
-              <option key={r.id_ruta} value={r.id_ruta}>{r.nombre}</option>
-            ))}
-          </select>
-        </div>
-      </div>
+      <input
+        placeholder="Teléfono"
+        value={cliente.telefono || ''}
+        onChange={e =>
+          setCliente({ ...cliente, telefono: e.target.value })
+        }
+      />
 
-      <div style={styles.buttons}>
-        <button style={styles.save} onClick={guardar}>Guardar</button>
-        <button style={styles.cancel} onClick={() => navigate('/clientes')}>Cancelar</button>
-      </div>
+      <input
+        placeholder="Email"
+        value={cliente.email || ''}
+        onChange={e =>
+          setCliente({ ...cliente, email: e.target.value })
+        }
+      />
+
+      <input
+        placeholder="Dirección"
+        value={cliente.direccion || ''}
+        onChange={e =>
+          setCliente({ ...cliente, direccion: e.target.value })
+        }
+      />
+
+      <br /><br />
+
+      <button onClick={guardarCambios}>
+        Guardar cambios
+      </button>
+
+      <button onClick={() => navigate('/clientes')}>
+        Cancelar
+      </button>
     </div>
   )
-}
-
-// =========================
-// COMPONENTE INPUT
-// =========================
-
-function Campo({ label, name, form, onChange }) {
-  return (
-    <div style={styles.field}>
-      <label>{label}</label>
-      <input name={name} value={form[name]} onChange={onChange}/>
-    </div>
-  )
-}
-
-// =========================
-// ESTILOS
-// =========================
-
-const vino = '#8B1E1E'
-
-const styles = {
-  page: { padding: 20, maxWidth: 900, margin: 'auto', fontFamily: 'Arial' },
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))', gap: 12 },
-  field: { display: 'flex', flexDirection: 'column' },
-  buttons: { marginTop: 20, display: 'flex', gap: 10 },
-  save: { background: vino, color: '#fff', border: 'none', padding: 10, borderRadius: 6 },
-  cancel: { background: '#fff', color: vino, border: `1px solid ${vino}`, padding: 10, borderRadius: 6 }
 }
 
 export default EditarCliente
