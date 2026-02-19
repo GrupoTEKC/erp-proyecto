@@ -59,7 +59,8 @@ app.post('/clientes', async (req, res) => {
       municipio,
       estado,
       correo,
-      rfc
+      rfc,
+      id_ruta
     } = req.body
 
     if (!nombre || !nombre_tienda || !rfc) {
@@ -79,15 +80,16 @@ app.post('/clientes', async (req, res) => {
 
     const [result] = await db.query(
       `INSERT INTO clientes
-      (nombre, nombre_tienda, direccion, telefono, email, rfc)
-      VALUES (?, ?, ?, ?, ?, ?)`,
+      (nombre, nombre_tienda, direccion, telefono, email, rfc, id_ruta)
+      VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         nombreCompleto,
         nombre_tienda,
         direccion,
         telefono,
         correo || null,
-        rfc
+        rfc,
+        id_ruta || null
       ]
     )
 
@@ -95,6 +97,7 @@ app.post('/clientes', async (req, res) => {
       success: true,
       id_cliente: result.insertId
     })
+
   } catch (err) {
     console.error('🔥 ERROR CLIENTE:', err)
     res.status(500).json({ error: err.message })
