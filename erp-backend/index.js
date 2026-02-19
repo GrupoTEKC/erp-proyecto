@@ -37,13 +37,14 @@ app.get('/clientes', async (_, res) => {
     const [rows] = await db.query(`
       SELECT 
         c.*,
-        r.nombre AS nombre_ruta
+        r.nombre AS ruta_nombre
       FROM clientes c
       LEFT JOIN rutas r 
         ON c.id_ruta = r.id_ruta
     `)
 
     res.json(rows)
+
   } catch (err) {
     console.error('🔥 ERROR CLIENTE:', err)
     res.status(500).json({ error: err.message })
