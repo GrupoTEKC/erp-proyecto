@@ -5,48 +5,48 @@ const API = 'https://erp-proyecto-production.up.railway.app'
 
 function Clientes() {
   const navigate = useNavigate()
+
   const [clientes, setClientes] = useState([])
+  const [rutas, setRutas] = useState([])
   const [busqueda, setBusqueda] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [rutas, setRutas] = useState([])
 
   useEffect(() => {
-  const cargarDatos = async () => {
-    try {
-      setLoading(true)
-      setError(null)
+    const cargarDatos = async () => {
+      try {
+        setLoading(true)
+        setError(null)
 
-      const [resClientes, resRutas] = await Promise.all([
-        fetch(`${API}/clientes`),
-        fetch(`${API}/rutas`)
-      ])
+        const [resClientes, resRutas] = await Promise.all([
+          fetch(`${API}/clientes`),
+          fetch(`${API}/rutas`)
+        ])
 
-      if (!resClientes.ok || !resRutas.ok)
-        throw new Error('Error cargando datos')
+        if (!resClientes.ok || !resRutas.ok)
+          throw new Error('Error cargando datos')
 
-      const dataClientes = await resClientes.json()
-      const dataRutas = await resRutas.json()
+        const dataClientes = await resClientes.json()
+        const dataRutas = await resRutas.json()
 
-      setClientes(dataClientes)
-      setRutas(dataRutas)
+        setClientes(dataClientes)
+        setRutas(dataRutas)
 
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
+      } catch (err) {
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
     }
+
+    cargarDatos()
+  }, [])
+
+  const obtenerNombreRuta = idRuta => {
+    const ruta = rutas.find(r => r.id_ruta == idRuta)
+    return ruta ? ruta.nombre : ''
   }
 
-  cargarDatos()
-}, [])
-  
-const obtenerNombreRuta = (idRuta) => {
-  const ruta = rutas.find(r => r.id_ruta === idRuta)
-  return ruta ? ruta.nombre : ''
-}
-
-  // 🔍 búsqueda ampliada
   const clientesFiltrados = clientes.filter(c =>
     JSON.stringify(c)
       .toLowerCase()
@@ -90,52 +90,37 @@ const obtenerNombreRuta = (idRuta) => {
 
             <thead style={thead}>
               <tr>
-
                 <th style={th}>Nombre</th>
                 <th style={th}>Apodo</th>
                 <th style={th}>RFC</th>
-
                 <th style={th}>Categoría</th>
-
                 <th style={th}>Tienda</th>
-
                 <th style={th}>Tel. Dueño</th>
                 <th style={th}>Tel. Tienda</th>
-
                 <th style={th}>Calle</th>
                 <th style={th}>Número</th>
                 <th style={th}>CP</th>
                 <th style={th}>Municipio</th>
                 <th style={th}>Estado</th>
-
                 <th style={th}>Entre calles</th>
                 <th style={th}>Referencia</th>
-
                 <th style={th}>Email</th>
                 <th style={th}>N. Ruta</th>
                 <th style={th}>Nombre Ruta</th>
-
-
-
                 <th style={th}>Saldo</th>
-
                 <th style={th}>Acción</th>
-
               </tr>
             </thead>
 
             <tbody>
-
               {clientesFiltrados.length === 0 ? (
                 <tr>
-                  <td colSpan="18" style={sinDatos}>
+                  <td colSpan="19" style={sinDatos}>
                     No hay clientes
                   </td>
                 </tr>
               ) : (
-
                 clientesFiltrados.map((c, i) => (
-
                   <tr
                     key={c.id_cliente}
                     style={{
@@ -148,34 +133,39 @@ const obtenerNombreRuta = (idRuta) => {
                     </td>
 
                     <td style={td}>{c.apodo}</td>
-
                     <td style={td}>{c.rfc}</td>
 
                     <td style={td}>
                       {c.categoria}
-                      {c.categoria_otro ? ` (${c.categoria_otro})` : ''}
+                      {c.categoria_otro
+                        ? ` (${c.categoria_otro})`
+                        : ''}
                     </td>
 
                     <td style={td}>{c.nombre_tienda}</td>
-
                     <td style={td}>{c.telefono_dueno}</td>
                     <td style={td}>{c.telefono_tienda}</td>
-
                     <td style={td}>{c.calle}</td>
                     <td style={td}>{c.numero}</td>
                     <td style={td}>{c.cp}</td>
                     <td style={td}>{c.municipio}</td>
                     <td style={td}>{c.estado}</td>
-
                     <td style={td}>{c.entre_calles}</td>
                     <td style={td}>{c.referencia}</td>
-
                     <td style={td}>{c.email}</td>
-                    <td style={td}>{obtenerNombreRuta(c.id_ruta)}</td>
 
+                    {/* 🔥 RUTA */}
+                    <td style={td}>{c.id_ruta || ''}</td>
+                    <td style={td}>
+                      {obtenerNombreRuta(c.id_ruta)}
+                    </td>
 
-                    <td style={td}>${c.saldo_actual || 0}</td>
+                    {/* SALDO */}
+                    <td style={td}>
+                      ${c.saldo_actual || 0}
+                    </td>
 
+                    {/* BOTÓN */}
                     <td style={td}>
                       <button
                         style={btnEditar}
@@ -188,12 +178,10 @@ const obtenerNombreRuta = (idRuta) => {
                     </td>
 
                   </tr>
-
                 ))
-
               )}
-
             </tbody>
+
           </table>
         </div>
       )}
@@ -201,7 +189,7 @@ const obtenerNombreRuta = (idRuta) => {
   )
 }
 
-/* 🎨 ESTILOS */
+/* ===== ESTILOS ===== */
 
 const vino = '#8B1E1E'
 
@@ -209,7 +197,7 @@ const container = {
   padding: 20,
   background: '#ffffff',
   minHeight: '100vh',
-  fontFamily: 'Arial, sans-serif'
+  fontFamily: 'Arial'
 }
 
 const header = {
@@ -227,14 +215,13 @@ const btnVino = {
   border: `1px solid ${vino}`,
   padding: '10px 14px',
   borderRadius: 6,
-  cursor: 'pointer',
-  fontSize: '14px'
+  cursor: 'pointer'
 }
 
 const btnEditar = {
   ...btnVino,
   padding: '6px 10px',
-  fontSize: '13px'
+  fontSize: 13
 }
 
 const buscador = {
@@ -242,8 +229,7 @@ const buscador = {
   padding: 10,
   borderRadius: 6,
   border: `1px solid ${vino}`,
-  marginBottom: 20,
-  fontSize: '14px'
+  marginBottom: 20
 }
 
 const tablaWrapper = {
@@ -266,14 +252,12 @@ const thead = {
 
 const th = {
   padding: 12,
-  textAlign: 'left',
-  fontSize: '14px'
+  textAlign: 'left'
 }
 
 const td = {
   padding: 12,
-  borderBottom: '1px solid #eee',
-  fontSize: '14px'
+  borderBottom: '1px solid #eee'
 }
 
 const sinDatos = {
