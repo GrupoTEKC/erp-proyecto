@@ -101,6 +101,9 @@ function Clientes() {
 
                 <th style={th}>Email</th>
                 <th style={th}>N. Ruta</th>
+                <th style={th}>Nombre Ruta</th>
+
+
 
                 <th style={th}>Saldo</th>
 
@@ -113,7 +116,7 @@ function Clientes() {
 
               {clientesFiltrados.length === 0 ? (
                 <tr>
-                  <td colSpan="17" style={sinDatos}>
+                  <td colSpan="18" style={sinDatos}>
                     No hay clientes
                   </td>
                 </tr>
@@ -157,6 +160,8 @@ function Clientes() {
 
                     <td style={td}>{c.email}</td>
                     <td style={td}>{c.id_ruta ?? ''}</td>
+                    <td style={td}>{c.ruta_nombre ?? ''}</td>
+
 
                     <td style={td}>${c.saldo_actual || 0}</td>
 
