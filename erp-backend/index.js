@@ -35,27 +35,28 @@ app.get('/', (_, res) => {
 // =========================
 // OBTENER CLIENTE POR ID
 // =========================
+// =========================
+// OBTENER CLIENTE POR ID
+// =========================
 app.get('/clientes/:id', async (req, res) => {
   try {
     const { id } = req.params
 
-    const [rows] = await db.query(`
-      SELECT 
-        c.*,
-        r.nombre AS ruta_nombre
-      FROM clientes c
-      LEFT JOIN rutas r 
-        ON c.id_ruta = r.id_ruta
-      WHERE c.id_cliente = ?
-    `, [id])
+    const [rows] = await db.query(
+      'SELECT * FROM clientes WHERE id_cliente = ?',
+      [id]
+    )
 
     if (rows.length === 0) {
-      return res.status(404).json({ error: 'Cliente no encontrado' })
+      return res.status(404).json({
+        error: 'Cliente no encontrado'
+      })
     }
 
     res.json(rows[0])
+
   } catch (err) {
-    console.error('🔥 ERROR OBTENER CLIENTE:', err)
+    console.error('🔥 ERROR OBTENIENDO CLIENTE:', err)
     res.status(500).json({ error: err.message })
   }
 })
