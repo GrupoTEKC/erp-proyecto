@@ -67,17 +67,18 @@ app.post('/clientes', async (req, res) => {
       return res.status(400).json({ error: 'Campos obligatorios faltantes' })
     }
 
-    // 👉 Nombre completo
+    // 👉 Nombre completo (igual que antes)
     const nombreCompleto =
       `${nombre} ${apellido1 || ''} ${apellido2 || ''}`.trim()
 
-    // 👉 Dirección
+    // 👉 Dirección (igual que antes)
     const direccion =
       `${calle || ''} ${numero || ''}, ${municipio || ''}, ${estado || ''}, CP ${cp || ''}`
 
-    // 👉 Teléfono
+    // 👉 Teléfono (igual que antes)
     const telefono = telefono_dueno || telefono_tienda || null
 
+    // ✅ SOLO agregamos id_ruta al INSERT
     const [result] = await db.query(
       `INSERT INTO clientes
       (nombre, nombre_tienda, direccion, telefono, email, rfc, id_ruta)
