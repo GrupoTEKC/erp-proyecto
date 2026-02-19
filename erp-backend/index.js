@@ -113,6 +113,22 @@ app.post('/clientes', async (req, res) => {
   }
 })
 
+app.put('/clientes/:id/ruta', async (req, res) => {
+  try {
+    const { id } = req.params
+    const { id_ruta } = req.body
+
+    await db.query(
+      'UPDATE clientes SET id_ruta = ? WHERE id_cliente = ?',
+      [id_ruta, id]
+    )
+
+    res.json({ success: true })
+  } catch (err) {
+    res.status(500).json(err)
+  }
+})
+
 // =========================
 // RUTAS
 // =========================
