@@ -32,8 +32,13 @@ app.get('/', (_, res) => {
 // =========================
 // CLIENTES
 // =========================
-app.get('/clientes', async (_, res) => {
+// =========================
+// OBTENER CLIENTE POR ID
+// =========================
+app.get('/clientes/:id', async (req, res) => {
   try {
+    const { id } = req.params
+
     const [rows] = await db.query(`
       SELECT 
         c.*,
@@ -41,11 +46,16 @@ app.get('/clientes', async (_, res) => {
       FROM clientes c
       LEFT JOIN rutas r 
         ON c.id_ruta = r.id_ruta
-    `)
+      WHERE c.id_cliente = ?
+    `, [id])
 
-    res.json(rows)
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Cliente no encontrado' })
+    }
+
+    res.json(rows[0])
   } catch (err) {
-    console.error('🔥 ERROR CLIENTE:', err)
+    console.error('🔥 ERROR OBTENER CLIENTE:', err)
     res.status(500).json({ error: err.message })
   }
 })
