@@ -100,7 +100,7 @@ function Clientes() {
                 <th style={th}>Referencia</th>
 
                 <th style={th}>Email</th>
-                <th style={th}>Ruta</th>
+                <th style={th}>N. Ruta</th>
 
                 <th style={th}>Saldo</th>
 
