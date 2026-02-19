@@ -45,6 +45,9 @@ app.get('/clientes', async (_, res) => {
 // =========================
 // OBTENER CLIENTE POR ID
 // =========================
+// =========================
+// OBTENER CLIENTE POR ID
+// =========================
 app.get('/clientes/:id', async (req, res) => {
   try {
     const { id } = req.params
@@ -63,8 +66,10 @@ app.get('/clientes/:id', async (req, res) => {
     res.json(rows[0])
 
   } catch (err) {
-    console.error('🔥 ERROR GET CLIENTE:', err)
-    res.status(500).json(err)
+    console.error('🔥 ERROR CLIENTE:', err)
+    res.status(500).json({
+      error: err.message
+    })
   }
 })
 
