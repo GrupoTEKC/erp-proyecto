@@ -5,7 +5,6 @@ const API = 'https://erp-proyecto-production.up.railway.app'
 
 function Clientes() {
   const navigate = useNavigate()
-
   const [clientes, setClientes] = useState([])
   const [rutas, setRutas] = useState([])
   const [busqueda, setBusqueda] = useState('')
@@ -26,11 +25,8 @@ function Clientes() {
         if (!resClientes.ok || !resRutas.ok)
           throw new Error('Error cargando datos')
 
-        const dataClientes = await resClientes.json()
-        const dataRutas = await resRutas.json()
-
-        setClientes(dataClientes)
-        setRutas(dataRutas)
+        setClientes(await resClientes.json())
+        setRutas(await resRutas.json())
 
       } catch (err) {
         setError(err.message)
@@ -53,31 +49,30 @@ function Clientes() {
       .includes(busqueda.toLowerCase())
   )
 
-  const eliminarCliente = async (id) => {
-  const confirmar = window.confirm('¿Eliminar cliente?')
+  const eliminarCliente = async id => {
+    const confirmar = window.confirm('¿Eliminar cliente?')
+    if (!confirmar) return
 
-  if (!confirmar) return
+    try {
+      const res = await fetch(`${API}/clientes/${id}`, {
+        method: 'DELETE'
+      })
 
-  try {
-    const res = await fetch(`${API}/clientes/${id}`, {
-      method: 'DELETE'
-    })
+      if (!res.ok) throw new Error()
 
-    if (!res.ok) throw new Error()
+      setClientes(prev =>
+        prev.filter(c => c.id_cliente !== id)
+      )
 
-    // refrescar lista
-    setClientes(clientes.filter(c => c.id_cliente !== id))
+      alert('✅ Cliente eliminado')
 
-    alert('✅ Cliente eliminado')
-  } catch {
-    alert('❌ Error al eliminar')
+    } catch {
+      alert('❌ Error al eliminar')
+    }
   }
-}
 
   return (
     <div style={container}>
-
-      {/* HEADER */}
       <div style={header}>
         <button style={btnVino} onClick={() => navigate('/')}>
           ← Volver
@@ -93,7 +88,6 @@ function Clientes() {
         </button>
       </div>
 
-      {/* BUSCADOR */}
       <input
         type="text"
         placeholder="Buscar cliente..."
@@ -108,7 +102,6 @@ function Clientes() {
       {!loading && !error && (
         <div style={tablaWrapper}>
           <table style={tabla}>
-
             <thead style={thead}>
               <tr>
                 <th style={th}>Nombre</th>
@@ -148,21 +141,17 @@ function Clientes() {
                       background: i % 2 === 0 ? '#f9f9f9' : 'white'
                     }}
                   >
-
                     <td style={td}>
                       {c.nombre} {c.apellido1} {c.apellido2}
                     </td>
-
                     <td style={td}>{c.apodo}</td>
                     <td style={td}>{c.rfc}</td>
-
                     <td style={td}>
                       {c.categoria}
                       {c.categoria_otro
                         ? ` (${c.categoria_otro})`
                         : ''}
                     </td>
-
                     <td style={td}>{c.nombre_tienda}</td>
                     <td style={td}>{c.telefono_dueno}</td>
                     <td style={td}>{c.telefono_tienda}</td>
@@ -175,44 +164,44 @@ function Clientes() {
                     <td style={td}>{c.referencia}</td>
                     <td style={td}>{c.email}</td>
 
-                    {/* 🔥 RUTA */}
                     <td style={td}>{c.id_ruta || ''}</td>
                     <td style={td}>
                       {obtenerNombreRuta(c.id_ruta)}
                     </td>
 
-                    {/* SALDO */}
                     <td style={td}>
                       ${c.saldo_actual || 0}
                     </td>
 
-                   <td style={td}>
-                   <button
-                   style={btnEditar}
-                   onClick={() =>
-                   navigate(`/clientes/editar/${c.id_cliente}`)
-                   }
-                   >
-                   Editar
-                   </button>
+                    <td style={td}>
+                      <button
+                        style={btnEditar}
+                        onClick={() =>
+                          navigate(`/clientes/editar/${c.id_cliente}`)
+                        }
+                      >
+                        Editar
+                      </button>
 
-                   <button
-                   style={{
-                   ...btnEditar,
-                   marginLeft: 6,
-                   color: 'red',
-                   borderColor: 'red'
-                   }}
-                   onClick={() => eliminarCliente(c.id_cliente)}
-                   >
-                   Eliminar
-                   </button>
-                   </td>
+                      <button
+                        style={{
+                          ...btnEditar,
+                          marginLeft: 6,
+                          color: 'red',
+                          borderColor: 'red'
+                        }}
+                        onClick={() =>
+                          eliminarCliente(c.id_cliente)
+                        }
+                      >
+                        Eliminar
+                      </button>
+                    </td>
+
                   </tr>
                 ))
               )}
             </tbody>
-
           </table>
         </div>
       )}
