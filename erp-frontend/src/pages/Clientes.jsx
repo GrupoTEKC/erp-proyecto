@@ -100,6 +100,7 @@ function Clientes() {
                 <th style={th}>Referencia</th>
 
                 <th style={th}>Email</th>
+                <th style={th}>id_ruta</th>
 
                 <th style={th}>Saldo</th>
 
@@ -155,6 +156,7 @@ function Clientes() {
                     <td style={td}>{c.referencia}</td>
 
                     <td style={td}>{c.email}</td>
+                    <td style={td}>{c.id_ruta}</td>
 
                     <td style={td}>${c.saldo_actual || 0}</td>
 
