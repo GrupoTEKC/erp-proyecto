@@ -100,7 +100,7 @@ function Clientes() {
                 <th style={th}>Referencia</th>
 
                 <th style={th}>Email</th>
-                <th style={th}>id_ruta</th>
+                <td>{c.ruta_nombre || c.id_ruta}</td>
 
                 <th style={th}>Saldo</th>
 
