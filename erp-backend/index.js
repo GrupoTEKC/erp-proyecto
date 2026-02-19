@@ -99,6 +99,24 @@ app.put('/clientes/:id', async (req, res) => {
 })
 
 // =========================
+// ELIMINAR CLIENTE
+// =========================
+app.delete('/clientes/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+
+    await db.query(
+      'DELETE FROM clientes WHERE id_cliente = ?',
+      [id]
+    )
+
+    res.json({ success: true })
+  } catch (err) {
+    console.error('🔥 ERROR ELIMINAR:', err)
+    res.status(500).json({ error: err.message })
+  }
+})
+// =========================
 // SERVIDOR
 // =========================
 app.listen(PORT, () => {
