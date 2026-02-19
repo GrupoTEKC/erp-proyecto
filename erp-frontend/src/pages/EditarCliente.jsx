@@ -8,6 +8,8 @@ function EditarCliente() {
   const { id } = useParams()
 
   const [rutas, setRutas] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   const [form, setForm] = useState({
     nombre: '',
@@ -33,22 +35,29 @@ function EditarCliente() {
   })
 
   // =========================
-  // CARGAR DATOS
+  // CARGAR CLIENTE + RUTAS
   // =========================
+
   useEffect(() => {
     const cargarDatos = async () => {
       try {
+        setLoading(true)
+        setError(null)
+
         const [resCliente, resRutas] = await Promise.all([
           fetch(`${API}/clientes/${id}`),
           fetch(`${API}/rutas`)
         ])
 
+        if (!resCliente.ok)
+          throw new Error('Cliente no encontrado')
+
         const cliente = await resCliente.json()
         const rutasData = await resRutas.json()
 
-        setRutas(rutasData)
+        setRutas(Array.isArray(rutasData) ? rutasData : [])
 
-        // separar correo
+        // dividir correo
         let correo_usuario = ''
         let correo_dominio = '@gmail.com'
 
@@ -81,8 +90,11 @@ function EditarCliente() {
           id_ruta: cliente.id_ruta || ''
         })
 
-      } catch {
-        alert('Error cargando cliente')
+      } catch (err) {
+        console.error(err)
+        setError('Error cargando cliente')
+      } finally {
+        setLoading(false)
       }
     }
 
@@ -90,29 +102,26 @@ function EditarCliente() {
   }, [id])
 
   // =========================
-  // FORMATEO
+  // FORMATEO INPUTS
   // =========================
+
   const upper = v => v.toUpperCase()
 
   const handleChange = e => {
     const { name, value } = e.target
     let val = value
 
-    if (name === 'rfc') {
+    if (name === 'rfc')
       val = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 13)
-    }
-    else if (name.includes('telefono')) {
+
+    else if (name.includes('telefono'))
       val = value.replace(/\D/g, '').slice(0, 10)
-    }
-    else if (name === 'cp') {
+
+    else if (name === 'cp')
       val = value.replace(/\D/g, '').slice(0, 5)
-    }
-    else if (name === 'correo_usuario') {
-      val = value
-    }
-    else {
+
+    else if (name !== 'correo_usuario')
       val = upper(value)
-    }
 
     setForm(prev => ({ ...prev, [name]: val }))
   }
@@ -120,36 +129,15 @@ function EditarCliente() {
   // =========================
   // VALIDACIÓN
   // =========================
+
   const validar = () => {
-    if (
-      !form.nombre ||
-      !form.apellido1 ||
-      !form.apellido2 ||
-      !form.rfc ||
-      !form.categoria ||
-      (form.categoria === 'OTROS' && !form.categoriaOtro) ||
-      !form.nombre_tienda ||
-      !form.calle ||
-      !form.numero ||
-      !form.cp ||
-      !form.municipio ||
-      !form.estado ||
-      !form.id_ruta
-    ) {
-      alert('Complete todos los campos obligatorios')
+    if (!form.nombre || !form.apellido1 || !form.apellido2 || !form.rfc || !form.id_ruta) {
+      alert('Complete campos obligatorios')
       return false
     }
 
     if (!form.telefono_dueno && !form.telefono_tienda) {
-      alert('Debe ingresar al menos un teléfono')
-      return false
-    }
-
-    if (
-      (form.telefono_dueno && form.telefono_dueno.length !== 10) ||
-      (form.telefono_tienda && form.telefono_tienda.length !== 10)
-    ) {
-      alert('Teléfonos inválidos')
+      alert('Ingrese al menos un teléfono')
       return false
     }
 
@@ -157,9 +145,10 @@ function EditarCliente() {
   }
 
   // =========================
-  // GUARDAR
+  // GUARDAR CAMBIOS
   // =========================
-  const guardarCambios = async () => {
+
+  const guardar = async () => {
     if (!validar()) return
 
     const payload = {
@@ -178,91 +167,55 @@ function EditarCliente() {
 
       if (!res.ok) throw new Error()
 
-      alert('Cliente actualizado')
+      alert('✅ Cliente actualizado')
       navigate('/clientes')
 
     } catch {
-      alert('Error al guardar')
+      alert('❌ Error actualizando')
     }
   }
 
   // =========================
   // UI
   // =========================
+
+  if (loading) return <p>Cargando cliente...</p>
+  if (error) return <p style={{ color: 'red' }}>{error}</p>
+
   return (
     <div style={styles.page}>
-      <h2 style={styles.title}>EDITAR CLIENTE</h2>
+      <h2>Editar Cliente</h2>
 
       <div style={styles.grid}>
-        <Campo label="Nombre dueño *" name="nombre" form={form} onChange={handleChange}/>
-        <Campo label="Primer apellido *" name="apellido1" form={form} onChange={handleChange}/>
-        <Campo label="Segundo apellido *" name="apellido2" form={form} onChange={handleChange}/>
-        <Campo label="Apodo" name="apodo" form={form} onChange={handleChange}/>
-        <Campo label="RFC *" name="rfc" form={form} onChange={handleChange}/>
-
-        <div style={styles.field}>
-          <label>Categoría *</label>
-          <select name="categoria" value={form.categoria} onChange={handleChange}>
-            <option value="">Seleccione</option>
-            <option value="FERRETERIA">FERRETERÍA</option>
-            <option value="MATERIALES">MATERIALES</option>
-            <option value="AMBOS">AMBOS</option>
-            <option value="OTROS">OTROS</option>
-          </select>
-        </div>
-
-        {form.categoria === 'OTROS' &&
-          <Campo label="Especifique *" name="categoriaOtro" form={form} onChange={handleChange}/>
-        }
-
-        <Campo label="Nombre negocio *" name="nombre_tienda" form={form} onChange={handleChange}/>
+        <Campo label="Nombre" name="nombre" form={form} onChange={handleChange}/>
+        <Campo label="Apellido 1" name="apellido1" form={form} onChange={handleChange}/>
+        <Campo label="Apellido 2" name="apellido2" form={form} onChange={handleChange}/>
+        <Campo label="RFC" name="rfc" form={form} onChange={handleChange}/>
+        <Campo label="Tienda" name="nombre_tienda" form={form} onChange={handleChange}/>
         <Campo label="Teléfono dueño" name="telefono_dueno" form={form} onChange={handleChange}/>
-        <Campo label="Teléfono tienda" name="telefono_tienda" form={form} onChange={handleChange}/>
-        <Campo label="Calle *" name="calle" form={form} onChange={handleChange}/>
-        <Campo label="Número *" name="numero" form={form} onChange={handleChange}/>
-        <Campo label="CP *" name="cp" form={form} onChange={handleChange}/>
-        <Campo label="Municipio *" name="municipio" form={form} onChange={handleChange}/>
-        <Campo label="Estado *" name="estado" form={form} onChange={handleChange}/>
-        <Campo label="Entre calles" name="entre_calles" form={form} onChange={handleChange}/>
-        <Campo label="Referencia" name="referencia" form={form} onChange={handleChange}/>
 
         <div style={styles.field}>
-          <label>Correo</label>
-          <div style={{ display:'flex', gap:6 }}>
-            <input name="correo_usuario" value={form.correo_usuario} onChange={handleChange}/>
-            <select name="correo_dominio" value={form.correo_dominio} onChange={handleChange}>
-              <option>@gmail.com</option>
-              <option>@hotmail.com</option>
-              <option>@outlook.com</option>
-            </select>
-          </div>
-        </div>
-
-        <div style={styles.field}>
-          <label>Ruta *</label>
+          <label>Ruta</label>
           <select name="id_ruta" value={form.id_ruta} onChange={handleChange}>
             <option value="">Seleccione</option>
             {rutas.map(r => (
-              <option key={r.id_ruta} value={r.id_ruta}>
-                {r.nombre}
-              </option>
+              <option key={r.id_ruta} value={r.id_ruta}>{r.nombre}</option>
             ))}
           </select>
         </div>
-
       </div>
 
       <div style={styles.buttons}>
-        <button style={styles.save} onClick={guardarCambios}>
-          Guardar cambios
-        </button>
-        <button style={styles.cancel} onClick={() => navigate('/clientes')}>
-          Cancelar
-        </button>
+        <button style={styles.save} onClick={guardar}>Guardar</button>
+        <button style={styles.cancel} onClick={() => navigate('/clientes')}>Cancelar</button>
       </div>
     </div>
   )
 }
+
+// =========================
+// COMPONENTE INPUT
+// =========================
 
 function Campo({ label, name, form, onChange }) {
   return (
@@ -273,16 +226,19 @@ function Campo({ label, name, form, onChange }) {
   )
 }
 
+// =========================
+// ESTILOS
+// =========================
+
 const vino = '#8B1E1E'
 
 const styles = {
-  page: { padding:20, maxWidth:900, margin:'auto', fontFamily:'Arial' },
-  title: { color:'#071849' },
-  grid: { display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))', gap:12 },
-  field: { display:'flex', flexDirection:'column' },
-  buttons: { marginTop:20, display:'flex', gap:10 },
-  save: { background:vino, color:'#fff', border:'none', padding:10, borderRadius:6 },
-  cancel: { background:'#fff', color:vino, border:`1px solid ${vino}`, padding:10, borderRadius:6 }
+  page: { padding: 20, maxWidth: 900, margin: 'auto', fontFamily: 'Arial' },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))', gap: 12 },
+  field: { display: 'flex', flexDirection: 'column' },
+  buttons: { marginTop: 20, display: 'flex', gap: 10 },
+  save: { background: vino, color: '#fff', border: 'none', padding: 10, borderRadius: 6 },
+  cancel: { background: '#fff', color: vino, border: `1px solid ${vino}`, padding: 10, borderRadius: 6 }
 }
 
 export default EditarCliente
