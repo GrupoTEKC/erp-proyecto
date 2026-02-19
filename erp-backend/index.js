@@ -44,7 +44,6 @@ app.get('/clientes', async (_, res) => {
     `)
 
     res.json(rows)
-
   } catch (err) {
     console.error('🔥 ERROR CLIENTE:', err)
     res.status(500).json({ error: err.message })
