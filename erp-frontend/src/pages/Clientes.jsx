@@ -53,6 +53,27 @@ function Clientes() {
       .includes(busqueda.toLowerCase())
   )
 
+  const eliminarCliente = async (id) => {
+  const confirmar = window.confirm('¿Eliminar cliente?')
+
+  if (!confirmar) return
+
+  try {
+    const res = await fetch(`${API}/clientes/${id}`, {
+      method: 'DELETE'
+    })
+
+    if (!res.ok) throw new Error()
+
+    // refrescar lista
+    setClientes(clientes.filter(c => c.id_cliente !== id))
+
+    alert('✅ Cliente eliminado')
+  } catch {
+    alert('❌ Error al eliminar')
+  }
+}
+
   return (
     <div style={container}>
 
