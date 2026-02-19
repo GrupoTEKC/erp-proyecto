@@ -186,18 +186,28 @@ function Clientes() {
                       ${c.saldo_actual || 0}
                     </td>
 
-                    {/* BOTÓN */}
-                    <td style={td}>
-                      <button
-                        style={btnEditar}
-                        onClick={() =>
-                          navigate(`/clientes/editar/${c.id_cliente}`)
-                        }
-                      >
-                        Editar
-                      </button>
-                    </td>
+                   <td style={td}>
+                   <button
+                   style={btnEditar}
+                   onClick={() =>
+                   navigate(`/clientes/editar/${c.id_cliente}`)
+                   }
+                   >
+                   Editar
+                   </button>
 
+                   <button
+                   style={{
+                   ...btnEditar,
+                   marginLeft: 6,
+                   color: 'red',
+                   borderColor: 'red'
+                   }}
+                   onClick={() => eliminarCliente(c.id_cliente)}
+                   >
+                   Eliminar
+                   </button>
+                   </td>
                   </tr>
                 ))
               )}
