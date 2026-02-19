@@ -171,8 +171,7 @@ const obtenerNombreRuta = (idRuta) => {
                     <td style={td}>{c.referencia}</td>
 
                     <td style={td}>{c.email}</td>
-                    <td style={td}>{c.id_ruta ?? ''}</td>
-                    <td style={td}>{c.ruta_nombre ?? ''}</td>
+                    <td style={td}>{obtenerNombreRuta(c.id_ruta)}</td>
 
 
                     <td style={td}>${c.saldo_actual || 0}</td>
