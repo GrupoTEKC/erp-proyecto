@@ -49,7 +49,7 @@ function Clientes() {
       .includes(busqueda.toLowerCase())
   )
 
-  const eliminarCliente = async id => {
+ const eliminarCliente = async (id) => {
   const confirmar = window.confirm('¿Eliminar cliente?')
   if (!confirmar) return
 
@@ -58,18 +58,24 @@ function Clientes() {
       method: 'DELETE'
     })
 
-    const data = await res.json()
+    const text = await res.text()
 
-    if (!res.ok) throw new Error(data.error)
+    if (!res.ok) {
+      console.error('Respuesta backend:', text)
+      throw new Error('Error del servidor')
+    }
+
+    const data = JSON.parse(text)
 
     setClientes(prev =>
-      prev.filter(c => c.id_cliente != id)
+      prev.filter(c => c.id_cliente !== id)
     )
 
     alert('✅ Cliente eliminado')
 
   } catch (err) {
-    alert('❌ ' + err.message)
+    console.error('🔥 ERROR:', err)
+    alert('❌ Error al eliminar')
   }
 }
   
