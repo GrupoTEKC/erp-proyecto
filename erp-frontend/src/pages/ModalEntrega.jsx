@@ -46,7 +46,31 @@ function ModalEntrega({ pedido, productos = [], onClose, onConfirmar }) {
 
     setEntregas(copia)
   }
+<hr />
 
+<label>Chofer *</label>
+<select
+  value={chofer}
+  onChange={e => setChofer(e.target.value)}
+  style={{ width: '100%', marginBottom: 10 }}
+>
+  <option value="">Seleccionar chofer</option>
+  {choferes.map(c => (
+    <option key={c.id_chofer} value={c.id_chofer}>
+      {c.nombre} {c.apellido1}
+    </option>
+  ))}
+</select>
+
+<label>Unidad *</label>
+<input
+  type="text"
+  value={unidad}
+  onChange={e => setUnidad(e.target.value)}
+  placeholder="Ej. Camión 3"
+  style={{ width: '100%', marginBottom: 10 }}
+/>
+  
   // =========================
   // CONFIRMAR ENTREGA
   // =========================
