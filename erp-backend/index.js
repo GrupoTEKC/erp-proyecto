@@ -29,27 +29,23 @@ app.get('/', (_, res) => {
   res.json({ status: 'Backend ERP funcionando' })
 })
 
-// =========================
-// CLIENTES
-// =========================
 
-// LISTAR
+// ======================================================
+// CLIENTES
+// ======================================================
+
 app.get('/clientes', async (_, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM clientes')
     res.json(rows)
   } catch (err) {
-    console.error(err)
     res.status(500).json({ error: err.message })
   }
 })
 
-// OBTENER POR ID
 app.get('/clientes/:id', async (req, res) => {
   try {
     const id = Number(req.params.id)
-    if (!id) return res.status(400).json({ error: 'ID inválido' })
-
     const [rows] = await db.query(
       'SELECT * FROM clientes WHERE id_cliente=?',
       [id]
@@ -64,7 +60,6 @@ app.get('/clientes/:id', async (req, res) => {
   }
 })
 
-// ACTUALIZAR
 app.put('/clientes/:id', async (req, res) => {
   try {
     const id = Number(req.params.id)
@@ -83,7 +78,6 @@ app.put('/clientes/:id', async (req, res) => {
   }
 })
 
-// ELIMINAR
 app.delete('/clientes/:id', async (req, res) => {
   try {
     const id = Number(req.params.id)
@@ -99,40 +93,117 @@ app.delete('/clientes/:id', async (req, res) => {
   }
 })
 
-// =========================
-// CHOFERES
-// =========================
 
-// LISTAR
+// ======================================================
+// PEDIDOS — NECESARIO PARA CONSULTAR PEDIDOS
+// ======================================================
+
+// LISTAR PEDIDOS
+app.get('/pedidos', async (_, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT p.*, c.nombre AS cliente
+      FROM pedidos p
+      JOIN clientes c ON p.id_cliente = c.id_cliente
+      ORDER BY p.id_pedido DESC
+    `)
+
+    res.json(rows)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// DETALLE PEDIDO
+app.get('/pedidos/:id/detalle', async (req, res) => {
+  try {
+    const id = Number(req.params.id)
+
+    const [rows] = await db.query(`
+      SELECT d.*, pr.nombre
+      FROM detalle_pedido d
+      JOIN productos pr ON d.id_producto = pr.id_producto
+      WHERE d.id_pedido=?
+    `, [id])
+
+    res.json(rows)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// ENTREGAR PEDIDO
+app.put('/pedidos/:id/entregar', async (req, res) => {
+  try {
+    const id = Number(req.params.id)
+
+    await db.query(`
+      UPDATE pedidos
+      SET estado='entregado',
+          fecha_entrega=NOW()
+      WHERE id_pedido=?
+    `, [id])
+
+    res.json({ success: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// CANCELAR PEDIDO
+app.put('/pedidos/:id/cancelar', async (req, res) => {
+  try {
+    const id = Number(req.params.id)
+
+    await db.query(`
+      UPDATE pedidos
+      SET estado='cancelado',
+          fecha_cancelacion=NOW()
+      WHERE id_pedido=?
+    `, [id])
+
+    res.json({ success: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+
+// ======================================================
+// CHOFERES
+// ======================================================
+
 app.get('/choferes', async (_, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM choferes')
     res.json(rows)
   } catch (err) {
-    console.error(err)
     res.status(500).json({ error: err.message })
   }
 })
 
 
-// =========================
+// ======================================================
 // UNIDADES
-// =========================
+// ======================================================
+
 app.get('/unidades', async (_, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM unidades')
     res.json(rows)
   } catch (err) {
-    console.error('🔥 ERROR UNIDADES:', err)
     res.status(500).json({ error: err.message })
   }
 })
+
+
 // =========================
 // 404 GLOBAL
 // =========================
 app.use((req, res) => {
   res.status(404).json({ error: 'Ruta no encontrada' })
 })
+
 
 // =========================
 // SERVIDOR
