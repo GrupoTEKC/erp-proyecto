@@ -5,8 +5,90 @@ import ModalCancelar from './ModalCancelar'
 
 const API = import.meta.env.VITE_API_URL
 
-function ConsultarPedidos() {
+/* ===== ESTILOS ===== */
+const vino = '#8B1E1E'
 
+const container = {
+  padding: 20,
+  background: '#ffffff',
+  minHeight: '100vh',
+  fontFamily: 'Arial'
+}
+
+const header = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: 20,
+  flexWrap: 'wrap',
+  gap: 10
+}
+
+const btnVino = {
+  background: '#fff',
+  color: vino,
+  border: `1px solid ${vino}`,
+  padding: '8px 12px',
+  borderRadius: 6,
+  cursor: 'pointer',
+  marginRight: 5
+}
+
+const buscador = {
+  width: '100%',
+  padding: 10,
+  borderRadius: 6,
+  border: `1px solid ${vino}`,
+  marginBottom: 15
+}
+
+const tablaWrapper = {
+  background: '#fff',
+  borderRadius: 8,
+  overflowX: 'auto',
+  boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
+}
+
+const tabla = {
+  width: '100%',
+  borderCollapse: 'collapse',
+  minWidth: 1500
+}
+
+const thead = {
+  background: vino,
+  color: '#fff'
+}
+
+const th = {
+  padding: 12,
+  textAlign: 'left'
+}
+
+const td = {
+  padding: 12,
+  borderBottom: '1px solid #eee'
+}
+
+const estadoPendiente = {
+  background: '#ffdede',
+  borderRadius: 6,
+  padding: '6px 10px'
+}
+
+const estadoEntregado = {
+  background: '#d4f8d4',
+  borderRadius: 6,
+  padding: '6px 10px'
+}
+
+const estadoCancelado = {
+  background: '#eeeeee',
+  borderRadius: 6,
+  padding: '6px 10px'
+}
+
+function ConsultarPedidos() {
   const [pedidos, setPedidos] = useState([])
   const [detallePedido, setDetallePedido] = useState([])
   const [mostrarModal, setMostrarModal] = useState(false)
@@ -17,20 +99,15 @@ function ConsultarPedidos() {
 
   const navigate = useNavigate()
 
-  // =========================
-  // CARGAR PEDIDOS
-  // =========================
+  /* =========================
+     CARGAR PEDIDOS
+  ========================= */
   const cargarPedidos = async () => {
-    if (!API) return
-
     try {
       const res = await fetch(`${API}/pedidos`)
-      if (!res.ok) throw new Error()
-
       const data = await res.json()
       setPedidos(Array.isArray(data) ? data : [])
-    } catch (err) {
-      console.error('Error cargando pedidos:', err)
+    } catch {
       setPedidos([])
     }
   }
@@ -39,11 +116,10 @@ function ConsultarPedidos() {
     cargarPedidos()
   }, [])
 
-  // =========================
-  // CALCULAR DÍAS
-  // =========================
+  /* =========================
+     CALCULAR DÍAS
+  ========================= */
   const calcularDias = pedido => {
-
     if (!pedido.fecha) return 0
 
     const inicio = new Date(pedido.fecha)
@@ -62,11 +138,10 @@ function ConsultarPedidos() {
     return Math.floor(diff / (1000 * 60 * 60 * 24))
   }
 
-  // =========================
-  // FILTRO
-  // =========================
+  /* =========================
+     FILTRO
+  ========================= */
   const pedidosFiltrados = pedidos.filter(p => {
-
     const dias = calcularDias(p)
 
     const cumpleFiltro =
@@ -91,229 +166,199 @@ function ConsultarPedidos() {
     )
   })
 
-  // =========================
-  // CARGAR DETALLE
-  // =========================
+  /* =========================
+     DETALLE
+  ========================= */
   const cargarDetallePedido = async id => {
-
     try {
       const res = await fetch(`${API}/pedidos/${id}/detalle`)
-      if (!res.ok) throw new Error()
-
       const data = await res.json()
-
-      const detalle = Array.isArray(data)
-        ? data.map(p => ({
-            id_producto: p.id_producto,
-            nombre: p.nombre,
-            cantidad: Number(p.cantidad) || 0,
-            precio: Number(p.precio) || 0
-          }))
-        : []
-
-      setDetallePedido(detalle)
-
+      setDetallePedido(Array.isArray(data) ? data : [])
       return true
-
-    } catch (err) {
-      console.error('Error detalle:', err)
+    } catch {
       alert('Error cargando detalle')
       return false
     }
   }
 
-  // =========================
-  // ENTREGAR
-  // =========================
-  const confirmarEntrega = async dataEntrega => {
-
+  /* =========================
+     ENTREGAR / CANCELAR
+  ========================= */
+  const confirmarEntrega = async data => {
     if (!pedidoSeleccionado) return
 
-    try {
-      const res = await fetch(
-        `${API}/pedidos/${pedidoSeleccionado.id_pedido}/entregar`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(dataEntrega)
-        }
-      )
+    await fetch(`${API}/pedidos/${pedidoSeleccionado.id_pedido}/entregar`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
 
-      if (!res.ok) throw new Error()
-
-      await cargarPedidos()
-
-      setMostrarModal(false)
-      setPedidoSeleccionado(null)
-      setDetallePedido([])
-
-    } catch {
-      alert('Error al confirmar entrega')
-    }
+    cargarPedidos()
+    setMostrarModal(false)
+    setPedidoSeleccionado(null)
   }
 
-  // =========================
-  // CANCELAR
-  // =========================
   const confirmarCancelacion = async ({ comentario }) => {
-
     if (!pedidoSeleccionado) return
 
-    try {
-      const res = await fetch(
-        `${API}/pedidos/${pedidoSeleccionado.id_pedido}/cancelar`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ comentario })
-        }
-      )
+    await fetch(`${API}/pedidos/${pedidoSeleccionado.id_pedido}/cancelar`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ comentario })
+    })
 
-      if (!res.ok) throw new Error()
-
-      await cargarPedidos()
-
-      setMostrarCancelar(false)
-      setPedidoSeleccionado(null)
-
-    } catch {
-      alert('Error al cancelar pedido')
-    }
+    cargarPedidos()
+    setMostrarCancelar(false)
+    setPedidoSeleccionado(null)
   }
 
-  // =========================
-  // UI
-  // =========================
   return (
+    <div style={container}>
 
-    <div>
+      <div style={header}>
+        <button style={btnVino} onClick={() => navigate('/')}>
+          ⬅ Volver
+        </button>
+        <h2>Consultar pedidos</h2>
+      </div>
 
-      <button onClick={() => navigate('/')}>
-        ⬅ Volver
-      </button>
-
-      <h2>Consultar pedidos</h2>
-
-      {/* BUSCADOR */}
       <input
-        type="text"
+        style={buscador}
         placeholder="Buscar pedido o cliente..."
         value={busqueda}
         onChange={e => setBusqueda(e.target.value)}
-        style={{ marginBottom: 10, width: '100%', padding: 6 }}
       />
 
-      {/* FILTRO */}
-      <select
-        value={filtroDias}
-        onChange={e => setFiltroDias(e.target.value)}
-        style={{ marginBottom: 10 }}
-      >
-        <option value="">Todos</option>
-        <option value="retrasados">Retrasados (+7 días)</option>
-        <option value="pendientes">Pendientes</option>
-        <option value="entregados">Entregados</option>
-      </select>
+      <div style={tablaWrapper}>
+        <table style={tabla}>
+          <thead style={thead}>
 
-      <table border="1" cellPadding="8" width="100%">
+            {/* FILA DE FILTRO */}
+            <tr>
+              <th style={th}></th>
+              <th style={th}></th>
+              <th style={th}></th>
+              <th style={th}></th>
+              <th style={th}></th>
+              <th style={th}></th>
 
-        <thead>
-          <tr>
-            <th>Pedido</th>
-            <th>Cliente</th>
-            <th>Fecha pedido</th>
-            <th>Fecha entrega</th>
-            <th>Fecha cancelación</th>
-            <th>Estado</th>
-            <th>Días</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-
-        <tbody>
-
-          {pedidosFiltrados.map(p => (
-
-            <tr key={p.id_pedido}>
-
-              <td>{p.id_pedido}</td>
-
-              <td>{p.cliente}</td>
-
-              <td>
-                {p.fecha
-                  ? new Date(p.fecha).toLocaleDateString()
-                  : '-'}
-              </td>
-
-              <td>
-                {p.fecha_entrega
-                  ? new Date(p.fecha_entrega).toLocaleDateString()
-                  : '-'}
-              </td>
-
-              <td>
-                {p.fecha_cancelacion
-                  ? new Date(p.fecha_cancelacion).toLocaleDateString()
-                  : '-'}
-              </td>
-
-              <td>{p.estado}</td>
-
-              <td>{calcularDias(p)}</td>
-
-              <td>
-
-                <button
-                  disabled={p.estado !== 'pendiente'}
-                  onClick={async () => {
-                    setPedidoSeleccionado(p)
-                    const ok = await cargarDetallePedido(p.id_pedido)
-                    if (ok) setMostrarModal(true)
+              {/* FILTRO DE DÍAS */}
+              <th style={th}>
+                <select
+                  value={filtroDias}
+                  onChange={e => setFiltroDias(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: 6,
+                    borderRadius: 4
                   }}
                 >
-                  Entregar
-                </button>
+                  <option value="">Filtro Días</option>
+                  <option value="retrasados">Retrasados (+7)</option>
+                  <option value="pendientes">Pendientes</option>
+                  <option value="entregados">Entregados</option>
+                </select>
+              </th>
 
-                <button
-                  disabled={p.estado !== 'pendiente'}
-                  onClick={() => {
-                    setPedidoSeleccionado(p)
-                    setMostrarCancelar(true)
-                  }}
-                >
-                  Cancelar
-                </button>
-
-              </td>
-
+              <th style={th}></th>
             </tr>
 
-          ))}
+            {/* TÍTULOS */}
+            <tr>
+              <th style={th}>Pedido</th>
+              <th style={th}>Cliente</th>
+              <th style={th}>Fecha pedido</th>
+              <th style={th}>Fecha entrega</th>
+              <th style={th}>Fecha cancelación</th>
+              <th style={th}>Estado</th>
+              <th style={th}>Días</th>
+              <th style={th}>Acciones</th>
+            </tr>
 
-        </tbody>
+          </thead>
 
-      </table>
+          <tbody>
+            {pedidosFiltrados.map(p => {
+              const dias = calcularDias(p)
+
+              const estiloEstado =
+                p.estado === 'entregado'
+                  ? estadoEntregado
+                  : p.estado === 'pendiente'
+                  ? estadoPendiente
+                  : estadoCancelado
+
+              return (
+                <tr key={p.id_pedido}>
+                  <td style={td}>{p.id_pedido}</td>
+                  <td style={td}>{p.cliente}</td>
+
+                  <td style={td}>
+                    {p.fecha ? new Date(p.fecha).toLocaleDateString() : '-'}
+                  </td>
+
+                  <td style={td}>
+                    {p.fecha_entrega ? new Date(p.fecha_entrega).toLocaleDateString() : '-'}
+                  </td>
+
+                  <td style={td}>
+                    {p.fecha_cancelacion ? new Date(p.fecha_cancelacion).toLocaleDateString() : '-'}
+                  </td>
+
+                  <td style={td}>
+                    <span style={estiloEstado}>
+                      {p.estado}
+                    </span>
+                  </td>
+
+                  <td style={td}>{dias}</td>
+
+                  <td style={td}>
+                    <button
+                      style={btnVino}
+                      disabled={p.estado !== 'pendiente'}
+                      onClick={async () => {
+                        setPedidoSeleccionado(p)
+                        const ok = await cargarDetallePedido(p.id_pedido)
+                        if (ok) setMostrarModal(true)
+                      }}
+                    >
+                      Entregar
+                    </button>
+
+                    <button
+                      style={btnVino}
+                      disabled={p.estado !== 'pendiente'}
+                      onClick={() => {
+                        setPedidoSeleccionado(p)
+                        setMostrarCancelar(true)
+                      }}
+                    >
+                      Cancelar
+                    </button>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
 
       {mostrarModal && pedidoSeleccionado && (
-
         <ModalEntrega
           pedido={pedidoSeleccionado}
           productos={detallePedido}
           onClose={() => setMostrarModal(false)}
           onConfirmar={confirmarEntrega}
         />
-
       )}
 
       {mostrarCancelar && pedidoSeleccionado && (
-
         <ModalCancelar
           pedido={pedidoSeleccionado}
           onClose={() => setMostrarCancelar(false)}
           onConfirmar={confirmarCancelacion}
         />
-
       )}
 
     </div>
