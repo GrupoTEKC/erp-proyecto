@@ -114,6 +114,19 @@ app.get('/choferes', async (_, res) => {
   }
 })
 
+
+// =========================
+// UNIDADES
+// =========================
+app.get('/unidades', async (_, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM unidades')
+    res.json(rows)
+  } catch (err) {
+    console.error('🔥 ERROR UNIDADES:', err)
+    res.status(500).json({ error: err.message })
+  }
+})
 // =========================
 // 404 GLOBAL
 // =========================
