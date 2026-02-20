@@ -129,7 +129,9 @@ app.delete('/clientes/:id', async (req, res) => {
 })
 
 
-// LISTAR CHOFERES
+// =========================
+// CHOFERES
+// =========================
 app.get('/choferes', async (_, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM choferes')
@@ -140,62 +142,8 @@ app.get('/choferes', async (_, res) => {
   }
 })
 
-// CREAR CHOFER
-app.post('/choferes', async (req, res) => {
-  try {
-    const { nombre, apellido1, apellido2, correo } = req.body
-
-    const [result] = await db.query(
-      `INSERT INTO choferes (nombre, apellido1, apellido2, correo)
-       VALUES (?, ?, ?, ?)`,
-      [nombre, apellido1, apellido2, correo]
-    )
-
-    res.json({ success: true, id: result.insertId })
-  } catch (err) {
-    console.error('🔥 ERROR CREAR CHOFER:', err)
-    res.status(500).json({ error: err.message })
-  }
-})
-
-// EDITAR CHOFER
-app.put('/choferes/:id', async (req, res) => {
-  try {
-    const { id } = req.params
-    const { nombre, apellido1, apellido2, correo } = req.body
-
-    await db.query(
-      `UPDATE choferes
-       SET nombre=?, apellido1=?, apellido2=?, correo=?
-       WHERE id_chofer=?`,
-      [nombre, apellido1, apellido2, correo, id]
-    )
-
-    res.json({ success: true })
-  } catch (err) {
-    console.error('🔥 ERROR UPDATE CHOFER:', err)
-    res.status(500).json({ error: err.message })
-  }
-})
-
-// ELIMINAR CHOFER
-app.delete('/choferes/:id', async (req, res) => {
-  try {
-    const { id } = req.params
-
-    await db.query(
-      'DELETE FROM choferes WHERE id_chofer=?',
-      [id]
-    )
-
-    res.json({ success: true })
-  } catch (err) {
-    console.error('🔥 ERROR DELETE CHOFER:', err)
-    res.status(500).json({ error: err.message })
-  }
-})
 // =========================
-// 404 GLOBAL — MUY IMPORTANTE
+// 404 GLOBAL — SIEMPRE ÚLTIMO
 // =========================
 app.use((req, res) => {
   res.status(404).json({ error: 'Ruta no encontrada' })
@@ -205,5 +153,6 @@ app.use((req, res) => {
 // SERVIDOR
 // =========================
 app.listen(PORT, () => {
+  console.log('🔥 VERSION CON CHOFERES ACTIVA 🔥')
   console.log(`✅ Backend corriendo en puerto ${PORT}`)
 })
