@@ -105,15 +105,27 @@ app.delete('/clientes/:id', async (req, res) => {
   try {
     const { id } = req.params
 
-    await db.query(
+    const [result] = await db.query(
       'DELETE FROM clientes WHERE id_cliente = ?',
       [id]
     )
 
-    res.json({ success: true })
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        error: 'Cliente no existe'
+      })
+    }
+
+    res.json({
+      success: true,
+      eliminado: id
+    })
+
   } catch (err) {
     console.error('🔥 ERROR ELIMINAR:', err)
-    res.status(500).json({ error: err.message })
+    res.status(500).json({
+      error: err.message
+    })
   }
 })
 // =========================
