@@ -112,17 +112,15 @@ app.delete('/clientes/:id', async (req, res) => {
 
     if (result.affectedRows === 0) {
       return res.status(404).json({
-        error: 'Cliente no existe'
+        error: 'Cliente no encontrado'
       })
     }
 
-    res.json({
-      success: true,
-      eliminado: id
-    })
+    res.json({ success: true })
 
   } catch (err) {
     console.error('🔥 ERROR ELIMINAR:', err)
+
     res.status(500).json({
       error: err.message
     })
