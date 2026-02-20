@@ -6,7 +6,6 @@ import ModalCancelar from './ModalCancelar'
 const API = import.meta.env.VITE_API_URL
 
 function ConsultarPedidos() {
-
   const [pedidos, setPedidos] = useState([])
   const [detallePedido, setDetallePedido] = useState([])
   const [mostrarModal, setMostrarModal] = useState(false)
@@ -20,24 +19,19 @@ function ConsultarPedidos() {
   // 🔄 CARGAR PEDIDOS
   // =========================
   const cargarPedidos = async () => {
-
     if (!API) {
       console.error('❌ API no definida')
       return
     }
 
     try {
-
       const res = await fetch(`${API}/pedidos`)
-
-      if (!res.ok) throw new Error('Error al obtener pedidos')
+      if (!res.ok) throw new Error()
 
       const data = await res.json()
-
       setPedidos(Array.isArray(data) ? data : [])
-
     } catch (err) {
-      console.error('Error al cargar pedidos:', err)
+      console.error('Error cargando pedidos:', err)
       setPedidos([])
     }
   }
@@ -50,7 +44,6 @@ function ConsultarPedidos() {
   // 🔍 FILTRO SEGURO
   // =========================
   const pedidosFiltrados = pedidos.filter(p => {
-
     const id = p?.id_pedido?.toString() || ''
     const cliente = p?.cliente?.toLowerCase() || ''
     const texto = busqueda.toLowerCase()
@@ -62,16 +55,13 @@ function ConsultarPedidos() {
   // 📦 CARGAR DETALLE
   // =========================
   const cargarDetallePedido = async id => {
-
     try {
-
       const res = await fetch(`${API}/pedidos/${id}/detalle`)
-
-      if (!res.ok) throw new Error('Error detalle')
+      if (!res.ok) throw new Error()
 
       const data = await res.json()
 
-      const detalleAdaptado = Array.isArray(data)
+      const detalle = Array.isArray(data)
         ? data.map(p => ({
             id_producto: p.id_producto,
             nombre: p.nombre,
@@ -80,10 +70,8 @@ function ConsultarPedidos() {
           }))
         : []
 
-      setDetallePedido(detalleAdaptado)
-
+      setDetallePedido(detalle)
       return true
-
     } catch (err) {
       console.error('Error detalle:', err)
       alert('Error cargando detalle')
@@ -92,14 +80,12 @@ function ConsultarPedidos() {
   }
 
   // =========================
-  // 🚚 ENTREGAR
+  // 🚚 CONFIRMAR ENTREGA
   // =========================
   const confirmarEntrega = async dataEntrega => {
-
     if (!pedidoSeleccionado) return
 
     try {
-
       const res = await fetch(
         `${API}/pedidos/${pedidoSeleccionado.id_pedido}/entregar`,
         {
@@ -109,14 +95,13 @@ function ConsultarPedidos() {
         }
       )
 
-      if (!res.ok) throw new Error('Error al entregar')
+      if (!res.ok) throw new Error()
 
       await cargarPedidos()
 
       setMostrarModal(false)
       setPedidoSeleccionado(null)
       setDetallePedido([])
-
     } catch (err) {
       console.error(err)
       alert('Error al confirmar entrega')
@@ -124,14 +109,12 @@ function ConsultarPedidos() {
   }
 
   // =========================
-  // ❌ CANCELAR
+  // ❌ CANCELAR PEDIDO
   // =========================
   const confirmarCancelacion = async ({ comentario }) => {
-
     if (!pedidoSeleccionado) return
 
     try {
-
       const res = await fetch(
         `${API}/pedidos/${pedidoSeleccionado.id_pedido}/cancelar`,
         {
@@ -141,13 +124,12 @@ function ConsultarPedidos() {
         }
       )
 
-      if (!res.ok) throw new Error('Error al cancelar')
+      if (!res.ok) throw new Error()
 
       await cargarPedidos()
 
       setMostrarCancelar(false)
       setPedidoSeleccionado(null)
-
     } catch (err) {
       console.error(err)
       alert('Error al cancelar pedido')
@@ -175,7 +157,6 @@ function ConsultarPedidos() {
       />
 
       <table border="1" cellPadding="8" width="100%">
-
         <thead>
           <tr>
             <th>Pedido #</th>
@@ -188,62 +169,65 @@ function ConsultarPedidos() {
         </thead>
 
         <tbody>
-          {pedidosFiltrados.map(p => (
+          {pedidosFiltrados.map(p => {
 
-            <tr key={p.id_pedido}>
+            const fechaCierre =
+              p.estado === 'entregado'
+                ? p.fecha_entrega
+                : p.estado === 'cancelado'
+                ? p.fecha_cancelacion
+                : null
 
-              <td>{p.id_pedido}</td>
+            return (
+              <tr key={p.id_pedido}>
+                <td>{p.id_pedido}</td>
 
-              <td>{p.cliente}</td>
+                <td>{p.cliente}</td>
 
-              <td>
-                {p.fecha
-                  ? new Date(p.fecha).toLocaleDateString()
-                  : '-'}
-              </td>
+                <td>
+                  {p.fecha
+                    ? new Date(p.fecha).toLocaleDateString()
+                    : '-'}
+                </td>
 
-              <td>
-                {p.estado === 'entregado' && p.fecha_entrega
-                  ? new Date(p.fecha_entrega).toLocaleDateString()
-                  : p.estado === 'cancelado' && p.fecha_cancelacion
-                  ? new Date(p.fecha_cancelacion).toLocaleDateString()
-                  : '-'}
-              </td>
+                <td>
+                  {fechaCierre
+                    ? new Date(fechaCierre).toLocaleDateString()
+                    : '-'}
+                </td>
 
-              <td>{p.estado}</td>
+                <td>{p.estado}</td>
 
-              <td>
+                <td>
+                  <button
+                    disabled={p.estado !== 'pendiente'}
+                    onClick={async () => {
+                      setPedidoSeleccionado(p)
+                      const ok = await cargarDetallePedido(p.id_pedido)
+                      if (ok) setMostrarModal(true)
+                    }}
+                  >
+                    Entregar
+                  </button>
 
-                <button
-                  disabled={p.estado !== 'pendiente'}
-                  onClick={async () => {
-                    setPedidoSeleccionado(p)
-                    const ok = await cargarDetallePedido(p.id_pedido)
-                    if (ok) setMostrarModal(true)
-                  }}
-                >
-                  Entregar
-                </button>
+                  <button
+                    disabled={p.estado !== 'pendiente'}
+                    onClick={() => {
+                      setPedidoSeleccionado(p)
+                      setMostrarCancelar(true)
+                    }}
+                  >
+                    Cancelar
+                  </button>
+                </td>
 
-                <button
-                  disabled={p.estado !== 'pendiente'}
-                  onClick={() => {
-                    setPedidoSeleccionado(p)
-                    setMostrarCancelar(true)
-                  }}
-                >
-                  Cancelar
-                </button>
-
-              </td>
-
-            </tr>
-
-          ))}
+              </tr>
+            )
+          })}
         </tbody>
-
       </table>
 
+      {/* MODAL ENTREGA */}
       {mostrarModal && pedidoSeleccionado && (
         <ModalEntrega
           pedido={pedidoSeleccionado}
@@ -253,6 +237,7 @@ function ConsultarPedidos() {
         />
       )}
 
+      {/* MODAL CANCELAR */}
       {mostrarCancelar && pedidoSeleccionado && (
         <ModalCancelar
           pedido={pedidoSeleccionado}
