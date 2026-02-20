@@ -12,21 +12,20 @@ function ConsultarPedidos() {
   const [mostrarCancelar, setMostrarCancelar] = useState(false)
   const [pedidoSeleccionado, setPedidoSeleccionado] = useState(null)
   const [busqueda, setBusqueda] = useState('')
-
   const navigate = useNavigate()
 
   // =========================
-  // 🔄 CARGAR PEDIDOS
+  // CARGAR PEDIDOS
   // =========================
   const cargarPedidos = async () => {
     if (!API) {
-      console.error('❌ API no definida')
+      console.error('API no definida')
       return
     }
 
     try {
       const res = await fetch(`${API}/pedidos`)
-      if (!res.ok) throw new Error()
+      if (!res.ok) throw new Error('Error al obtener pedidos')
 
       const data = await res.json()
       setPedidos(Array.isArray(data) ? data : [])
@@ -41,7 +40,7 @@ function ConsultarPedidos() {
   }, [])
 
   // =========================
-  // 🔍 FILTRO SEGURO
+  // FILTRO
   // =========================
   const pedidosFiltrados = pedidos.filter(p => {
     const id = p?.id_pedido?.toString() || ''
@@ -52,7 +51,7 @@ function ConsultarPedidos() {
   })
 
   // =========================
-  // 📦 CARGAR DETALLE
+  // CARGAR DETALLE
   // =========================
   const cargarDetallePedido = async id => {
     try {
@@ -80,7 +79,7 @@ function ConsultarPedidos() {
   }
 
   // =========================
-  // 🚚 CONFIRMAR ENTREGA
+  // ENTREGAR
   // =========================
   const confirmarEntrega = async dataEntrega => {
     if (!pedidoSeleccionado) return
@@ -98,18 +97,16 @@ function ConsultarPedidos() {
       if (!res.ok) throw new Error()
 
       await cargarPedidos()
-
       setMostrarModal(false)
       setPedidoSeleccionado(null)
       setDetallePedido([])
-    } catch (err) {
-      console.error(err)
+    } catch {
       alert('Error al confirmar entrega')
     }
   }
 
   // =========================
-  // ❌ CANCELAR PEDIDO
+  // CANCELAR
   // =========================
   const confirmarCancelacion = async ({ comentario }) => {
     if (!pedidoSeleccionado) return
@@ -127,24 +124,19 @@ function ConsultarPedidos() {
       if (!res.ok) throw new Error()
 
       await cargarPedidos()
-
       setMostrarCancelar(false)
       setPedidoSeleccionado(null)
-    } catch (err) {
-      console.error(err)
+    } catch {
       alert('Error al cancelar pedido')
     }
   }
 
   // =========================
-  // 🧩 UI
+  // UI
   // =========================
   return (
     <div>
-
-      <button onClick={() => navigate('/')}>
-        ⬅ Volver
-      </button>
+      <button onClick={() => navigate('/')}>⬅ Volver</button>
 
       <h2>Consultar pedidos</h2>
 
@@ -159,75 +151,70 @@ function ConsultarPedidos() {
       <table border="1" cellPadding="8" width="100%">
         <thead>
           <tr>
-            <th>Pedido #</th>
+            <th>Pedido</th>
             <th>Cliente</th>
             <th>Fecha pedido</th>
-            <th>Entrega / Cancelación</th>
+            <th>Fecha entrega</th>
+            <th>Fecha cancelación</th>
             <th>Estado</th>
             <th>Acciones</th>
           </tr>
         </thead>
 
         <tbody>
-          {pedidosFiltrados.map(p => {
+          {pedidosFiltrados.map(p => (
+            <tr key={p.id_pedido}>
+              <td>{p.id_pedido}</td>
 
-            const fechaCierre =
-              p.estado === 'entregado'
-                ? p.fecha_entrega
-                : p.estado === 'cancelado'
-                ? p.fecha_cancelacion
-                : null
+              <td>{p.cliente}</td>
 
-            return (
-              <tr key={p.id_pedido}>
-                <td>{p.id_pedido}</td>
+              <td>
+                {p.fecha
+                  ? new Date(p.fecha).toLocaleDateString()
+                  : '-'}
+              </td>
 
-                <td>{p.cliente}</td>
+              <td>
+                {p.fecha_entrega
+                  ? new Date(p.fecha_entrega).toLocaleDateString()
+                  : '-'}
+              </td>
 
-                <td>
-                  {p.fecha
-                    ? new Date(p.fecha).toLocaleDateString()
-                    : '-'}
-                </td>
+              <td>
+                {p.fecha_cancelacion
+                  ? new Date(p.fecha_cancelacion).toLocaleDateString()
+                  : '-'}
+              </td>
 
-                <td>
-                  {fechaCierre
-                    ? new Date(fechaCierre).toLocaleDateString()
-                    : '-'}
-                </td>
+              <td>{p.estado}</td>
 
-                <td>{p.estado}</td>
+              <td>
+                <button
+                  disabled={p.estado !== 'pendiente'}
+                  onClick={async () => {
+                    setPedidoSeleccionado(p)
+                    const ok = await cargarDetallePedido(p.id_pedido)
+                    if (ok) setMostrarModal(true)
+                  }}
+                >
+                  Entregar
+                </button>
 
-                <td>
-                  <button
-                    disabled={p.estado !== 'pendiente'}
-                    onClick={async () => {
-                      setPedidoSeleccionado(p)
-                      const ok = await cargarDetallePedido(p.id_pedido)
-                      if (ok) setMostrarModal(true)
-                    }}
-                  >
-                    Entregar
-                  </button>
-
-                  <button
-                    disabled={p.estado !== 'pendiente'}
-                    onClick={() => {
-                      setPedidoSeleccionado(p)
-                      setMostrarCancelar(true)
-                    }}
-                  >
-                    Cancelar
-                  </button>
-                </td>
-
-              </tr>
-            )
-          })}
+                <button
+                  disabled={p.estado !== 'pendiente'}
+                  onClick={() => {
+                    setPedidoSeleccionado(p)
+                    setMostrarCancelar(true)
+                  }}
+                >
+                  Cancelar
+                </button>
+              </td>
+            </tr>
+          ))}
         </tbody>
       </table>
 
-      {/* MODAL ENTREGA */}
       {mostrarModal && pedidoSeleccionado && (
         <ModalEntrega
           pedido={pedidoSeleccionado}
@@ -237,7 +224,6 @@ function ConsultarPedidos() {
         />
       )}
 
-      {/* MODAL CANCELAR */}
       {mostrarCancelar && pedidoSeleccionado && (
         <ModalCancelar
           pedido={pedidoSeleccionado}
@@ -245,7 +231,6 @@ function ConsultarPedidos() {
           onConfirmar={confirmarCancelacion}
         />
       )}
-
     </div>
   )
 }
