@@ -6,26 +6,26 @@ import ModalCancelar from './ModalCancelar'
 const API = import.meta.env.VITE_API_URL
 
 function ConsultarPedidos() {
+
   const [pedidos, setPedidos] = useState([])
   const [detallePedido, setDetallePedido] = useState([])
   const [mostrarModal, setMostrarModal] = useState(false)
   const [mostrarCancelar, setMostrarCancelar] = useState(false)
   const [pedidoSeleccionado, setPedidoSeleccionado] = useState(null)
   const [busqueda, setBusqueda] = useState('')
+  const [filtroDias, setFiltroDias] = useState('')
+
   const navigate = useNavigate()
 
   // =========================
   // CARGAR PEDIDOS
   // =========================
   const cargarPedidos = async () => {
-    if (!API) {
-      console.error('API no definida')
-      return
-    }
+    if (!API) return
 
     try {
       const res = await fetch(`${API}/pedidos`)
-      if (!res.ok) throw new Error('Error al obtener pedidos')
+      if (!res.ok) throw new Error()
 
       const data = await res.json()
       setPedidos(Array.isArray(data) ? data : [])
@@ -40,20 +40,62 @@ function ConsultarPedidos() {
   }, [])
 
   // =========================
+  // CALCULAR DÍAS
+  // =========================
+  const calcularDias = pedido => {
+
+    if (!pedido.fecha) return 0
+
+    const inicio = new Date(pedido.fecha)
+
+    const cierre =
+      pedido.estado === 'entregado'
+        ? pedido.fecha_entrega
+        : pedido.estado === 'cancelado'
+        ? pedido.fecha_cancelacion
+        : null
+
+    const fin = cierre ? new Date(cierre) : new Date()
+
+    const diff = fin - inicio
+
+    return Math.floor(diff / (1000 * 60 * 60 * 24))
+  }
+
+  // =========================
   // FILTRO
   // =========================
   const pedidosFiltrados = pedidos.filter(p => {
-    const id = p?.id_pedido?.toString() || ''
-    const cliente = p?.cliente?.toLowerCase() || ''
+
+    const dias = calcularDias(p)
+
+    const cumpleFiltro =
+      filtroDias === ''
+        ? true
+        : filtroDias === 'retrasados'
+        ? dias > 7 && p.estado === 'pendiente'
+        : filtroDias === 'pendientes'
+        ? p.estado === 'pendiente'
+        : filtroDias === 'entregados'
+        ? p.estado === 'entregado'
+        : true
+
     const texto = busqueda.toLowerCase()
 
-    return id.includes(texto) || cliente.includes(texto)
+    return (
+      cumpleFiltro &&
+      (
+        p.id_pedido?.toString().includes(texto) ||
+        p.cliente?.toLowerCase().includes(texto)
+      )
+    )
   })
 
   // =========================
   // CARGAR DETALLE
   // =========================
   const cargarDetallePedido = async id => {
+
     try {
       const res = await fetch(`${API}/pedidos/${id}/detalle`)
       if (!res.ok) throw new Error()
@@ -70,7 +112,9 @@ function ConsultarPedidos() {
         : []
 
       setDetallePedido(detalle)
+
       return true
+
     } catch (err) {
       console.error('Error detalle:', err)
       alert('Error cargando detalle')
@@ -82,6 +126,7 @@ function ConsultarPedidos() {
   // ENTREGAR
   // =========================
   const confirmarEntrega = async dataEntrega => {
+
     if (!pedidoSeleccionado) return
 
     try {
@@ -97,9 +142,11 @@ function ConsultarPedidos() {
       if (!res.ok) throw new Error()
 
       await cargarPedidos()
+
       setMostrarModal(false)
       setPedidoSeleccionado(null)
       setDetallePedido([])
+
     } catch {
       alert('Error al confirmar entrega')
     }
@@ -109,6 +156,7 @@ function ConsultarPedidos() {
   // CANCELAR
   // =========================
   const confirmarCancelacion = async ({ comentario }) => {
+
     if (!pedidoSeleccionado) return
 
     try {
@@ -124,8 +172,10 @@ function ConsultarPedidos() {
       if (!res.ok) throw new Error()
 
       await cargarPedidos()
+
       setMostrarCancelar(false)
       setPedidoSeleccionado(null)
+
     } catch {
       alert('Error al cancelar pedido')
     }
@@ -135,11 +185,16 @@ function ConsultarPedidos() {
   // UI
   // =========================
   return (
+
     <div>
-      <button onClick={() => navigate('/')}>⬅ Volver</button>
+
+      <button onClick={() => navigate('/')}>
+        ⬅ Volver
+      </button>
 
       <h2>Consultar pedidos</h2>
 
+      {/* BUSCADOR */}
       <input
         type="text"
         placeholder="Buscar pedido o cliente..."
@@ -148,7 +203,20 @@ function ConsultarPedidos() {
         style={{ marginBottom: 10, width: '100%', padding: 6 }}
       />
 
+      {/* FILTRO */}
+      <select
+        value={filtroDias}
+        onChange={e => setFiltroDias(e.target.value)}
+        style={{ marginBottom: 10 }}
+      >
+        <option value="">Todos</option>
+        <option value="retrasados">Retrasados (+7 días)</option>
+        <option value="pendientes">Pendientes</option>
+        <option value="entregados">Entregados</option>
+      </select>
+
       <table border="1" cellPadding="8" width="100%">
+
         <thead>
           <tr>
             <th>Pedido</th>
@@ -157,13 +225,17 @@ function ConsultarPedidos() {
             <th>Fecha entrega</th>
             <th>Fecha cancelación</th>
             <th>Estado</th>
+            <th>Días</th>
             <th>Acciones</th>
           </tr>
         </thead>
 
         <tbody>
+
           {pedidosFiltrados.map(p => (
+
             <tr key={p.id_pedido}>
+
               <td>{p.id_pedido}</td>
 
               <td>{p.cliente}</td>
@@ -188,7 +260,10 @@ function ConsultarPedidos() {
 
               <td>{p.estado}</td>
 
+              <td>{calcularDias(p)}</td>
+
               <td>
+
                 <button
                   disabled={p.estado !== 'pendiente'}
                   onClick={async () => {
@@ -209,28 +284,38 @@ function ConsultarPedidos() {
                 >
                   Cancelar
                 </button>
+
               </td>
+
             </tr>
+
           ))}
+
         </tbody>
+
       </table>
 
       {mostrarModal && pedidoSeleccionado && (
+
         <ModalEntrega
           pedido={pedidoSeleccionado}
           productos={detallePedido}
           onClose={() => setMostrarModal(false)}
           onConfirmar={confirmarEntrega}
         />
+
       )}
 
       {mostrarCancelar && pedidoSeleccionado && (
+
         <ModalCancelar
           pedido={pedidoSeleccionado}
           onClose={() => setMostrarCancelar(false)}
           onConfirmar={confirmarCancelacion}
         />
+
       )}
+
     </div>
   )
 }
