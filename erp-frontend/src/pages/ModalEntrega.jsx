@@ -7,47 +7,63 @@ function ModalEntrega({ pedido, productos = [], onClose, onConfirmar }) {
   // =========================
   // CARGAR PRODUCTOS
   // =========================
-useEffect(() => {
-  console.log("📦 Productos recibidos:", productos)
+  useEffect(() => {
+    if (!Array.isArray(productos)) return
 
-  if (!Array.isArray(productos)) return
+    const data = productos.map(p => {
+      const cantidad = Number(p.cantidad) || 0
 
-  const data = productos.map(p => {
-    const cantidad = parseFloat(p.cantidad)
+      return {
+        id_producto: p.id_producto,
+        nombre: p.nombre || "Sin nombre",
+        cantidad_pedida: cantidad,
+        cantidad_entregada: cantidad
+      }
+    })
 
-    return {
-      id_producto: p.id_producto,
-      nombre: p.nombre || "Sin nombre",
-      cantidad_pedida: isNaN(cantidad) ? 0 : cantidad,
-      cantidad_entregada: isNaN(cantidad) ? 0 : cantidad
-    }
-  })
-
-  setEntregas(data)
-}, [productos])
+    setEntregas(data)
+  }, [productos])
 
   // =========================
   // VALIDAR DIFERENCIAS
   // =========================
   const hayDiferencias = entregas.some(
-    p => Number(p.cantidad_entregada) !== Number(p.cantidad_pedida)
+    p => p.cantidad_entregada !== p.cantidad_pedida
   )
+
+  // =========================
+  // CAMBIAR CANTIDAD
+  // =========================
+  const cambiarCantidad = (index, valor) => {
+    let nueva = Number(valor)
+
+    if (isNaN(nueva) || nueva < 0) nueva = 0
+    if (nueva > entregas[index].cantidad_pedida)
+      nueva = entregas[index].cantidad_pedida
+
+    const copia = [...entregas]
+    copia[index].cantidad_entregada = nueva
+
+    setEntregas(copia)
+  }
 
   // =========================
   // CONFIRMAR ENTREGA
   // =========================
   const confirmar = () => {
     if (hayDiferencias && comentario.trim() === '') {
-      alert('Debes indicar un comentario por la diferencia')
+      alert(
+        'En caso de no entregar lo solicitado por el cliente, se deberá registrar el motivo específico que originó la situación.'
+      )
       return
     }
 
-    // Convertir al formato que espera el backend
     const productosParaBackend = entregas.map(p => ({
-  id_producto: p.id_producto,
-  cantidad_pedida: p.cantidad_pedida,
-  cantidad_entregada: p.cantidad_entregada
-}))
+      id_producto: p.id_producto,
+      cantidad_pedida: p.cantidad_pedida,
+      cantidad_entregada: p.cantidad_entregada
+    }))
+
     onConfirmar({
       productos: productosParaBackend,
       comentario
@@ -56,6 +72,9 @@ useEffect(() => {
 
   if (!pedido) return null
 
+  // =========================
+  // UI
+  // =========================
   return (
     <div style={overlay}>
       <div style={modal}>
@@ -72,28 +91,35 @@ useEffect(() => {
               <th>Entregar</th>
             </tr>
           </thead>
+
           <tbody>
             {entregas.map((p, i) => (
               <tr key={p.id_producto}>
                 <td>{p.nombre}</td>
+
                 <td>{p.cantidad_pedida}</td>
+
                 <td>
                   <input
                     type="number"
                     min="0"
                     max={p.cantidad_pedida}
                     value={p.cantidad_entregada}
-                    onChange={e => {
-                      const copia = [...entregas]
-                      copia[i].cantidad_entregada = Number(e.target.value)
-                      setEntregas(copia)
-                    }}
+                    onChange={e =>
+                      cambiarCantidad(i, e.target.value)
+                    }
                   />
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+
+        {hayDiferencias && (
+          <p style={{ color: 'red', marginTop: 10 }}>
+            ⚠ Si la entrega no coincide, debes registrar el motivo.
+          </p>
+        )}
 
         <label>
           Comentario
@@ -107,14 +133,21 @@ useEffect(() => {
           style={{ width: '100%' }}
         />
 
-        <div style={{ marginTop: 15, display: 'flex', justifyContent: 'space-between' }}>
-          <button onClick={onClose}>Cerrar</button>
-          <button onClick={confirmar}>Confirmar entrega</button>
+        <div style={acciones}>
+          <button onClick={onClose}>Cancelar</button>
+
+          <button onClick={confirmar}>
+            Confirmar entrega
+          </button>
         </div>
       </div>
     </div>
   )
 }
+
+// =========================
+// ESTILOS
+// =========================
 
 const overlay = {
   position: 'fixed',
@@ -129,8 +162,14 @@ const overlay = {
 const modal = {
   background: '#fff',
   padding: '20px',
-  width: '520px',
-  borderRadius: '4px'
+  width: '540px',
+  borderRadius: '6px'
+}
+
+const acciones = {
+  marginTop: 15,
+  display: 'flex',
+  justifyContent: 'space-between'
 }
 
 export default ModalEntrega
