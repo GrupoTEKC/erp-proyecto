@@ -26,7 +26,7 @@ app.use(express.json())
 // ROOT
 // =========================
 app.get('/', (_, res) => {
-  res.send('✅ Backend ERP funcionando')
+  res.json({ status: 'Backend ERP funcionando' })
 })
 
 // =========================
@@ -37,20 +37,21 @@ app.get('/clientes', async (_, res) => {
     const [rows] = await db.query('SELECT * FROM clientes')
     res.json(rows)
   } catch (err) {
-    console.error(err)
-    res.status(500).json(err)
+    console.error('🔥 ERROR LISTAR:', err)
+    res.status(500).json({ error: err.message })
   }
 })
 
 // =========================
 // OBTENER CLIENTE POR ID
 // =========================
-// =========================
-// OBTENER CLIENTE POR ID
-// =========================
 app.get('/clientes/:id', async (req, res) => {
   try {
-    const { id } = req.params
+    const id = Number(req.params.id)
+
+    if (!id) {
+      return res.status(400).json({ error: 'ID inválido' })
+    }
 
     const [rows] = await db.query(
       'SELECT * FROM clientes WHERE id_cliente = ?',
@@ -58,18 +59,13 @@ app.get('/clientes/:id', async (req, res) => {
     )
 
     if (rows.length === 0) {
-      return res.status(404).json({
-        error: 'Cliente no encontrado'
-      })
+      return res.status(404).json({ error: 'Cliente no encontrado' })
     }
 
     res.json(rows[0])
-
   } catch (err) {
     console.error('🔥 ERROR CLIENTE:', err)
-    res.status(500).json({
-      error: err.message
-    })
+    res.status(500).json({ error: err.message })
   }
 })
 
@@ -78,10 +74,14 @@ app.get('/clientes/:id', async (req, res) => {
 // =========================
 app.put('/clientes/:id', async (req, res) => {
   try {
-    const { id } = req.params
+    const id = Number(req.params.id)
     const { nombre, telefono, email, direccion } = req.body
 
-    await db.query(
+    if (!id) {
+      return res.status(400).json({ error: 'ID inválido' })
+    }
+
+    const [result] = await db.query(
       `
       UPDATE clientes
       SET nombre=?, telefono=?, email=?, direccion=?
@@ -90,11 +90,14 @@ app.put('/clientes/:id', async (req, res) => {
       [nombre, telefono, email, direccion, id]
     )
 
-    res.json({ success: true })
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Cliente no encontrado' })
+    }
 
+    res.json({ success: true })
   } catch (err) {
     console.error('🔥 ERROR UPDATE:', err)
-    res.status(500).json(err)
+    res.status(500).json({ error: err.message })
   }
 })
 
@@ -103,7 +106,11 @@ app.put('/clientes/:id', async (req, res) => {
 // =========================
 app.delete('/clientes/:id', async (req, res) => {
   try {
-    const { id } = req.params
+    const id = Number(req.params.id)
+
+    if (!id) {
+      return res.status(400).json({ error: 'ID inválido' })
+    }
 
     const [result] = await db.query(
       'DELETE FROM clientes WHERE id_cliente = ?',
@@ -111,21 +118,23 @@ app.delete('/clientes/:id', async (req, res) => {
     )
 
     if (result.affectedRows === 0) {
-      return res.status(404).json({
-        error: 'Cliente no encontrado'
-      })
+      return res.status(404).json({ error: 'Cliente no encontrado' })
     }
 
     res.json({ success: true })
-
   } catch (err) {
     console.error('🔥 ERROR ELIMINAR:', err)
-
-    res.status(500).json({
-      error: err.message
-    })
+    res.status(500).json({ error: err.message })
   }
 })
+
+// =========================
+// 404 GLOBAL — MUY IMPORTANTE
+// =========================
+app.use((req, res) => {
+  res.status(404).json({ error: 'Ruta no encontrada' })
+})
+
 // =========================
 // SERVIDOR
 // =========================
