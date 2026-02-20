@@ -153,6 +153,5 @@ app.use((req, res) => {
 // SERVIDOR
 // =========================
 app.listen(PORT, () => {
-  console.log('🔥 VERSION CON CHOFERES ACTIVA 🔥')
-  console.log(`✅ Backend corriendo en puerto ${PORT}`)
+  console.log(`✅ ELI TODO BIEN ${PORT}`)
 })
