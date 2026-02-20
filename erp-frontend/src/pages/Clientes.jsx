@@ -50,27 +50,29 @@ function Clientes() {
   )
 
   const eliminarCliente = async id => {
-    const confirmar = window.confirm('¿Eliminar cliente?')
-    if (!confirmar) return
+  const confirmar = window.confirm('¿Eliminar cliente?')
+  if (!confirmar) return
 
-    try {
-      const res = await fetch(`${API}/clientes/${id}`, {
-        method: 'DELETE'
-      })
+  try {
+    const res = await fetch(`${API}/clientes/${id}`, {
+      method: 'DELETE'
+    })
 
-      if (!res.ok) throw new Error()
+    const data = await res.json()
 
-      setClientes(prev =>
-        prev.filter(c => c.id_cliente !== id)
-      )
+    if (!res.ok) throw new Error(data.error)
 
-      alert('✅ Cliente eliminado')
+    setClientes(prev =>
+      prev.filter(c => c.id_cliente != id)
+    )
 
-    } catch {
-      alert('❌ Error al eliminar')
-    }
+    alert('✅ Cliente eliminado')
+
+  } catch (err) {
+    alert('❌ ' + err.message)
   }
-
+}
+  
   return (
     <div style={container}>
       <div style={header}>
