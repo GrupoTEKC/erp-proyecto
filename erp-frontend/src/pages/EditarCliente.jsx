@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 const API = 'https://erp-proyecto-production.up.railway.app'
 
 function EditarCliente() {
+
   const navigate = useNavigate()
   const { id } = useParams()
 
@@ -15,36 +16,60 @@ function EditarCliente() {
   // CARGAR CLIENTE
   // =========================
   useEffect(() => {
+
     const cargarCliente = async () => {
+
       try {
+
+        console.log('🟢 ID recibido:', id)
+
+        if (!id) throw new Error('ID inválido')
+
         setLoading(true)
         setError(null)
 
         const res = await fetch(`${API}/clientes/${id}`)
 
-        if (!res.ok) throw new Error('No se pudo cargar cliente')
+        console.log('📡 Status:', res.status)
 
-        const data = await res.json()
+        // leer como texto primero para debug
+        const text = await res.text()
 
-        console.log('Cliente cargado:', data)
+        console.log('📦 Respuesta cruda:', text)
+
+        if (!res.ok) {
+          throw new Error('Servidor respondió error')
+        }
+
+        const data = JSON.parse(text)
+
+        console.log('✅ Cliente cargado:', data)
 
         setCliente(data)
+
       } catch (err) {
-        console.error(err)
+
+        console.error('🔥 ERROR:', err)
         setError('Error cargando cliente')
+
       } finally {
+
         setLoading(false)
+
       }
     }
 
     cargarCliente()
+
   }, [id])
 
   // =========================
   // GUARDAR CAMBIOS
   // =========================
   const guardarCambios = async () => {
+
     try {
+
       const res = await fetch(`${API}/clientes/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -57,21 +82,28 @@ function EditarCliente() {
       navigate('/clientes')
 
     } catch {
+
       alert('❌ Error al guardar cambios')
+
     }
   }
 
   // =========================
-  // LOADING / ERROR
+  // ESTADOS
   // =========================
   if (loading) return <p>Cargando cliente...</p>
+
   if (error) return <p style={{ color: 'red' }}>{error}</p>
+
+  if (!cliente) return <p>No hay datos</p>
 
   // =========================
   // UI
   // =========================
   return (
+
     <div style={{ padding: 20 }}>
+
       <h2>Editar Cliente</h2>
 
       <input
@@ -115,7 +147,9 @@ function EditarCliente() {
       <button onClick={() => navigate('/clientes')}>
         Cancelar
       </button>
+
     </div>
+
   )
 }
 
