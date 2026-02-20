@@ -128,16 +128,6 @@ app.delete('/clientes/:id', async (req, res) => {
   }
 })
 
-// =========================
-// 404 GLOBAL — MUY IMPORTANTE
-// =========================
-app.use((req, res) => {
-  res.status(404).json({ error: 'Ruta no encontrada' })
-})
-
-// =========================
-// CHOFERES
-// =========================
 
 // LISTAR CHOFERES
 app.get('/choferes', async (_, res) => {
@@ -204,6 +194,13 @@ app.delete('/choferes/:id', async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
+// =========================
+// 404 GLOBAL — MUY IMPORTANTE
+// =========================
+app.use((req, res) => {
+  res.status(404).json({ error: 'Ruta no encontrada' })
+})
+
 // =========================
 // SERVIDOR
 // =========================
