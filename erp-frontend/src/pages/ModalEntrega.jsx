@@ -3,6 +3,9 @@ import { useEffect, useState } from 'react'
 function ModalEntrega({ pedido, productos = [], onClose, onConfirmar }) {
   const [entregas, setEntregas] = useState([])
   const [comentario, setComentario] = useState('')
+  const [choferes, setChoferes] = useState([])
+  const [chofer, setChofer] = useState('')
+  const [unidad, setUnidad] = useState('')
 
   // =========================
   // CARGAR PRODUCTOS
@@ -12,10 +15,9 @@ function ModalEntrega({ pedido, productos = [], onClose, onConfirmar }) {
 
     const data = productos.map(p => {
       const cantidad = Number(p.cantidad) || 0
-
       return {
         id_producto: p.id_producto,
-        nombre: p.nombre || "Sin nombre",
+        nombre: p.nombre || 'Sin nombre',
         cantidad_pedida: cantidad,
         cantidad_entregada: cantidad
       }
@@ -23,6 +25,23 @@ function ModalEntrega({ pedido, productos = [], onClose, onConfirmar }) {
 
     setEntregas(data)
   }, [productos])
+
+  // =========================
+  // CARGAR CHOFERES
+  // =========================
+  useEffect(() => {
+    const cargarChoferes = async () => {
+      try {
+        const res = await fetch('/choferes')
+        const data = await res.json()
+        setChoferes(data)
+      } catch {
+        console.error('Error cargando choferes')
+      }
+    }
+
+    cargarChoferes()
+  }, [])
 
   // =========================
   // VALIDAR DIFERENCIAS
@@ -46,35 +65,21 @@ function ModalEntrega({ pedido, productos = [], onClose, onConfirmar }) {
 
     setEntregas(copia)
   }
-<hr />
 
-<label>Chofer *</label>
-<select
-  value={chofer}
-  onChange={e => setChofer(e.target.value)}
-  style={{ width: '100%', marginBottom: 10 }}
->
-  <option value="">Seleccionar chofer</option>
-  {choferes.map(c => (
-    <option key={c.id_chofer} value={c.id_chofer}>
-      {c.nombre} {c.apellido1}
-    </option>
-  ))}
-</select>
-
-<label>Unidad *</label>
-<input
-  type="text"
-  value={unidad}
-  onChange={e => setUnidad(e.target.value)}
-  placeholder="Ej. Camión 3"
-  style={{ width: '100%', marginBottom: 10 }}
-/>
-  
   // =========================
   // CONFIRMAR ENTREGA
   // =========================
   const confirmar = () => {
+    if (!chofer) {
+      alert('Selecciona un chofer')
+      return
+    }
+
+    if (!unidad.trim()) {
+      alert('Indica la unidad utilizada')
+      return
+    }
+
     if (hayDiferencias && comentario.trim() === '') {
       alert(
         'En caso de no entregar lo solicitado por el cliente, se deberá registrar el motivo específico que originó la situación.'
@@ -90,7 +95,9 @@ function ModalEntrega({ pedido, productos = [], onClose, onConfirmar }) {
 
     onConfirmar({
       productos: productosParaBackend,
-      comentario
+      comentario,
+      chofer,
+      unidad
     })
   }
 
@@ -115,19 +122,14 @@ function ModalEntrega({ pedido, productos = [], onClose, onConfirmar }) {
               <th>Entregar</th>
             </tr>
           </thead>
-
           <tbody>
             {entregas.map((p, i) => (
               <tr key={p.id_producto}>
                 <td>{p.nombre}</td>
-
                 <td>{p.cantidad_pedida}</td>
-
                 <td>
                   <input
                     type="number"
-                    min="0"
-                    max={p.cantidad_pedida}
                     value={p.cantidad_entregada}
                     onChange={e =>
                       cambiarCantidad(i, e.target.value)
@@ -140,10 +142,34 @@ function ModalEntrega({ pedido, productos = [], onClose, onConfirmar }) {
         </table>
 
         {hayDiferencias && (
-          <p style={{ color: 'red', marginTop: 10 }}>
+          <p style={{ color: 'red' }}>
             ⚠ Si la entrega no coincide, debes registrar el motivo.
           </p>
         )}
+
+        <hr />
+
+        <label>Chofer *</label>
+        <select
+          value={chofer}
+          onChange={e => setChofer(e.target.value)}
+          style={{ width: '100%', marginBottom: 10 }}
+        >
+          <option value="">Seleccionar chofer</option>
+          {choferes.map(c => (
+            <option key={c.id_chofer} value={c.id_chofer}>
+              {c.nombre} {c.apellido1}
+            </option>
+          ))}
+        </select>
+
+        <label>Unidad *</label>
+        <input
+          value={unidad}
+          onChange={e => setUnidad(e.target.value)}
+          placeholder="Ej. Camión 3"
+          style={{ width: '100%', marginBottom: 10 }}
+        />
 
         <label>
           Comentario
@@ -159,7 +185,6 @@ function ModalEntrega({ pedido, productos = [], onClose, onConfirmar }) {
 
         <div style={acciones}>
           <button onClick={onClose}>Cancelar</button>
-
           <button onClick={confirmar}>
             Confirmar entrega
           </button>
@@ -172,7 +197,6 @@ function ModalEntrega({ pedido, productos = [], onClose, onConfirmar }) {
 // =========================
 // ESTILOS
 // =========================
-
 const overlay = {
   position: 'fixed',
   inset: 0,
@@ -186,7 +210,7 @@ const overlay = {
 const modal = {
   background: '#fff',
   padding: '20px',
-  width: '540px',
+  width: '560px',
   borderRadius: '6px'
 }
 
