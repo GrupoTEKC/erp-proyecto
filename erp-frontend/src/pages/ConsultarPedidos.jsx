@@ -3,25 +3,39 @@ import { useNavigate } from 'react-router-dom'
 import ModalEntrega from './ModalEntrega'
 import ModalCancelar from './ModalCancelar'
 
-const API = 'https://erp-proyecto-production.up.railway.app'
+const API = import.meta.env.VITE_API_URL
 
 function ConsultarPedidos() {
+
   const [pedidos, setPedidos] = useState([])
   const [detallePedido, setDetallePedido] = useState([])
   const [mostrarModal, setMostrarModal] = useState(false)
   const [mostrarCancelar, setMostrarCancelar] = useState(false)
   const [pedidoSeleccionado, setPedidoSeleccionado] = useState(null)
   const [busqueda, setBusqueda] = useState('')
+
   const navigate = useNavigate()
 
   // =========================
   // 🔄 CARGAR PEDIDOS
   // =========================
   const cargarPedidos = async () => {
+
+    if (!API) {
+      console.error('❌ API no definida')
+      return
+    }
+
     try {
+
       const res = await fetch(`${API}/pedidos`)
+
+      if (!res.ok) throw new Error('Error al obtener pedidos')
+
       const data = await res.json()
+
       setPedidos(Array.isArray(data) ? data : [])
+
     } catch (err) {
       console.error('Error al cargar pedidos:', err)
       setPedidos([])
@@ -33,34 +47,43 @@ function ConsultarPedidos() {
   }, [])
 
   // =========================
-  // 🔍 FILTRO
+  // 🔍 FILTRO SEGURO
   // =========================
-  const pedidosFiltrados = pedidos.filter(p =>
-    p?.id_pedido?.toString().includes(busqueda) ||
-    p?.cliente?.toLowerCase().includes(busqueda.toLowerCase())
-  )
+  const pedidosFiltrados = pedidos.filter(p => {
+
+    const id = p?.id_pedido?.toString() || ''
+    const cliente = p?.cliente?.toLowerCase() || ''
+    const texto = busqueda.toLowerCase()
+
+    return id.includes(texto) || cliente.includes(texto)
+  })
 
   // =========================
   // 📦 CARGAR DETALLE
   // =========================
   const cargarDetallePedido = async id => {
+
     try {
+
       const res = await fetch(`${API}/pedidos/${id}/detalle`)
-      if (!res.ok) throw new Error()
+
+      if (!res.ok) throw new Error('Error detalle')
 
       const data = await res.json()
 
-      const detalleAdaptado = (Array.isArray(data) ? data : []).map(p => ({
-        id_producto: p.id_producto,
-        nombre: p.nombre,
-        cantidad_pedida: Number(p.cantidad),
-        cantidad_entregada: Number(p.cantidad),
-        precio: Number(p.precio)
-      }))
+      const detalleAdaptado = Array.isArray(data)
+        ? data.map(p => ({
+            id_producto: p.id_producto,
+            nombre: p.nombre,
+            cantidad: Number(p.cantidad) || 0,
+            precio: Number(p.precio) || 0
+          }))
+        : []
 
       setDetallePedido(detalleAdaptado)
 
       return true
+
     } catch (err) {
       console.error('Error detalle:', err)
       alert('Error cargando detalle')
@@ -72,7 +95,11 @@ function ConsultarPedidos() {
   // 🚚 ENTREGAR
   // =========================
   const confirmarEntrega = async dataEntrega => {
+
+    if (!pedidoSeleccionado) return
+
     try {
+
       const res = await fetch(
         `${API}/pedidos/${pedidoSeleccionado.id_pedido}/entregar`,
         {
@@ -82,13 +109,14 @@ function ConsultarPedidos() {
         }
       )
 
-      if (!res.ok) throw new Error()
+      if (!res.ok) throw new Error('Error al entregar')
 
       await cargarPedidos()
 
       setMostrarModal(false)
       setPedidoSeleccionado(null)
       setDetallePedido([])
+
     } catch (err) {
       console.error(err)
       alert('Error al confirmar entrega')
@@ -99,7 +127,11 @@ function ConsultarPedidos() {
   // ❌ CANCELAR
   // =========================
   const confirmarCancelacion = async ({ comentario }) => {
+
+    if (!pedidoSeleccionado) return
+
     try {
+
       const res = await fetch(
         `${API}/pedidos/${pedidoSeleccionado.id_pedido}/cancelar`,
         {
@@ -109,12 +141,13 @@ function ConsultarPedidos() {
         }
       )
 
-      if (!res.ok) throw new Error()
+      if (!res.ok) throw new Error('Error al cancelar')
 
       await cargarPedidos()
 
       setMostrarCancelar(false)
       setPedidoSeleccionado(null)
+
     } catch (err) {
       console.error(err)
       alert('Error al cancelar pedido')
@@ -126,7 +159,10 @@ function ConsultarPedidos() {
   // =========================
   return (
     <div>
-      <button onClick={() => navigate('/')}>⬅ Volver</button>
+
+      <button onClick={() => navigate('/')}>
+        ⬅ Volver
+      </button>
 
       <h2>Consultar pedidos</h2>
 
@@ -139,6 +175,7 @@ function ConsultarPedidos() {
       />
 
       <table border="1" cellPadding="8" width="100%">
+
         <thead>
           <tr>
             <th>Pedido #</th>
@@ -152,10 +189,19 @@ function ConsultarPedidos() {
 
         <tbody>
           {pedidosFiltrados.map(p => (
+
             <tr key={p.id_pedido}>
+
               <td>{p.id_pedido}</td>
+
               <td>{p.cliente}</td>
-              <td>{p.fecha ? new Date(p.fecha).toLocaleDateString() : '-'}</td>
+
+              <td>
+                {p.fecha
+                  ? new Date(p.fecha).toLocaleDateString()
+                  : '-'}
+              </td>
+
               <td>
                 {p.estado === 'entregado' && p.fecha_entrega
                   ? new Date(p.fecha_entrega).toLocaleDateString()
@@ -163,8 +209,11 @@ function ConsultarPedidos() {
                   ? new Date(p.fecha_cancelacion).toLocaleDateString()
                   : '-'}
               </td>
+
               <td>{p.estado}</td>
+
               <td>
+
                 <button
                   disabled={p.estado !== 'pendiente'}
                   onClick={async () => {
@@ -185,10 +234,14 @@ function ConsultarPedidos() {
                 >
                   Cancelar
                 </button>
+
               </td>
+
             </tr>
+
           ))}
         </tbody>
+
       </table>
 
       {mostrarModal && pedidoSeleccionado && (
@@ -207,6 +260,7 @@ function ConsultarPedidos() {
           onConfirmar={confirmarCancelacion}
         />
       )}
+
     </div>
   )
 }
