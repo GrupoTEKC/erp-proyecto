@@ -168,14 +168,15 @@ app.put('/pedidos/:id/entregar', async (req, res) => {
     }
 
     // 2️⃣ Guardar productos entregados
+   // 2️⃣ Guardar productos entregados
     for (const p of productos) {
-      await connection.query(
-        `UPDATE detalle_pedido
-         SET cantidad_entregada=?
-         WHERE id_pedido=? AND id_producto=?`,
-        [p.cantidad_entregada, id, p.id_producto]
-      )
-    }
+    await connection.query(
+    `UPDATE pedido_detalle
+     SET cantidad_entregada=?
+     WHERE id_pedido=? AND id_producto=?`,
+     [p.cantidad_entregada, id, p.id_producto]
+  )
+}
 
     // 3️⃣ Manejar chofer
     let idChoferFinal = null
