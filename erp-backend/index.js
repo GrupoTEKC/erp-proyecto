@@ -5,7 +5,14 @@ const cors = require('cors')
 const db = require('./db')
 
 const app = express()
-const PORT = process.env.PORT || 3001
+
+// ✅ OBLIGATORIO PARA RAILWAY
+const PORT = process.env.PORT
+
+if (!PORT) {
+  console.error("❌ PORT no definido por Railway")
+  process.exit(1)
+}
 
 app.use(cors())
 app.use(express.json())
@@ -29,11 +36,9 @@ app.get('/', (_, res) => {
   res.json({ status: 'Backend ERP funcionando' })
 })
 
-
 // ======================================================
 // CLIENTES
 // ======================================================
-
 app.get('/clientes', async (_, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM clientes')
@@ -50,10 +55,8 @@ app.get('/clientes/:id', async (req, res) => {
       'SELECT * FROM clientes WHERE id_cliente=?',
       [id]
     )
-
     if (!rows.length)
       return res.status(404).json({ error: 'Cliente no encontrado' })
-
     res.json(rows[0])
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -64,14 +67,12 @@ app.put('/clientes/:id', async (req, res) => {
   try {
     const id = Number(req.params.id)
     const { nombre, telefono, email, direccion } = req.body
-
     await db.query(
       `UPDATE clientes 
        SET nombre=?, telefono=?, email=?, direccion=? 
        WHERE id_cliente=?`,
       [nombre, telefono, email, direccion, id]
     )
-
     res.json({ success: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -81,24 +82,19 @@ app.put('/clientes/:id', async (req, res) => {
 app.delete('/clientes/:id', async (req, res) => {
   try {
     const id = Number(req.params.id)
-
     await db.query(
       'DELETE FROM clientes WHERE id_cliente=?',
       [id]
     )
-
     res.json({ success: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
 })
 
-
 // ======================================================
-// PEDIDOS — NECESARIO PARA CONSULTAR PEDIDOS
+// PEDIDOS
 // ======================================================
-
-// LISTAR PEDIDOS
 app.get('/pedidos', async (_, res) => {
   try {
     const [rows] = await db.query(`
@@ -107,25 +103,21 @@ app.get('/pedidos', async (_, res) => {
       JOIN clientes c ON p.id_cliente = c.id_cliente
       ORDER BY p.id_pedido DESC
     `)
-
     res.json(rows)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
 })
 
-// DETALLE PEDIDO
 app.get('/pedidos/:id/detalle', async (req, res) => {
   try {
     const id = Number(req.params.id)
-
     const [rows] = await db.query(`
       SELECT d.*, pr.nombre
       FROM detalle_pedido d
       JOIN productos pr ON d.id_producto = pr.id_producto
       WHERE d.id_pedido=?
     `, [id])
-
     res.json(rows)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -134,40 +126,32 @@ app.get('/pedidos/:id/detalle', async (req, res) => {
 
 app.put('/pedidos/:id/entregar', async (req, res) => {
   const connection = await db.getConnection()
-
   try {
     const id = Number(req.params.id)
     const { productos, comentario, unidad, chofer } = req.body
 
-    if (!productos || !Array.isArray(productos)) {
+    if (!productos || !Array.isArray(productos))
       return res.status(400).json({ error: 'Productos inválidos' })
-    }
 
-    if (!unidad) {
+    if (!unidad)
       return res.status(400).json({ error: 'Unidad requerida' })
-    }
 
-    if (!chofer) {
+    if (!chofer)
       return res.status(400).json({ error: 'Chofer requerido' })
-    }
 
     await connection.beginTransaction()
 
-    // 🔒 Bloquear pedido
     const [pedidoRows] = await connection.query(
       'SELECT estado FROM pedidos WHERE id_pedido=? FOR UPDATE',
       [id]
     )
 
-    if (!pedidoRows.length) {
+    if (!pedidoRows.length)
       throw new Error('Pedido no existe')
-    }
 
-    if (pedidoRows[0].estado !== 'pendiente') {
+    if (pedidoRows[0].estado !== 'pendiente')
       throw new Error('El pedido no está pendiente')
-    }
 
-    // 1️⃣ Actualizar detalle productos
     let totalEntregado = 0
 
     for (const p of productos) {
@@ -177,11 +161,9 @@ app.put('/pedidos/:id/entregar', async (req, res) => {
          WHERE id_pedido=? AND id_producto=?`,
         [p.cantidad_entregada, id, p.id_producto]
       )
-
       totalEntregado += Number(p.cantidad_entregada)
     }
 
-    // 2️⃣ Preparar datos de chofer
     let choferId = null
     let externoNombre = null
     let externoApellido1 = null
@@ -199,7 +181,6 @@ app.put('/pedidos/:id/entregar', async (req, res) => {
       externoEmail = chofer.correo
     }
 
-    // 3️⃣ Actualizar pedido
     await connection.query(
       `UPDATE pedidos
        SET estado='entregado',
@@ -227,7 +208,6 @@ app.put('/pedidos/:id/entregar', async (req, res) => {
     )
 
     await connection.commit()
-
     res.json({ success: true })
 
   } catch (err) {
@@ -238,29 +218,24 @@ app.put('/pedidos/:id/entregar', async (req, res) => {
   }
 })
 
-// CANCELAR PEDIDO
 app.put('/pedidos/:id/cancelar', async (req, res) => {
   try {
     const id = Number(req.params.id)
-
     await db.query(`
       UPDATE pedidos
       SET estado='cancelado',
           fecha_cancelacion=NOW()
       WHERE id_pedido=?
     `, [id])
-
     res.json({ success: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
 })
 
-
 // ======================================================
 // CHOFERES
 // ======================================================
-
 app.get('/choferes', async (_, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM choferes')
@@ -270,11 +245,9 @@ app.get('/choferes', async (_, res) => {
   }
 })
 
-
 // ======================================================
 // UNIDADES
 // ======================================================
-
 app.get('/unidades', async (_, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM unidades')
@@ -284,7 +257,6 @@ app.get('/unidades', async (_, res) => {
   }
 })
 
-
 // =========================
 // 404 GLOBAL
 // =========================
@@ -292,10 +264,9 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Ruta no encontrada' })
 })
 
-
 // =========================
 // SERVIDOR
 // =========================
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Backend activo en puerto ${PORT}`)
 })
