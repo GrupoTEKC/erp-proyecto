@@ -153,7 +153,7 @@ app.put('/pedidos/:id/entregar', async (req, res) => {
 
     await connection.beginTransaction()
 
-    // 1️⃣ Validar que el pedido exista y esté pendiente
+    // 🔒 Bloquear pedido
     const [pedidoRows] = await connection.query(
       'SELECT estado FROM pedidos WHERE id_pedido=? FOR UPDATE',
       [id]
@@ -167,58 +167,67 @@ app.put('/pedidos/:id/entregar', async (req, res) => {
       throw new Error('El pedido no está pendiente')
     }
 
-    // 2️⃣ Guardar productos entregados
-   // 2️⃣ Guardar productos entregados
-    for (const p of productos) {
-    await connection.query(
-    `UPDATE pedido_detalle
-     SET cantidad_entregada=?
-     WHERE id_pedido=? AND id_producto=?`,
-     [p.cantidad_entregada, id, p.id_producto]
-  )
-}
+    // 1️⃣ Actualizar detalle productos
+    let totalEntregado = 0
 
-    // 3️⃣ Manejar chofer
-    let idChoferFinal = null
+    for (const p of productos) {
+      await connection.query(
+        `UPDATE pedido_detalle
+         SET cantidad_entregada=?
+         WHERE id_pedido=? AND id_producto=?`,
+        [p.cantidad_entregada, id, p.id_producto]
+      )
+
+      totalEntregado += Number(p.cantidad_entregada)
+    }
+
+    // 2️⃣ Preparar datos de chofer
+    let choferId = null
+    let externoNombre = null
+    let externoApellido1 = null
+    let externoApellido2 = null
+    let externoEmail = null
 
     if (chofer.tipo === 'interno') {
-      idChoferFinal = chofer.id_chofer
+      choferId = chofer.id_chofer
     }
 
     if (chofer.tipo === 'externo') {
-      const [result] = await connection.query(
-        `INSERT INTO choferes 
-         (nombre, apellido1, apellido2, correo, tipo)
-         VALUES (?, ?, ?, ?, 'externo')`,
-        [
-          chofer.nombre,
-          chofer.apellido1,
-          chofer.apellido2 || '',
-          chofer.correo
-        ]
-      )
-
-      idChoferFinal = result.insertId
+      externoNombre = chofer.nombre
+      externoApellido1 = chofer.apellido1
+      externoApellido2 = chofer.apellido2 || ''
+      externoEmail = chofer.correo
     }
 
-    // 4️⃣ Actualizar pedido
+    // 3️⃣ Actualizar pedido
     await connection.query(
       `UPDATE pedidos
        SET estado='entregado',
            fecha_entrega=NOW(),
-           comentario_entrega=?,
-           id_unidad=?,
-           id_chofer=?
+           observaciones_entrega=?,
+           cantidad_entregada=?,
+           chofer_id=?,
+           chofer_externo_nombre=?,
+           chofer_externo_apellido1=?,
+           chofer_externo_apellido2=?,
+           chofer_externo_email=?,
+           unidad=?
        WHERE id_pedido=?`,
       [
         comentario || '',
+        totalEntregado,
+        choferId,
+        externoNombre,
+        externoApellido1,
+        externoApellido2,
+        externoEmail,
         unidad,
-        idChoferFinal,
         id
       ]
     )
 
     await connection.commit()
+
     res.json({ success: true })
 
   } catch (err) {
@@ -228,6 +237,7 @@ app.put('/pedidos/:id/entregar', async (req, res) => {
     connection.release()
   }
 })
+
 // CANCELAR PEDIDO
 app.put('/pedidos/:id/cancelar', async (req, res) => {
   try {
