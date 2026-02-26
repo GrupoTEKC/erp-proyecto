@@ -20,7 +20,7 @@ function ModalEntrega({ pedido, productos = [], onClose, onConfirmar }) {
   const [loadingChoferes, setLoadingChoferes] = useState(false)
   const [loadingUnidades, setLoadingUnidades] = useState(false)
 
-  const API = import.meta.env.VITE_API_URL
+  const API = 'https://erp-proyecto-production.up.railway.app'
 
   /* =========================
      CARGAR PRODUCTOS
