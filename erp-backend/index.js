@@ -1,4 +1,4 @@
-console.log('🔥 VERSION LIMPIA ERP 🔥')
+console.log("🚀 ESTE ES MI BACKEND EXPRESS REAL 🚀")
 
 const express = require('express')
 const cors = require('cors')
