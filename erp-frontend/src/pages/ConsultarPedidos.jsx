@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import ModalEntrega from './ModalEntrega'
 import ModalCancelar from './ModalCancelar'
 
-const API = import.meta.env.VITE_API_URL
+const API = import.meta.env.VITE_API_URL || ''
 
 /* ===== ESTILOS ===== */
 const vino = '#8B1E1E'
