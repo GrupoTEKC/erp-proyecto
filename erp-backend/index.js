@@ -114,7 +114,7 @@ app.get('/pedidos/:id/detalle', async (req, res) => {
     const id = Number(req.params.id)
     const [rows] = await db.query(`
       SELECT d.*, pr.nombre
-      FROM detalle_pedido d
+      FROM pedido_detalle d
       JOIN productos pr ON d.id_producto = pr.id_producto
       WHERE d.id_pedido=?
     `, [id])
