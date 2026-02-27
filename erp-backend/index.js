@@ -116,6 +116,10 @@ app.get('/pedidos', async (_, res) => {
   }
 })
 
+app.get('/prueba-ruta', (req, res) => {
+  res.json({ funciona: true })
+})
+
 app.get('/pedidos/:id/detalle', async (req, res) => {
   try {
     const id = Number(req.params.id)
@@ -246,6 +250,7 @@ app.put('/pedidos/:id/cancelar', async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
+
 
 /* =====================================================
    CHOFERES
