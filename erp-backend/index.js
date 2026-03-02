@@ -1,4 +1,4 @@
-console.log("🔥 ESTE ES EL INDEX NUEVO 🔥")
+console.log("🔥 VERSION NUEVA 2 MARZO 🔥")
 
 const express = require('express')
 const cors = require('cors')
