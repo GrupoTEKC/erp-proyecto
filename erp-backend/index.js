@@ -116,124 +116,32 @@ app.get('/pedidos', async (_, res) => {
   }
 })
 
-app.get('/prueba-ruta', (req, res) => {
-  res.json({ funciona: true })
-})
+// ======================================
+// ENTREGAR PEDIDO (VERSIÓN LIMPIA)
+// ======================================
 
-app.get('/pedidos/:id/detalle', async (req, res) => {
+app.put('/entregar/:id', async (req, res) => {
   try {
     const id = Number(req.params.id)
 
-    const [rows] = await db.query(`
-      SELECT d.*, pr.nombre
-      FROM pedido_detalle d
-      JOIN productos pr ON d.id_producto = pr.id_producto
-      WHERE d.id_pedido=?
-    `, [id])
-
-    res.json(rows)
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
-
-app.put('/pedidos/:id/entregar', async (req, res) => {
-  const connection = await db.getConnection()
-
-  try {
-    const id = Number(req.params.id)
-    const { productos, comentario, unidad, chofer } = req.body
-
-    if (!productos || !Array.isArray(productos))
-      return res.status(400).json({ error: 'Productos inválidos' })
-
-    if (!unidad)
-      return res.status(400).json({ error: 'Unidad requerida' })
-
-    if (!chofer)
-      return res.status(400).json({ error: 'Chofer requerido' })
-
-    await connection.beginTransaction()
-
-    const [pedidoRows] = await connection.query(
-      'SELECT estado FROM pedidos WHERE id_pedido=? FOR UPDATE',
+    await db.query(
+      `UPDATE pedidos 
+       SET estado='entregado',
+           fecha_entrega=NOW()
+       WHERE id_pedido=?`,
       [id]
     )
 
-    if (!pedidoRows.length)
-      throw new Error('Pedido no existe')
-
-    if (pedidoRows[0].estado !== 'pendiente')
-      throw new Error('El pedido no está pendiente')
-
-    let totalEntregado = 0
-
-    for (const p of productos) {
-      await connection.query(
-        `UPDATE pedido_detalle
-         SET cantidad_entregada=?
-         WHERE id_pedido=? AND id_producto=?`,
-        [p.cantidad_entregada, id, p.id_producto]
-      )
-
-      totalEntregado += Number(p.cantidad_entregada)
-    }
-
-    let choferId = null
-    let externoNombre = null
-    let externoApellido1 = null
-    let externoApellido2 = null
-    let externoEmail = null
-
-    if (chofer.tipo === 'interno') {
-      choferId = chofer.id_chofer
-    }
-
-    if (chofer.tipo === 'externo') {
-      externoNombre = chofer.nombre
-      externoApellido1 = chofer.apellido1
-      externoApellido2 = chofer.apellido2 || ''
-      externoEmail = chofer.correo
-    }
-
-    await connection.query(
-      `UPDATE pedidos
-       SET estado='entregado',
-           fecha_entrega=NOW(),
-           observaciones_entrega=?,
-           cantidad_entregada=?,
-           chofer_id=?,
-           chofer_externo_nombre=?,
-           chofer_externo_apellido1=?,
-           chofer_externo_apellido2=?,
-           chofer_externo_email=?,
-           unidad=?
-       WHERE id_pedido=?`,
-      [
-        comentario || '',
-        totalEntregado,
-        choferId,
-        externoNombre,
-        externoApellido1,
-        externoApellido2,
-        externoEmail,
-        unidad,
-        id
-      ]
-    )
-
-    await connection.commit()
-
     res.json({ success: true })
 
-  } catch (err) {
-    await connection.rollback()
-    res.status(500).json({ error: err.message })
-  } finally {
-    connection.release()
+  } catch (error) {
+    res.status(500).json({ error: error.message })
   }
 })
 
+/*-----------------------------------
+CANCELAR
+-------------------------------------*/
 app.put('/pedidos/:id/cancelar', async (req, res) => {
   try {
     const id = Number(req.params.id)
