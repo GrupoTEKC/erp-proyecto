@@ -1,4 +1,4 @@
-console.log("🚀 ESTE ES MI BACKEND EXPRESS REAL 🚀")
+console.log("🔥 ESTE ES EL INDEX NUEVO 🔥")
 
 const express = require('express')
 const cors = require('cors')
