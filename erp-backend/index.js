@@ -143,14 +143,17 @@ app.put('/entregar/:id', async (req, res) => {
 // CANCELAR PEDIDO
 // ======================================
 
+// ======================================
+// CANCELAR PEDIDO
+// ======================================
+
 app.put('/pedidos/:id/cancelar', async (req, res) => {
   try {
     const id = Number(req.params.id)
-    const { motivo } = req.body
+    const { comentario } = req.body
 
-    // Validar motivo obligatorio
-    if (!motivo || motivo.trim() === "") {
-      return res.status(400).json({ error: "El motivo es obligatorio" })
+    if (!comentario || comentario.trim() === "") {
+      return res.status(400).json({ error: "El comentario es obligatorio" })
     }
 
     await db.query(`
@@ -159,7 +162,7 @@ app.put('/pedidos/:id/cancelar', async (req, res) => {
           fecha_cancelacion = NOW(),
           observaciones_cancelacion = ?
       WHERE id_pedido = ?
-    `, [motivo, id])
+    `, [comentario, id])
 
     res.json({ success: true })
 
@@ -167,7 +170,6 @@ app.put('/pedidos/:id/cancelar', async (req, res) => {
     res.status(500).json({ error: error.message })
   }
 })
-
 
 /* =====================================================
    CHOFERES
