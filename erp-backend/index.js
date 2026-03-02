@@ -111,42 +111,32 @@ app.get('/pedidos', async (_, res) => {
 app.put('/pedidos/:id/entregar', async (req, res) => {
   try {
     const id = Number(req.params.id)
-
     await db.query(`
       UPDATE pedidos
       SET estado = 'entregado',
           fecha_entrega = NOW()
       WHERE id_pedido = ?
     `, [id])
-
     res.json({ success: true })
-
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
 })
-// ======================================
-// CANCELAR PEDIDO
-// ======================================
 
 app.put('/pedidos/:id/cancelar', async (req, res) => {
   try {
     const id = Number(req.params.id)
-
     await db.query(`
       UPDATE pedidos
       SET estado = 'cancelado',
           fecha_cancelacion = NOW()
       WHERE id_pedido = ?
     `, [id])
-
     res.json({ success: true })
-
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
 })
-
 /* =====================================================
    404 GLOBAL (SIEMPRE AL FINAL)
 ===================================================== */
