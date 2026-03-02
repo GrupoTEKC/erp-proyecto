@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import ModalEntrega from './ModalEntrega'
-import ModalCancelar from './ModalCancelar'
 
 const API = import.meta.env.VITE_API_URL
 
@@ -52,7 +50,7 @@ const tablaWrapper = {
 const tabla = {
   width: '100%',
   borderCollapse: 'collapse',
-  minWidth: 1500
+  minWidth: 1200
 }
 
 const thead = {
@@ -82,13 +80,9 @@ const estadoCancelado = {
 }
 
 function ConsultarPedidos() {
+
   const [pedidos, setPedidos] = useState([])
-  const [detallePedido, setDetallePedido] = useState([])
-  const [mostrarModal, setMostrarModal] = useState(false)
-  const [mostrarCancelar, setMostrarCancelar] = useState(false)
-  const [pedidoSeleccionado, setPedidoSeleccionado] = useState(null)
   const [busqueda, setBusqueda] = useState('')
-  const [filtroDias, setFiltroDias] = useState('')
   const navigate = useNavigate()
 
   /* =========================
@@ -130,73 +124,51 @@ function ConsultarPedidos() {
   }
 
   /* =========================
-     FILTRO
+     ENTREGAR DIRECTO
+  ========================= */
+  const confirmarEntrega = async (id) => {
+    try {
+      await fetch(`${API}/pedidos/${id}/entregar`, {
+        method: 'PUT'
+      })
+
+      await cargarPedidos()
+
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  /* =========================
+     CANCELAR DIRECTO
+  ========================= */
+  const confirmarCancelacion = async (id) => {
+    try {
+      await fetch(`${API}/pedidos/${id}/cancelar`, {
+        method: 'PUT'
+      })
+
+      await cargarPedidos()
+
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  /* =========================
+     FILTRO SIMPLE
   ========================= */
   const pedidosFiltrados = pedidos.filter(p => {
-    const dias = calcularDias(p)
-
-    const cumpleFiltro =
-      filtroDias === ''
-        ? true
-        : filtroDias === 'retrasados'
-        ? dias > 7 && p.estado === 'pendiente'
-        : filtroDias === 'pendientes'
-        ? p.estado === 'pendiente'
-        : filtroDias === 'entregados'
-        ? p.estado === 'entregado'
-        : true
-
     const texto = busqueda.toLowerCase()
-
     return (
-      cumpleFiltro &&
-      (
-        p.id_pedido?.toString().includes(texto) ||
-        p.cliente?.toLowerCase().includes(texto)
-      )
+      p.id_pedido?.toString().includes(texto) ||
+      p.cliente?.toLowerCase().includes(texto)
     )
   })
 
-  /* =========================
-     ENTREGAR / CANCELAR (VERSIÓN SIMPLE)
-  ========================= */
-
-  const confirmarEntrega = async () => {
-    if (!pedidoSeleccionado) return
-
-    try {
-      await fetch(`${API}/pedidos/${pedidoSeleccionado.id_pedido}/entregar`, {
-        method: 'PUT'
-      })
-
-      await cargarPedidos()
-      setMostrarModal(false)
-      setPedidoSeleccionado(null)
-
-    } catch (error) {
-      console.error(error)
-    }
-  }
-
-  const confirmarCancelacion = async () => {
-    if (!pedidoSeleccionado) return
-
-    try {
-      await fetch(`${API}/pedidos/${pedidoSeleccionado.id_pedido}/cancelar`, {
-        method: 'PUT'
-      })
-
-      await cargarPedidos()
-      setMostrarCancelar(false)
-      setPedidoSeleccionado(null)
-
-    } catch (error) {
-      console.error(error)
-    }
-  }
-
   return (
     <div style={container}>
+
       <div style={header}>
         <button style={btnVino} onClick={() => navigate('/')}>
           ⬅ Volver
@@ -228,6 +200,7 @@ function ConsultarPedidos() {
 
           <tbody>
             {pedidosFiltrados.map(p => {
+
               const dias = calcularDias(p)
 
               const estiloEstado =
@@ -243,9 +216,7 @@ function ConsultarPedidos() {
                   <td style={td}>{p.cliente}</td>
 
                   <td style={td}>
-                    {p.fecha
-                      ? new Date(p.fecha).toLocaleDateString()
-                      : '-'}
+                    {p.fecha ? new Date(p.fecha).toLocaleDateString() : '-'}
                   </td>
 
                   <td style={td}>
@@ -270,10 +241,7 @@ function ConsultarPedidos() {
                     <button
                       style={btnVino}
                       disabled={p.estado !== 'pendiente'}
-                      onClick={() => {
-                        setPedidoSeleccionado(p)
-                        setMostrarModal(true)
-                      }}
+                      onClick={() => confirmarEntrega(p.id_pedido)}
                     >
                       Entregar
                     </button>
@@ -281,10 +249,7 @@ function ConsultarPedidos() {
                     <button
                       style={btnVino}
                       disabled={p.estado !== 'pendiente'}
-                      onClick={() => {
-                        setPedidoSeleccionado(p)
-                        setMostrarCancelar(true)
-                      }}
+                      onClick={() => confirmarCancelacion(p.id_pedido)}
                     >
                       Cancelar
                     </button>
@@ -293,24 +258,9 @@ function ConsultarPedidos() {
               )
             })}
           </tbody>
+
         </table>
       </div>
-
-      {mostrarModal && pedidoSeleccionado && (
-        <ModalEntrega
-          pedido={pedidoSeleccionado}
-          onClose={() => setMostrarModal(false)}
-          onConfirmar={confirmarEntrega}
-        />
-      )}
-
-      {mostrarCancelar && pedidoSeleccionado && (
-        <ModalCancelar
-          pedido={pedidoSeleccionado}
-          onClose={() => setMostrarCancelar(false)}
-          onConfirmar={confirmarCancelacion}
-        />
-      )}
     </div>
   )
 }
