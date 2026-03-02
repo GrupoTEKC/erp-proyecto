@@ -1,16 +1,13 @@
 console.log("🔥 VERSION NUEVA 2 MARZO 🔥")
-
 const express = require('express')
 const cors = require('cors')
 const db = require('./db')
-
 const app = express()
 
 // =========================
 // CONFIG RAILWAY
 // =========================
 const PORT = process.env.PORT || 3000
-
 app.use(cors())
 app.use(express.json())
 
@@ -49,15 +46,12 @@ app.get('/clientes', async (_, res) => {
 app.get('/clientes/:id', async (req, res) => {
   try {
     const id = Number(req.params.id)
-
     const [rows] = await db.query(
       'SELECT * FROM clientes WHERE id_cliente=?',
       [id]
     )
-
     if (!rows.length)
       return res.status(404).json({ error: 'Cliente no encontrado' })
-
     res.json(rows[0])
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -68,14 +62,12 @@ app.put('/clientes/:id', async (req, res) => {
   try {
     const id = Number(req.params.id)
     const { nombre, telefono, email, direccion } = req.body
-
     await db.query(
       `UPDATE clientes 
        SET nombre=?, telefono=?, email=?, direccion=? 
        WHERE id_cliente=?`,
       [nombre, telefono, email, direccion, id]
     )
-
     res.json({ success: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -85,12 +77,10 @@ app.put('/clientes/:id', async (req, res) => {
 app.delete('/clientes/:id', async (req, res) => {
   try {
     const id = Number(req.params.id)
-
     await db.query(
       'DELETE FROM clientes WHERE id_cliente=?',
       [id]
     )
-
     res.json({ success: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -109,7 +99,6 @@ app.get('/pedidos', async (_, res) => {
       JOIN clientes c ON p.id_cliente = c.id_cliente
       ORDER BY p.id_pedido DESC
     `)
-
     res.json(rows)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -117,10 +106,10 @@ app.get('/pedidos', async (_, res) => {
 })
 
 // ======================================
-// ENTREGAR PEDIDO (VERSIÓN LIMPIA)
+// ENTREGAR PEDIDO (CORREGIDO Y ALINEADO)
 // ======================================
 
-app.put('/entregar/:id', async (req, res) => {
+app.put('/pedidos/:id/entregar', async (req, res) => {
   try {
     const id = Number(req.params.id)
 
@@ -138,10 +127,6 @@ app.put('/entregar/:id', async (req, res) => {
     res.status(500).json({ error: error.message })
   }
 })
-
-// ======================================
-// CANCELAR PEDIDO
-// ======================================
 
 // ======================================
 // CANCELAR PEDIDO
