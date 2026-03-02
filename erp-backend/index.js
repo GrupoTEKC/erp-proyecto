@@ -108,18 +108,62 @@ app.get('/pedidos', async (_, res) => {
 // ======================================
 // ENTREGAR PEDIDO (CORREGIDO Y ALINEADO)
 // ======================================
+// ======================================
+// ENTREGAR PEDIDO (VERSIÓN PROFESIONAL)
+// ======================================
 
 app.put('/pedidos/:id/entregar', async (req, res) => {
   try {
     const id = Number(req.params.id)
+    const { comentario, unidad, chofer } = req.body
 
-    await db.query(
-      `UPDATE pedidos 
-       SET estado='entregado',
-           fecha_entrega=NOW()
-       WHERE id_pedido=?`,
-      [id]
-    )
+    if (!unidad) {
+      return res.status(400).json({ error: "La unidad es obligatoria" })
+    }
+
+    if (!chofer) {
+      return res.status(400).json({ error: "El chofer es obligatorio" })
+    }
+
+    let chofer_id = null
+    let chofer_externo_nombre = null
+    let chofer_externo_apellido1 = null
+    let chofer_externo_apellido2 = null
+    let chofer_externo_email = null
+
+    if (chofer.tipo === 'interno') {
+      chofer_id = chofer.id_chofer
+    }
+
+    if (chofer.tipo === 'externo') {
+      chofer_externo_nombre = chofer.nombre
+      chofer_externo_apellido1 = chofer.apellido1
+      chofer_externo_apellido2 = chofer.apellido2
+      chofer_externo_email = chofer.correo
+    }
+
+    await db.query(`
+      UPDATE pedidos
+      SET estado = 'entregado',
+          fecha_entrega = NOW(),
+          observaciones_entrega = ?,
+          unidad = ?,
+          chofer_id = ?,
+          chofer_externo_nombre = ?,
+          chofer_externo_apellido1 = ?,
+          chofer_externo_apellido2 = ?,
+          chofer_externo_email = ?
+      WHERE id_pedido = ?
+    `, [
+      comentario || null,
+      unidad,
+      chofer_id,
+      chofer_externo_nombre,
+      chofer_externo_apellido1,
+      chofer_externo_apellido2,
+      chofer_externo_email,
+      id
+    ])
 
     res.json({ success: true })
 
