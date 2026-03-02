@@ -108,62 +108,16 @@ app.get('/pedidos', async (_, res) => {
 // ======================================
 // ENTREGAR PEDIDO (CORREGIDO Y ALINEADO)
 // ======================================
-// ======================================
-// ENTREGAR PEDIDO (VERSIÓN PROFESIONAL)
-// ======================================
-
 app.put('/pedidos/:id/entregar', async (req, res) => {
   try {
     const id = Number(req.params.id)
-    const { comentario, unidad, chofer } = req.body
-
-    if (!unidad) {
-      return res.status(400).json({ error: "La unidad es obligatoria" })
-    }
-
-    if (!chofer) {
-      return res.status(400).json({ error: "El chofer es obligatorio" })
-    }
-
-    let chofer_id = null
-    let chofer_externo_nombre = null
-    let chofer_externo_apellido1 = null
-    let chofer_externo_apellido2 = null
-    let chofer_externo_email = null
-
-    if (chofer.tipo === 'interno') {
-      chofer_id = chofer.id_chofer
-    }
-
-    if (chofer.tipo === 'externo') {
-      chofer_externo_nombre = chofer.nombre
-      chofer_externo_apellido1 = chofer.apellido1
-      chofer_externo_apellido2 = chofer.apellido2
-      chofer_externo_email = chofer.correo
-    }
 
     await db.query(`
       UPDATE pedidos
       SET estado = 'entregado',
-          fecha_entrega = NOW(),
-          observaciones_entrega = ?,
-          unidad = ?,
-          chofer_id = ?,
-          chofer_externo_nombre = ?,
-          chofer_externo_apellido1 = ?,
-          chofer_externo_apellido2 = ?,
-          chofer_externo_email = ?
+          fecha_entrega = NOW()
       WHERE id_pedido = ?
-    `, [
-      comentario || null,
-      unidad,
-      chofer_id,
-      chofer_externo_nombre,
-      chofer_externo_apellido1,
-      chofer_externo_apellido2,
-      chofer_externo_email,
-      id
-    ])
+    `, [id])
 
     res.json({ success: true })
 
@@ -171,7 +125,6 @@ app.put('/pedidos/:id/entregar', async (req, res) => {
     res.status(500).json({ error: error.message })
   }
 })
-
 // ======================================
 // CANCELAR PEDIDO
 // ======================================
@@ -179,50 +132,18 @@ app.put('/pedidos/:id/entregar', async (req, res) => {
 app.put('/pedidos/:id/cancelar', async (req, res) => {
   try {
     const id = Number(req.params.id)
-    const { comentario } = req.body
-
-    if (!comentario || comentario.trim() === "") {
-      return res.status(400).json({ error: "El comentario es obligatorio" })
-    }
 
     await db.query(`
       UPDATE pedidos
       SET estado = 'cancelado',
-          fecha_cancelacion = NOW(),
-          observaciones_cancelacion = ?
+          fecha_cancelacion = NOW()
       WHERE id_pedido = ?
-    `, [comentario, id])
+    `, [id])
 
     res.json({ success: true })
 
   } catch (error) {
     res.status(500).json({ error: error.message })
-  }
-})
-
-/* =====================================================
-   CHOFERES
-===================================================== */
-
-app.get('/choferes', async (_, res) => {
-  try {
-    const [rows] = await db.query('SELECT * FROM choferes')
-    res.json(rows)
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
-
-/* =====================================================
-   UNIDADES
-===================================================== */
-
-app.get('/unidades', async (_, res) => {
-  try {
-    const [rows] = await db.query('SELECT * FROM unidades')
-    res.json(rows)
-  } catch (err) {
-    res.status(500).json({ error: err.message })
   }
 })
 
