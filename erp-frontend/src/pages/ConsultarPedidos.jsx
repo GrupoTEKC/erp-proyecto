@@ -60,15 +60,8 @@ const thead = {
   color: '#fff'
 }
 
-const th = {
-  padding: 12,
-  textAlign: 'left'
-}
-
-const td = {
-  padding: 12,
-  borderBottom: '1px solid #eee'
-}
+const th = { padding: 12, textAlign: 'left' }
+const td = { padding: 12, borderBottom: '1px solid #eee' }
 
 const estadoPendiente = {
   background: '#ffdede',
@@ -96,7 +89,6 @@ function ConsultarPedidos() {
   const [pedidoSeleccionado, setPedidoSeleccionado] = useState(null)
   const [busqueda, setBusqueda] = useState('')
   const [filtroDias, setFiltroDias] = useState('')
-
   const navigate = useNavigate()
 
   /* =========================
@@ -134,7 +126,6 @@ function ConsultarPedidos() {
     const fin = cierre ? new Date(cierre) : new Date()
 
     const diff = fin - inicio
-
     return Math.floor(diff / (1000 * 60 * 60 * 24))
   }
 
@@ -167,54 +158,45 @@ function ConsultarPedidos() {
   })
 
   /* =========================
-     DETALLE
+     ENTREGAR / CANCELAR (VERSIÓN SIMPLE)
   ========================= */
-  const cargarDetallePedido = async id => {
+
+  const confirmarEntrega = async () => {
+    if (!pedidoSeleccionado) return
+
     try {
-      const res = await fetch(`${API}/pedidos/${id}/detalle`)
-      const data = await res.json()
-      setDetallePedido(Array.isArray(data) ? data : [])
-      return true
-    } catch {
-      alert('Error cargando detalle')
-      return false
+      await fetch(`${API}/pedidos/${pedidoSeleccionado.id_pedido}/entregar`, {
+        method: 'PUT'
+      })
+
+      await cargarPedidos()
+      setMostrarModal(false)
+      setPedidoSeleccionado(null)
+
+    } catch (error) {
+      console.error(error)
     }
   }
 
-  /* =========================
-     ENTREGAR / CANCELAR
-  ========================= */
-  const confirmarEntrega = async data => {
+  const confirmarCancelacion = async () => {
     if (!pedidoSeleccionado) return
 
-    await fetch(`${API}/pedidos/${pedidoSeleccionado.id_pedido}/entregar`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    })
+    try {
+      await fetch(`${API}/pedidos/${pedidoSeleccionado.id_pedido}/cancelar`, {
+        method: 'PUT'
+      })
 
-    cargarPedidos()
-    setMostrarModal(false)
-    setPedidoSeleccionado(null)
-  }
+      await cargarPedidos()
+      setMostrarCancelar(false)
+      setPedidoSeleccionado(null)
 
-  const confirmarCancelacion = async ({ comentario }) => {
-    if (!pedidoSeleccionado) return
-
-    await fetch(`${API}/pedidos/${pedidoSeleccionado.id_pedido}/cancelar`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ comentario })
-    })
-
-    cargarPedidos()
-    setMostrarCancelar(false)
-    setPedidoSeleccionado(null)
+    } catch (error) {
+      console.error(error)
+    }
   }
 
   return (
     <div style={container}>
-
       <div style={header}>
         <button style={btnVino} onClick={() => navigate('/')}>
           ⬅ Volver
@@ -232,38 +214,6 @@ function ConsultarPedidos() {
       <div style={tablaWrapper}>
         <table style={tabla}>
           <thead style={thead}>
-
-            {/* FILA DE FILTRO */}
-            <tr>
-              <th style={th}></th>
-              <th style={th}></th>
-              <th style={th}></th>
-              <th style={th}></th>
-              <th style={th}></th>
-              <th style={th}></th>
-
-              {/* FILTRO DE DÍAS */}
-              <th style={th}>
-                <select
-                  value={filtroDias}
-                  onChange={e => setFiltroDias(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: 6,
-                    borderRadius: 4
-                  }}
-                >
-                  <option value="">Filtro Días</option>
-                  <option value="retrasados">Retrasados (+7)</option>
-                  <option value="pendientes">Pendientes</option>
-                  <option value="entregados">Entregados</option>
-                </select>
-              </th>
-
-              <th style={th}></th>
-            </tr>
-
-            {/* TÍTULOS */}
             <tr>
               <th style={th}>Pedido</th>
               <th style={th}>Cliente</th>
@@ -274,7 +224,6 @@ function ConsultarPedidos() {
               <th style={th}>Días</th>
               <th style={th}>Acciones</th>
             </tr>
-
           </thead>
 
           <tbody>
@@ -294,21 +243,25 @@ function ConsultarPedidos() {
                   <td style={td}>{p.cliente}</td>
 
                   <td style={td}>
-                    {p.fecha ? new Date(p.fecha).toLocaleDateString() : '-'}
+                    {p.fecha
+                      ? new Date(p.fecha).toLocaleDateString()
+                      : '-'}
                   </td>
 
                   <td style={td}>
-                    {p.fecha_entrega ? new Date(p.fecha_entrega).toLocaleDateString() : '-'}
+                    {p.fecha_entrega
+                      ? new Date(p.fecha_entrega).toLocaleDateString()
+                      : '-'}
                   </td>
 
                   <td style={td}>
-                    {p.fecha_cancelacion ? new Date(p.fecha_cancelacion).toLocaleDateString() : '-'}
+                    {p.fecha_cancelacion
+                      ? new Date(p.fecha_cancelacion).toLocaleDateString()
+                      : '-'}
                   </td>
 
                   <td style={td}>
-                    <span style={estiloEstado}>
-                      {p.estado}
-                    </span>
+                    <span style={estiloEstado}>{p.estado}</span>
                   </td>
 
                   <td style={td}>{dias}</td>
@@ -317,10 +270,9 @@ function ConsultarPedidos() {
                     <button
                       style={btnVino}
                       disabled={p.estado !== 'pendiente'}
-                      onClick={async () => {
+                      onClick={() => {
                         setPedidoSeleccionado(p)
-                        const ok = await cargarDetallePedido(p.id_pedido)
-                        if (ok) setMostrarModal(true)
+                        setMostrarModal(true)
                       }}
                     >
                       Entregar
@@ -347,7 +299,6 @@ function ConsultarPedidos() {
       {mostrarModal && pedidoSeleccionado && (
         <ModalEntrega
           pedido={pedidoSeleccionado}
-          productos={detallePedido}
           onClose={() => setMostrarModal(false)}
           onConfirmar={confirmarEntrega}
         />
@@ -360,7 +311,6 @@ function ConsultarPedidos() {
           onConfirmar={confirmarCancelacion}
         />
       )}
-
     </div>
   )
 }
