@@ -1,10 +1,12 @@
- import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import logo from '../assets/TRANSPARENTE.png'
 import Buscador from "../components/Buscador"
 import ProductosPedido from '../components/ProductosPedido'
+
 // ✅ URL DEL BACKEND
 const API = import.meta.env.VITE_API_URL
+
 // =========================
 // 🎨 ESTILOS
 // =========================
@@ -71,6 +73,7 @@ const styles = {
     cursor: 'pointer'
   }
 }
+
 // =========================
 // 📋 COMPONENTE
 // =========================
@@ -85,7 +88,7 @@ function Pedidos() {
   const [idRuta, setIdRuta] = useState('')
   const [vendedores, setVendedores] = useState([])
   const [idVendedor, setIdVendedor] = useState('')
- 
+
   // =========================
   // 🔄 CARGAR DATOS INICIALES
   // =========================
@@ -110,6 +113,7 @@ function Pedidos() {
     }
     cargarDatos()
   }, [])
+
   // =========================
   // 💾 GUARDAR PEDIDO
   // =========================
@@ -126,6 +130,8 @@ function Pedidos() {
       alert('El crédito máximo es de 31 días')
       return
     }
+
+    // ✅ CORRECCIÓN: Se añade el campo 'estado' para que el botón de entregar funcione
     const pedido = {
       id_cliente: cliente.id_cliente,
       id_vendedor: idVendedor,
@@ -134,8 +140,10 @@ function Pedidos() {
       total,
       tipo_pedido: tipoPedido,
       dias_credito: tipoPedido === 'credito' ? diasCredito : 0,
-      productos
+      productos,
+      estado: 'pendiente' 
     }
+
     try {
       const res = await fetch(`${API}/pedidos`, {
         method: 'POST',
@@ -144,6 +152,7 @@ function Pedidos() {
       })
       if (!res.ok) throw new Error()
       alert('✅ Pedido guardado correctamente')
+      
       // RESET
       setCliente(null)
       setFecha('')
@@ -157,7 +166,7 @@ function Pedidos() {
       alert('❌ Error al guardar pedido')
     }
   }
-  
+
   // =========================
   // 🧩 UI
   // =========================
@@ -169,7 +178,9 @@ function Pedidos() {
         </Link>
         <img src={logo} alt="Logo" style={styles.logo} />
       </div>
+
       <h2 style={styles.title}>NUEVO PEDIDO</h2>
+
       {!cliente ? (
         <Buscador onSelectCliente={setCliente} />
       ) : (
@@ -177,6 +188,7 @@ function Pedidos() {
           <p style={styles.clienteTexto}>
             Cliente: {cliente.nombre}
           </p>
+
           {/* VENDEDOR */}
           <div style={styles.section}>
             <label style={styles.label}>Vendedor</label>
@@ -193,6 +205,7 @@ function Pedidos() {
               ))}
             </select>
           </div>
+
           {/* RUTA */}
           <div style={styles.section}>
             <label style={styles.label}>Ruta</label>
@@ -209,6 +222,7 @@ function Pedidos() {
               ))}
             </select>
           </div>
+
           {/* FECHA */}
           <div style={styles.section}>
             <label style={styles.label}>Fecha</label>
@@ -219,6 +233,7 @@ function Pedidos() {
               onChange={e => setFecha(e.target.value)}
             />
           </div>
+
           {/* TIPO PEDIDO */}
           <div style={styles.section}>
             <label style={styles.label}>Tipo de pedido</label>
@@ -232,6 +247,7 @@ function Pedidos() {
               <option value="credito">Crédito</option>
             </select>
           </div>
+
           {/* CRÉDITO */}
           {tipoPedido === 'credito' && (
             <div style={styles.section}>
@@ -239,19 +255,22 @@ function Pedidos() {
               <input
                 type="number"
                 min="1"
-                max="15"
+                max="31"
                 style={styles.field}
                 value={diasCredito}
                 onChange={e => setDiasCredito(Number(e.target.value))}
               />
             </div>
           )}
+
           {/* PRODUCTOS */}
           <ProductosPedido
             onTotalChange={setTotal}
             onProductosChange={setProductos}
           />
+
           <h3 style={styles.total}>Total: ${total}</h3>
+
           <button style={styles.guardar} onClick={guardarPedido}>
             Guardar Pedido
           </button>
