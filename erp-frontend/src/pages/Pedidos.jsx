@@ -131,7 +131,7 @@ function Pedidos() {
       return
     }
 
-    // ✅ CORRECCIÓN: Se añade el campo 'estado' para que el botón de entregar funcione
+    // ✅ CORRECCIÓN: Se usa 'estado_pedido' para coincidir con el Backend y la BD
     const pedido = {
       id_cliente: cliente.id_cliente,
       id_vendedor: idVendedor,
@@ -141,7 +141,7 @@ function Pedidos() {
       tipo_pedido: tipoPedido,
       dias_credito: tipoPedido === 'credito' ? diasCredito : 0,
       productos,
-      estado: 'pendiente' 
+      estado_pedido: 'pendiente' // Antes decía 'estado'
     }
 
     try {
@@ -150,7 +150,12 @@ function Pedidos() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(pedido)
       })
-      if (!res.ok) throw new Error()
+      
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.error || 'Error desconocido')
+      }
+
       alert('✅ Pedido guardado correctamente')
       
       // RESET
@@ -162,14 +167,11 @@ function Pedidos() {
       setTotal(0)
       setIdVendedor('')
       setIdRuta('')
-    } catch {
-      alert('❌ Error al guardar pedido')
+    } catch (err) {
+      alert(`❌ Error al guardar pedido: ${err.message}`)
     }
   }
 
-  // =========================
-  // 🧩 UI
-  // =========================
   return (
     <div style={styles.page}>
       <div style={styles.header}>
@@ -189,7 +191,6 @@ function Pedidos() {
             Cliente: {cliente.nombre}
           </p>
 
-          {/* VENDEDOR */}
           <div style={styles.section}>
             <label style={styles.label}>Vendedor</label>
             <select
@@ -206,7 +207,6 @@ function Pedidos() {
             </select>
           </div>
 
-          {/* RUTA */}
           <div style={styles.section}>
             <label style={styles.label}>Ruta</label>
             <select
@@ -223,7 +223,6 @@ function Pedidos() {
             </select>
           </div>
 
-          {/* FECHA */}
           <div style={styles.section}>
             <label style={styles.label}>Fecha</label>
             <input
@@ -234,7 +233,6 @@ function Pedidos() {
             />
           </div>
 
-          {/* TIPO PEDIDO */}
           <div style={styles.section}>
             <label style={styles.label}>Tipo de pedido</label>
             <select
@@ -248,7 +246,6 @@ function Pedidos() {
             </select>
           </div>
 
-          {/* CRÉDITO */}
           {tipoPedido === 'credito' && (
             <div style={styles.section}>
               <label style={styles.label}>Días de crédito</label>
@@ -263,7 +260,6 @@ function Pedidos() {
             </div>
           )}
 
-          {/* PRODUCTOS */}
           <ProductosPedido
             onTotalChange={setTotal}
             onProductosChange={setProductos}
