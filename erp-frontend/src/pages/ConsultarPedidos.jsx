@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 
 const API = import.meta.env.VITE_API_URL
 
-/* ===== ESTILOS (Mantenidos exactamente como los tienes) ===== */
+/* ===== ESTILOS ===== */
 const vino = '#8B1E1E'
 const container = { padding: 20, background: '#ffffff', minHeight: '100vh', fontFamily: 'Arial' }
 const header = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 10 }
@@ -23,7 +23,7 @@ function ConsultarPedidos() {
   const [busqueda, setBusqueda] = useState('')
   const navigate = useNavigate()
 
-  // Limpiamos la URL base una sola vez para evitar errores de diagonal doble //
+  // Limpiamos la URL base
   const urlLimpia = API?.endsWith('/') ? API.slice(0, -1) : API;
 
   /* =========================
@@ -50,10 +50,11 @@ function ConsultarPedidos() {
   const calcularDias = pedido => {
     if (!pedido.fecha) return 0
     const inicio = new Date(pedido.fecha)
+    // USAMOS estado_pedido
     const cierre =
-      pedido.estado === 'entregado'
+      pedido.estado_pedido === 'entregado'
         ? pedido.fecha_entrega
-        : pedido.estado === 'cancelado'
+        : pedido.estado_pedido === 'cancelado'
         ? pedido.fecha_cancelacion
         : null
     const fin = cierre ? new Date(cierre) : new Date()
@@ -62,7 +63,7 @@ function ConsultarPedidos() {
   }
 
   /* =========================
-      ENTREGAR DIRECTO (CORREGIDO)
+      ENTREGAR DIRECTO
   ========================= */
   const confirmarEntrega = async (id) => {
     if (!window.confirm(`¿Marcar el pedido #${id} como ENTREGADO?`)) return;
@@ -74,7 +75,6 @@ function ConsultarPedidos() {
       })
 
       if (res.ok) {
-        // Recargar la lista inmediatamente para ver el cambio de color y estado
         await cargarPedidos()
       } else {
         const err = await res.json()
@@ -87,7 +87,7 @@ function ConsultarPedidos() {
   }
 
   /* =========================
-      CANCELAR DIRECTO (CORREGIDO)
+      CANCELAR DIRECTO
   ========================= */
   const confirmarCancelacion = async (id) => {
     if (!window.confirm(`¿Seguro que deseas CANCELAR el pedido #${id}?`)) return;
@@ -110,9 +110,6 @@ function ConsultarPedidos() {
     }
   }
 
-  /* =========================
-      FILTRO SIMPLE
-  ========================= */
   const pedidosFiltrados = pedidos.filter(p => {
     const texto = busqueda.toLowerCase()
     return (
@@ -155,10 +152,12 @@ function ConsultarPedidos() {
           <tbody>
             {pedidosFiltrados.map(p => {
               const dias = calcularDias(p)
+              
+              // Lógica de colores usando estado_pedido
               const estiloEstado =
-                p.estado === 'entregado'
+                p.estado_pedido === 'entregado'
                   ? estadoEntregado
-                  : p.estado === 'pendiente'
+                  : p.estado_pedido === 'pendiente'
                   ? estadoPendiente
                   : estadoCancelado
 
@@ -180,21 +179,21 @@ function ConsultarPedidos() {
                       : '-'}
                   </td>
                   <td style={td}>
-                    <span style={estiloEstado}>{p.estado || 'sin estado'}</span>
+                    <span style={estiloEstado}>{p.estado_pedido || 'pendiente'}</span>
                   </td>
                   <td style={td}>{dias}</td>
                   <td style={td}>
                     <button
-                      style={{...btnVino, opacity: p.estado !== 'pendiente' ? 0.5 : 1}}
-                      disabled={p.estado !== 'pendiente'}
+                      style={{...btnVino, opacity: p.estado_pedido !== 'pendiente' ? 0.5 : 1}}
+                      disabled={p.estado_pedido !== 'pendiente'}
                       onClick={() => confirmarEntrega(p.id_pedido)}
                     >
                       Entregar
                     </button>
 
                     <button
-                      style={{...btnVino, opacity: p.estado !== 'pendiente' ? 0.5 : 1}}
-                      disabled={p.estado !== 'pendiente'}
+                      style={{...btnVino, opacity: p.estado_pedido !== 'pendiente' ? 0.5 : 1}}
+                      disabled={p.estado_pedido !== 'pendiente'}
                       onClick={() => confirmarCancelacion(p.id_pedido)}
                     >
                       Cancelar
