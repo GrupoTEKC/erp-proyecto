@@ -4,9 +4,9 @@ const cors = require('cors')
 const db = require('./db')
 const app = express()
 
-// =========================
-// CONFIG RAILWAY (Puerto 8080)
-// =========================
+// ===================================
+// CONFIG RAILWAY (CORREGIDO A 8080)
+// ===================================
 const PORT = process.env.PORT || 8080
 app.use(cors())
 app.use(express.json())
@@ -31,7 +31,7 @@ app.get('/', (_, res) => {
 })
 
 /* =====================================================
-   CLIENTES (Tal cual lo tenías)
+   CLIENTES
 ===================================================== */
 
 app.get('/clientes', async (_, res) => {
@@ -105,9 +105,9 @@ app.get('/pedidos', async (_, res) => {
   }
 })
 
-// ======================================
-// ENTREGAR PEDIDO (CAMBIO A estado_pedido)
-// ======================================
+// ==========================================================
+// ENTREGAR PEDIDO (CORREGIDO PARA USAR estado_pedido)
+// ==========================================================
 app.put('/pedidos/:id/entregar', async (req, res) => {
   try {
     const id = Number(req.params.id)
@@ -139,7 +139,7 @@ app.put('/pedidos/:id/cancelar', async (req, res) => {
 })
 
 /* =====================================================
-   404 GLOBAL
+   404 GLOBAL (SIEMPRE AL FINAL)
 ===================================================== */
 
 app.use((req, res) => {
