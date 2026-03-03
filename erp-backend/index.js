@@ -4,7 +4,7 @@ const cors = require('cors')
 const db = require('./db')
 const app = express()
 
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 8080
 
 app.use(cors())
 app.use(express.json())
@@ -84,6 +84,6 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Ruta no encontrada en el ERP' })
 })
 
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor listo en puerto ${PORT}`)
-})
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ Backend activo y escuchando en puerto ${PORT}`);
+});
