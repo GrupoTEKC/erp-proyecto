@@ -1,17 +1,19 @@
-console.log("🔥 VERSION TOTAL REPARADA - 3 MARZO 🔥")
+console.log("🔥 VERSION RESTAURADA - 3 MARZO 🔥")
 const express = require('express')
 const cors = require('cors')
 const db = require('./db')
 const app = express()
 
-// ===================================
-// CONFIG RAILWAY (Puerto 3000 o 8080)
-// ===================================
-const PORT = process.env.PORT || 3000
+// =========================
+// CONFIG RAILWAY (Puerto 8080)
+// =========================
+const PORT = process.env.PORT || 8080
 app.use(cors())
 app.use(express.json())
 
+// =========================
 // TEST MYSQL
+// =========================
 ;(async () => {
   try {
     await db.query('SELECT 1')
@@ -21,21 +23,74 @@ app.use(express.json())
   }
 })()
 
-app.get('/', (_, res) => res.json({ status: 'Backend ERP funcionando' }))
+// =========================
+// ROOT
+// =========================
+app.get('/', (_, res) => {
+  res.json({ status: 'Backend ERP funcionando' })
+})
 
 /* =====================================================
-   CLIENTES (Tu código original)
+   CLIENTES
 ===================================================== */
+
 app.get('/clientes', async (_, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM clientes')
     res.json(rows)
-  } catch (err) { res.status(500).json({ error: err.message }) }
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+app.get('/clientes/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id)
+    const [rows] = await db.query(
+      'SELECT * FROM clientes WHERE id_cliente=?',
+      [id]
+    )
+    if (!rows.length)
+      return res.status(404).json({ error: 'Cliente no encontrado' })
+    res.json(rows[0])
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+app.put('/clientes/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id)
+    const { nombre, telefono, email, direccion } = req.body
+    await db.query(
+      `UPDATE clientes 
+       SET nombre=?, telefono=?, email=?, direccion=? 
+       WHERE id_cliente=?`,
+      [nombre, telefono, email, direccion, id]
+    )
+    res.json({ success: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+app.delete('/clientes/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id)
+    await db.query(
+      'DELETE FROM clientes WHERE id_cliente=?',
+      [id]
+    )
+    res.json({ success: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
 })
 
 /* =====================================================
-   RUTAS, VENDEDORES Y PRODUCTOS (Las que faltaban)
+   RUTAS, VENDEDORES Y PRODUCTOS (Agregadas para quitar el 404)
 ===================================================== */
+
 app.get('/rutas', async (_, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM rutas')
@@ -58,8 +113,9 @@ app.get('/productos', async (_, res) => {
 })
 
 /* =====================================================
-   PEDIDOS (Con la corrección de estado_pedido)
+   PEDIDOS
 ===================================================== */
+
 app.get('/pedidos', async (_, res) => {
   try {
     const [rows] = await db.query(`
@@ -69,33 +125,52 @@ app.get('/pedidos', async (_, res) => {
       ORDER BY p.id_pedido DESC
     `)
     res.json(rows)
-  } catch (err) { res.status(500).json({ error: err.message }) }
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
 })
 
 app.put('/pedidos/:id/entregar', async (req, res) => {
   try {
     const id = Number(req.params.id)
     await db.query(`
-      UPDATE pedidos SET estado_pedido = 'entregado', fecha_entrega = NOW() WHERE id_pedido = ?
+      UPDATE pedidos
+      SET estado = 'entregado',
+          fecha_entrega = NOW()
+      WHERE id_pedido = ?
     `, [id])
     res.json({ success: true })
-  } catch (error) { res.status(500).json({ error: error.message }) }
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
 })
 
 app.put('/pedidos/:id/cancelar', async (req, res) => {
   try {
     const id = Number(req.params.id)
     await db.query(`
-      UPDATE pedidos SET estado_pedido = 'cancelado', fecha_cancelacion = NOW() WHERE id_pedido = ?
+      UPDATE pedidos
+      SET estado = 'cancelado',
+          fecha_cancelacion = NOW()
+      WHERE id_pedido = ?
     `, [id])
     res.json({ success: true })
-  } catch (error) { res.status(500).json({ error: error.message }) }
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
 })
 
 /* =====================================================
-   404 GLOBAL Y SERVIDOR
+   404 GLOBAL
 ===================================================== */
-app.use((req, res) => res.status(404).json({ error: 'Ruta no encontrada' }))
+
+app.use((req, res) => {
+  res.status(404).json({ error: 'Ruta no encontrada' })
+})
+
+/* =====================================================
+   SERVIDOR
+===================================================== */
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Backend activo en puerto ${PORT}`)
