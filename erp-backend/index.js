@@ -1,13 +1,14 @@
-console.log("🔥 VERSION NUEVA 3 MARZO - CORREGIDA 🔥")
+console.log("🔥 VERSION RESTAURADA Y CORREGIDA 🔥")
 const express = require('express')
 const cors = require('cors')
 const db = require('./db')
 const app = express()
 
-// ===================================
-// CONFIG RAILWAY (CORREGIDO A 8080)
-// ===================================
-const PORT = process.env.PORT || 8080
+// =========================
+// CONFIG RAILWAY 
+// Volvemos al puerto 3000 si ese es el que tenías configurado en tu Frontend
+// =========================
+const PORT = process.env.PORT || 3000
 app.use(cors())
 app.use(express.json())
 
@@ -31,7 +32,7 @@ app.get('/', (_, res) => {
 })
 
 /* =====================================================
-   CLIENTES
+   CLIENTES (Sin cambios, tal cual los tenías)
 ===================================================== */
 
 app.get('/clientes', async (_, res) => {
@@ -105,9 +106,9 @@ app.get('/pedidos', async (_, res) => {
   }
 })
 
-// ==========================================================
-// ENTREGAR PEDIDO (CORREGIDO PARA USAR estado_pedido)
-// ==========================================================
+// ======================================================
+// ENTREGAR PEDIDO (CAMBIO ÚNICO: estado_pedido)
+// ======================================================
 app.put('/pedidos/:id/entregar', async (req, res) => {
   try {
     const id = Number(req.params.id)
@@ -139,7 +140,7 @@ app.put('/pedidos/:id/cancelar', async (req, res) => {
 })
 
 /* =====================================================
-   404 GLOBAL (SIEMPRE AL FINAL)
+   404 GLOBAL
 ===================================================== */
 
 app.use((req, res) => {
