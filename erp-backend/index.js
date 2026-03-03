@@ -1,4 +1,4 @@
-revisa mi backend index.js y si esta mal corrigelo lo que ya es funcional dejalo console.log("🔥 VERSION NUEVA 2 MARZO 🔥")
+console.log("🔥 VERSION NUEVA 2 MARZO 🔥")
 const express = require('express')
 const cors = require('cors')
 const db = require('./db')
