@@ -1,4 +1,4 @@
-console.log("🔥 VERSION REVISADA Y COMPLETA - 3 MARZO 🔥")
+console.log("🔥 VERSION REVISADA Y RESTAURADA - 3 MARZO 🔥")
 const express = require('express')
 const cors = require('cors')
 const db = require('./db')
@@ -35,8 +35,7 @@ app.get('/clientes', async (_, res) => {
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-/* === NUEVAS RUTAS AGREGADAS (Para quitar el 404) === */
-
+/* --- RUTAS (Faltaba en tu código actual) --- */
 app.get('/rutas', async (_, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM rutas')
@@ -44,6 +43,7 @@ app.get('/rutas', async (_, res) => {
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
+/* --- VENDEDORES (Faltaba en tu código actual) --- */
 app.get('/vendedores', async (_, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM vendedores')
@@ -51,6 +51,7 @@ app.get('/vendedores', async (_, res) => {
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
+/* --- PRODUCTOS (Faltaba en tu código actual) --- */
 app.get('/productos', async (_, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM productos')
@@ -82,7 +83,6 @@ app.post('/pedidos', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-// LAS RUTAS DE UPDATE
 app.put('/pedidos/:id/entregar', async (req, res) => {
   try {
     const id = Number(req.params.id)
@@ -101,12 +101,11 @@ app.put('/pedidos/:id/cancelar', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-// 404 GLOBAL
 app.use((req, res) => {
   console.log(`⚠️ 404 en: ${req.method} ${req.url}`);
-  res.status(404).json({ error: 'Ruta no encontrada en el ERP' })
+  res.status(404).json({ error: 'Ruta no encontrada' })
 })
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`✅ Backend activo y escuchando en puerto ${PORT}`);
+  console.log(`✅ Backend activo en puerto ${PORT}`);
 });
