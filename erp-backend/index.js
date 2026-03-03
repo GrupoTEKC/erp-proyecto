@@ -32,109 +32,32 @@ app.get('/', (_, res) => res.json({ status: 'Backend ERP funcionando' }))
 /* =====================================================
    CLIENTES (Tu código original)
 ===================================================== */
-
 app.get('/clientes', async (_, res) => {
-
   try {
-
     const [rows] = await db.query('SELECT * FROM clientes')
-
     res.json(rows)
-
-  } catch (err) {
-
-    res.status(500).json({ error: err.message })
-
-  }
-
+  } catch (err) { res.status(500).json({ error: err.message }) }
 })
-
-
 
 app.get('/clientes/:id', async (req, res) => {
-
   try {
-
     const id = Number(req.params.id)
-
-    const [rows] = await db.query(
-
-      'SELECT * FROM clientes WHERE id_cliente=?',
-
-      [id]
-
-    )
-
-    if (!rows.length)
-
-      return res.status(404).json({ error: 'Cliente no encontrado' })
-
+    const [rows] = await db.query('SELECT * FROM clientes WHERE id_cliente=?', [id])
+    if (!rows.length) return res.status(404).json({ error: 'Cliente no encontrado' })
     res.json(rows[0])
-
-  } catch (err) {
-
-    res.status(500).json({ error: err.message })
-
-  }
-
+  } catch (err) { res.status(500).json({ error: err.message }) }
 })
-
-
 
 app.put('/clientes/:id', async (req, res) => {
-
   try {
-
     const id = Number(req.params.id)
-
     const { nombre, telefono, email, direccion } = req.body
-
     await db.query(
-
-      `UPDATE clientes 
-
-       SET nombre=?, telefono=?, email=?, direccion=? 
-
-       WHERE id_cliente=?`,
-
+      `UPDATE clientes SET nombre=?, telefono=?, email=?, direccion=? WHERE id_cliente=?`,
       [nombre, telefono, email, direccion, id]
-
     )
-
     res.json({ success: true })
-
-  } catch (err) {
-
-    res.status(500).json({ error: err.message })
-
-  }
-
-})
-
-
-
-app.delete('/clientes/:id', async (req, res) => {
-
-  try {
-
-    const id = Number(req.params.id)
-
-    await db.query(
-
-      'DELETE FROM clientes WHERE id_cliente=?',
-
-      [id]
-
-    )
-
-    res.json({ success: true })
-
-  } catch (err) {
-
-    res.status(500).json({ error: err.message })
-
-  }
-
+  } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
 /* =====================================================
