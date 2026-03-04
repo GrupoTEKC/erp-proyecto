@@ -35,15 +35,17 @@ function Clientes() {
   }, [])
 
   /* ================= FILTRO MEJORADO ================= */
+  // Agregamos "?" para evitar errores si algún campo es null
+  const term = busqueda.toLowerCase()
   const clientesFiltrados = clientes.filter(c =>
-    `${c.nombre} ${c.apellido1} ${c.apellido2} ${c.nombre_tienda}`
+    `${c.nombre} ${c.apellido1} ${c.apellido2} ${c.nombre_tienda} ${c.apodo}`
       .toLowerCase()
-      .includes(busqueda.toLowerCase())
+      .includes(term)
   )
 
   /* ================= ELIMINAR ================= */
   const eliminarCliente = async (id) => {
-    const confirmar = window.confirm('¿Eliminar cliente?')
+    const confirmar = window.confirm('¿Eliminar cliente definitivamente?')
     if (!confirmar) return
 
     try {
@@ -57,11 +59,11 @@ function Clientes() {
         prev.filter(c => c.id_cliente !== id)
       )
 
-      alert('✅ Cliente eliminado')
+      alert('✅ Cliente eliminado correctamente')
 
     } catch (err) {
       console.error('🔥 ERROR:', err)
-      alert('❌ Error al eliminar')
+      alert('❌ No se pudo eliminar el cliente')
     }
   }
 
@@ -72,33 +74,33 @@ function Clientes() {
           ← Volver
         </button>
 
-        <h2 style={{ margin: 0 }}>Clientes</h2>
+        <h2 style={{ margin: 0 }}>Gestión de Clientes</h2>
 
         <button
           style={btnVino}
           onClick={() => navigate('/clientes/nuevo')}
         >
-          + Nuevo
+          + Nuevo Cliente
         </button>
       </div>
 
       <input
         type="text"
-        placeholder="Buscar cliente..."
+        placeholder="Buscar por nombre, tienda o apodo..."
         value={busqueda}
         onChange={e => setBusqueda(e.target.value)}
         style={buscador}
       />
 
-      {loading && <p>Cargando clientes...</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {loading && <p>Cargando información de clientes...</p>}
+      {error && <p style={{ color: 'red' }}>⚠️ Error: {error}</p>}
 
       {!loading && !error && (
         <div style={tablaWrapper}>
           <table style={tabla}>
             <thead style={thead}>
               <tr>
-                <th style={th}>Nombre</th>
+                <th style={th}>Nombre Completo</th>
                 <th style={th}>Apodo</th>
                 <th style={th}>RFC</th>
                 <th style={th}>Categoría</th>
@@ -106,7 +108,7 @@ function Clientes() {
                 <th style={th}>Tel. Dueño</th>
                 <th style={th}>Tel. Tienda</th>
                 <th style={th}>Calle</th>
-                <th style={th}>Número</th>
+                <th style={th}>Nº</th>
                 <th style={th}>CP</th>
                 <th style={th}>Municipio</th>
                 <th style={th}>Estado</th>
@@ -115,7 +117,7 @@ function Clientes() {
                 <th style={th}>Email</th>
                 <th style={th}>Ruta</th>
                 <th style={th}>Saldo</th>
-                <th style={th}>Acción</th>
+                <th style={th}>Acciones</th>
               </tr>
             </thead>
 
@@ -123,7 +125,7 @@ function Clientes() {
               {clientesFiltrados.length === 0 ? (
                 <tr>
                   <td colSpan="18" style={sinDatos}>
-                    No hay clientes
+                    No se encontraron clientes que coincidan con la búsqueda
                   </td>
                 </tr>
               ) : (
@@ -141,9 +143,7 @@ function Clientes() {
                     <td style={td}>{c.rfc}</td>
                     <td style={td}>
                       {c.categoria}
-                      {c.categoria_otro
-                        ? ` (${c.categoria_otro})`
-                        : ''}
+                      {c.categoria_otro ? ` (${c.categoria_otro})` : ''}
                     </td>
                     <td style={td}>{c.nombre_tienda}</td>
                     <td style={td}>{c.telefono_dueno}</td>
@@ -156,31 +156,35 @@ function Clientes() {
                     <td style={td}>{c.entre_calles}</td>
                     <td style={td}>{c.referencia}</td>
                     <td style={td}>{c.email}</td>
-                    <td style={td}>{c.ruta || ''}</td>
-                    <td style={td}>${c.saldo_actual || 0}</td>
+                    {/* ✅ Mostramos el nombre de la ruta que viene del JOIN del backend */}
                     <td style={td}>
-                      <button
-                        style={btnEditar}
-                        onClick={() =>
-                          navigate(`/clientes/editar/${c.id_cliente}`)
-                        }
-                      >
-                        Editar
-                      </button>
+                      {c.ruta ? c.ruta : <span style={{color: '#ccc'}}>No asignada</span>}
+                    </td>
+                    <td style={td}>
+                      <b style={{color: c.saldo_actual > 0 ? 'red' : 'green'}}>
+                        ${Number(c.saldo_actual || 0).toLocaleString()}
+                      </b>
+                    </td>
+                    <td style={td}>
+                      <div style={{display: 'flex', gap: '5px'}}>
+                        <button
+                          style={btnEditar}
+                          onClick={() => navigate(`/clientes/editar/${c.id_cliente}`)}
+                        >
+                          Editar
+                        </button>
 
-                      <button
-                        style={{
-                          ...btnEditar,
-                          marginLeft: 6,
-                          color: 'red',
-                          borderColor: 'red'
-                        }}
-                        onClick={() =>
-                          eliminarCliente(c.id_cliente)
-                        }
-                      >
-                        Eliminar
-                      </button>
+                        <button
+                          style={{
+                            ...btnEditar,
+                            color: 'red',
+                            borderColor: 'red'
+                          }}
+                          onClick={() => eliminarCliente(c.id_cliente)}
+                        >
+                          Eliminar
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -193,80 +197,18 @@ function Clientes() {
   )
 }
 
-/* ================= ESTILOS ================= */
-
+/* ================= ESTILOS (Sin cambios) ================= */
 const vino = '#8B1E1E'
-
-const container = {
-  padding: 20,
-  background: '#ffffff',
-  minHeight: '100vh',
-  fontFamily: 'Arial'
-}
-
-const header = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  marginBottom: 20,
-  flexWrap: 'wrap',
-  gap: 10
-}
-
-const btnVino = {
-  background: '#fff',
-  color: vino,
-  border: `1px solid ${vino}`,
-  padding: '10px 14px',
-  borderRadius: 6,
-  cursor: 'pointer'
-}
-
-const btnEditar = {
-  ...btnVino,
-  padding: '6px 10px',
-  fontSize: 13
-}
-
-const buscador = {
-  width: '100%',
-  padding: 10,
-  borderRadius: 6,
-  border: `1px solid ${vino}`,
-  marginBottom: 20
-}
-
-const tablaWrapper = {
-  background: '#fff',
-  borderRadius: 8,
-  overflowX: 'auto',
-  boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
-}
-
-const tabla = {
-  width: '100%',
-  borderCollapse: 'collapse',
-  minWidth: 1500
-}
-
-const thead = {
-  background: vino,
-  color: '#fff'
-}
-
-const th = {
-  padding: 12,
-  textAlign: 'left'
-}
-
-const td = {
-  padding: 12,
-  borderBottom: '1px solid #eee'
-}
-
-const sinDatos = {
-  padding: 15,
-  textAlign: 'center'
-}
+const container = { padding: 20, background: '#ffffff', minHeight: '100vh', fontFamily: 'Arial' }
+const header = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 10 }
+const btnVino = { background: '#fff', color: vino, border: `1px solid ${vino}`, padding: '10px 14px', borderRadius: 6, cursor: 'pointer' }
+const btnEditar = { ...btnVino, padding: '6px 10px', fontSize: 13 }
+const buscador = { width: '100%', padding: 10, borderRadius: 6, border: `1px solid ${vino}`, marginBottom: 20 }
+const tablaWrapper = { background: '#fff', borderRadius: 8, overflowX: 'auto', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }
+const tabla = { width: '100%', borderCollapse: 'collapse', minWidth: 1500 }
+const thead = { background: vino, color: '#fff' }
+const th = { padding: 12, textAlign: 'left' }
+const td = { padding: 12, borderBottom: '1px solid #eee' }
+const sinDatos = { padding: 15, textAlign: 'center' }
 
 export default Clientes
