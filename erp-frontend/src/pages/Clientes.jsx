@@ -5,28 +5,24 @@ const API = 'https://erp-proyecto-production.up.railway.app'
 
 function Clientes() {
   const navigate = useNavigate()
+
   const [clientes, setClientes] = useState([])
-  const [rutas, setRutas] = useState([])
   const [busqueda, setBusqueda] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
+  /* ================= CARGAR CLIENTES ================= */
   useEffect(() => {
-    const cargarDatos = async () => {
+    const cargarClientes = async () => {
       try {
         setLoading(true)
         setError(null)
 
-        const [resClientes, resRutas] = await Promise.all([
-          fetch(`${API}/clientes`),
-          fetch(`${API}/rutas`)
-        ])
+        const res = await fetch(`${API}/clientes`)
+        if (!res.ok) throw new Error('Error cargando clientes')
 
-        if (!resClientes.ok || !resRutas.ok)
-          throw new Error('Error cargando datos')
-
-        setClientes(await resClientes.json())
-        setRutas(await resRutas.json())
+        const data = await res.json()
+        setClientes(data)
 
       } catch (err) {
         setError(err.message)
@@ -35,50 +31,40 @@ function Clientes() {
       }
     }
 
-    cargarDatos()
+    cargarClientes()
   }, [])
 
-  const obtenerNombreRuta = idRuta => {
-    const ruta = rutas.find(r => r.id_ruta == idRuta)
-    return ruta ? ruta.nombre : ''
-  }
-
+  /* ================= FILTRO MEJORADO ================= */
   const clientesFiltrados = clientes.filter(c =>
-    JSON.stringify(c)
+    `${c.nombre} ${c.apellido1} ${c.apellido2} ${c.nombre_tienda}`
       .toLowerCase()
       .includes(busqueda.toLowerCase())
   )
 
- const eliminarCliente = async (id) => {
-  const confirmar = window.confirm('¿Eliminar cliente?')
-  if (!confirmar) return
+  /* ================= ELIMINAR ================= */
+  const eliminarCliente = async (id) => {
+    const confirmar = window.confirm('¿Eliminar cliente?')
+    if (!confirmar) return
 
-  try {
-    const res = await fetch(`${API}/clientes/${id}`, {
-      method: 'DELETE'
-    })
+    try {
+      const res = await fetch(`${API}/clientes/${id}`, {
+        method: 'DELETE'
+      })
 
-    const text = await res.text()
+      if (!res.ok) throw new Error('Error al eliminar')
 
-    if (!res.ok) {
-      console.error('Respuesta backend:', text)
-      throw new Error('Error del servidor')
+      setClientes(prev =>
+        prev.filter(c => c.id_cliente !== id)
+      )
+
+      alert('✅ Cliente eliminado')
+
+    } catch (err) {
+      console.error('🔥 ERROR:', err)
+      alert('❌ Error al eliminar')
     }
-
-    const data = JSON.parse(text)
-
-    setClientes(prev =>
-      prev.filter(c => c.id_cliente !== id)
-    )
-
-    alert('✅ Cliente eliminado')
-
-  } catch (err) {
-    console.error('🔥 ERROR:', err)
-    alert('❌ Error al eliminar')
   }
-}
-  
+
   return (
     <div style={container}>
       <div style={header}>
@@ -127,8 +113,7 @@ function Clientes() {
                 <th style={th}>Entre calles</th>
                 <th style={th}>Referencia</th>
                 <th style={th}>Email</th>
-                <th style={th}>N. Ruta</th>
-                <th style={th}>Nombre Ruta</th>
+                <th style={th}>Ruta</th>
                 <th style={th}>Saldo</th>
                 <th style={th}>Acción</th>
               </tr>
@@ -137,7 +122,7 @@ function Clientes() {
             <tbody>
               {clientesFiltrados.length === 0 ? (
                 <tr>
-                  <td colSpan="19" style={sinDatos}>
+                  <td colSpan="18" style={sinDatos}>
                     No hay clientes
                   </td>
                 </tr>
@@ -171,16 +156,8 @@ function Clientes() {
                     <td style={td}>{c.entre_calles}</td>
                     <td style={td}>{c.referencia}</td>
                     <td style={td}>{c.email}</td>
-
-                    <td style={td}>{c.id_ruta || ''}</td>
-                    <td style={td}>
-                      {obtenerNombreRuta(c.id_ruta)}
-                    </td>
-
-                    <td style={td}>
-                      ${c.saldo_actual || 0}
-                    </td>
-
+                    <td style={td}>{c.ruta || ''}</td>
+                    <td style={td}>${c.saldo_actual || 0}</td>
                     <td style={td}>
                       <button
                         style={btnEditar}
@@ -205,7 +182,6 @@ function Clientes() {
                         Eliminar
                       </button>
                     </td>
-
                   </tr>
                 ))
               )}
@@ -217,7 +193,7 @@ function Clientes() {
   )
 }
 
-/* ===== ESTILOS ===== */
+/* ================= ESTILOS ================= */
 
 const vino = '#8B1E1E'
 
