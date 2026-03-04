@@ -1,15 +1,11 @@
- import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import logo from '../assets/TRANSPARENTE.png'
 import Buscador from "../components/Buscador"
 import ProductosPedido from '../components/ProductosPedido'
 
-// ✅ URL DEL BACKEND (Asegúrate de que en Railway esté configurada)
 const API = import.meta.env.VITE_API_URL
 
-// =========================
-// 🎨 ESTILOS (Manteniendo tu diseño original)
-// =========================
 const styles = {
   page: { backgroundColor: '#ffffff', minHeight: '100vh', padding: '20px', fontFamily: 'Arial, sans-serif' },
   header: { marginBottom: '20px' },
@@ -36,51 +32,31 @@ function Pedidos() {
   const [vendedores, setVendedores] = useState([])
   const [idVendedor, setIdVendedor] = useState('')
 
-  // =========================
-  // 🔄 CARGAR RUTAS Y VENDEDORES
-  // =========================
   useEffect(() => {
-    if (!API) {
-      console.error('❌ API no definida en variables de entorno');
-      return;
-    }
-
+    if (!API) return;
     const cargarDatos = async () => {
       try {
-        // Limpiamos la URL por si tiene una diagonal extra al final
         const urlLimpia = API.endsWith('/') ? API.slice(0, -1) : API;
-        
         const [resRutas, resVendedores] = await Promise.all([
           fetch(`${urlLimpia}/rutas`),
           fetch(`${urlLimpia}/vendedores`)
         ]);
-
         const rutasData = await resRutas.json();
         const vendedoresData = await resVendedores.json();
-
         setRutas(Array.isArray(rutasData) ? rutasData : []);
         setVendedores(Array.isArray(vendedoresData) ? vendedoresData : []);
       } catch (error) {
-        console.error('❌ Error cargando catálogos:', error);
+        console.error('Error cargando catálogos:', error);
       }
     }
     cargarDatos();
   }, []);
 
-  // =========================
-  // 💾 GUARDAR PEDIDO
-  // =========================
   const guardarPedido = async () => {
     if (!cliente || !fecha || !tipoPedido || productos.length === 0) {
-      alert('Por favor, complete todos los campos obligatorios');
+      alert('Complete los campos obligatorios');
       return;
     }
-    if (!idVendedor || !idRuta) {
-      alert('Seleccione un vendedor y una ruta válida');
-      return;
-    }
-
-    // ✅ ALINEACIÓN CON BACKEND: Usamos 'estado' como campo clave
     const nuevoPedido = {
       id_cliente: cliente.id_cliente,
       id_vendedor: Number(idVendedor),
@@ -89,7 +65,7 @@ function Pedidos() {
       total,
       tipo_pedido: tipoPedido,
       dias_credito: tipoPedido === 'credito' ? diasCredito : 0,
-      productos, // Se procesan en el backend
+      productos,
       estado: 'pendiente' 
     };
 
@@ -100,24 +76,9 @@ function Pedidos() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(nuevoPedido)
       });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Error al procesar el pedido');
-      }
-
-      alert('✅ Pedido guardado y registrado correctamente');
-      
-      // RESET FORMULARIO
-      setCliente(null);
-      setFecha('');
-      setTipoPedido('');
-      setDiasCredito(0);
-      setProductos([]);
-      setTotal(0);
-      setIdVendedor('');
-      setIdRuta('');
-
+      if (!res.ok) throw new Error('Error al guardar');
+      alert('✅ Pedido guardado');
+      setCliente(null); setFecha(''); setTipoPedido(''); setProductos([]); setTotal(0);
     } catch (err) {
       alert(`❌ Error: ${err.message}`);
     }
@@ -171,3 +132,23 @@ function Pedidos() {
               <option value="credito">Crédito</option>
             </select>
           </div>
+
+          {tipoPedido === 'credito' && (
+            <div style={styles.section}>
+              <label style={styles.label}>Días de crédito</label>
+              <input type="number" style={styles.field} value={diasCredito} onChange={e => setDiasCredito(Number(e.target.value))} />
+            </div>
+          )}
+
+          <ProductosPedido onTotalChange={setTotal} onProductosChange={setProductos} />
+
+          <h3 style={styles.total}>Total: ${total}</h3>
+
+          <button style={styles.guardar} onClick={guardarPedido}>Guardar Pedido</button>
+        </>
+      )}
+    </div>
+  )
+}
+
+export default Pedidos;
