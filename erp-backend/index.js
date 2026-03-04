@@ -148,22 +148,6 @@ app.put('/clientes/:id', async (req, res) => {
    ================= MÓDULO PEDIDOS ===================
 ===================================================== */
 
-// GET - Listar pedidos con nombre cliente
-app.get('/pedidos', async (_, res) => {
-  try {
-    const [rows] = await db.query(`
-      SELECT p.*, c.nombre AS cliente
-      FROM pedidos p
-      JOIN clientes c ON p.id_cliente = c.id_cliente
-      ORDER BY p.id_pedido DESC
-    `)
-    res.json(rows)
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
-
-// POST - Crear pedido
 app.post('/pedidos', async (req, res) => {
   try {
     const {
@@ -177,62 +161,23 @@ app.post('/pedidos', async (req, res) => {
       estado_pedido
     } = req.body
 
-    const [result] = await db.query(`
-      INSERT INTO pedidos (
-        id_cliente, id_vendedor, id_ruta,
-        fecha, total, tipo_pedido,
-        dias_credito, estado_pedido
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `, [
-      id_cliente,
-      id_vendedor,
-      id_ruta,
-      fecha,
-      total,
-      tipo_pedido,
-      dias_credito,
-      estado_pedido || 'pendiente'
-    ])
+    const [result] = await db.query(
+      `INSERT INTO pedidos 
+       (id_cliente, id_vendedor, id_ruta, fecha, total, tipo_pedido, dias_credito, estado_pedido) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id_cliente,
+        id_vendedor,
+        id_ruta,
+        fecha,
+        total,
+        tipo_pedido,
+        dias_credito,
+        estado_pedido || 'pendiente'
+      ]
+    )
 
     res.json({ success: true, id: result.insertId })
-
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
-
-// PUT - Entregar pedido
-app.put('/pedidos/:id/entregar', async (req, res) => {
-  try {
-    const { id } = req.params
-
-    await db.query(`
-      UPDATE pedidos 
-      SET estado_pedido='entregado', fecha_entrega=NOW()
-      WHERE id_pedido=?
-    `, [id])
-
-    res.json({ success: true })
-
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
-
-// PUT - Cancelar pedido
-app.put('/pedidos/:id/cancelar', async (req, res) => {
-  try {
-    const { id } = req.params
-
-    await db.query(`
-      UPDATE pedidos 
-      SET estado_pedido='cancelado', fecha_cancelacion=NOW()
-      WHERE id_pedido=?
-    `, [id])
-
-    res.json({ success: true })
-
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
