@@ -23,12 +23,8 @@ function ConsultarPedidos() {
   const [busqueda, setBusqueda] = useState('')
   const navigate = useNavigate()
 
-  // Limpiamos la URL base
   const urlLimpia = API?.endsWith('/') ? API.slice(0, -1) : API;
 
-  /* =========================
-      CARGAR PEDIDOS
-  ========================= */
   const cargarPedidos = async () => {
     try {
       const res = await fetch(`${urlLimpia}/pedidos`)
@@ -44,13 +40,10 @@ function ConsultarPedidos() {
     cargarPedidos()
   }, [])
 
-  /* =========================
-      CALCULAR DÍAS
-  ========================= */
   const calcularDias = pedido => {
     if (!pedido.fecha) return 0
     const inicio = new Date(pedido.fecha)
-    // USAMOS estado_pedido
+    // Sincronizado con estado_pedido
     const cierre =
       pedido.estado_pedido === 'entregado'
         ? pedido.fecha_entrega
@@ -62,51 +55,31 @@ function ConsultarPedidos() {
     return Math.floor(diff / (1000 * 60 * 60 * 24))
   }
 
-  /* =========================
-      ENTREGAR DIRECTO
-  ========================= */
   const confirmarEntrega = async (id) => {
-    if (!window.confirm(`¿Marcar el pedido #${id} como ENTREGADO?`)) return;
-
+    if (!window.confirm(`¿Marcar pedido #${id} como ENTREGADO?`)) return;
     try {
       const res = await fetch(`${urlLimpia}/pedidos/${id}/entregar`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' }
       })
-
-      if (res.ok) {
-        await cargarPedidos()
-      } else {
-        const err = await res.json()
-        alert("Error: " + (err.error || "No se pudo actualizar"))
-      }
+      if (res.ok) await cargarPedidos()
+      else alert("Error al actualizar")
     } catch (error) {
-      console.error("Error de conexión:", error)
-      alert("Error de conexión con el servidor")
+      alert("Error de conexión")
     }
   }
 
-  /* =========================
-      CANCELAR DIRECTO
-  ========================= */
   const confirmarCancelacion = async (id) => {
     if (!window.confirm(`¿Seguro que deseas CANCELAR el pedido #${id}?`)) return;
-
     try {
       const res = await fetch(`${urlLimpia}/pedidos/${id}/cancelar`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' }
       })
-
-      if (res.ok) {
-        await cargarPedidos()
-      } else {
-        const err = await res.json()
-        alert("Error: " + (err.error || "No se pudo cancelar"))
-      }
+      if (res.ok) await cargarPedidos()
+      else alert("Error al cancelar")
     } catch (error) {
-      console.error("Error de conexión:", error)
-      alert("Error de conexión con el servidor")
+      alert("Error de conexión")
     }
   }
 
@@ -121,9 +94,7 @@ function ConsultarPedidos() {
   return (
     <div style={container}>
       <div style={header}>
-        <button style={btnVino} onClick={() => navigate('/')}>
-          ⬅ Volver
-        </button>
+        <button style={btnVino} onClick={() => navigate('/')}>⬅ Volver</button>
         <h2>Consultar pedidos</h2>
       </div>
 
@@ -148,52 +119,32 @@ function ConsultarPedidos() {
               <th style={th}>Acciones</th>
             </tr>
           </thead>
-
           <tbody>
             {pedidosFiltrados.map(p => {
               const dias = calcularDias(p)
-              
-              // Lógica de colores usando estado_pedido
-              const estiloEstado =
-                p.estado_pedido === 'entregado'
-                  ? estadoEntregado
-                  : p.estado_pedido === 'pendiente'
-                  ? estadoPendiente
-                  : estadoCancelado
+              const est = p.estado_pedido || 'pendiente'
+              const estilo = est === 'entregado' ? estadoEntregado : est === 'pendiente' ? estadoPendiente : estadoCancelado
 
               return (
                 <tr key={p.id_pedido}>
                   <td style={td}>{p.id_pedido}</td>
                   <td style={td}>{p.cliente}</td>
-                  <td style={td}>
-                    {p.fecha ? new Date(p.fecha).toLocaleDateString() : '-'}
-                  </td>
-                  <td style={td}>
-                    {p.fecha_entrega
-                      ? new Date(p.fecha_entrega).toLocaleDateString()
-                      : '-'}
-                  </td>
-                  <td style={td}>
-                    {p.fecha_cancelacion
-                      ? new Date(p.fecha_cancelacion).toLocaleDateString()
-                      : '-'}
-                  </td>
-                  <td style={td}>
-                    <span style={estiloEstado}>{p.estado_pedido || 'pendiente'}</span>
-                  </td>
+                  <td style={td}>{p.fecha ? new Date(p.fecha).toLocaleDateString() : '-'}</td>
+                  <td style={td}>{p.fecha_entrega ? new Date(p.fecha_entrega).toLocaleDateString() : '-'}</td>
+                  <td style={td}>{p.fecha_cancelacion ? new Date(p.fecha_cancelacion).toLocaleDateString() : '-'}</td>
+                  <td style={td}><span style={estilo}>{est}</span></td>
                   <td style={td}>{dias}</td>
                   <td style={td}>
                     <button
-                      style={{...btnVino, opacity: p.estado_pedido !== 'pendiente' ? 0.5 : 1}}
-                      disabled={p.estado_pedido !== 'pendiente'}
+                      style={{...btnVino, opacity: est !== 'pendiente' ? 0.5 : 1}}
+                      disabled={est !== 'pendiente'}
                       onClick={() => confirmarEntrega(p.id_pedido)}
                     >
                       Entregar
                     </button>
-
                     <button
-                      style={{...btnVino, opacity: p.estado_pedido !== 'pendiente' ? 0.5 : 1}}
-                      disabled={p.estado_pedido !== 'pendiente'}
+                      style={{...btnVino, opacity: est !== 'pendiente' ? 0.5 : 1}}
+                      disabled={est !== 'pendiente'}
                       onClick={() => confirmarCancelacion(p.id_pedido)}
                     >
                       Cancelar
