@@ -242,19 +242,34 @@ app.put('/pedidos/:id/cancelar', async (req, res) => {
    ================= CATÁLOGOS ========================
 ===================================================== */
 
-app.get('/vendedores', async (_, res) => {
-  const [rows] = await db.query('SELECT * FROM vendedores')
-  res.json(rows)
+app.get('/rutas', async (_, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM rutas')
+    res.json(rows)
+  } catch (err) {
+    console.error('Error rutas:', err)
+    res.status(500).json({ error: err.message })
+  }
 })
 
-app.get('/rutas', async (_, res) => {
-  const [rows] = await db.query('SELECT * FROM rutas')
-  res.json(rows)
+app.get('/vendedores', async (_, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM vendedores')
+    res.json(rows)
+  } catch (err) {
+    console.error('Error vendedores:', err)
+    res.status(500).json({ error: err.message })
+  }
 })
 
 app.get('/productos', async (_, res) => {
-  const [rows] = await db.query('SELECT * FROM productos')
-  res.json(rows)
+  try {
+    const [rows] = await db.query('SELECT * FROM productos')
+    res.json(rows)
+  } catch (err) {
+    console.error('Error productos:', err)
+    res.status(500).json({ error: err.message })
+  }
 })
 
 /* =====================================================
