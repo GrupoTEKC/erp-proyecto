@@ -1,27 +1,21 @@
- console.log("🔥 VERSION FINAL REPARADA - 3 MARZO 🔥")
+console.log("🔥 VERSION RESTAURADA + FIX DE RUTAS - 3 MARZO 🔥")
 const express = require('express')
 const cors = require('cors')
 const db = require('./db')
 const app = express()
 
-// ===================================
-// CONFIG RAILWAY
-// ===================================
+// =========================
+// CONFIG RAILWAY (Puerto 8080 Obligatorio)
+// =========================
 const PORT = process.env.PORT || 8080
 app.use(cors())
 app.use(express.json())
-
-// LOG DE DEPURACIÓN PARA VER RUTAS EN CONSOLA
-app.use((req, res, next) => {
-  console.log(`[${new Date().toLocaleString()}] ${req.method} ${req.url}`);
-  next();
-});
 
 // TEST MYSQL
 ;(async () => {
   try {
     await db.query('SELECT 1')
-    console.log('✅ MySQL conectado')
+    console.log('✅ MySQL conectado correctamente')
   } catch (error) {
     console.error('❌ Error MySQL:', error.message)
   }
@@ -30,7 +24,7 @@ app.use((req, res, next) => {
 app.get('/', (_, res) => res.json({ status: 'Backend ERP funcionando' }))
 
 /* =====================================================
-   CLIENTES
+   CLIENTES (Restaurado)
 ===================================================== */
 app.get('/clientes', async (_, res) => {
   try {
@@ -39,29 +33,8 @@ app.get('/clientes', async (_, res) => {
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-app.get('/clientes/:id', async (req, res) => {
-  try {
-    const id = Number(req.params.id)
-    const [rows] = await db.query('SELECT * FROM clientes WHERE id_cliente=?', [id])
-    if (!rows.length) return res.status(404).json({ error: 'Cliente no encontrado' })
-    res.json(rows[0])
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
-
-app.put('/clientes/:id', async (req, res) => {
-  try {
-    const id = Number(req.params.id)
-    const { nombre, telefono, email, direccion } = req.body
-    await db.query(
-      `UPDATE clientes SET nombre=?, telefono=?, email=?, direccion=? WHERE id_cliente=?`,
-      [nombre, telefono, email, direccion, id]
-    )
-    res.json({ success: true })
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
-
 /* =====================================================
-   RUTAS, VENDEDORES Y PRODUCTOS (Rutas que daban 404)
+   RUTAS, VENDEDORES Y PRODUCTOS (Las piezas que faltaban)
 ===================================================== */
 app.get('/rutas', async (_, res) => {
   try {
@@ -99,39 +72,25 @@ app.get('/pedidos', async (_, res) => {
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-app.post('/pedidos', async (req, res) => {
-  try {
-    const { id_cliente, id_vendedor, id_ruta, fecha, total, tipo_pedido, dias_credito, estado } = req.body
-    const [result] = await db.query(`
-      INSERT INTO pedidos (id_cliente, id_vendedor, id_ruta, fecha, total, tipo_pedido, dias_credito, estado) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `, [id_cliente, id_vendedor, id_ruta, fecha, total, tipo_pedido, dias_credito, estado || 'pendiente'])
-    res.json({ success: true, id: result.insertId })
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
-
 app.put('/pedidos/:id/entregar', async (req, res) => {
   try {
     const id = Number(req.params.id)
-    await db.query(`UPDATE pedidos SET estado = 'entregado', fecha_entrega = NOW() WHERE id_pedido = ?`, [id])
+    await db.query("UPDATE pedidos SET estado='entregado', fecha_entrega=NOW() WHERE id_pedido=?", [id])
     res.json({ success: true })
-  } catch (error) { res.status(500).json({ error: error.message }) }
+  } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
 app.put('/pedidos/:id/cancelar', async (req, res) => {
   try {
     const id = Number(req.params.id)
-    await db.query(`UPDATE pedidos SET estado = 'cancelado', fecha_cancelacion = NOW() WHERE id_pedido = ?`, [id])
+    await db.query("UPDATE pedidos SET estado='cancelado', fecha_cancelacion=NOW() WHERE id_pedido=?", [id])
     res.json({ success: true })
-  } catch (error) { res.status(500).json({ error: error.message }) }
+  } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-/* =====================================================
-   404 GLOBAL (SIEMPRE AL FINAL)
-===================================================== */
+// 404 GLOBAL
 app.use((req, res) => {
-  console.log(`⚠️ 404 detectado en: ${req.method} ${req.url}`);
-  res.status(404).json({ error: 'Ruta no encontrada en el ERP' })
+  res.status(404).json({ error: 'Ruta no encontrada en el servidor' })
 })
 
 app.listen(PORT, '0.0.0.0', () => {
