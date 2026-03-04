@@ -32,15 +32,13 @@ app.get('/', (_, res) => res.json({ status: 'Servidor ERP Funcionando' }))
 app.get('/clientes', async (_, res) => {
   try {
     const [rows] = await db.query(`
-      SELECT c.*, r.nombre AS ruta
+      SELECT c.*, r.nombre AS ruta 
       FROM clientes c
       LEFT JOIN rutas r ON c.id_ruta = r.id_ruta
       ORDER BY c.nombre ASC
     `)
     res.json(rows)
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
+  } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
 // POST - Crear cliente
