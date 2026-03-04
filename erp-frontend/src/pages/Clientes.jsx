@@ -35,7 +35,6 @@ function Clientes() {
   }, [])
 
   /* ================= FILTRO MEJORADO ================= */
-  // Agregamos "?" para evitar errores si algún campo es null
   const term = busqueda.toLowerCase()
   const clientesFiltrados = clientes.filter(c =>
     `${c.nombre} ${c.apellido1} ${c.apellido2} ${c.nombre_tienda} ${c.apodo}`
@@ -55,15 +54,12 @@ function Clientes() {
 
       if (!res.ok) throw new Error('Error al eliminar')
 
-      setClientes(prev =>
-        prev.filter(c => c.id_cliente !== id)
-      )
-
-      alert('✅ Cliente eliminado correctamente')
+      setClientes(prev => prev.filter(c => c.id_cliente !== id))
+      alert('✅ Cliente eliminado')
 
     } catch (err) {
       console.error('🔥 ERROR:', err)
-      alert('❌ No se pudo eliminar el cliente')
+      alert('❌ No se pudo eliminar')
     }
   }
 
@@ -92,7 +88,7 @@ function Clientes() {
         style={buscador}
       />
 
-      {loading && <p>Cargando información de clientes...</p>}
+      {loading && <p>Cargando información...</p>}
       {error && <p style={{ color: 'red' }}>⚠️ Error: {error}</p>}
 
       {!loading && !error && (
@@ -116,7 +112,6 @@ function Clientes() {
                 <th style={th}>Referencia</th>
                 <th style={th}>Email</th>
                 <th style={th}>Ruta</th>
-                <th style={th}>Saldo</th>
                 <th style={th}>Acciones</th>
               </tr>
             </thead>
@@ -124,26 +119,21 @@ function Clientes() {
             <tbody>
               {clientesFiltrados.length === 0 ? (
                 <tr>
-                  <td colSpan="18" style={sinDatos}>
-                    No se encontraron clientes que coincidan con la búsqueda
+                  <td colSpan="17" style={sinDatos}>
+                    No se encontraron clientes
                   </td>
                 </tr>
               ) : (
                 clientesFiltrados.map((c, i) => (
                   <tr
                     key={c.id_cliente}
-                    style={{
-                      background: i % 2 === 0 ? '#f9f9f9' : 'white'
-                    }}
+                    style={{ background: i % 2 === 0 ? '#f9f9f9' : 'white' }}
                   >
-                    <td style={td}>
-                      {c.nombre} {c.apellido1} {c.apellido2}
-                    </td>
+                    <td style={td}>{c.nombre} {c.apellido1} {c.apellido2}</td>
                     <td style={td}>{c.apodo}</td>
                     <td style={td}>{c.rfc}</td>
                     <td style={td}>
-                      {c.categoria}
-                      {c.categoria_otro ? ` (${c.categoria_otro})` : ''}
+                      {c.categoria}{c.categoria_otro ? ` (${c.categoria_otro})` : ''}
                     </td>
                     <td style={td}>{c.nombre_tienda}</td>
                     <td style={td}>{c.telefono_dueno}</td>
@@ -156,14 +146,9 @@ function Clientes() {
                     <td style={td}>{c.entre_calles}</td>
                     <td style={td}>{c.referencia}</td>
                     <td style={td}>{c.email}</td>
-                    {/* ✅ Mostramos el nombre de la ruta que viene del JOIN del backend */}
                     <td style={td}>
-                      {c.ruta ? c.ruta : <span style={{color: '#ccc'}}>No asignada</span>}
-                    </td>
-                    <td style={td}>
-                      <b style={{color: c.saldo_actual > 0 ? 'red' : 'green'}}>
-                        ${Number(c.saldo_actual || 0).toLocaleString()}
-                      </b>
+                      {/* Si el backend devolvió el nombre de la ruta, lo muestra. Si no, muestra el ID */}
+                      {c.ruta ? c.ruta : (c.id_ruta ? `ID: ${c.id_ruta}` : 'Sin Ruta')}
                     </td>
                     <td style={td}>
                       <div style={{display: 'flex', gap: '5px'}}>
@@ -173,13 +158,8 @@ function Clientes() {
                         >
                           Editar
                         </button>
-
                         <button
-                          style={{
-                            ...btnEditar,
-                            color: 'red',
-                            borderColor: 'red'
-                          }}
+                          style={{ ...btnEditar, color: 'red', borderColor: 'red' }}
                           onClick={() => eliminarCliente(c.id_cliente)}
                         >
                           Eliminar
@@ -197,7 +177,7 @@ function Clientes() {
   )
 }
 
-/* ================= ESTILOS (Sin cambios) ================= */
+/* ================= ESTILOS ================= */
 const vino = '#8B1E1E'
 const container = { padding: 20, background: '#ffffff', minHeight: '100vh', fontFamily: 'Arial' }
 const header = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 10 }
