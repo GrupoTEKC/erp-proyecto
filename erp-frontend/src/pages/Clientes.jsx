@@ -112,7 +112,6 @@ function Clientes() {
                 <th style={th}>Referencia</th>
                 <th style={th}>Email</th>
                 <th style={th}>ID Ruta</th>
-                <th style={th}>Nombre Ruta</th>
                 <th style={th}>Acciones</th>
               </tr>
             </thead>
@@ -120,7 +119,7 @@ function Clientes() {
             <tbody>
               {clientesFiltrados.length === 0 ? (
                 <tr>
-                  <td colSpan="18" style={sinDatos}>
+                  <td colSpan="17" style={sinDatos}>
                     No se encontraron clientes
                   </td>
                 </tr>
@@ -147,12 +146,8 @@ function Clientes() {
                     <td style={td}>{c.entre_calles}</td>
                     <td style={td}>{c.referencia}</td>
                     <td style={td}>{c.email}</td>
-                    {/* ID de la Ruta */}
+                    {/* Solo el ID de la Ruta */}
                     <td style={td}>{c.id_ruta || 'N/A'}</td>
-                    {/* Nombre de la Ruta */}
-                    <td style={td}>
-                      {c.ruta ? c.ruta : <span style={{color: '#999'}}>No asignada</span>}
-                    </td>
                     <td style={td}>
                       <div style={{display: 'flex', gap: '5px'}}>
                         <button
@@ -188,7 +183,7 @@ const btnVino = { background: '#fff', color: vino, border: `1px solid ${vino}`, 
 const btnEditar = { ...btnVino, padding: '6px 10px', fontSize: 13 }
 const buscador = { width: '100%', padding: 10, borderRadius: 6, border: `1px solid ${vino}`, marginBottom: 20 }
 const tablaWrapper = { background: '#fff', borderRadius: 8, overflowX: 'auto', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }
-const tabla = { width: '100%', borderCollapse: 'collapse', minWidth: 1600 } // Aumentado un poco por la nueva columna
+const tabla = { width: '100%', borderCollapse: 'collapse', minWidth: 1500 }
 const thead = { background: vino, color: '#fff' }
 const th = { padding: 12, textAlign: 'left' }
 const td = { padding: 12, borderBottom: '1px solid #eee' }
