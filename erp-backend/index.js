@@ -11,8 +11,11 @@ app.use(express.json())
 // =====================================================
 // GET - LISTAR CLIENTES
 // =====================================================
+
 app.get('/clientes', async (_, res) => {
+
   try {
+
     const [rows] = await db.query(`
       SELECT c.*, r.nombre AS ruta
       FROM clientes c
@@ -23,56 +26,82 @@ app.get('/clientes', async (_, res) => {
     res.json(rows)
 
   } catch (err) {
+
     console.error('ERROR /clientes:', err)
     res.status(500).json({ error: err.message })
+
   }
+
 })
 
 
 // =====================================================
-// GET - OBTENER CLIENTE POR ID (EDITAR)
+// GET - OBTENER CLIENTE POR id_cliente
 // =====================================================
-app.get('/clientes/:id', async (req, res) => {
+
+app.get('/clientes/:id_cliente', async (req, res) => {
+
   try {
 
-    const { id } = req.params
+    const { id_cliente } = req.params
 
-    const [rows] = await db.query(
-      `SELECT c.*, r.nombre AS ruta
-       FROM clientes c
-       LEFT JOIN rutas r ON c.id_ruta = r.id_ruta
-       WHERE c.id_cliente = ?`,
-      [id]
-    )
+    const [rows] = await db.query(`
+      SELECT c.*, r.nombre AS ruta
+      FROM clientes c
+      LEFT JOIN rutas r ON c.id_ruta = r.id_ruta
+      WHERE c.id_cliente = ?
+    `, [id_cliente])
 
     if (rows.length === 0) {
+
       return res.status(404).json({ error: 'Cliente no encontrado' })
+
     }
 
     res.json(rows[0])
 
   } catch (err) {
-    console.error('ERROR /clientes/:id:', err)
+
+    console.error('ERROR /clientes/:id_cliente:', err)
     res.status(500).json({ error: err.message })
+
   }
+
 })
 
 
 // =====================================================
 // PUT - ACTUALIZAR CLIENTE
 // =====================================================
-app.put('/clientes/:id', async (req, res) => {
+
+app.put('/clientes/:id_cliente', async (req, res) => {
+
   try {
 
-    const { id } = req.params
+    const { id_cliente } = req.params
     const v = req.body
 
     await db.query(`
       UPDATE clientes SET
-        nombre=?, apellido1=?, apellido2=?, nombre_tienda=?, apodo=?,
-        rfc=?, email=?, telefono_dueno=?, telefono_tienda=?,
-        categoria=?, categoria_otro=?, calle=?, numero=?, cp=?,
-        municipio=?, estado=?, entre_calles=?, referencia=?, id_ruta=?
+        nombre=?,
+        apellido1=?,
+        apellido2=?,
+        nombre_tienda=?,
+        apodo=?,
+        rfc=?,
+        email=?,
+        telefono_dueno=?,
+        telefono_tienda=?,
+        categoria=?,
+        categoria_otro=?,
+        calle=?,
+        numero=?,
+        cp=?,
+        municipio=?,
+        estado=?,
+        entre_calles=?,
+        referencia=?,
+        id_ruta=?
       WHERE id_cliente=?
     `, [
       v.nombre,
@@ -94,15 +123,18 @@ app.put('/clientes/:id', async (req, res) => {
       v.entre_calles,
       v.referencia,
       v.id_ruta,
-      id
+      id_cliente
     ])
 
     res.json({ success: true })
 
   } catch (err) {
+
     console.error('ERROR UPDATE CLIENTE:', err)
     res.status(500).json({ error: err.message })
+
   }
+
 })
 
 
@@ -110,38 +142,60 @@ app.put('/clientes/:id', async (req, res) => {
 // CATÁLOGOS
 // =====================================================
 
-// rutas
+
+// RUTAS
 app.get('/rutas', async (_, res) => {
+
   try {
+
     const [rows] = await db.query('SELECT * FROM rutas')
     res.json(rows)
+
   } catch (err) {
+
     console.error('ERROR /rutas:', err)
     res.status(500).json({ error: err.message })
+
   }
+
 })
 
-// vendedores
+
+// VENDEDORES
 app.get('/vendedores', async (_, res) => {
+
   try {
+
     const [rows] = await db.query('SELECT * FROM vendedores')
     res.json(rows)
+
   } catch (err) {
+
     console.error('ERROR /vendedores:', err)
     res.status(500).json({ error: err.message })
+
   }
+
 })
 
 
 // =====================================================
 // RUTA DEFAULT PARA EVITAR ERROR 404 GLOBAL
 // =====================================================
+
 app.use((req, res) => {
+
   res.status(404).json({ error: 'Ruta no encontrada en el ERP' })
+
 })
 
 
 // =====================================================
+// INICIAR SERVIDOR
+// =====================================================
+
 app.listen(PORT, '0.0.0.0', () => {
+
   console.log(`🚀 Server corriendo en puerto ${PORT}`)
+
 })
