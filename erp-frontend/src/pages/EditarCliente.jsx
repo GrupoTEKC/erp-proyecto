@@ -15,6 +15,7 @@ function EditarCliente() {
   // =========================
   // CARGAR CLIENTE
   // =========================
+
   useEffect(() => {
 
     const cargarCliente = async () => {
@@ -23,25 +24,11 @@ function EditarCliente() {
 
         console.log('🟢 ID recibido:', id)
 
-        if (!id) throw new Error('ID inválido')
-
-        setLoading(true)
-        setError(null)
-
         const res = await fetch(`${API}/clientes/${id}`)
 
-        console.log('📡 Status:', res.status)
+        if (!res.ok) throw new Error('Error cargando cliente')
 
-        // leer como texto primero para debug
-        const text = await res.text()
-
-        console.log('📦 Respuesta cruda:', text)
-
-        if (!res.ok) {
-          throw new Error('Servidor respondió error')
-        }
-
-        const data = JSON.parse(text)
+        const data = await res.json()
 
         console.log('✅ Cliente cargado:', data)
 
@@ -49,7 +36,7 @@ function EditarCliente() {
 
       } catch (err) {
 
-        console.error('🔥 ERROR:', err)
+        console.error(err)
         setError('Error cargando cliente')
 
       } finally {
@@ -57,28 +44,35 @@ function EditarCliente() {
         setLoading(false)
 
       }
+
     }
 
     cargarCliente()
 
   }, [id])
 
+
+
   // =========================
   // GUARDAR CAMBIOS
   // =========================
+
   const guardarCambios = async () => {
 
     try {
 
       const res = await fetch(`${API}/clientes/${id}`, {
+
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cliente)
+
       })
 
       if (!res.ok) throw new Error()
 
       alert('✅ Cliente actualizado')
+
       navigate('/clientes')
 
     } catch {
@@ -86,20 +80,17 @@ function EditarCliente() {
       alert('❌ Error al guardar cambios')
 
     }
+
   }
 
-  // =========================
-  // ESTADOS
-  // =========================
+
+
   if (loading) return <p>Cargando cliente...</p>
-
   if (error) return <p style={{ color: 'red' }}>{error}</p>
-
   if (!cliente) return <p>No hay datos</p>
 
-  // =========================
-  // UI
-  // =========================
+
+
   return (
 
     <div style={{ padding: 20 }}>
@@ -115,10 +106,34 @@ function EditarCliente() {
       />
 
       <input
-        placeholder="Teléfono"
-        value={cliente.telefono || ''}
+        placeholder="Apellido 1"
+        value={cliente.apellido1 || ''}
         onChange={e =>
-          setCliente({ ...cliente, telefono: e.target.value })
+          setCliente({ ...cliente, apellido1: e.target.value })
+        }
+      />
+
+      <input
+        placeholder="Apellido 2"
+        value={cliente.apellido2 || ''}
+        onChange={e =>
+          setCliente({ ...cliente, apellido2: e.target.value })
+        }
+      />
+
+      <input
+        placeholder="Nombre tienda"
+        value={cliente.nombre_tienda || ''}
+        onChange={e =>
+          setCliente({ ...cliente, nombre_tienda: e.target.value })
+        }
+      />
+
+      <input
+        placeholder="Teléfono dueño"
+        value={cliente.telefono_dueno || ''}
+        onChange={e =>
+          setCliente({ ...cliente, telefono_dueno: e.target.value })
         }
       />
 
@@ -131,10 +146,18 @@ function EditarCliente() {
       />
 
       <input
-        placeholder="Dirección"
-        value={cliente.direccion || ''}
+        placeholder="Calle"
+        value={cliente.calle || ''}
         onChange={e =>
-          setCliente({ ...cliente, direccion: e.target.value })
+          setCliente({ ...cliente, calle: e.target.value })
+        }
+      />
+
+      <input
+        placeholder="Número"
+        value={cliente.numero || ''}
+        onChange={e =>
+          setCliente({ ...cliente, numero: e.target.value })
         }
       />
 
@@ -151,6 +174,7 @@ function EditarCliente() {
     </div>
 
   )
+
 }
 
 export default EditarCliente
