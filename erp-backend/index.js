@@ -1,43 +1,39 @@
+require('dotenv').config()
 const express = require('express')
+const mysql = require('mysql2/promise')
 const cors = require('cors')
-const db = require('./db')
 
 const app = express()
-const PORT = process.env.PORT || 8080
 
 app.use(cors())
 app.use(express.json())
 
-// =====================================================
-// GET - LISTAR CLIENTES
-// =====================================================
+// =============================
+// CONEXIÓN MYSQL
+// =============================
 
-app.get('/clientes', async (_, res) => {
-
-  try {
-
-    const [rows] = await db.query(`
-      SELECT c.*, r.nombre AS ruta
-      FROM clientes c
-      LEFT JOIN rutas r ON c.id_ruta = r.id_ruta
-      ORDER BY c.nombre ASC
-    `)
-
-    res.json(rows)
-
-  } catch (err) {
-
-    console.error('ERROR /clientes:', err)
-    res.status(500).json({ error: err.message })
-
-  }
-
+const db = mysql.createPool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME
 })
 
+// =============================
+// CLIENTES
+// =============================
 
-// =====================================================
-// GET - OBTENER CLIENTE POR id_cliente
-// =====================================================
+// Obtener todos
+app.get('/clientes', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM clientes')
+    res.json(rows)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// Obtener por ID
 app.get('/clientes/:id_cliente', async (req, res) => {
   try {
     const { id_cliente } = req.params
@@ -54,137 +50,124 @@ app.get('/clientes/:id_cliente', async (req, res) => {
     res.json(rows[0])
 
   } catch (err) {
-    console.error('ERROR /clientes/:id_cliente:', err)
     res.status(500).json({ error: err.message })
   }
 })
 
-// =====================================================
-// PUT - ACTUALIZAR CLIENTE
-// =====================================================
-
+// Actualizar cliente
 app.put('/clientes/:id_cliente', async (req, res) => {
-
   try {
-
     const { id_cliente } = req.params
-    const v = req.body
+    const data = req.body
 
-    await db.query(`
-      UPDATE clientes SET
-        nombre=?,
-        apellido1=?,
-        apellido2=?,
-        nombre_tienda=?,
-        apodo=?,
-        rfc=?,
-        email=?,
-        telefono_dueno=?,
-        telefono_tienda=?,
-        categoria=?,
-        categoria_otro=?,
-        calle=?,
-        numero=?,
-        cp=?,
-        municipio=?,
-        estado=?,
-        entre_calles=?,
-        referencia=?,
-        id_ruta=?
-      WHERE id_cliente=?
-    `, [
-      v.nombre,
-      v.apellido1,
-      v.apellido2,
-      v.nombre_tienda,
-      v.apodo,
-      v.rfc,
-      v.email,
-      v.telefono_dueno,
-      v.telefono_tienda,
-      v.categoria,
-      v.categoria_otro,
-      v.calle,
-      v.numero,
-      v.cp,
-      v.municipio,
-      v.estado,
-      v.entre_calles,
-      v.referencia,
-      v.id_ruta,
-      id_cliente
-    ])
+    await db.query(
+      `UPDATE clientes SET
+      nombre = ?,
+      telefono = ?,
+      email = ?
+      WHERE id_cliente = ?`,
+      [data.nombre, data.telefono, data.email, id_cliente]
+    )
 
     res.json({ success: true })
 
   } catch (err) {
-
-    console.error('ERROR UPDATE CLIENTE:', err)
     res.status(500).json({ error: err.message })
-
   }
-
 })
 
-
-// =====================================================
-// CATÁLOGOS
-// =====================================================
-
-
+// =============================
 // RUTAS
-app.get('/rutas', async (_, res) => {
+// =============================
 
+app.get('/rutas', async (req, res) => {
   try {
-
     const [rows] = await db.query('SELECT * FROM rutas')
     res.json(rows)
-
   } catch (err) {
-
-    console.error('ERROR /rutas:', err)
     res.status(500).json({ error: err.message })
-
   }
-
 })
 
-
+// =============================
 // VENDEDORES
-app.get('/vendedores', async (_, res) => {
+// =============================
+
+app.get('/vendedores', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM vendedores')
+    res.json(rows)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// =============================
+// CREAR PEDIDO
+// =============================
+
+app.post('/pedidos', async (req, res) => {
 
   try {
 
-    const [rows] = await db.query('SELECT * FROM vendedores')
-    res.json(rows)
+    const p = req.body
+
+    const [result] = await db.query(`
+      INSERT INTO pedidos (
+        id_cliente,
+        id_vendedor,
+        id_ruta,
+        fecha,
+        total,
+        tipo_pedido,
+        dias_credito,
+        estado_pedido
+      )
+      VALUES (?,?,?,?,?,?,?,?)
+    `,[
+      p.id_cliente,
+      p.id_vendedor,
+      p.id_ruta,
+      p.fecha,
+      p.total,
+      p.tipo_pedido,
+      p.dias_credito,
+      p.estado_pedido
+    ])
+
+    res.json({
+      success:true,
+      id_pedido: result.insertId
+    })
 
   } catch (err) {
 
-    console.error('ERROR /vendedores:', err)
-    res.status(500).json({ error: err.message })
+    console.error(err)
+
+    res.status(500).json({
+      error: err.message
+    })
 
   }
 
 })
 
+// =============================
+// RUTA 404
+// =============================
 
-// =====================================================
-// RUTA DEFAULT PARA EVITAR ERROR 404 GLOBAL
-// =====================================================
-
-app.use((req, res) => {
-
-  res.status(404).json({ error: 'Ruta no encontrada en el ERP' })
-
+app.use((req,res)=>{
+  res.status(404).json({
+    error:'Ruta no encontrada en el ERP'
+  })
 })
 
+// =============================
+// SERVER
+// =============================
 
-// =====================================================
-// INICIAR SERVIDOR
-// =====================================================
+const PORT = process.env.PORT || 3000
 
-app.listen(PORT, '0.0.0.0', () => {
-
-  console.log(`🚀 Server corriendo en puerto ${PORT}`)
-
+app.listen(PORT, () => {
+  console.log('ERP corriendo en puerto', PORT)
 })
