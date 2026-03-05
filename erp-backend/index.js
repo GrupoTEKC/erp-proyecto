@@ -1,191 +1,80 @@
-import { useNavigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+const express = require('express')
+const cors = require('cors')
+const db = require('./db')
 
-const API = 'https://erp-proyecto-production.up.railway.app'
+const app = express()
+const PORT = process.env.PORT || 8080
 
-function Clientes() {
-  const navigate = useNavigate()
+app.use(cors())
+app.use(express.json())
 
-  const [clientes, setClientes] = useState([])
-  const [busqueda, setBusqueda] = useState('')
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+// GET - Listar todos los clientes
+app.get('/clientes', async (_, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT c.*, r.nombre AS ruta 
+      FROM clientes c
+      LEFT JOIN rutas r ON c.id_ruta = r.id_ruta
+      ORDER BY c.nombre ASC
+    `)
+    res.json(rows)
+  } catch (err) { res.status(500).json({ error: err.message }) }
+})
 
-  /* ================= CARGAR CLIENTES ================= */
-  useEffect(() => {
-    const cargarClientes = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-
-        const res = await fetch(`${API}/clientes`)
-        if (!res.ok) throw new Error('Error cargando clientes')
-
-        const data = await res.json()
-        setClientes(data)
-
-      } catch (err) {
-        setError(err.message)
-      } finally {
-        setLoading(false)
-      }
+// =====================================================
+// NUEVA RUTA: GET - Obtener un solo cliente por ID 
+// (ESTO ES LO QUE ARREGLA EL ERROR 404)
+// =====================================================
+app.get('/clientes/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+    const [rows] = await db.query('SELECT * FROM clientes WHERE id_cliente = ?', [id])
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Cliente no encontrado' })
     }
-
-    cargarClientes()
-  }, [])
-
-  /* ================= FILTRO MEJORADO ================= */
-  const term = busqueda.toLowerCase()
-  const clientesFiltrados = clientes.filter(c =>
-    `${c.nombre} ${c.apellido1} ${c.apellido2} ${c.nombre_tienda} ${c.apodo}`
-      .toLowerCase()
-      .includes(term)
-  )
-
-  /* ================= ELIMINAR ================= */
-  const eliminarCliente = async (id) => {
-    const confirmar = window.confirm('¿Eliminar cliente definitivamente?')
-    if (!confirmar) return
-
-    try {
-      const res = await fetch(`${API}/clientes/${id}`, {
-        method: 'DELETE'
-      })
-
-      if (!res.ok) throw new Error('Error al eliminar')
-
-      setClientes(prev => prev.filter(c => c.id_cliente !== id))
-      alert('✅ Cliente eliminado')
-
-    } catch (err) {
-      console.error('🔥 ERROR:', err)
-      alert('❌ No se pudo eliminar')
-    }
+    res.json(rows[0])
+  } catch (err) {
+    res.status(500).json({ error: err.message })
   }
+})
 
-  return (
-    <div style={container}>
-      <div style={header}>
-        <button style={btnVino} onClick={() => navigate('/')}>
-          ← Volver
-        </button>
+// PUT - Actualizar cliente
+app.put('/clientes/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+    const v = req.body
+    await db.query(`
+      UPDATE clientes SET
+        nombre=?, apellido1=?, apellido2=?, nombre_tienda=?, apodo=?,
+        rfc=?, email=?, telefono_dueno=?, telefono_tienda=?,
+        categoria=?, categoria_otro=?, calle=?, numero=?, cp=?,
+        municipio=?, estado=?, entre_calles=?, referencia=?, id_ruta=?
+      WHERE id_cliente=?
+    `, [
+      v.nombre, v.apellido1, v.apellido2, v.nombre_tienda, v.apodo,
+      v.rfc, v.email, v.telefono_dueno, v.telefono_tienda,
+      v.categoria, v.categoria_otro, v.calle, v.numero, v.cp,
+      v.municipio, v.estado, v.entre_calles, v.referencia, v.id_ruta,
+      id
+    ])
+    res.json({ success: true })
+  } catch (err) { res.status(500).json({ error: err.message }) }
+})
 
-        <h2 style={{ margin: 0 }}>Gestión de Clientes</h2>
+// Rutas de catálogos (Asegúrate de que existan para evitar errores en consola)
+app.get('/rutas', async (_, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM rutas')
+    res.json(rows)
+  } catch (err) { res.status(500).json({ error: err.message }) }
+})
 
-        <button
-          style={btnVino}
-          onClick={() => navigate('/clientes/nuevo')}
-        >
-          + Nuevo Cliente
-        </button>
-      </div>
+app.get('/vendedores', async (_, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM vendedores')
+    res.json(rows)
+  } catch (err) { res.status(500).json({ error: err.message }) }
+})
 
-      <input
-        type="text"
-        placeholder="Buscar por nombre, tienda o apodo..."
-        value={busqueda}
-        onChange={e => setBusqueda(e.target.value)}
-        style={buscador}
-      />
-
-      {loading && <p>Cargando información...</p>}
-      {error && <p style={{ color: 'red' }}>⚠️ Error: {error}</p>}
-
-      {!loading && !error && (
-        <div style={tablaWrapper}>
-          <table style={tabla}>
-            <thead style={thead}>
-              <tr>
-                <th style={th}>Nombre Completo</th>
-                <th style={th}>Apodo</th>
-                <th style={th}>RFC</th>
-                <th style={th}>Categoría</th>
-                <th style={th}>Tienda</th>
-                <th style={th}>Tel. Dueño</th>
-                <th style={th}>Tel. Tienda</th>
-                <th style={th}>Calle</th>
-                <th style={th}>Nº</th>
-                <th style={th}>CP</th>
-                <th style={th}>Municipio</th>
-                <th style={th}>Estado</th>
-                <th style={th}>Entre calles</th>
-                <th style={th}>Referencia</th>
-                <th style={th}>Email</th>
-                <th style={th}>ID Ruta</th> {/* Dejamos solo el ID */}
-                <th style={th}>Acciones</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {clientesFiltrados.length === 0 ? (
-                <tr>
-                  <td colSpan="17" style={sinDatos}>
-                    No se encontraron clientes
-                  </td>
-                </tr>
-              ) : (
-                clientesFiltrados.map((c, i) => (
-                  <tr
-                    key={c.id_cliente}
-                    style={{ background: i % 2 === 0 ? '#f9f9f9' : 'white' }}
-                  >
-                    <td style={td}>{c.nombre} {c.apellido1} {c.apellido2}</td>
-                    <td style={td}>{c.apodo}</td>
-                    <td style={td}>{c.rfc}</td>
-                    <td style={td}>
-                      {c.categoria}{c.categoria_otro ? ` (${c.categoria_otro})` : ''}
-                    </td>
-                    <td style={td}>{c.nombre_tienda}</td>
-                    <td style={td}>{c.telefono_dueno}</td>
-                    <td style={td}>{c.telefono_tienda}</td>
-                    <td style={td}>{c.calle}</td>
-                    <td style={td}>{c.numero}</td>
-                    <td style={td}>{c.cp}</td>
-                    <td style={td}>{c.municipio}</td>
-                    <td style={td}>{c.estado}</td>
-                    <td style={td}>{c.entre_calles}</td>
-                    <td style={td}>{c.referencia}</td>
-                    <td style={td}>{c.email}</td>
-                    <td style={td}>{c.id_ruta || 'N/A'}</td> {/* Muestra el ID de la tabla clientes */}
-                    <td style={td}>
-                      <div style={{display: 'flex', gap: '5px'}}>
-                        <button
-                          style={btnEditar}
-                          onClick={() => navigate(`/clientes/editar/${c.id_cliente}`)}
-                        >
-                          Editar
-                        </button>
-                        <button
-                          style={{ ...btnEditar, color: 'red', borderColor: 'red' }}
-                          onClick={() => eliminarCliente(c.id_cliente)}
-                        >
-                          Eliminar
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  )
-}
-
-/* ================= ESTILOS ================= */
-const vino = '#8B1E1E'
-const container = { padding: 20, background: '#ffffff', minHeight: '100vh', fontFamily: 'Arial' }
-const header = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 10 }
-const btnVino = { background: '#fff', color: vino, border: `1px solid ${vino}`, padding: '10px 14px', borderRadius: 6, cursor: 'pointer' }
-const btnEditar = { ...btnVino, padding: '6px 10px', fontSize: 13 }
-const buscador = { width: '100%', padding: 10, borderRadius: 6, border: `1px solid ${vino}`, marginBottom: 20 }
-const tablaWrapper = { background: '#fff', borderRadius: 8, overflowX: 'auto', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }
-const tabla = { width: '100%', borderCollapse: 'collapse', minWidth: 1500 }
-const thead = { background: vino, color: '#fff' }
-const th = { padding: 12, textAlign: 'left' }
-const td = { padding: 12, borderBottom: '1px solid #eee' }
-const sinDatos = { padding: 15, textAlign: 'center' }
-
-export default Clientes
+app.listen(PORT, '0.0.0.0', () => console.log(`🚀 Server en puerto ${PORT}`))
