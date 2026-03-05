@@ -6,14 +6,14 @@ function Pagos() {
   const [busqueda, setBusqueda] = useState("")
 
   useEffect(() => {
-    fetch("http://localhost:3001/clientes")
+    fetch("http://localhost:3000/clientes")
       .then(res => res.json())
       .then(data => setClientes(data))
-      .catch(err => console.log(err))
+      .catch(err => console.error(err))
   }, [])
 
-  const clientesFiltrados = clientes.filter(cliente =>
-    `${cliente.nombre} ${cliente.apellido1} ${cliente.apellido2} ${cliente.nombre_tienda}`
+  const clientesFiltrados = clientes.filter(c =>
+    `${c.nombre} ${c.apellido1} ${c.apellido2} ${c.nombre_tienda}`
       .toLowerCase()
       .includes(busqueda.toLowerCase())
   )
@@ -21,55 +21,47 @@ function Pagos() {
   return (
     <div style={{ padding: "20px" }}>
 
-      <h1>Pagos</h1>
+      <h2>Pagos</h2>
 
-      {/* BUSCADOR */}
       <input
         type="text"
         placeholder="Buscar cliente o tienda..."
         value={busqueda}
-        onChange={(e) => setBusqueda(e.target.value)}
+        onChange={(e)=>setBusqueda(e.target.value)}
         style={{
-          padding: "10px",
-          width: "300px",
-          marginBottom: "20px"
+          padding:"10px",
+          width:"300px",
+          marginBottom:"20px"
         }}
       />
 
-      {/* LISTA DE CLIENTES */}
-      <div style={{
-        background: "#fff",
-        border: "1px solid #ddd",
-        borderRadius: "6px"
-      }}>
+      {clientesFiltrados.map(cliente => (
 
-        {clientesFiltrados.map(cliente => (
+        <div
+          key={cliente.id_cliente}
+          style={{
+            border:"1px solid #ddd",
+            padding:"10px",
+            marginBottom:"10px",
+            borderRadius:"6px"
+          }}
+        >
 
-          <div
-            key={cliente.id_cliente}
-            style={{
-              padding: "12px",
-              borderBottom: "1px solid #eee"
-            }}
-          >
+          <b>
+            {cliente.nombre} {cliente.apellido1} {cliente.apellido2}
+          </b>
 
-            <b>
-              {cliente.nombre} {cliente.apellido1} {cliente.apellido2}
-            </b>
+          <br/>
 
-            <br />
+          {cliente.nombre_tienda}
 
-            {cliente.nombre_tienda}
+          <br/>
 
-            <br />
+          Saldo actual: ${cliente.saldo_actual}
 
-            Saldo: ${cliente.saldo_actual}
+        </div>
 
-          </div>
-
-        ))}
-
-      </div>
+      ))}
 
     </div>
   )
