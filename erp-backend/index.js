@@ -38,37 +38,26 @@ app.get('/clientes', async (_, res) => {
 // =====================================================
 // GET - OBTENER CLIENTE POR id_cliente
 // =====================================================
-
 app.get('/clientes/:id_cliente', async (req, res) => {
-
   try {
-
     const { id_cliente } = req.params
 
-    const [rows] = await db.query(`
-      SELECT c.*, r.nombre AS ruta
-      FROM clientes c
-      LEFT JOIN rutas r ON c.id_ruta = r.id_ruta
-      WHERE c.id_cliente = ?
-    `, [id_cliente])
+    const [rows] = await db.query(
+      'SELECT * FROM clientes WHERE id_cliente = ?',
+      [id_cliente]
+    )
 
     if (rows.length === 0) {
-
       return res.status(404).json({ error: 'Cliente no encontrado' })
-
     }
 
     res.json(rows[0])
 
   } catch (err) {
-
     console.error('ERROR /clientes/:id_cliente:', err)
     res.status(500).json({ error: err.message })
-
   }
-
 })
-
 
 // =====================================================
 // PUT - ACTUALIZAR CLIENTE
