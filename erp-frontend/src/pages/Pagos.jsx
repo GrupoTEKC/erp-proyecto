@@ -1,70 +1,135 @@
-import { useState, useEffect } from "react"
+ import { useEffect, useState } from "react"
+
+const API = "https://erp-proyecto-production.up.railway.app"
 
 function Pagos() {
 
   const [clientes, setClientes] = useState([])
   const [busqueda, setBusqueda] = useState("")
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  /* ================= CARGAR CLIENTES ================= */
 
   useEffect(() => {
-    fetch("http://localhost:3000/clientes")
-      .then(res => res.json())
-      .then(data => setClientes(data))
-      .catch(err => console.error(err))
+
+    const cargarClientes = async () => {
+
+      try {
+
+        setLoading(true)
+        setError(null)
+
+        const res = await fetch(`${API}/clientes`)
+
+        if (!res.ok) throw new Error("Error cargando clientes")
+
+        const data = await res.json()
+
+        setClientes(data)
+
+      } catch (err) {
+
+        setError(err.message)
+
+      } finally {
+
+        setLoading(false)
+
+      }
+
+    }
+
+    cargarClientes()
+
   }, [])
 
+  /* ================= FILTRO ================= */
+
+  const term = busqueda.toLowerCase()
+
   const clientesFiltrados = clientes.filter(c =>
-    `${c.nombre} ${c.apellido1} ${c.apellido2} ${c.nombre_tienda}`
+    `${c.nombre} ${c.apellido1} ${c.apellido2} ${c.nombre_tienda} ${c.apodo}`
       .toLowerCase()
-      .includes(busqueda.toLowerCase())
+      .includes(term)
   )
 
   return (
-    <div style={{ padding: "20px" }}>
 
-      <h2>Pagos</h2>
+    <div style={{ padding: 20 }}>
+
+      <h2>Módulo de Pagos</h2>
 
       <input
         type="text"
         placeholder="Buscar cliente o tienda..."
         value={busqueda}
-        onChange={(e)=>setBusqueda(e.target.value)}
+        onChange={(e) => setBusqueda(e.target.value)}
         style={{
-          padding:"10px",
-          width:"300px",
-          marginBottom:"20px"
+          width: "100%",
+          padding: 10,
+          borderRadius: 6,
+          border: "1px solid #8B1E1E",
+          marginBottom: 20
         }}
       />
 
-      {clientesFiltrados.map(cliente => (
+      {loading && <p>Cargando clientes...</p>}
 
-        <div
-          key={cliente.id_cliente}
-          style={{
-            border:"1px solid #ddd",
-            padding:"10px",
-            marginBottom:"10px",
-            borderRadius:"6px"
-          }}
-        >
+      {error && <p style={{ color: "red" }}>⚠️ Error: {error}</p>}
 
-          <b>
-            {cliente.nombre} {cliente.apellido1} {cliente.apellido2}
-          </b>
+      {!loading && !error && (
 
-          <br/>
+        <div style={{
+          border: "1px solid #ddd",
+          borderRadius: 6
+        }}>
 
-          {cliente.nombre_tienda}
+          {clientesFiltrados.length === 0 ? (
 
-          <br/>
+            <p style={{ padding: 15 }}>
+              No se encontraron clientes
+            </p>
 
-          Saldo actual: ${cliente.saldo_actual}
+          ) : (
+
+            clientesFiltrados.map(c => (
+
+              <div
+                key={c.id_cliente}
+                style={{
+                  padding: 12,
+                  borderBottom: "1px solid #eee",
+                  cursor: "pointer"
+                }}
+              >
+
+                <b>
+                  {c.nombre} {c.apellido1} {c.apellido2}
+                </b>
+
+                <br />
+
+                {c.nombre_tienda}
+
+                <br />
+
+                Saldo actual: ${c.saldo_actual}
+
+              </div>
+
+            ))
+
+          )}
 
         </div>
 
-      ))}
+      )}
 
     </div>
+
   )
+
 }
 
 export default Pagos
