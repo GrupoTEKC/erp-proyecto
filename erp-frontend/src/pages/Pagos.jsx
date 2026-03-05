@@ -1,20 +1,21 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 function Pagos() {
 
-  // lista temporal de clientes
-  const [clientes] = useState([
-    { id: 1, nombre: "Juan Pérez" },
-    { id: 2, nombre: "María López" },
-    { id: 3, nombre: "Carlos Ramírez" },
-    { id: 4, nombre: "Ana Torres" }
-  ])
-
+  const [clientes, setClientes] = useState([])
   const [busqueda, setBusqueda] = useState("")
 
-  // filtrar clientes
+  useEffect(() => {
+    fetch("http://localhost:3001/clientes")
+      .then(res => res.json())
+      .then(data => setClientes(data))
+      .catch(err => console.log(err))
+  }, [])
+
   const clientesFiltrados = clientes.filter(cliente =>
-    cliente.nombre.toLowerCase().includes(busqueda.toLowerCase())
+    `${cliente.nombre} ${cliente.apellido1} ${cliente.apellido2} ${cliente.nombre_tienda}`
+      .toLowerCase()
+      .includes(busqueda.toLowerCase())
   )
 
   return (
@@ -23,20 +24,17 @@ function Pagos() {
       <h1>Pagos</h1>
 
       {/* BUSCADOR */}
-      <div style={{ marginBottom: "20px" }}>
-        <input
-          type="text"
-          placeholder="Buscar cliente..."
-          value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-          style={{
-            padding: "10px",
-            width: "300px",
-            borderRadius: "6px",
-            border: "1px solid #ccc"
-          }}
-        />
-      </div>
+      <input
+        type="text"
+        placeholder="Buscar cliente o tienda..."
+        value={busqueda}
+        onChange={(e) => setBusqueda(e.target.value)}
+        style={{
+          padding: "10px",
+          width: "300px",
+          marginBottom: "20px"
+        }}
+      />
 
       {/* LISTA DE CLIENTES */}
       <div style={{
@@ -44,17 +42,33 @@ function Pagos() {
         border: "1px solid #ddd",
         borderRadius: "6px"
       }}>
+
         {clientesFiltrados.map(cliente => (
+
           <div
-            key={cliente.id}
+            key={cliente.id_cliente}
             style={{
               padding: "12px",
               borderBottom: "1px solid #eee"
             }}
           >
-            {cliente.nombre}
+
+            <b>
+              {cliente.nombre} {cliente.apellido1} {cliente.apellido2}
+            </b>
+
+            <br />
+
+            {cliente.nombre_tienda}
+
+            <br />
+
+            Saldo: ${cliente.saldo_actual}
+
           </div>
+
         ))}
+
       </div>
 
     </div>
