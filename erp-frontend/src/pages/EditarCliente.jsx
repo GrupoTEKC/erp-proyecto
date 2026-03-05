@@ -6,7 +6,7 @@ const API = 'https://erp-proyecto-production.up.railway.app'
 function EditarCliente() {
 
   const navigate = useNavigate()
-  const { id } = useParams()
+  const { id_cliente } = useParams()
 
   const [cliente, setCliente] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -22,9 +22,9 @@ function EditarCliente() {
 
       try {
 
-        console.log('🟢 ID recibido:', id)
+        console.log('🟢 ID recibido:', id_cliente)
 
-        const res = await fetch(`${API}/clientes/${id}`)
+        const res = await fetch(`${API}/clientes/${id_cliente}`)
 
         if (!res.ok) throw new Error('Error cargando cliente')
 
@@ -49,8 +49,7 @@ function EditarCliente() {
 
     cargarCliente()
 
-  }, [id])
-
+  }, [id_cliente])
 
 
   // =========================
@@ -61,12 +60,10 @@ function EditarCliente() {
 
     try {
 
-      const res = await fetch(`${API}/clientes/${id}`, {
-
+      const res = await fetch(`${API}/clientes/${id_cliente}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cliente)
-
       })
 
       if (!res.ok) throw new Error()
@@ -84,11 +81,11 @@ function EditarCliente() {
   }
 
 
-
   if (loading) return <p>Cargando cliente...</p>
-  if (error) return <p style={{ color: 'red' }}>{error}</p>
-  if (!cliente) return <p>No hay datos</p>
 
+  if (error) return <p style={{ color: 'red' }}>{error}</p>
+
+  if (!cliente) return <p>No hay datos</p>
 
 
   return (
