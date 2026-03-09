@@ -118,14 +118,15 @@ function Pagos() {
 
             clientesFiltrados.map(c => (
 
-              <div
-                key={c.id_cliente}
-                style={{
-                  padding: 12,
-                  borderBottom: "1px solid #eee",
-                  cursor: "pointer"
-                }}
-              >
+             <div
+             key={c.id_cliente}
+             onClick={() => cargarPedidos(c)}
+             style={{
+             padding: 12,
+             borderBottom: "1px solid #eee",
+             cursor: "pointer"
+             }}
+             >
 
                 <b>
                   {c.nombre} {c.apellido1} {c.apellido2}
