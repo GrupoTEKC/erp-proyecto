@@ -198,24 +198,30 @@ app.get('/pedidos/cliente/:id_cliente', async (req, res) => {
 // ENTREGAR PEDIDO
 // =============================
 app.put('/pedidos/:id/entregar', async (req, res) => {
+  const { id } = req.params
+
   try {
 
-    const { id } = req.params
-
-    await db.query(`
+    const [result] = await db.query(`
       UPDATE pedidos
       SET estado_pedido = 'entregado',
           fecha_entrega = NOW()
       WHERE id_pedido = ?
-    `,[id])
+    `, [id])
 
-    res.json({ success:true })
+    res.json({ ok: true })
 
-  } catch (err) {
-    res.status(500).json({ error: err.message })
+  } catch (error) {
+
+    console.error("ERROR ENTREGAR PEDIDO:", error)
+
+    res.status(500).json({
+      error: "Error actualizando pedido",
+      detalle: error.message
+    })
+
   }
-}) 
-
+})
 // =============================
 // CANCELAR PEDIDO
 // =============================
