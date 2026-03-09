@@ -198,51 +198,60 @@ app.get('/pedidos/cliente/:id_cliente', async (req, res) => {
 // ENTREGAR PEDIDO
 // =============================
 app.put('/pedidos/:id/entregar', async (req, res) => {
-  const { id } = req.params
+
+  const { id } = req.params;
 
   try {
 
     const [result] = await db.query(`
       UPDATE pedidos
-      SET estado_pedido = 'entregado',
-          fecha_entrega = NOW()
+      SET 
+        estado_pedido = 'entregado',
+        fecha_entrega = NOW()
       WHERE id_pedido = ?
-    `, [id])
+    `, [id]);
 
-    res.json({ ok: true })
+    res.json({ ok: true });
 
   } catch (error) {
 
-    console.error("ERROR ENTREGAR PEDIDO:", error)
+    console.error("ERROR ENTREGAR:", error);
 
     res.status(500).json({
-      error: "Error actualizando pedido",
-      detalle: error.message
-    })
+      error: error.message
+    });
 
   }
-})
-// =============================
-// CANCELAR PEDIDO
-// =============================
+
+});
+
 app.put('/pedidos/:id/cancelar', async (req, res) => {
+
+  const { id } = req.params;
+
   try {
 
-    const { id } = req.params
-
-    await db.query(`
+    const [result] = await db.query(`
       UPDATE pedidos
-      SET estado_pedido = 'cancelado',
-          fecha_cancelacion = NOW()
+      SET 
+        estado_pedido = 'cancelado',
+        fecha_cancelacion = NOW()
       WHERE id_pedido = ?
-    `,[id])
+    `, [id]);
 
-    res.json({ success:true })
+    res.json({ ok: true });
 
-  } catch (err) {
-    res.status(500).json({ error: err.message })
+  } catch (error) {
+
+    console.error("ERROR CANCELAR:", error);
+
+    res.status(500).json({
+      error: error.message
+    });
+
   }
-})
+
+});
 // =============================
 // RUTA 404
 // =============================
