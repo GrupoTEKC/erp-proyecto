@@ -8,30 +8,41 @@ function Pagos() {
   const [busqueda, setBusqueda] = useState("")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
   const [clienteSeleccionado, setClienteSeleccionado] = useState(null)
   const [pedidos, setPedidos] = useState([])
+  const [loadingPedidos, setLoadingPedidos] = useState(false)
 
   /* ================= CARGAR CLIENTES ================= */
   useEffect(() => {
+
     const cargarClientes = async () => {
       try {
+
         setLoading(true)
         setError(null)
 
         const res = await fetch(`${API}/clientes`)
+
         if (!res.ok) throw new Error("Error cargando clientes")
 
         const data = await res.json()
+
         setClientes(data)
 
       } catch (err) {
+
         setError(err.message)
+
       } finally {
+
         setLoading(false)
+
       }
     }
 
     cargarClientes()
+
   }, [])
 
   /* ================= FILTRO ================= */
@@ -50,6 +61,7 @@ function Pagos() {
 
     setClienteSeleccionado(cliente)
     setPedidos([])
+    setLoadingPedidos(true)
 
     try {
 
@@ -62,12 +74,18 @@ function Pagos() {
       setPedidos(data)
 
     } catch (err) {
-      console.error(err)
-    }
 
+      console.error("Error cargando pedidos:", err)
+
+    } finally {
+
+      setLoadingPedidos(false)
+
+    }
   }
 
   return (
+
     <div style={{ padding: 20 }}>
 
       <h2>Módulo de Pagos</h2>
@@ -139,7 +157,7 @@ function Pagos() {
 
       )}
 
-      {/* PEDIDOS DEL CLIENTE */}
+      {/* ================= PEDIDOS DEL CLIENTE ================= */}
 
       {clienteSeleccionado && (
 
@@ -149,47 +167,45 @@ function Pagos() {
             Pedidos de {clienteSeleccionado.nombre} {clienteSeleccionado.apellido1}
           </h3>
 
-          {pedidos.length === 0 ? (
+          {loadingPedidos && <p>Cargando pedidos...</p>}
 
+          {!loadingPedidos && pedidos.length === 0 && (
             <p>Este cliente no tiene pedidos.</p>
-
-          ) : (
-
-            pedidos.map(p => (
-
-              <div
-                key={p.id_pedido}
-                style={{
-                  border: "1px solid #ddd",
-                  padding: 10,
-                  marginBottom: 10,
-                  borderRadius: 6
-                }}
-              >
-
-                Pedido #{p.id_pedido}
-
-                <br />
-
-                Fecha: {p.fecha}
-
-                <br />
-
-                Total: ${p.total}
-
-              </div>
-
-            ))
-
           )}
+
+          {!loadingPedidos && pedidos.map(p => (
+
+            <div
+              key={p.id_pedido}
+              style={{
+                border: "1px solid #ddd",
+                padding: 10,
+                marginBottom: 10,
+                borderRadius: 6
+              }}
+            >
+
+              Pedido #{p.id_pedido}
+
+              <br />
+
+              Fecha: {p.fecha}
+
+              <br />
+
+              Total: ${p.total}
+
+            </div>
+
+          ))}
 
         </div>
 
       )}
 
     </div>
-  )
 
+  )
 }
 
 export default Pagos
