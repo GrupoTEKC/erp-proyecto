@@ -153,6 +153,28 @@ app.post('/pedidos', async (req, res) => {
 })
 
 // =============================
+// PEDIDOS POR CLIENTE
+// =============================
+app.get('/pedidos/cliente/:id_cliente', async (req, res) => {
+  try {
+
+    const { id_cliente } = req.params
+
+    const [rows] = await db.query(
+      `SELECT * FROM pedidos 
+       WHERE id_cliente = ? 
+       ORDER BY fecha DESC`,
+      [id_cliente]
+    )
+
+    res.json(rows)
+
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// =============================
 // RUTA 404
 // =============================
 
