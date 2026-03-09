@@ -77,83 +77,105 @@ function Pagos() {
 
 }
 
-  return (
+ return (
+  <div style={{ padding: 20 }}>
 
-    <div style={{ padding: 20 }}>
+    <h2>Módulo de Pagos</h2>
 
-      <h2>Módulo de Pagos</h2>
+    <input
+      type="text"
+      placeholder="Buscar cliente o tienda..."
+      value={busqueda}
+      onChange={(e) => setBusqueda(e.target.value)}
+      style={{
+        width: "100%",
+        padding: 10,
+        borderRadius: 6,
+        border: "1px solid #8B1E1E",
+        marginBottom: 20
+      }}
+    />
 
-      <input
-        type="text"
-        placeholder="Buscar cliente o tienda..."
-        value={busqueda}
-        onChange={(e) => setBusqueda(e.target.value)}
-        style={{
-          width: "100%",
-          padding: 10,
-          borderRadius: 6,
-          border: "1px solid #8B1E1E",
-          marginBottom: 20
-        }}
-      />
+    {loading && <p>Cargando clientes...</p>}
 
-      {loading && <p>Cargando clientes...</p>}
+    {error && <p style={{ color: "red" }}>⚠️ Error: {error}</p>}
 
-      {error && <p style={{ color: "red" }}>⚠️ Error: {error}</p>}
+    {!loading && !error && (
+      <div style={{
+        border: "1px solid #ddd",
+        borderRadius: 6
+      }}>
+        {clientesFiltrados.length === 0 ? (
+          <p style={{ padding: 15 }}>
+            No se encontraron clientes
+          </p>
+        ) : (
+          clientesFiltrados.map(c => (
+            <div
+              key={c.id_cliente}
+              onClick={() => cargarPedidos(c)}
+              style={{
+                padding: 12,
+                borderBottom: "1px solid #eee",
+                cursor: "pointer"
+              }}
+            >
+              <b>
+                {c.nombre} {c.apellido1} {c.apellido2}
+              </b>
 
-      {!loading && !error && (
+              <br />
 
-        <div style={{
-          border: "1px solid #ddd",
-          borderRadius: 6
-        }}>
+              {c.nombre_tienda}
 
-          {clientesFiltrados.length === 0 ? (
+              <br />
 
-            <p style={{ padding: 15 }}>
-              No se encontraron clientes
-            </p>
+              Saldo actual: ${c.saldo_actual}
 
-          ) : (
+            </div>
+          ))
+        )}
+      </div>
+    )}
 
-            clientesFiltrados.map(c => (
+    {/* PEDIDOS DEL CLIENTE */}
 
-             <div
-             key={c.id_cliente}
-             onClick={() => cargarPedidos(c)}
-             style={{
-             padding: 12,
-             borderBottom: "1px solid #eee",
-             cursor: "pointer"
-             }}
-             >
+    {clienteSeleccionado && (
+      <div style={{ marginTop: 30 }}>
 
-                <b>
-                  {c.nombre} {c.apellido1} {c.apellido2}
-                </b>
+        <h3>
+          Pedidos de {clienteSeleccionado.nombre} {clienteSeleccionado.apellido1}
+        </h3>
 
-                <br />
+        {pedidos.length === 0 ? (
 
-                {c.nombre_tienda}
+          <p>Este cliente no tiene pedidos.</p>
 
-                <br />
+        ) : (
 
-                Saldo actual: ${c.saldo_actual}
+          pedidos.map(p => (
+            <div
+              key={p.id_pedido}
+              style={{
+                border: "1px solid #ddd",
+                padding: 10,
+                marginBottom: 10,
+                borderRadius: 6
+              }}
+            >
+              Pedido #{p.id_pedido}
+              <br />
+              Fecha: {p.fecha}
+              <br />
+              Total: ${p.total}
+            </div>
+          ))
 
-              </div>
+        )}
 
-            ))
+      </div>
+    )}
 
-          )}
-
-        </div>
-
-      )}
-
-    </div>
-
-  )
-
-}
-
+  </div>
+)
 export default Pagos
