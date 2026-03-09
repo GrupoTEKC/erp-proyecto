@@ -8,7 +8,10 @@ function Pagos() {
   const [busqueda, setBusqueda] = useState("")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [clienteSeleccionado, setClienteSeleccionado] = useState(null)
+  const [pedidos, setPedidos] = useState([])
 
+ 
   /* ================= CARGAR CLIENTES ================= */
 
   useEffect(() => {
@@ -53,6 +56,26 @@ function Pagos() {
       .toLowerCase()
       .includes(term)
   )
+
+ const cargarPedidos = async (cliente) => {
+
+  setClienteSeleccionado(cliente)
+
+  try {
+
+    const res = await fetch(`${API}/pedidos/cliente/${cliente.id_cliente}`)
+
+    const data = await res.json()
+
+    setPedidos(data)
+
+  } catch (err) {
+
+    console.error(err)
+
+  }
+
+}
 
   return (
 
