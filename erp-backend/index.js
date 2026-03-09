@@ -201,6 +201,8 @@ app.put('/pedidos/:id/entregar', async (req, res) => {
 
   const { id } = req.params;
 
+  console.log("ENTREGAR PEDIDO ID:", id);
+
   try {
 
     const [result] = await db.query(`
@@ -209,9 +211,14 @@ app.put('/pedidos/:id/entregar', async (req, res) => {
         estado_pedido = 'entregado',
         fecha_entrega = NOW()
       WHERE id_pedido = ?
-    `, [id]);
+    `,[id]);
 
-    res.json({ ok: true });
+    console.log("RESULTADO MYSQL:", result);
+
+    res.json({
+      ok: true,
+      result
+    });
 
   } catch (error) {
 
