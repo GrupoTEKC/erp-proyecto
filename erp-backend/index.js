@@ -153,6 +153,26 @@ app.post('/pedidos', async (req, res) => {
 })
 
 // =============================
+// OBTENER TODOS LOS PEDIDOS
+// =============================
+app.get('/pedidos', async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT 
+        p.*,
+        CONCAT(c.nombre,' ',c.apellido1) AS cliente
+      FROM pedidos p
+      LEFT JOIN clientes c ON p.id_cliente = c.id_cliente
+      ORDER BY p.fecha DESC
+    `)
+
+    res.json(rows)
+
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+// =============================
 // PEDIDOS POR CLIENTE
 // =============================
 app.get('/pedidos/cliente/:id_cliente', async (req, res) => {
@@ -174,6 +194,49 @@ app.get('/pedidos/cliente/:id_cliente', async (req, res) => {
   }
 })
 
+// =============================
+// ENTREGAR PEDIDO
+// =============================
+app.put('/pedidos/:id/entregar', async (req, res) => {
+  try {
+
+    const { id } = req.params
+
+    await db.query(`
+      UPDATE pedidos
+      SET estado_pedido = 'entregado',
+          fecha_entrega = NOW()
+      WHERE id_pedido = ?
+    `,[id])
+
+    res.json({ success:true })
+
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+}) 
+
+// =============================
+// CANCELAR PEDIDO
+// =============================
+app.put('/pedidos/:id/cancelar', async (req, res) => {
+  try {
+
+    const { id } = req.params
+
+    await db.query(`
+      UPDATE pedidos
+      SET estado_pedido = 'cancelado',
+          fecha_cancelacion = NOW()
+      WHERE id_pedido = ?
+    `,[id])
+
+    res.json({ success:true })
+
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
 // =============================
 // RUTA 404
 // =============================
