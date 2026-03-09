@@ -1,4 +1,4 @@
- import { useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 
 const API = "https://erp-proyecto-production.up.railway.app"
 
@@ -11,40 +11,27 @@ function Pagos() {
   const [clienteSeleccionado, setClienteSeleccionado] = useState(null)
   const [pedidos, setPedidos] = useState([])
 
- 
   /* ================= CARGAR CLIENTES ================= */
-
   useEffect(() => {
-
     const cargarClientes = async () => {
-
       try {
-
         setLoading(true)
         setError(null)
 
         const res = await fetch(`${API}/clientes`)
-
         if (!res.ok) throw new Error("Error cargando clientes")
 
         const data = await res.json()
-
         setClientes(data)
 
       } catch (err) {
-
         setError(err.message)
-
       } finally {
-
         setLoading(false)
-
       }
-
     }
 
     cargarClientes()
-
   }, [])
 
   /* ================= FILTRO ================= */
@@ -57,125 +44,152 @@ function Pagos() {
       .includes(term)
   )
 
- const cargarPedidos = async (cliente) => {
+  /* ================= CARGAR PEDIDOS ================= */
 
-  setClienteSeleccionado(cliente)
+  const cargarPedidos = async (cliente) => {
 
-  try {
+    setClienteSeleccionado(cliente)
+    setPedidos([])
 
-    const res = await fetch(`${API}/pedidos/cliente/${cliente.id_cliente}`)
+    try {
 
-    const data = await res.json()
+      const res = await fetch(`${API}/pedidos/cliente/${cliente.id_cliente}`)
 
-    setPedidos(data)
+      if (!res.ok) throw new Error("Error cargando pedidos")
 
-  } catch (err) {
+      const data = await res.json()
 
-    console.error(err)
+      setPedidos(data)
+
+    } catch (err) {
+      console.error(err)
+    }
 
   }
 
+  return (
+    <div style={{ padding: 20 }}>
+
+      <h2>Módulo de Pagos</h2>
+
+      <input
+        type="text"
+        placeholder="Buscar cliente o tienda..."
+        value={busqueda}
+        onChange={(e) => setBusqueda(e.target.value)}
+        style={{
+          width: "100%",
+          padding: 10,
+          borderRadius: 6,
+          border: "1px solid #8B1E1E",
+          marginBottom: 20
+        }}
+      />
+
+      {loading && <p>Cargando clientes...</p>}
+
+      {error && <p style={{ color: "red" }}>⚠️ Error: {error}</p>}
+
+      {!loading && !error && (
+
+        <div style={{
+          border: "1px solid #ddd",
+          borderRadius: 6
+        }}>
+
+          {clientesFiltrados.length === 0 ? (
+
+            <p style={{ padding: 15 }}>
+              No se encontraron clientes
+            </p>
+
+          ) : (
+
+            clientesFiltrados.map(c => (
+
+              <div
+                key={c.id_cliente}
+                onClick={() => cargarPedidos(c)}
+                style={{
+                  padding: 12,
+                  borderBottom: "1px solid #eee",
+                  cursor: "pointer"
+                }}
+              >
+
+                <b>
+                  {c.nombre} {c.apellido1} {c.apellido2}
+                </b>
+
+                <br />
+
+                {c.nombre_tienda}
+
+                <br />
+
+                Saldo actual: ${c.saldo_actual}
+
+              </div>
+
+            ))
+
+          )}
+
+        </div>
+
+      )}
+
+      {/* PEDIDOS DEL CLIENTE */}
+
+      {clienteSeleccionado && (
+
+        <div style={{ marginTop: 30 }}>
+
+          <h3>
+            Pedidos de {clienteSeleccionado.nombre} {clienteSeleccionado.apellido1}
+          </h3>
+
+          {pedidos.length === 0 ? (
+
+            <p>Este cliente no tiene pedidos.</p>
+
+          ) : (
+
+            pedidos.map(p => (
+
+              <div
+                key={p.id_pedido}
+                style={{
+                  border: "1px solid #ddd",
+                  padding: 10,
+                  marginBottom: 10,
+                  borderRadius: 6
+                }}
+              >
+
+                Pedido #{p.id_pedido}
+
+                <br />
+
+                Fecha: {p.fecha}
+
+                <br />
+
+                Total: ${p.total}
+
+              </div>
+
+            ))
+
+          )}
+
+        </div>
+
+      )}
+
+    </div>
+  )
+
 }
 
- return (
-  <div style={{ padding: 20 }}>
-
-    <h2>Módulo de Pagos</h2>
-
-    <input
-      type="text"
-      placeholder="Buscar cliente o tienda..."
-      value={busqueda}
-      onChange={(e) => setBusqueda(e.target.value)}
-      style={{
-        width: "100%",
-        padding: 10,
-        borderRadius: 6,
-        border: "1px solid #8B1E1E",
-        marginBottom: 20
-      }}
-    />
-
-    {loading && <p>Cargando clientes...</p>}
-
-    {error && <p style={{ color: "red" }}>⚠️ Error: {error}</p>}
-
-    {!loading && !error && (
-      <div style={{
-        border: "1px solid #ddd",
-        borderRadius: 6
-      }}>
-        {clientesFiltrados.length === 0 ? (
-          <p style={{ padding: 15 }}>
-            No se encontraron clientes
-          </p>
-        ) : (
-          clientesFiltrados.map(c => (
-            <div
-              key={c.id_cliente}
-              onClick={() => cargarPedidos(c)}
-              style={{
-                padding: 12,
-                borderBottom: "1px solid #eee",
-                cursor: "pointer"
-              }}
-            >
-              <b>
-                {c.nombre} {c.apellido1} {c.apellido2}
-              </b>
-
-              <br />
-
-              {c.nombre_tienda}
-
-              <br />
-
-              Saldo actual: ${c.saldo_actual}
-
-            </div>
-          ))
-        )}
-      </div>
-    )}
-
-    {/* PEDIDOS DEL CLIENTE */}
-
-    {clienteSeleccionado && (
-      <div style={{ marginTop: 30 }}>
-
-        <h3>
-          Pedidos de {clienteSeleccionado.nombre} {clienteSeleccionado.apellido1}
-        </h3>
-
-        {pedidos.length === 0 ? (
-
-          <p>Este cliente no tiene pedidos.</p>
-
-        ) : (
-
-          pedidos.map(p => (
-            <div
-              key={p.id_pedido}
-              style={{
-                border: "1px solid #ddd",
-                padding: 10,
-                marginBottom: 10,
-                borderRadius: 6
-              }}
-            >
-              Pedido #{p.id_pedido}
-              <br />
-              Fecha: {p.fecha}
-              <br />
-              Total: ${p.total}
-            </div>
-          ))
-
-        )}
-
-      </div>
-    )}
-
-  </div>
-)
 export default Pagos
