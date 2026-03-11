@@ -194,38 +194,43 @@ app.get('/pedidos/cliente/:id_cliente', async (req, res) => {
   }
 })
 
-// =============================
-// ENTREGAR PEDIDO
-// =============================
-// =============================
-// ENTREGAR PEDIDO
-// =============================
 app.put('/pedidos/:id/entregar', async (req, res) => {
+
   const { id } = req.params;
+
   try {
+
     const [result] = await db.query(`
       UPDATE pedidos
-      SET estado_pedido = 'entregado', fecha_entrega = CURDATE()
-      WHERE id_pedido = ? AND estado_pedido = 'pendiente'
+      SET 
+        estado_pedido = 'entregado',
+        fecha_entrega = CURDATE()
+      WHERE id_pedido = ?
     `, [id]);
 
     if (result.affectedRows === 0) {
-      return res.status(400).json({ 
-        error: 'El pedido no está pendiente o no existe' 
+      return res.status(404).json({
+        error: 'Pedido no encontrado'
       });
     }
 
     const [rows] = await db.query(
-      'SELECT * FROM pedidos WHERE id_pedido = ?', 
+      'SELECT * FROM pedidos WHERE id_pedido = ?',
       [id]
     );
 
     res.json(rows[0]);
 
   } catch (error) {
-    console.error("Error entregando pedido:", error);
-    res.status(500).json({ error: error.message });
+
+    console.error("ERROR ENTREGAR PEDIDO:", error);
+
+    res.status(500).json({
+      error: error.message
+    });
+
   }
+
 });
 
 app.put('/pedidos/:id/cancelar', async (req, res) => {
