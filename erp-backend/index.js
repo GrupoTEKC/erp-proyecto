@@ -202,9 +202,8 @@ app.put('/pedidos/:id/entregar', async (req, res) => {
 
     const [result] = await db.query(`
       UPDATE pedidos
-      SET 
-        estado_pedido = 'entregado',
-        fecha_entrega = CURDATE()
+      SET estado_pedido = 'entregado',
+          fecha_entrega = CURDATE()
       WHERE id_pedido = ?
     `, [id]);
 
