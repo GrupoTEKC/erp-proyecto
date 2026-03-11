@@ -198,67 +198,45 @@ app.get('/pedidos/cliente/:id_cliente', async (req, res) => {
 // ENTREGAR PEDIDO
 // =============================
 app.put('/pedidos/:id/entregar', async (req, res) => {
-
   const { id } = req.params;
-
-  console.log("ENTREGAR PEDIDO ID:", id);
-
   try {
-
     const [result] = await db.query(`
       UPDATE pedidos
-      SET 
-        estado_pedido = 'entregado',
-        fecha_entrega = NOW()
-      WHERE id_pedido = ?
-    `,[id]);
+      SET estado_pedido = 'entregado', fecha_entrega = NOW()
+      WHERE id_pedido = ? AND estado_pedido = 'pendiente'
+    `, [id]);
 
-    console.log("RESULTADO MYSQL:", result);
+    if (result.affectedRows === 0) {
+      return res.status(400).json({ error: 'El pedido no está pendiente o no existe' });
+    }
 
-    res.json({
-      ok: true,
-      result
-    });
-
+    const [rows] = await db.query('SELECT * FROM pedidos WHERE id_pedido = ?', [id]);
+    res.json(rows[0]);
   } catch (error) {
-
-    console.error("ERROR ENTREGAR:", error);
-
-    res.status(500).json({
-      error: error.message
-    });
-
+    res.status(500).json({ error: error.message });
   }
-
 });
 
 app.put('/pedidos/:id/cancelar', async (req, res) => {
-
   const { id } = req.params;
-
   try {
-
     const [result] = await db.query(`
       UPDATE pedidos
-      SET 
-        estado_pedido = 'cancelado',
-        fecha_cancelacion = NOW()
-      WHERE id_pedido = ?
+      SET estado_pedido = 'cancelado', fecha_cancelacion = NOW()
+      WHERE id_pedido = ? AND estado_pedido = 'pendiente'
     `, [id]);
 
-    res.json({ ok: true });
+    if (result.affectedRows === 0) {
+      return res.status(400).json({ error: 'El pedido no está pendiente o no existe' });
+    }
 
+    const [rows] = await db.query('SELECT * FROM pedidos WHERE id_pedido = ?', [id]);
+    res.json(rows[0]);
   } catch (error) {
-
-    console.error("ERROR CANCELAR:", error);
-
-    res.status(500).json({
-      error: error.message
-    });
-
+    res.status(500).json({ error: error.message });
   }
-
 });
+
 // =============================
 // RUTA 404
 // =============================
