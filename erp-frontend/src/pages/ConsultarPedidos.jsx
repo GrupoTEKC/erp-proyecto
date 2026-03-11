@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 const API = import.meta.env.VITE_API_URL
 
 /* ===== ESTILOS ===== */
+
 const vino = '#8B1E1E'
 
 const container = {
@@ -95,14 +96,29 @@ function ConsultarPedidos() {
 
   const urlLimpia = API?.endsWith('/') ? API.slice(0, -1) : API
 
+  /* ============================= */
+  /* CARGAR PEDIDOS */
+  /* ============================= */
+
   const cargarPedidos = async () => {
     try {
+
       const res = await fetch(`${urlLimpia}/pedidos`)
+
+      if (!res.ok) {
+        throw new Error('Error obteniendo pedidos')
+      }
+
       const data = await res.json()
+
       setPedidos(Array.isArray(data) ? data : [])
+
     } catch (error) {
+
       console.error("Error cargando pedidos:", error)
+
       setPedidos([])
+
     }
   }
 
@@ -110,16 +126,24 @@ function ConsultarPedidos() {
     cargarPedidos()
   }, [])
 
-  const calcularDias = pedido => {
+  /* ============================= */
+  /* CALCULAR DIAS */
+  /* ============================= */
+
+  const calcularDias = (pedido) => {
 
     if (!pedido.fecha) return 0
+
+    const estado = (pedido.estado_pedido || '')
+      .trim()
+      .toLowerCase()
 
     const inicio = new Date(pedido.fecha)
 
     const cierre =
-      pedido.estado_pedido === 'entregado'
+      estado === 'entregado'
         ? pedido.fecha_entrega
-        : pedido.estado_pedido === 'cancelado'
+        : estado === 'cancelado'
         ? pedido.fecha_cancelacion
         : null
 
@@ -129,6 +153,10 @@ function ConsultarPedidos() {
 
     return Math.floor(diff / (1000 * 60 * 60 * 24))
   }
+
+  /* ============================= */
+  /* ENTREGAR */
+  /* ============================= */
 
   const confirmarEntrega = async (id) => {
 
@@ -141,16 +169,24 @@ function ConsultarPedidos() {
         headers: { 'Content-Type': 'application/json' }
       })
 
-      if (res.ok) {
-        await cargarPedidos()
-      } else {
-        alert("Error al actualizar")
+      if (!res.ok) {
+        throw new Error("Error actualizando pedido")
       }
 
+      await cargarPedidos()
+
     } catch (error) {
-      alert("Error de conexión")
+
+      console.error(error)
+
+      alert("Error al actualizar")
+
     }
   }
+
+  /* ============================= */
+  /* CANCELAR */
+  /* ============================= */
 
   const confirmarCancelacion = async (id) => {
 
@@ -163,16 +199,24 @@ function ConsultarPedidos() {
         headers: { 'Content-Type': 'application/json' }
       })
 
-      if (res.ok) {
-        await cargarPedidos()
-      } else {
-        alert("Error al cancelar")
+      if (!res.ok) {
+        throw new Error("Error cancelando pedido")
       }
 
+      await cargarPedidos()
+
     } catch (error) {
-      alert("Error de conexión")
+
+      console.error(error)
+
+      alert("Error al cancelar")
+
     }
   }
+
+  /* ============================= */
+  /* FILTRO BUSQUEDA */
+  /* ============================= */
 
   const pedidosFiltrados = pedidos.filter(p => {
 
@@ -180,20 +224,30 @@ function ConsultarPedidos() {
 
     return (
       p.id_pedido?.toString().includes(texto) ||
-      p.cliente?.toLowerCase().includes(texto)
+      (p.cliente || '').toLowerCase().includes(texto)
     )
+
   })
+
+  /* ============================= */
+  /* RENDER */
+  /* ============================= */
 
   return (
 
     <div style={container}>
 
       <div style={header}>
-        <button style={btnVino} onClick={() => navigate('/')}>
+
+        <button
+          style={btnVino}
+          onClick={() => navigate('/')}
+        >
           ⬅ Volver
         </button>
 
         <h2>Consultar pedidos</h2>
+
       </div>
 
       <input
@@ -208,6 +262,7 @@ function ConsultarPedidos() {
         <table style={tabla}>
 
           <thead style={thead}>
+
             <tr>
               <th style={th}>Pedido</th>
               <th style={th}>Cliente</th>
@@ -218,6 +273,7 @@ function ConsultarPedidos() {
               <th style={th}>Días</th>
               <th style={th}>Acciones</th>
             </tr>
+
           </thead>
 
           <tbody>
@@ -226,8 +282,9 @@ function ConsultarPedidos() {
 
               const dias = calcularDias(p)
 
-              // NORMALIZAMOS EL ESTADO (SOLUCIÓN)
-              const est = (p.estado_pedido || 'pendiente').trim().toLowerCase()
+              const est = (p.estado_pedido || 'pendiente')
+                .trim()
+                .toLowerCase()
 
               const estilo =
                 est === 'entregado'
@@ -245,7 +302,9 @@ function ConsultarPedidos() {
                   <td style={td}>{p.cliente}</td>
 
                   <td style={td}>
-                    {p.fecha ? new Date(p.fecha).toLocaleDateString() : '-'}
+                    {p.fecha
+                      ? new Date(p.fecha).toLocaleDateString()
+                      : '-'}
                   </td>
 
                   <td style={td}>
@@ -293,7 +352,9 @@ function ConsultarPedidos() {
                   </td>
 
                 </tr>
+
               )
+
             })}
 
           </tbody>
@@ -303,6 +364,7 @@ function ConsultarPedidos() {
       </div>
 
     </div>
+
   )
 }
 
