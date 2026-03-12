@@ -158,31 +158,27 @@ function ConsultarPedidos() {
   /* ENTREGAR */
   /* ============================= */
 
-  const confirmarEntrega = async (id) => {
+const confirmarEntrega = async (id) => {
+  if (!window.confirm(`¿Marcar pedido #${id} como ENTREGADO?`)) return;
 
-    if (!window.confirm(`¿Marcar pedido #${id} como ENTREGADO?`)) return
+  try {
+    const res = await fetch(`${urlLimpia}/pedidos/${id}/entregar`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' }
+    });
 
-    try {
-
-      const res = await fetch(`${urlLimpia}/pedidos/${id}/entregar`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' }
-      })
-
-      if (!res.ok) {
-        throw new Error("Error actualizando pedido")
-      }
-
-      await cargarPedidos()
-
-    } catch (error) {
-
-      console.error(error)
-
-      alert("Error al actualizar")
-
+    if (!res.ok) {
+      const errorData = await res.json(); 
+      throw new Error(errorData.error || "Error actualizando pedido");
     }
+
+    await cargarPedidos();
+
+  } catch (error) {
+    console.error(error);
+    alert(`Error al actualizar: ${error.message}`); 
   }
+};
 
   /* ============================= */
   /* CANCELAR */
