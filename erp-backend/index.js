@@ -220,42 +220,34 @@ app.get('/pedidos/cliente/:id_cliente', async (req, res) => {
 // =============================
 
 app.put('/pedidos/:id/entregar', async (req, res) => {
-
   const { id } = req.params;
 
   try {
-
     const [result] = await db.query(`
       UPDATE pedidos
       SET estado_pedido = 'entregado',
           fecha_entrega = CURRENT_DATE()
       WHERE id_pedido = ?
-    `,[id])
+    `, [id]);
 
-    if(result.affectedRows === 0){
+    if (result.affectedRows === 0) {
       return res.status(404).json({
         error: "Pedido no encontrado"
-      })
+      });
     }
 
     const [rows] = await db.query(
       'SELECT * FROM pedidos WHERE id_pedido = ?',
       [id]
-    )
+    );
 
-    res.json(rows[0])
+    res.json(rows[0]);
 
   } catch (error) {
-
-    console.error("ERROR ENTREGAR:", error)
-
-    res.status(500).json({
-      error: error.message
-    })
-
+    console.error("ERROR ENTREGAR:", error);
+    res.status(500).json({ error: error.message });
   }
-
-})
+});
 // =============================
 // CANCELAR PEDIDO
 // =============================
