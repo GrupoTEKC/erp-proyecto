@@ -11,7 +11,6 @@ app.use(express.json())
 // =============================
 // CONEXIÓN MYSQL
 // =============================
-
 const db = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -29,6 +28,7 @@ app.get('/clientes', async (req, res) => {
     const [rows] = await db.query('SELECT * FROM clientes')
     res.json(rows)
   } catch (err) {
+    console.error("ERROR CLIENTES:", err)
     res.status(500).json({ error: err.message })
   }
 })
@@ -36,6 +36,7 @@ app.get('/clientes', async (req, res) => {
 // Obtener por ID
 app.get('/clientes/:id_cliente', async (req, res) => {
   try {
+
     const { id_cliente } = req.params
 
     const [rows] = await db.query(
@@ -44,12 +45,15 @@ app.get('/clientes/:id_cliente', async (req, res) => {
     )
 
     if (rows.length === 0) {
-      return res.status(404).json({ error: 'Cliente no encontrado' })
+      return res.status(404).json({
+        error: 'Cliente no encontrado'
+      })
     }
 
     res.json(rows[0])
 
   } catch (err) {
+    console.error("ERROR CLIENTE:", err)
     res.status(500).json({ error: err.message })
   }
 })
@@ -57,14 +61,15 @@ app.get('/clientes/:id_cliente', async (req, res) => {
 // Actualizar cliente
 app.put('/clientes/:id_cliente', async (req, res) => {
   try {
+
     const { id_cliente } = req.params
     const data = req.body
 
     await db.query(
       `UPDATE clientes SET
-      nombre = ?,
-      telefono = ?,
-      email = ?
+        nombre = ?,
+        telefono = ?,
+        email = ?
       WHERE id_cliente = ?`,
       [data.nombre, data.telefono, data.email, id_cliente]
     )
@@ -72,6 +77,7 @@ app.put('/clientes/:id_cliente', async (req, res) => {
     res.json({ success: true })
 
   } catch (err) {
+    console.error("ERROR ACTUALIZAR CLIENTE:", err)
     res.status(500).json({ error: err.message })
   }
 })
@@ -82,9 +88,13 @@ app.put('/clientes/:id_cliente', async (req, res) => {
 
 app.get('/rutas', async (req, res) => {
   try {
+
     const [rows] = await db.query('SELECT * FROM rutas')
+
     res.json(rows)
+
   } catch (err) {
+    console.error("ERROR RUTAS:", err)
     res.status(500).json({ error: err.message })
   }
 })
@@ -95,9 +105,13 @@ app.get('/rutas', async (req, res) => {
 
 app.get('/vendedores', async (req, res) => {
   try {
+
     const [rows] = await db.query('SELECT * FROM vendedores')
+
     res.json(rows)
+
   } catch (err) {
+    console.error("ERROR VENDEDORES:", err)
     res.status(500).json({ error: err.message })
   }
 })
@@ -136,18 +150,15 @@ app.post('/pedidos', async (req, res) => {
     ])
 
     res.json({
-      success:true,
+      success: true,
       id_pedido: result.insertId
     })
 
   } catch (err) {
-
-    console.error(err)
-
+    console.error("ERROR CREAR PEDIDO:", err)
     res.status(500).json({
       error: err.message
     })
-
   }
 
 })
@@ -155,8 +166,11 @@ app.post('/pedidos', async (req, res) => {
 // =============================
 // OBTENER TODOS LOS PEDIDOS
 // =============================
+
 app.get('/pedidos', async (req, res) => {
+
   try {
+
     const [rows] = await db.query(`
       SELECT 
         p.*,
@@ -169,49 +183,61 @@ app.get('/pedidos', async (req, res) => {
     res.json(rows)
 
   } catch (err) {
+    console.error("ERROR PEDIDOS:", err)
     res.status(500).json({ error: err.message })
   }
+
 })
+
 // =============================
 // PEDIDOS POR CLIENTE
 // =============================
+
 app.get('/pedidos/cliente/:id_cliente', async (req, res) => {
+
   try {
 
     const { id_cliente } = req.params
 
-    const [rows] = await db.query(
-      `SELECT * FROM pedidos 
-       WHERE id_cliente = ? 
-       ORDER BY fecha DESC`,
-      [id_cliente]
-    )
+    const [rows] = await db.query(`
+      SELECT * 
+      FROM pedidos 
+      WHERE id_cliente = ?
+      ORDER BY fecha DESC
+    `,[id_cliente])
 
     res.json(rows)
 
   } catch (err) {
+    console.error("ERROR PEDIDOS CLIENTE:", err)
     res.status(500).json({ error: err.message })
   }
+
 })
+
+// =============================
+// ENTREGAR PEDIDO
+// =============================
 
 app.put('/pedidos/:id/entregar', async (req, res) => {
 
-  const { id } = req.params;
-
   try {
 
-    const fechaHoy = new Date().toISOString().slice(0,10)
+    const { id } = req.params
 
     const [result] = await db.query(`
       UPDATE pedidos
-      SET estado_pedido = ?, fecha_entrega = ?
+      SET estado_pedido = 'entregado',
+          fecha_entrega = NOW()
       WHERE id_pedido = ?
-    `, ['entregado', fechaHoy, id])
+    `,[id])
 
-    if (result.affectedRows === 0) {
+    if(result.affectedRows === 0){
+
       return res.status(404).json({
-        error: 'Pedido no encontrado'
+        error: "Pedido no encontrado"
       })
+
     }
 
     const [rows] = await db.query(
@@ -223,7 +249,7 @@ app.put('/pedidos/:id/entregar', async (req, res) => {
 
   } catch (error) {
 
-    console.error("ERROR ENTREGAR:", error)
+    console.error("ERROR ENTREGAR PEDIDO:", error)
 
     res.status(500).json({
       error: error.message
@@ -232,42 +258,61 @@ app.put('/pedidos/:id/entregar', async (req, res) => {
   }
 
 })
+
+// =============================
+// CANCELAR PEDIDO
+// =============================
+
 app.put('/pedidos/:id/cancelar', async (req, res) => {
-  const { id } = req.params;
+
   try {
+
+    const { id } = req.params
+
     const [result] = await db.query(`
       UPDATE pedidos
-      SET estado_pedido = 'cancelado', fecha_cancelacion = NOW()
-      WHERE id_pedido = ? AND estado_pedido = 'pendiente'
-    `, [id]);
+      SET estado_pedido = 'cancelado',
+          fecha_cancelacion = NOW()
+      WHERE id_pedido = ?
+    `,[id])
 
-    if (result.affectedRows === 0) {
-      return res.status(400).json({ 
-        error: 'El pedido no está pendiente o no existe' 
-      });
+    if(result.affectedRows === 0){
+
+      return res.status(404).json({
+        error: "Pedido no encontrado"
+      })
+
     }
 
     const [rows] = await db.query(
-      'SELECT * FROM pedidos WHERE id_pedido = ?', 
+      'SELECT * FROM pedidos WHERE id_pedido = ?',
       [id]
-    );
+    )
 
-    res.json(rows[0]);
+    res.json(rows[0])
 
   } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
 
+    console.error("ERROR CANCELAR PEDIDO:", error)
+
+    res.status(500).json({
+      error: error.message
+    })
+
+  }
+
+})
 
 // =============================
 // RUTA 404
 // =============================
 
 app.use((req,res)=>{
+
   res.status(404).json({
     error:'Ruta no encontrada en el ERP'
   })
+
 })
 
 // =============================
