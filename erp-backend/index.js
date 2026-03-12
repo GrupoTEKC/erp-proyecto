@@ -198,45 +198,40 @@ app.put('/pedidos/:id/entregar', async (req, res) => {
 
   const { id } = req.params;
 
-  console.log("ENTREGAR PEDIDO ID:", id);
-
   try {
 
-    const [result] = await db.query(
-      `UPDATE pedidos 
-       SET estado_pedido = ?, fecha_entrega = CURDATE() 
-       WHERE id_pedido = ?`,
-      ['entregado', id]
-    );
+    const fechaHoy = new Date().toISOString().slice(0,10)
 
-    console.log("RESULTADO UPDATE:", result);
+    const [result] = await db.query(`
+      UPDATE pedidos
+      SET estado_pedido = ?, fecha_entrega = ?
+      WHERE id_pedido = ?
+    `, ['entregado', fechaHoy, id])
 
     if (result.affectedRows === 0) {
       return res.status(404).json({
-        error: "Pedido no encontrado"
-      });
+        error: 'Pedido no encontrado'
+      })
     }
 
     const [rows] = await db.query(
-      "SELECT * FROM pedidos WHERE id_pedido = ?",
+      'SELECT * FROM pedidos WHERE id_pedido = ?',
       [id]
-    );
+    )
 
-    res.json(rows[0]);
+    res.json(rows[0])
 
   } catch (error) {
 
-    console.error("ERROR BACKEND ENTREGAR:", error);
+    console.error("ERROR ENTREGAR:", error)
 
     res.status(500).json({
       error: error.message
-    });
+    })
 
   }
 
-});
-
-
+})
 app.put('/pedidos/:id/cancelar', async (req, res) => {
   const { id } = req.params;
   try {
