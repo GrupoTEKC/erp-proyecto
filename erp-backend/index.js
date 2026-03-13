@@ -222,7 +222,7 @@ app.get('/pedidos', async (req, res) => {
 // PEDIDOS POR CLIENTE (SOLO ENTREGADOS)
 // =============================
 
-app.get('/pedidos/cliente/:id_cliente', async (req, res) => {
+app.get('/pedidos/clientes/:id_cliente', async (req, res) => {
   try {
 
     const { id_cliente } = req.params
