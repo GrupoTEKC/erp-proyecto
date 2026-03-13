@@ -36,7 +36,6 @@ app.get('/clientes', async (req, res) => {
 // Obtener por ID
 app.get('/clientes/:id_cliente', async (req, res) => {
   try {
-
     const { id_cliente } = req.params
 
     const [rows] = await db.query(
@@ -90,7 +89,6 @@ app.get('/rutas', async (req, res) => {
   try {
 
     const [rows] = await db.query('SELECT * FROM rutas')
-
     res.json(rows)
 
   } catch (err) {
@@ -107,7 +105,6 @@ app.get('/vendedores', async (req, res) => {
   try {
 
     const [rows] = await db.query('SELECT * FROM vendedores')
-
     res.json(rows)
 
   } catch (err) {
@@ -155,10 +152,13 @@ app.post('/pedidos', async (req, res) => {
     })
 
   } catch (err) {
+
     console.error("ERROR CREAR PEDIDO:", err)
+
     res.status(500).json({
       error: err.message
     })
+
   }
 
 })
@@ -176,15 +176,19 @@ app.get('/pedidos', async (req, res) => {
         p.*,
         CONCAT(c.nombre,' ',c.apellido1) AS cliente
       FROM pedidos p
-      LEFT JOIN clientes c ON p.id_cliente = c.id_cliente
+      LEFT JOIN clientes c 
+      ON p.id_cliente = c.id_cliente
       ORDER BY p.fecha DESC
     `)
 
     res.json(rows)
 
   } catch (err) {
+
     console.error("ERROR PEDIDOS:", err)
+
     res.status(500).json({ error: err.message })
+
   }
 
 })
@@ -209,8 +213,11 @@ app.get('/pedidos/cliente/:id_cliente', async (req, res) => {
     res.json(rows)
 
   } catch (err) {
+
     console.error("ERROR PEDIDOS CLIENTE:", err)
+
     res.status(500).json({ error: err.message })
+
   }
 
 })
@@ -220,40 +227,51 @@ app.get('/pedidos/cliente/:id_cliente', async (req, res) => {
 // =============================
 
 app.put('/pedidos/:id/entregar', async (req, res) => {
-  const { id } = req.params;
+
+  const { id } = req.params
 
   try {
+
     const [result] = await db.query(`
       UPDATE pedidos
       SET estado_pedido = 'entregado',
           fecha_entrega = CURRENT_DATE()
       WHERE id_pedido = ?
-    `, [id]);
+      AND estado_pedido = 'pendiente'
+    `,[id])
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({
-        error: "Pedido no encontrado"
-      });
+    if(result.affectedRows === 0){
+      return res.status(400).json({
+        error: "El pedido ya fue procesado"
+      })
     }
 
     const [rows] = await db.query(
       'SELECT * FROM pedidos WHERE id_pedido = ?',
       [id]
-    );
+    )
 
-    res.json(rows[0]);
+    res.json(rows[0])
 
   } catch (error) {
-    console.error("ERROR ENTREGAR:", error);
-    res.status(500).json({ error: error.message });
+
+    console.error("ERROR ENTREGAR:", error)
+
+    res.status(500).json({
+      error: error.message
+    })
+
   }
-});
+
+})
+
 // =============================
 // CANCELAR PEDIDO
 // =============================
+
 app.put('/pedidos/:id/cancelar', async (req, res) => {
 
-  const { id } = req.params;
+  const { id } = req.params
 
   try {
 
@@ -262,11 +280,12 @@ app.put('/pedidos/:id/cancelar', async (req, res) => {
       SET estado_pedido = 'cancelado',
           fecha_cancelacion = NOW()
       WHERE id_pedido = ?
+      AND estado_pedido = 'pendiente'
     `,[id])
 
     if(result.affectedRows === 0){
-      return res.status(404).json({
-        error: "Pedido no encontrado"
+      return res.status(400).json({
+        error: "El pedido ya fue procesado"
       })
     }
 
@@ -288,16 +307,15 @@ app.put('/pedidos/:id/cancelar', async (req, res) => {
   }
 
 })
+
 // =============================
 // RUTA 404
 // =============================
 
 app.use((req,res)=>{
-
   res.status(404).json({
     error:'Ruta no encontrada en el ERP'
   })
-
 })
 
 // =============================
