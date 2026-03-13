@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 
-const API = believable-education-production-bec4.up.railway.app
+const API = erp-proyecto-production.up.railway.app
 function Pagos() {
 
   const [clientes, setClientes] = useState([])
