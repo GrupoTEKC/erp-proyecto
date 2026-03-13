@@ -278,7 +278,7 @@ const confirmarEntrega = async (id) => {
 
               const dias = calcularDias(p)
 
-              const est = (p.estado_pedido || 'pendiente')
+              const est = (p.estado || 'pendiente')
                 .trim()
                 .toLowerCase()
 
