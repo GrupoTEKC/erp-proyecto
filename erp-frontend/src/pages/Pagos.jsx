@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 
-const API = "https://believable-education-production-bec4.up.railway.app"
+const API = "https://erp-proyecto-production.up.railway.app"
 
 function Pagos() {
 
