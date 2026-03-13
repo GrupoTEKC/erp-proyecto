@@ -11,6 +11,7 @@ app.use(express.json())
 // =============================
 // CONEXIÓN MYSQL
 // =============================
+
 const db = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -25,17 +26,25 @@ const db = mysql.createPool({
 // Obtener todos
 app.get('/clientes', async (req, res) => {
   try {
+
     const [rows] = await db.query('SELECT * FROM clientes')
+
     res.json(rows)
+
   } catch (err) {
+
     console.error("ERROR CLIENTES:", err)
+
     res.status(500).json({ error: err.message })
+
   }
 })
+
 
 // Obtener por ID
 app.get('/clientes/:id_cliente', async (req, res) => {
   try {
+
     const { id_cliente } = req.params
 
     const [rows] = await db.query(
@@ -52,10 +61,14 @@ app.get('/clientes/:id_cliente', async (req, res) => {
     res.json(rows[0])
 
   } catch (err) {
+
     console.error("ERROR CLIENTE:", err)
+
     res.status(500).json({ error: err.message })
+
   }
 })
+
 
 // Actualizar cliente
 app.put('/clientes/:id_cliente', async (req, res) => {
@@ -76,10 +89,14 @@ app.put('/clientes/:id_cliente', async (req, res) => {
     res.json({ success: true })
 
   } catch (err) {
+
     console.error("ERROR ACTUALIZAR CLIENTE:", err)
+
     res.status(500).json({ error: err.message })
+
   }
 })
+
 
 // =============================
 // RUTAS
@@ -89,13 +106,18 @@ app.get('/rutas', async (req, res) => {
   try {
 
     const [rows] = await db.query('SELECT * FROM rutas')
+
     res.json(rows)
 
   } catch (err) {
+
     console.error("ERROR RUTAS:", err)
+
     res.status(500).json({ error: err.message })
+
   }
 })
+
 
 // =============================
 // VENDEDORES
@@ -105,20 +127,24 @@ app.get('/vendedores', async (req, res) => {
   try {
 
     const [rows] = await db.query('SELECT * FROM vendedores')
+
     res.json(rows)
 
   } catch (err) {
+
     console.error("ERROR VENDEDORES:", err)
+
     res.status(500).json({ error: err.message })
+
   }
 })
+
 
 // =============================
 // CREAR PEDIDO
 // =============================
 
 app.post('/pedidos', async (req, res) => {
-
   try {
 
     const p = req.body
@@ -160,15 +186,14 @@ app.post('/pedidos', async (req, res) => {
     })
 
   }
-
 })
+
 
 // =============================
 // OBTENER TODOS LOS PEDIDOS
 // =============================
 
 app.get('/pedidos', async (req, res) => {
-
   try {
 
     const [rows] = await db.query(`
@@ -190,15 +215,14 @@ app.get('/pedidos', async (req, res) => {
     res.status(500).json({ error: err.message })
 
   }
-
 })
 
+
 // =============================
-// PEDIDOS POR CLIENTE
+// PEDIDOS POR CLIENTE (SOLO ENTREGADOS)
 // =============================
 
 app.get('/pedidos/cliente/:id_cliente', async (req, res) => {
-
   try {
 
     const { id_cliente } = req.params
@@ -207,6 +231,7 @@ app.get('/pedidos/cliente/:id_cliente', async (req, res) => {
       SELECT * 
       FROM pedidos 
       WHERE id_cliente = ?
+      AND estado = 'entregado'
       ORDER BY fecha DESC
     `,[id_cliente])
 
@@ -219,8 +244,8 @@ app.get('/pedidos/cliente/:id_cliente', async (req, res) => {
     res.status(500).json({ error: err.message })
 
   }
-
 })
+
 
 // =============================
 // ENTREGAR PEDIDO
@@ -265,6 +290,7 @@ app.put('/pedidos/:id/entregar', async (req, res) => {
 
 })
 
+
 // =============================
 // CANCELAR PEDIDO
 // =============================
@@ -308,6 +334,7 @@ app.put('/pedidos/:id/cancelar', async (req, res) => {
 
 })
 
+
 // =============================
 // RUTA 404
 // =============================
@@ -317,6 +344,7 @@ app.use((req,res)=>{
     error:'Ruta no encontrada en el ERP'
   })
 })
+
 
 // =============================
 // SERVER
