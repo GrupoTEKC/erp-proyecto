@@ -222,30 +222,28 @@ app.get('/pedidos', async (req, res) => {
 // PEDIDOS POR CLIENTE (SOLO ENTREGADOS)
 // =============================
 
-app.get('/pedidos/clientes/:id_cliente', async (req, res) => {
+// =============================
+// PEDIDOS ENTREGADOS POR CLIENTE
+// =============================
+app.get('/pedidos/cliente/:id_cliente', async (req, res) => {
   try {
-
     const { id_cliente } = req.params
 
     const [rows] = await db.query(`
-      SELECT * 
-      FROM pedidos 
+      SELECT *
+      FROM pedidos
       WHERE id_cliente = ?
-      AND estado = 'entregado'
+      AND estado_pedido = 'entregado'
       ORDER BY fecha DESC
     `,[id_cliente])
 
     res.json(rows)
 
   } catch (err) {
-
     console.error("ERROR PEDIDOS CLIENTE:", err)
-
     res.status(500).json({ error: err.message })
-
   }
 })
-
 
 // =============================
 // ENTREGAR PEDIDO
@@ -333,6 +331,7 @@ app.put('/pedidos/:id/cancelar', async (req, res) => {
   }
 
 })
+
 
 
 // =============================
