@@ -1,4 +1,4 @@
-console.log("🔥 PRUEBA 🔥")
+console.log("🔥 VERSION 18 MARZO FORZADA 🔥")
 require('dotenv').config()
 const express = require('express')
 const mysql = require('mysql2/promise')
