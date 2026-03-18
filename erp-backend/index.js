@@ -1,4 +1,4 @@
-console.log("🔥 ESTE ES EL INDEX NUEVO 🔥")
+console.log("🔥 PRUEBA 🔥")
 require('dotenv').config()
 const express = require('express')
 const mysql = require('mysql2/promise')
