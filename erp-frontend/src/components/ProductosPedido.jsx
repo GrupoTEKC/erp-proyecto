@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { API_URL } from '../config'
+const API_URL = 'https://erp-proyecto-production.up.railway.app'
 
 function ProductosPedido({ onTotalChange, onProductosChange }) {
 
