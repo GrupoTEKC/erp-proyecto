@@ -21,21 +21,17 @@ const styles = {
 }
 
 function Pedidos() {
-
   const [cliente, setCliente] = useState(null)
-  const [fecha, setFecha] = useState('')
   const [tipoPedido, setTipoPedido] = useState('')
   const [diasCredito, setDiasCredito] = useState(0)
   const [total, setTotal] = useState(0)
   const [productos, setProductos] = useState([])
-
   const [rutas, setRutas] = useState([])
   const [idRuta, setIdRuta] = useState('')
-
   const [vendedores, setVendedores] = useState([])
   const [idVendedor, setIdVendedor] = useState('')
 
-  /* ================= CARGAR CATÁLOGOS ================= */
+  // ================= CARGAR CATÁLOGOS =================
   useEffect(() => {
     const cargarDatos = async () => {
       try {
@@ -44,45 +40,45 @@ function Pedidos() {
           fetch(`${API}/vendedores`)
         ])
 
-        if (!resRutas.ok || !resVendedores.ok)
-          throw new Error('Error cargando catálogos')
-
         const rutasData = await resRutas.json()
         const vendedoresData = await resVendedores.json()
 
-        setRutas(Array.isArray(rutasData) ? rutasData : [])
-        setVendedores(Array.isArray(vendedoresData) ? vendedoresData : [])
+        setRutas(rutasData)
+        setVendedores(vendedoresData)
 
       } catch (error) {
-        console.error('Error cargando catálogos:', error)
-        alert('Error cargando rutas o vendedores')
+        console.error(error)
+        alert('Error cargando datos')
       }
     }
 
     cargarDatos()
   }, [])
 
-  /* ================= GUARDAR PEDIDO ================= */
+  // ================= GUARDAR PEDIDO =================
   const guardarPedido = async () => {
-
-    if (!cliente || !fecha || !tipoPedido || !idRuta || !idVendedor || productos.length === 0) {
+    if (!cliente || !tipoPedido || !idRuta || !idVendedor || productos.length === 0) {
       alert('Complete todos los campos obligatorios')
       return
     }
 
+    // 🔥 ALINEADO AL BACKEND NUEVO
     const nuevoPedido = {
       id_cliente: cliente.id_cliente,
       id_vendedor: Number(idVendedor),
       id_ruta: Number(idRuta),
-      fecha,
-      total,
       tipo_pedido: tipoPedido,
       dias_credito: tipoPedido === 'credito' ? diasCredito : 0,
-      estado_pedido: 'pendiente'
+
+      productos: productos.map(p => ({
+        id_producto: p.id_producto,
+        cantidad: p.cantidad,
+        precio: p.precio
+      }))
     }
 
     try {
-      const res = await fetch(`${API}/pedidos`, {
+      const res = await fetch(`${API}/pedidos-completo`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(nuevoPedido)
@@ -90,11 +86,12 @@ function Pedidos() {
 
       if (!res.ok) throw new Error('Error al guardar')
 
-      alert('✅ Pedido guardado correctamente')
+      const data = await res.json()
 
-      // Reset
+      alert(`✅ Pedido guardado (ID: ${data.id_pedido})`)
+
+      // RESET (sin tocar diseño)
       setCliente(null)
-      setFecha('')
       setTipoPedido('')
       setDiasCredito(0)
       setProductos([])
@@ -103,7 +100,7 @@ function Pedidos() {
       setIdVendedor('')
 
     } catch (err) {
-      alert(`❌ Error: ${err.message}`)
+      alert(`❌ ${err.message}`)
     }
   }
 
@@ -126,6 +123,7 @@ function Pedidos() {
             <strong>Cliente:</strong> {cliente.nombre}
           </p>
 
+          {/* VENDEDOR */}
           <div style={styles.section}>
             <label style={styles.label}>Vendedor</label>
             <select
@@ -142,6 +140,7 @@ function Pedidos() {
             </select>
           </div>
 
+          {/* RUTA */}
           <div style={styles.section}>
             <label style={styles.label}>Ruta</label>
             <select
@@ -158,16 +157,7 @@ function Pedidos() {
             </select>
           </div>
 
-          <div style={styles.section}>
-            <label style={styles.label}>Fecha</label>
-            <input
-              type="date"
-              style={styles.field}
-              value={fecha}
-              onChange={e => setFecha(e.target.value)}
-            />
-          </div>
-
+          {/* TIPO */}
           <div style={styles.section}>
             <label style={styles.label}>Tipo de pedido</label>
             <select
@@ -181,6 +171,7 @@ function Pedidos() {
             </select>
           </div>
 
+          {/* CRÉDITO */}
           {tipoPedido === 'credito' && (
             <div style={styles.section}>
               <label style={styles.label}>Días de crédito</label>
@@ -193,6 +184,7 @@ function Pedidos() {
             </div>
           )}
 
+          {/* PRODUCTOS */}
           <ProductosPedido
             onTotalChange={setTotal}
             onProductosChange={setProductos}
