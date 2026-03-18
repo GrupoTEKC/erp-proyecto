@@ -85,6 +85,29 @@ app.get('/vendedores', async (req, res) => {
 })
 
 // =============================
+// PRODUCTOS
+// =============================
+app.get('/productos', async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT 
+        id_producto,
+        nombre,
+        precio,
+        activo
+      FROM productos
+      WHERE activo = 1
+      ORDER BY nombre ASC
+    `)
+
+    res.json(rows)
+
+  } catch (err) {
+    console.error("ERROR PRODUCTOS:", err)
+    res.status(500).json({ error: err.message })
+  }
+})
+// =============================
 // PEDIDO COMPLETO (PRO)
 // =============================
 app.post('/pedidos-completo', async (req, res) => {
