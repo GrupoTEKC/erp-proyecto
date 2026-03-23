@@ -3,364 +3,240 @@ import { useNavigate } from 'react-router-dom'
 
 const API = 'https://erp-proyecto-production.up.railway.app'
 
-/* ===== ESTILOS ===== */
-
 const vino = '#8B1E1E'
 
-const container = {
-  padding: 20,
-  background: '#ffffff',
-  minHeight: '100vh',
-  fontFamily: 'Arial'
-}
-
-const header = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  marginBottom: 20,
-  flexWrap: 'wrap',
-  gap: 10
-}
-
-const btnVino = {
-  background: '#fff',
-  color: vino,
-  border: `1px solid ${vino}`,
-  padding: '8px 12px',
-  borderRadius: 6,
-  cursor: 'pointer',
-  marginRight: 5
-}
-
-const buscador = {
-  width: '100%',
-  padding: 10,
-  borderRadius: 6,
-  border: `1px solid ${vino}`,
-  marginBottom: 15
-}
-
-const tablaWrapper = {
-  background: '#fff',
-  borderRadius: 8,
-  overflowX: 'auto',
-  boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
-}
-
-const tabla = {
-  width: '100%',
-  borderCollapse: 'collapse',
-  minWidth: 1200
-}
-
-const thead = {
-  background: vino,
-  color: '#fff'
-}
-
-const th = {
-  padding: 12,
-  textAlign: 'left'
-}
-
-const td = {
-  padding: 12,
-  borderBottom: '1px solid #eee'
-}
-
-const estadoPendiente = {
-  background: '#ffdede',
-  borderRadius: 6,
-  padding: '6px 10px'
-}
-
-const estadoEntregado = {
-  background: '#d4f8d4',
-  borderRadius: 6,
-  padding: '6px 10px'
-}
-
-const estadoCancelado = {
-  background: '#eeeeee',
-  borderRadius: 6,
-  padding: '6px 10px'
-}
-
 function ConsultarPedidos() {
-
   const [pedidos, setPedidos] = useState([])
   const [busqueda, setBusqueda] = useState('')
+  const [modalEntrega, setModalEntrega] = useState(false)
+  const [pedidoSeleccionado, setPedidoSeleccionado] = useState(null)
+  const [detalle, setDetalle] = useState([])
+  const [choferes, setChoferes] = useState([])
+  const [unidades, setUnidades] = useState([])
+
+  const [form, setForm] = useState({
+    id_chofer: '',
+    id_unidad: '',
+    comentario: '',
+    productos: []
+  })
 
   const navigate = useNavigate()
-
   const urlLimpia = API?.endsWith('/') ? API.slice(0, -1) : API
 
-  /* ============================= */
-  /* CARGAR PEDIDOS */
-  /* ============================= */
-
+  // =============================
+  // CARGAR PEDIDOS
+  // =============================
   const cargarPedidos = async () => {
-    try {
-
-      const res = await fetch(`${urlLimpia}/pedidos`)
-
-      if (!res.ok) {
-        throw new Error('Error obteniendo pedidos')
-      }
-
-      const data = await res.json()
-
-      setPedidos(Array.isArray(data) ? data : [])
-
-    } catch (error) {
-
-      console.error("Error cargando pedidos:", error)
-
-      setPedidos([])
-
-    }
+    const res = await fetch(`${urlLimpia}/pedidos`)
+    const data = await res.json()
+    setPedidos(data)
   }
 
   useEffect(() => {
     cargarPedidos()
   }, [])
 
-  /* ============================= */
-  /* CALCULAR DIAS */
-  /* ============================= */
+  // =============================
+  // ABRIR MODAL ENTREGA
+  // =============================
+  const abrirEntrega = async (id) => {
+    const res = await fetch(`${urlLimpia}/pedidos/${id}/detalle`)
+    const data = await res.json()
 
-  const calcularDias = (pedido) => {
+    const ch = await fetch(`${urlLimpia}/choferes`)
+    const chData = await ch.json()
 
-    if (!pedido.fecha) return 0
+    const un = await fetch(`${urlLimpia}/unidades`)
+    const unData = await un.json()
 
-    const estado = (pedido.estado_pedido || '')
-      .trim()
-      .toLowerCase()
+    setDetalle(data)
+    setChoferes(chData)
+    setUnidades(unData)
 
-    const inicio = new Date(pedido.fecha)
+    setForm({
+      id_chofer: '',
+      id_unidad: '',
+      comentario: '',
+      productos: data.map(p => ({
+        id_producto: p.id_producto,
+        cantidad_pedida: p.cantidad_pedida,
+        cantidad_entregada: p.cantidad_pedida
+      }))
+    })
 
-    const cierre =
-      estado === 'entregado'
-        ? pedido.fecha_entrega
-        : estado === 'cancelado'
-        ? pedido.fecha_cancelacion
-        : null
-
-    const fin = cierre ? new Date(cierre) : new Date()
-
-    const diff = fin - inicio
-
-    return Math.floor(diff / (1000 * 60 * 60 * 24))
+    setPedidoSeleccionado(id)
+    setModalEntrega(true)
   }
 
-  /* ============================= */
-  /* ENTREGAR */
-  /* ============================= */
-
-const confirmarEntrega = async (id) => {
-  if (!window.confirm(`¿Marcar pedido #${id} como ENTREGADO?`)) return;
-
-  try {
-    const res = await fetch(`${urlLimpia}/pedidos/${id}/entregar`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' }
-    });
-
-    if (!res.ok) {
-      const errorData = await res.json(); 
-      throw new Error(errorData.error || "Error actualizando pedido");
+  // =============================
+  // GUARDAR ENTREGA
+  // =============================
+  const guardarEntrega = async () => {
+    if (!form.id_chofer || !form.id_unidad) {
+      return alert("Selecciona chofer y unidad")
     }
 
-    await cargarPedidos();
-
-  } catch (error) {
-    console.error(error);
-    alert(`Error al actualizar: ${error.message}`); 
-  }
-};
-
-  /* ============================= */
-  /* CANCELAR */
-  /* ============================= */
-
-  const confirmarCancelacion = async (id) => {
-
-    if (!window.confirm(`¿Seguro que deseas CANCELAR el pedido #${id}?`)) return
-
-    try {
-
-      const res = await fetch(`${urlLimpia}/pedidos/${id}/cancelar`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' }
-      })
-
-      if (!res.ok) {
-        throw new Error("Error cancelando pedido")
-      }
-
-      await cargarPedidos()
-
-    } catch (error) {
-
-      console.error(error)
-
-      alert("Error al cancelar")
-
-    }
-  }
-
-  /* ============================= */
-  /* FILTRO BUSQUEDA */
-  /* ============================= */
-
-  const pedidosFiltrados = pedidos.filter(p => {
-
-    const texto = busqueda.toLowerCase()
-
-    return (
-      p.id_pedido?.toString().includes(texto) ||
-      (p.cliente || '').toLowerCase().includes(texto)
+    const hayDiferencias = form.productos.some(
+      p => p.cantidad_entregada !== p.cantidad_pedida
     )
 
-  })
+    if (hayDiferencias && !form.comentario) {
+      return alert("Debes agregar comentario por diferencias")
+    }
 
-  /* ============================= */
-  /* RENDER */
-  /* ============================= */
+    const res = await fetch(`${urlLimpia}/entregas`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id_pedido: pedidoSeleccionado,
+        ...form
+      })
+    })
 
+    if (!res.ok) {
+      const err = await res.json()
+      return alert(err.error)
+    }
+
+    setModalEntrega(false)
+    cargarPedidos()
+  }
+
+  // =============================
+  // CANCELAR
+  // =============================
+  const cancelarPedido = async (id) => {
+    await fetch(`${urlLimpia}/pedidos/${id}/cancelar`, {
+      method: 'PUT'
+    })
+    cargarPedidos()
+  }
+
+  // =============================
+  // FILTRO
+  // =============================
+  const pedidosFiltrados = pedidos.filter(p =>
+    p.id_pedido.toString().includes(busqueda) ||
+    (p.cliente || '').toLowerCase().includes(busqueda.toLowerCase())
+  )
+
+  // =============================
+  // UI
+  // =============================
   return (
+    <div style={{ padding: 20 }}>
 
-    <div style={container}>
+      <button onClick={() => navigate('/')}>⬅ Volver</button>
 
-      <div style={header}>
-
-        <button
-          style={btnVino}
-          onClick={() => navigate('/')}
-        >
-          ⬅ Volver
-        </button>
-
-        <h2>Consultar pedidos</h2>
-
-      </div>
+      <h2>Consultar pedidos</h2>
 
       <input
-        style={buscador}
-        placeholder="Buscar pedido o cliente..."
+        placeholder="Buscar..."
         value={busqueda}
         onChange={e => setBusqueda(e.target.value)}
       />
 
-      <div style={tablaWrapper}>
+      <table border="1" width="100%">
+        <thead style={{ background: vino, color: '#fff' }}>
+          <tr>
+            <th>ID</th>
+            <th>Cliente</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
 
-        <table style={tabla}>
+        <tbody>
+          {pedidosFiltrados.map(p => (
+            <tr key={p.id_pedido}>
+              <td>{p.id_pedido}</td>
+              <td>{p.cliente}</td>
+              <td>{p.estado}</td>
 
-          <thead style={thead}>
+              <td>
+                <button
+                  disabled={p.estado !== 'pendiente'}
+                  onClick={() => abrirEntrega(p.id_pedido)}
+                >
+                  Preparar envío
+                </button>
 
-            <tr>
-              <th style={th}>Pedido</th>
-              <th style={th}>Cliente</th>
-              <th style={th}>Fecha pedido</th>
-              <th style={th}>Fecha entrega</th>
-              <th style={th}>Fecha cancelación</th>
-              <th style={th}>Estado</th>
-              <th style={th}>Días</th>
-              <th style={th}>Acciones</th>
+                <button
+                  disabled={p.estado !== 'pendiente'}
+                  onClick={() => cancelarPedido(p.id_pedido)}
+                >
+                  Cancelar
+                </button>
+              </td>
             </tr>
+          ))}
+        </tbody>
+      </table>
 
-          </thead>
+      {/* =============================
+          MODAL ENTREGA
+      ============================= */}
+      {modalEntrega && (
+        <div style={{
+          position:'fixed',
+          top:0,left:0,right:0,bottom:0,
+          background:'rgba(0,0,0,0.5)',
+          display:'flex',
+          justifyContent:'center',
+          alignItems:'center'
+        }}>
+          <div style={{ background:'#fff', padding:20, width:600 }}>
 
-          <tbody>
+            <h3>Preparar entrega</h3>
 
-            {pedidosFiltrados.map(p => {
+            {form.productos.map((p, i) => (
+              <div key={i}>
+                <span>{p.cantidad_pedida}</span>
+                <input
+                  type="number"
+                  value={p.cantidad_entregada}
+                  onChange={e => {
+                    const copia = [...form.productos]
+                    copia[i].cantidad_entregada = Number(e.target.value)
+                    setForm({ ...form, productos: copia })
+                  }}
+                />
+              </div>
+            ))}
 
-              const dias = calcularDias(p)
+            <select onChange={e => setForm({ ...form, id_chofer: e.target.value })}>
+              <option value="">Chofer</option>
+              {choferes.map(c => (
+                <option key={c.id_chofer} value={c.id_chofer}>
+                  {c.nombre}
+                </option>
+              ))}
+            </select>
 
-              const est = (p.estado || 'pendiente')
-                .trim()
-                .toLowerCase()
+            <select onChange={e => setForm({ ...form, id_unidad: e.target.value })}>
+              <option value="">Unidad</option>
+              {unidades.map(u => (
+                <option key={u.id_unidad} value={u.id_unidad}>
+                  {u.nombre}
+                </option>
+              ))}
+            </select>
 
-              const estilo =
-                est === 'entregado'
-                  ? estadoEntregado
-                  : est === 'pendiente'
-                  ? estadoPendiente
-                  : estadoCancelado
+            <textarea
+              placeholder="Comentario (obligatorio si hay diferencias)"
+              onChange={e => setForm({ ...form, comentario: e.target.value })}
+            />
 
-              return (
+            <br /><br />
 
-                <tr key={p.id_pedido}>
+            <button onClick={guardarEntrega}>Guardar</button>
+            <button onClick={() => setModalEntrega(false)}>Cerrar</button>
 
-                  <td style={td}>{p.id_pedido}</td>
-
-                  <td style={td}>{p.cliente}</td>
-
-                  <td style={td}>
-                    {p.fecha
-                      ? new Date(p.fecha).toLocaleDateString()
-                      : '-'}
-                  </td>
-
-                  <td style={td}>
-                    {p.fecha_entrega
-                      ? new Date(p.fecha_entrega).toLocaleDateString()
-                      : '-'}
-                  </td>
-
-                  <td style={td}>
-                    {p.fecha_cancelacion
-                      ? new Date(p.fecha_cancelacion).toLocaleDateString()
-                      : '-'}
-                  </td>
-
-                  <td style={td}>
-                    <span style={estilo}>{est}</span>
-                  </td>
-
-                  <td style={td}>{dias}</td>
-
-                  <td style={td}>
-
-                    <button
-                      style={{
-                        ...btnVino,
-                        opacity: est !== 'pendiente' ? 0.5 : 1
-                      }}
-                      disabled={est !== 'pendiente'}
-                      onClick={() => confirmarEntrega(p.id_pedido)}
-                    >
-                      Entregar
-                    </button>
-
-                    <button
-                      style={{
-                        ...btnVino,
-                        opacity: est !== 'pendiente' ? 0.5 : 1
-                      }}
-                      disabled={est !== 'pendiente'}
-                      onClick={() => confirmarCancelacion(p.id_pedido)}
-                    >
-                      Cancelar
-                    </button>
-
-                  </td>
-
-                </tr>
-
-              )
-
-            })}
-
-          </tbody>
-
-        </table>
-
-      </div>
-
+          </div>
+        </div>
+      )}
     </div>
-
   )
 }
 
