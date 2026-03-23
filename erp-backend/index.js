@@ -144,29 +144,24 @@ app.post('/pedidos-completo', async (req, res) => {
 
     // 2. Insertar detalle
     let total = 0
+for (const item of p.productos) {
+  total += item.cantidad * item.precio
 
-    for (const item of p.productos) {
-      const subtotal = item.cantidad * item.precio
-      total += subtotal
-
-      await conn.query(`
-        INSERT INTO pedido_detalle (
-          id_pedido,
-          id_producto,
-          cantidad,
-          precio,
-          subtotal
-        )
-        VALUES (?, ?, ?, ?, ?)
-      `, [
-        id_pedido,
-        item.id_producto,
-        item.cantidad,
-        item.precio,
-        subtotal
-      ])
-    }
-
+  await conn.query(`
+    INSERT INTO pedido_detalle (
+      id_pedido,
+      id_producto,
+      cantidad,
+      precio_unitario
+    )
+    VALUES (?, ?, ?, ?)
+  `, [
+    id_pedido,
+    item.id_producto,
+    item.cantidad,
+    item.precio
+  ])
+}
     // 3. Actualizar total
     await conn.query(`
       UPDATE pedidos
