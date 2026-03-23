@@ -7,11 +7,18 @@ const vino = '#8B1E1E'
 function ConsultarPedidos() {
   const [pedidos, setPedidos] = useState([])
   const [busqueda, setBusqueda] = useState('')
+
   const [modalEntrega, setModalEntrega] = useState(false)
+  const [modalCancelar, setModalCancelar] = useState(false)
+
   const [pedidoSeleccionado, setPedidoSeleccionado] = useState(null)
+
   const [detalle, setDetalle] = useState([])
   const [choferes, setChoferes] = useState([])
   const [unidades, setUnidades] = useState([])
+
+  const [comentarioCancelacion, setComentarioCancelacion] = useState('')
+
   const [form, setForm] = useState({
     id_chofer: '',
     id_unidad: '',
@@ -47,7 +54,7 @@ function ConsultarPedidos() {
   }
 
   // =============================
-  // ABRIR MODAL
+  // ABRIR ENTREGA
   // =============================
   const abrirEntrega = async (id) => {
     const res = await fetch(`${urlLimpia}/pedidos/${id}/detalle`)
@@ -69,7 +76,7 @@ function ConsultarPedidos() {
       comentario: '',
       productos: data.map(p => ({
         id_producto: p.id_producto,
-        nombre: p.nombre, // 🔥 IMPORTANTE
+        nombre: p.nombre,
         cantidad_pedida: p.cantidad,
         cantidad_entregada: p.cantidad
       }))
@@ -111,12 +118,33 @@ function ConsultarPedidos() {
   }
 
   // =============================
-  // CANCELAR
+  // CANCELAR (NUEVO 🔥)
   // =============================
-  const cancelarPedido = async (id) => {
-    await fetch(`${urlLimpia}/pedidos/${id}/cancelar`, {
-      method: 'PUT'
+  const abrirCancelar = (id) => {
+    setPedidoSeleccionado(id)
+    setComentarioCancelacion('')
+    setModalCancelar(true)
+  }
+
+  const confirmarCancelacion = async () => {
+    if (!comentarioCancelacion.trim()) {
+      return alert("Debes escribir el motivo de cancelación")
+    }
+
+    const res = await fetch(`${urlLimpia}/pedidos/${pedidoSeleccionado}/cancelar`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        comentario: comentarioCancelacion
+      })
     })
+
+    if (!res.ok) {
+      const err = await res.json()
+      return alert(err.error)
+    }
+
+    setModalCancelar(false)
     cargarPedidos()
   }
 
@@ -162,9 +190,7 @@ function ConsultarPedidos() {
               <td>{p.cliente}</td>
 
               <td>
-                {p.fecha
-                  ? new Date(p.fecha).toLocaleDateString()
-                  : '-'}
+                {p.fecha ? new Date(p.fecha).toLocaleDateString() : '-'}
               </td>
 
               <td>{calcularDias(p.fecha)}</td>
@@ -181,7 +207,7 @@ function ConsultarPedidos() {
 
                 <button
                   disabled={p.estado !== 'pendiente'}
-                  onClick={() => cancelarPedido(p.id_pedido)}
+                  onClick={() => abrirCancelar(p.id_pedido)}
                 >
                   Cancelar
                 </button>
@@ -204,15 +230,12 @@ function ConsultarPedidos() {
           alignItems:'center'
         }}>
           <div style={{ background:'#fff', padding:20, width:600 }}>
-
             <h3>Preparar entrega</h3>
 
-            {/* 🔥 PRODUCTOS CON NOMBRE */}
             {form.productos.map((p, i) => (
               <div key={i} style={{ marginBottom: 10 }}>
-                <strong>{p.nombre}</strong> {/* 🔥 AQUI ESTA LA MAGIA */}
+                <strong>{p.nombre}</strong>
                 <br />
-
                 Pedido: {p.cantidad_pedida}
 
                 <input
@@ -255,7 +278,41 @@ function ConsultarPedidos() {
 
             <button onClick={guardarEntrega}>Guardar</button>
             <button onClick={() => setModalEntrega(false)}>Cerrar</button>
+          </div>
+        </div>
+      )}
 
+      {/* =============================
+          MODAL CANCELAR 🔥
+      ============================= */}
+      {modalCancelar && (
+        <div style={{
+          position:'fixed',
+          top:0,left:0,right:0,bottom:0,
+          background:'rgba(0,0,0,0.5)',
+          display:'flex',
+          justifyContent:'center',
+          alignItems:'center'
+        }}>
+          <div style={{ background:'#fff', padding:20, width:400 }}>
+            <h3>Cancelar pedido</h3>
+
+            <textarea
+              placeholder="Motivo de cancelación (obligatorio)"
+              value={comentarioCancelacion}
+              onChange={e => setComentarioCancelacion(e.target.value)}
+              style={{ width: '100%', height: 100 }}
+            />
+
+            <br /><br />
+
+            <button onClick={confirmarCancelacion}>
+              Confirmar cancelación
+            </button>
+
+            <button onClick={() => setModalCancelar(false)}>
+              Cerrar
+            </button>
           </div>
         </div>
       )}
