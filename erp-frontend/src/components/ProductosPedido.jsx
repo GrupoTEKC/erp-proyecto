@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
+
 const API_URL = 'https://erp-proyecto-production.up.railway.app'
 
 function ProductosPedido({ onTotalChange, onProductosChange }) {
-
   const [catalogo, setCatalogo] = useState([])
   const [productos, setProductos] = useState([])
   const [open, setOpen] = useState(false)
@@ -14,13 +14,9 @@ function ProductosPedido({ onTotalChange, onProductosChange }) {
     const cargarProductos = async () => {
       try {
         const res = await fetch(`${API_URL}/productos`)
-
-        // 🔥 VALIDACIÓN
         if (!res.ok) throw new Error('Error cargando productos')
-
         const data = await res.json()
 
-        // 🔥 ASEGURAR ARRAY
         if (Array.isArray(data)) {
           setCatalogo(
             data.map(p => ({
@@ -33,25 +29,29 @@ function ProductosPedido({ onTotalChange, onProductosChange }) {
           console.error('Respuesta inválida:', data)
           setCatalogo([])
         }
-
       } catch (err) {
         console.error('ERROR PRODUCTOS:', err)
-        setCatalogo([]) // 🔥 evita crash
+        setCatalogo([])
       }
     }
-
     cargarProductos()
   }, [])
 
   // ================= RECALCULAR =================
   const recalcular = lista => {
     const total = lista.reduce(
-      (sum, p) => sum + (p.precio * p.cantidad),
+      (sum, p) => sum + (p.precio * (Number(p.cantidad) || 0)),
       0
     )
-
     onTotalChange(total)
-    onProductosChange(lista)
+
+    // 🔥 convertir cantidades antes de enviar
+    const limpia = lista.map(p => ({
+      ...p,
+      cantidad: Number(p.cantidad) || 0
+    }))
+
+    onProductosChange(limpia)
   }
 
   // ================= AGREGAR =================
@@ -61,11 +61,10 @@ function ProductosPedido({ onTotalChange, onProductosChange }) {
     )
 
     let lista
-
     if (existe) {
       lista = productos.map(x =>
         x.id_producto === p.id_producto
-          ? { ...x, cantidad: x.cantidad + 1 }
+          ? { ...x, cantidad: Number(x.cantidad) + 1 }
           : x
       )
     } else {
@@ -74,13 +73,12 @@ function ProductosPedido({ onTotalChange, onProductosChange }) {
 
     setProductos(lista)
     recalcular(lista)
-
     setOpen(false)
     setOpenJuntas(false)
     setOpenBoquillas(false)
   }
 
-  // ================= FILTROS SEGUROS =================
+  // ================= FILTROS =================
   const normales = catalogo.filter(p => {
     const nombre = (p.nombre || '').toLowerCase()
     return !nombre.includes('junta') && !nombre.includes('boquilla')
@@ -123,8 +121,6 @@ function ProductosPedido({ onTotalChange, onProductosChange }) {
 
         {open && (
           <div>
-
-            {/* NORMALES */}
             {Array.isArray(normales) && normales.map(p => (
               <div
                 key={p.id_producto}
@@ -135,7 +131,6 @@ function ProductosPedido({ onTotalChange, onProductosChange }) {
               </div>
             ))}
 
-            {/* JUNTAS */}
             <div
               style={itemStyle}
               onClick={() => setOpenJuntas(!openJuntas)}
@@ -153,7 +148,6 @@ function ProductosPedido({ onTotalChange, onProductosChange }) {
               </div>
             ))}
 
-            {/* BOQUILLAS */}
             <div
               style={itemStyle}
               onClick={() => setOpenBoquillas(!openBoquillas)}
@@ -170,7 +164,6 @@ function ProductosPedido({ onTotalChange, onProductosChange }) {
                 {p.nombre}
               </div>
             ))}
-
           </div>
         )}
       </div>
@@ -186,6 +179,7 @@ function ProductosPedido({ onTotalChange, onProductosChange }) {
               <th>Subtotal</th>
             </tr>
           </thead>
+
           <tbody>
             {productos.map((p, i) => (
               <tr key={p.id_producto}>
@@ -210,8 +204,13 @@ function ProductosPedido({ onTotalChange, onProductosChange }) {
                     min="1"
                     value={p.cantidad}
                     onChange={e => {
+                      const value = e.target.value
+
                       const lista = [...productos]
-                      lista[i].cantidad = Number(e.target.value) || 1
+
+                      // 🔥 CLAVE: permitir vacío
+                      lista[i].cantidad = value === '' ? '' : Number(value)
+
                       setProductos(lista)
                       recalcular(lista)
                     }}
@@ -219,7 +218,7 @@ function ProductosPedido({ onTotalChange, onProductosChange }) {
                 </td>
 
                 <td>
-                  ${p.precio * p.cantidad}
+                  ${p.precio * (Number(p.cantidad) || 0)}
                 </td>
               </tr>
             ))}
