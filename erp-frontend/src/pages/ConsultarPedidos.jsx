@@ -14,7 +14,20 @@ const styles = {
   td: { padding: 8, textAlign: 'center' },
   button: { padding: '6px 10px', margin: '2px', borderRadius: '6px', border: 'none', cursor: 'pointer' },
   primary: { backgroundColor: '#8B1E1E', color: '#fff' },
-  secondary: { backgroundColor: '#fff', border: '1px solid #8B1E1E', color: '#8B1E1E' }
+  secondary: { backgroundColor: '#fff', border: '1px solid #8B1E1E', color: '#8B1E1E' },
+
+  // 🔥 NUEVO: estados
+  estado: (estado) => ({
+    color: '#fff',
+    padding: '4px 8px',
+    borderRadius: '6px',
+    fontSize: '12px',
+    backgroundColor:
+      estado === 'pendiente' ? '#c0392b' :
+      estado === 'en_ruta' ? '#27ae60' :
+      estado === 'cancelado' ? '#7f8c8d' :
+      '#34495e'
+  })
 }
 
 function ConsultarPedidos() {
@@ -172,6 +185,7 @@ function ConsultarPedidos() {
             <th style={styles.th}>Acciones</th>
           </tr>
         </thead>
+
         <tbody>
           {pedidosFiltrados.map(p => (
             <tr key={p.id_pedido}>
@@ -181,7 +195,14 @@ function ConsultarPedidos() {
                 {p.fecha ? new Date(p.fecha).toLocaleDateString() : '-'}
               </td>
               <td style={styles.td}>{calcularDias(p.fecha)}</td>
-              <td style={styles.td}>{p.estado}</td>
+
+              {/* 🔥 ESTADO CON COLOR */}
+              <td style={styles.td}>
+                <span style={styles.estado(p.estado)}>
+                  {p.estado}
+                </span>
+              </td>
+
               <td style={styles.td}>
                 <button
                   style={{ ...styles.button, ...styles.primary }}
@@ -204,22 +225,24 @@ function ConsultarPedidos() {
         </tbody>
       </table>
 
-      {/* MODALES (NO TOCADOS FUNCIONALMENTE) */}
+      {/* MODAL ENTREGA */}
       {modalEntrega && (
         <div style={{
           position:'fixed', top:0,left:0,right:0,bottom:0,
           background:'rgba(0,0,0,0.5)',
           display:'flex', justifyContent:'center', alignItems:'center'
         }}>
-          <div style={{ background:'#fff', padding:20, width:600 }}>
-            <h3>Preparar entrega</h3>
+          <div style={{ background:'#fff', padding:20, width:600, borderRadius:10 }}>
+            <h3 style={styles.title}>Preparar entrega</h3>
 
             {form.productos.map((p, i) => (
-              <div key={i}>
+              <div key={i} style={{ marginBottom: 10 }}>
                 <strong>{p.nombre}</strong>
                 <br />
                 Pedido: {p.cantidad_pedida}
+
                 <input
+                  style={styles.field}
                   type="number"
                   value={p.cantidad_entregada}
                   onChange={e => {
@@ -231,7 +254,10 @@ function ConsultarPedidos() {
               </div>
             ))}
 
-            <select onChange={e => setForm({ ...form, id_chofer: e.target.value })}>
+            <select
+              style={styles.field}
+              onChange={e => setForm({ ...form, id_chofer: e.target.value })}
+            >
               <option value="">Chofer</option>
               {choferes.map(c => (
                 <option key={c.id_chofer} value={c.id_chofer}>
@@ -240,7 +266,10 @@ function ConsultarPedidos() {
               ))}
             </select>
 
-            <select onChange={e => setForm({ ...form, id_unidad: e.target.value })}>
+            <select
+              style={styles.field}
+              onChange={e => setForm({ ...form, id_unidad: e.target.value })}
+            >
               <option value="">Unidad</option>
               {unidades.map(u => (
                 <option key={u.id_unidad} value={u.id_unidad}>
@@ -250,38 +279,46 @@ function ConsultarPedidos() {
             </select>
 
             <textarea
+              style={{ ...styles.field, width:'100%', height:80 }}
               placeholder="Comentario (obligatorio si hay diferencias)"
               onChange={e => setForm({ ...form, comentario: e.target.value })}
             />
 
-            <br /><br />
-            <button onClick={guardarEntrega}>Guardar</button>
-            <button onClick={() => setModalEntrega(false)}>Cerrar</button>
+            <br />
+
+            <button style={{ ...styles.button, ...styles.primary }} onClick={guardarEntrega}>
+              Guardar
+            </button>
+
+            <button style={{ ...styles.button, ...styles.secondary }} onClick={() => setModalEntrega(false)}>
+              Cerrar
+            </button>
           </div>
         </div>
       )}
 
+      {/* MODAL CANCELAR */}
       {modalCancelar && (
         <div style={{
           position:'fixed', top:0,left:0,right:0,bottom:0,
           background:'rgba(0,0,0,0.5)',
           display:'flex', justifyContent:'center', alignItems:'center'
         }}>
-          <div style={{ background:'#fff', padding:20, width:400 }}>
-            <h3>Cancelar pedido</h3>
+          <div style={{ background:'#fff', padding:20, width:400, borderRadius:10 }}>
+            <h3 style={styles.title}>Cancelar pedido</h3>
 
             <textarea
-              placeholder="Motivo de cancelación (obligatorio)"
+              style={{ ...styles.field, width:'100%', height:100 }}
+              placeholder="Motivo de cancelación"
               value={comentarioCancelacion}
               onChange={e => setComentarioCancelacion(e.target.value)}
-              style={{ width: '100%', height: 100 }}
             />
 
-            <br /><br />
-            <button onClick={confirmarCancelacion}>
-              Confirmar cancelación
+            <button style={{ ...styles.button, ...styles.primary }} onClick={confirmarCancelacion}>
+              Confirmar
             </button>
-            <button onClick={() => setModalCancelar(false)}>
+
+            <button style={{ ...styles.button, ...styles.secondary }} onClick={() => setModalCancelar(false)}>
               Cerrar
             </button>
           </div>
