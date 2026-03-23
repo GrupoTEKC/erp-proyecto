@@ -2,23 +2,31 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 const API = 'https://erp-proyecto-production.up.railway.app'
-const vino = '#8B1E1E'
+
+const styles = {
+  page: { backgroundColor: '#ffffff', minHeight: '100vh', padding: '20px', fontFamily: 'Arial, sans-serif' },
+  header: { marginBottom: '20px' },
+  backButton: { display: 'inline-flex', alignItems: 'center', padding: '10px 14px', fontSize: '14px', backgroundColor: '#fff', color: '#8B1E1E', border: '1px solid #8B1E1E', borderRadius: '6px', cursor: 'pointer' },
+  title: { marginTop: '20px', marginBottom: '15px', color: '#071849', fontWeight: 'bold' },
+  field: { width: '260px', padding: '8px 10px', fontSize: '14px', borderRadius: '6px', border: '1px solid #8B1E1E', boxSizing: 'border-box', marginBottom: 15 },
+  table: { width: '100%', borderCollapse: 'collapse', marginTop: 10 },
+  th: { backgroundColor: '#8B1E1E', color: '#fff', padding: 8 },
+  td: { padding: 8, textAlign: 'center' },
+  button: { padding: '6px 10px', margin: '2px', borderRadius: '6px', border: 'none', cursor: 'pointer' },
+  primary: { backgroundColor: '#8B1E1E', color: '#fff' },
+  secondary: { backgroundColor: '#fff', border: '1px solid #8B1E1E', color: '#8B1E1E' }
+}
 
 function ConsultarPedidos() {
   const [pedidos, setPedidos] = useState([])
   const [busqueda, setBusqueda] = useState('')
-
   const [modalEntrega, setModalEntrega] = useState(false)
   const [modalCancelar, setModalCancelar] = useState(false)
-
   const [pedidoSeleccionado, setPedidoSeleccionado] = useState(null)
-
   const [detalle, setDetalle] = useState([])
   const [choferes, setChoferes] = useState([])
   const [unidades, setUnidades] = useState([])
-
   const [comentarioCancelacion, setComentarioCancelacion] = useState('')
-
   const [form, setForm] = useState({
     id_chofer: '',
     id_unidad: '',
@@ -29,9 +37,6 @@ function ConsultarPedidos() {
   const navigate = useNavigate()
   const urlLimpia = API?.endsWith('/') ? API.slice(0, -1) : API
 
-  // =============================
-  // CARGAR PEDIDOS
-  // =============================
   const cargarPedidos = async () => {
     const res = await fetch(`${urlLimpia}/pedidos`)
     const data = await res.json()
@@ -42,9 +47,6 @@ function ConsultarPedidos() {
     cargarPedidos()
   }, [])
 
-  // =============================
-  // CALCULAR DIAS
-  // =============================
   const calcularDias = (fecha) => {
     if (!fecha) return 0
     const inicio = new Date(fecha)
@@ -53,16 +55,11 @@ function ConsultarPedidos() {
     return Math.floor(diff / (1000 * 60 * 60 * 24))
   }
 
-  // =============================
-  // ABRIR ENTREGA
-  // =============================
   const abrirEntrega = async (id) => {
     const res = await fetch(`${urlLimpia}/pedidos/${id}/detalle`)
     const data = await res.json()
-
     const ch = await fetch(`${urlLimpia}/choferes`)
     const chData = await ch.json()
-
     const un = await fetch(`${urlLimpia}/unidades`)
     const unData = await un.json()
 
@@ -86,9 +83,6 @@ function ConsultarPedidos() {
     setModalEntrega(true)
   }
 
-  // =============================
-  // GUARDAR ENTREGA
-  // =============================
   const guardarEntrega = async () => {
     if (!form.id_chofer || !form.id_unidad) {
       return alert("Selecciona chofer y unidad")
@@ -117,9 +111,6 @@ function ConsultarPedidos() {
     cargarPedidos()
   }
 
-  // =============================
-  // CANCELAR (NUEVO 🔥)
-  // =============================
   const abrirCancelar = (id) => {
     setPedidoSeleccionado(id)
     setComentarioCancelacion('')
@@ -148,57 +139,52 @@ function ConsultarPedidos() {
     cargarPedidos()
   }
 
-  // =============================
-  // FILTRO
-  // =============================
   const pedidosFiltrados = pedidos.filter(p =>
     p.id_pedido.toString().includes(busqueda) ||
     (p.cliente || '').toLowerCase().includes(busqueda.toLowerCase())
   )
 
-  // =============================
-  // UI
-  // =============================
   return (
-    <div style={{ padding: 20 }}>
-      <button onClick={() => navigate('/')}>⬅ Volver</button>
+    <div style={styles.page}>
+      <div style={styles.header}>
+        <button style={styles.backButton} onClick={() => navigate('/')}>
+          ⬅ Volver
+        </button>
+      </div>
 
-      <h2>Consultar pedidos</h2>
+      <h2 style={styles.title}>Consultar pedidos</h2>
 
       <input
+        style={styles.field}
         placeholder="Buscar..."
         value={busqueda}
         onChange={e => setBusqueda(e.target.value)}
       />
 
-      <table border="1" width="100%">
-        <thead style={{ background: vino, color: '#fff' }}>
+      <table style={styles.table} border="1">
+        <thead>
           <tr>
-            <th>ID</th>
-            <th>Cliente</th>
-            <th>Fecha</th>
-            <th>Días</th>
-            <th>Estado</th>
-            <th>Acciones</th>
+            <th style={styles.th}>ID</th>
+            <th style={styles.th}>Cliente</th>
+            <th style={styles.th}>Fecha</th>
+            <th style={styles.th}>Días</th>
+            <th style={styles.th}>Estado</th>
+            <th style={styles.th}>Acciones</th>
           </tr>
         </thead>
-
         <tbody>
           {pedidosFiltrados.map(p => (
             <tr key={p.id_pedido}>
-              <td>{p.id_pedido}</td>
-              <td>{p.cliente}</td>
-
-              <td>
+              <td style={styles.td}>{p.id_pedido}</td>
+              <td style={styles.td}>{p.cliente}</td>
+              <td style={styles.td}>
                 {p.fecha ? new Date(p.fecha).toLocaleDateString() : '-'}
               </td>
-
-              <td>{calcularDias(p.fecha)}</td>
-
-              <td>{p.estado}</td>
-
-              <td>
+              <td style={styles.td}>{calcularDias(p.fecha)}</td>
+              <td style={styles.td}>{p.estado}</td>
+              <td style={styles.td}>
                 <button
+                  style={{ ...styles.button, ...styles.primary }}
                   disabled={p.estado !== 'pendiente'}
                   onClick={() => abrirEntrega(p.id_pedido)}
                 >
@@ -206,6 +192,7 @@ function ConsultarPedidos() {
                 </button>
 
                 <button
+                  style={{ ...styles.button, ...styles.secondary }}
                   disabled={p.estado !== 'pendiente'}
                   onClick={() => abrirCancelar(p.id_pedido)}
                 >
@@ -217,31 +204,24 @@ function ConsultarPedidos() {
         </tbody>
       </table>
 
-      {/* =============================
-          MODAL ENTREGA
-      ============================= */}
+      {/* MODALES (NO TOCADOS FUNCIONALMENTE) */}
       {modalEntrega && (
         <div style={{
-          position:'fixed',
-          top:0,left:0,right:0,bottom:0,
+          position:'fixed', top:0,left:0,right:0,bottom:0,
           background:'rgba(0,0,0,0.5)',
-          display:'flex',
-          justifyContent:'center',
-          alignItems:'center'
+          display:'flex', justifyContent:'center', alignItems:'center'
         }}>
           <div style={{ background:'#fff', padding:20, width:600 }}>
             <h3>Preparar entrega</h3>
 
             {form.productos.map((p, i) => (
-              <div key={i} style={{ marginBottom: 10 }}>
+              <div key={i}>
                 <strong>{p.nombre}</strong>
                 <br />
                 Pedido: {p.cantidad_pedida}
-
                 <input
                   type="number"
                   value={p.cantidad_entregada}
-                  style={{ marginLeft: 10 }}
                   onChange={e => {
                     const copia = [...form.productos]
                     copia[i].cantidad_entregada = Number(e.target.value)
@@ -275,24 +255,17 @@ function ConsultarPedidos() {
             />
 
             <br /><br />
-
             <button onClick={guardarEntrega}>Guardar</button>
             <button onClick={() => setModalEntrega(false)}>Cerrar</button>
           </div>
         </div>
       )}
 
-      {/* =============================
-          MODAL CANCELAR 🔥
-      ============================= */}
       {modalCancelar && (
         <div style={{
-          position:'fixed',
-          top:0,left:0,right:0,bottom:0,
+          position:'fixed', top:0,left:0,right:0,bottom:0,
           background:'rgba(0,0,0,0.5)',
-          display:'flex',
-          justifyContent:'center',
-          alignItems:'center'
+          display:'flex', justifyContent:'center', alignItems:'center'
         }}>
           <div style={{ background:'#fff', padding:20, width:400 }}>
             <h3>Cancelar pedido</h3>
@@ -305,11 +278,9 @@ function ConsultarPedidos() {
             />
 
             <br /><br />
-
             <button onClick={confirmarCancelacion}>
               Confirmar cancelación
             </button>
-
             <button onClick={() => setModalCancelar(false)}>
               Cerrar
             </button>
