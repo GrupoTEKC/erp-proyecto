@@ -230,8 +230,12 @@ app.get('/pedidos/cliente/:id_cliente', async (req, res) => {
 // =============================
 // 🔥 PEDIDO EN CURSO (CORREGIDO)
 // =============================
+// =============================
+// 🔥 PEDIDO EN CURSO (CORREGIDO BIEN)
+// =============================
 app.post('/pedidos/:id/en-curso', async (req, res) => {
   const conn = await db.getConnection()
+
   try {
     const { id } = req.params
     const { id_chofer, id_unidad, productos, comentario } = req.body
@@ -251,30 +255,31 @@ app.post('/pedidos/:id/en-curso', async (req, res) => {
 
     const id_entrega = entregaResult.insertId
 
-   for (const item of productos) {
-  const diferencia = item.cantidad_entregada - item.cantidad_pedida
+    // 🔥 AQUÍ ESTABA EL ERROR
+    for (const item of productos) {
 
- if (diferencia !== 0 && !comentario?.trim())
-    throw new Error(`Comentario obligatorio en producto ${item.id_producto}`)
-  }
+      const diferencia = item.cantidad_entregada - item.cantidad_pedida
 
-  await conn.query(`
-    INSERT INTO entrega_detalle (
-      id_entrega,
-      id_producto,
-      cantidad_pedida,
-      cantidad_entregada
-    )
-    VALUES (?, ?, ?, ?)
-  `, [
-    id_entrega,
-    item.id_producto,
-    item.cantidad_pedida,
-    item.cantidad_entregada
-  ])
-}
+      if (diferencia !== 0 && !comentario?.trim()) {
+        throw new Error(`Comentario obligatorio en producto ${item.id_producto}`)
+      }
 
-    // 🔥 CORRECCIÓN IMPORTANTE
+      await conn.query(`
+        INSERT INTO entrega_detalle (
+          id_entrega,
+          id_producto,
+          cantidad_pedida,
+          cantidad_entregada
+        )
+        VALUES (?, ?, ?, ?)
+      `, [
+        id_entrega,
+        item.id_producto,
+        item.cantidad_pedida,
+        item.cantidad_entregada
+      ])
+    }
+
     await conn.query(`
       UPDATE pedidos
       SET 
