@@ -122,16 +122,17 @@ app.post('/pedidos-completo', async (req, res) => {
 
     // 1. Crear pedido (sin total)
     const [pedidoResult] = await conn.query(`
-      INSERT INTO pedidos (
-        id_cliente,
-        id_vendedor,
-        id_ruta,
-        fecha,
-        tipo_pedido,
-        dias_credito,
-        estado
-      )
-      VALUES (?, ?, ?, NOW(), ?, ?, 'pendiente')
+     INSERT INTO pedidos (
+  id_cliente,
+  id_vendedor,
+  id_ruta,
+  fecha,
+  tipo_pedido,
+  dias_credito,
+  total,
+  estado
+)
+VALUES (?, ?, ?, NOW(), ?, ?, 0, 'pendiente')
     `, [
       p.id_cliente,
       p.id_vendedor,
