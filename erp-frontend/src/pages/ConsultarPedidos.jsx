@@ -36,7 +36,7 @@ function ConsultarPedidos() {
   }, [])
 
   // =============================
-  // CALCULAR DIAS 🔥
+  // CALCULAR DIAS
   // =============================
   const calcularDias = (fecha) => {
     if (!fecha) return 0
@@ -47,7 +47,7 @@ function ConsultarPedidos() {
   }
 
   // =============================
-  // ABRIR MODAL ENTREGA
+  // ABRIR MODAL
   // =============================
   const abrirEntrega = async (id) => {
     const res = await fetch(`${urlLimpia}/pedidos/${id}/detalle`)
@@ -69,6 +69,7 @@ function ConsultarPedidos() {
       comentario: '',
       productos: data.map(p => ({
         id_producto: p.id_producto,
+        nombre: p.nombre, // 🔥 IMPORTANTE
         cantidad_pedida: p.cantidad,
         cantidad_entregada: p.cantidad
       }))
@@ -79,7 +80,7 @@ function ConsultarPedidos() {
   }
 
   // =============================
-  // GUARDAR ENTREGA (USA TU ENDPOINT)
+  // GUARDAR ENTREGA
   // =============================
   const guardarEntrega = async () => {
     if (!form.id_chofer || !form.id_unidad) {
@@ -133,6 +134,7 @@ function ConsultarPedidos() {
   return (
     <div style={{ padding: 20 }}>
       <button onClick={() => navigate('/')}>⬅ Volver</button>
+
       <h2>Consultar pedidos</h2>
 
       <input
@@ -146,8 +148,8 @@ function ConsultarPedidos() {
           <tr>
             <th>ID</th>
             <th>Cliente</th>
-            <th>Fecha</th> {/* 🔥 agregado */}
-            <th>Días</th>  {/* 🔥 agregado */}
+            <th>Fecha</th>
+            <th>Días</th>
             <th>Estado</th>
             <th>Acciones</th>
           </tr>
@@ -159,14 +161,12 @@ function ConsultarPedidos() {
               <td>{p.id_pedido}</td>
               <td>{p.cliente}</td>
 
-              {/* 🔥 FECHA */}
               <td>
                 {p.fecha
                   ? new Date(p.fecha).toLocaleDateString()
                   : '-'}
               </td>
 
-              {/* 🔥 DIAS */}
               <td>{calcularDias(p.fecha)}</td>
 
               <td>{p.estado}</td>
@@ -204,14 +204,21 @@ function ConsultarPedidos() {
           alignItems:'center'
         }}>
           <div style={{ background:'#fff', padding:20, width:600 }}>
+
             <h3>Preparar entrega</h3>
 
+            {/* 🔥 PRODUCTOS CON NOMBRE */}
             {form.productos.map((p, i) => (
-              <div key={i}>
-                <span>{p.cantidad_pedida}</span>
+              <div key={i} style={{ marginBottom: 10 }}>
+                <strong>{p.nombre}</strong> {/* 🔥 AQUI ESTA LA MAGIA */}
+                <br />
+
+                Pedido: {p.cantidad_pedida}
+
                 <input
                   type="number"
                   value={p.cantidad_entregada}
+                  style={{ marginLeft: 10 }}
                   onChange={e => {
                     const copia = [...form.productos]
                     copia[i].cantidad_entregada = Number(e.target.value)
@@ -248,6 +255,7 @@ function ConsultarPedidos() {
 
             <button onClick={guardarEntrega}>Guardar</button>
             <button onClick={() => setModalEntrega(false)}>Cerrar</button>
+
           </div>
         </div>
       )}
