@@ -1,4 +1,4 @@
-console.log("🔥 VERSION:", "ENTREGAS PRO");
+console.log("🔥 VERSION:", "18 MARZO");
 console.log("🌐 DB:", process.env.DB_NAME);
 
 require('dotenv').config()
@@ -32,100 +32,83 @@ app.get('/clientes', async (req, res) => {
   }
 })
 
+app.get('/clientes/:id_cliente', async (req, res) => {
+  try {
+    const { id_cliente } = req.params
+    const [rows] = await db.query(
+      'SELECT * FROM clientes WHERE id_cliente = ?',
+      [id_cliente]
+    )
+    if (!rows.length) return res.status(404).json({ error: 'No encontrado' })
+    res.json(rows[0])
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+app.put('/clientes/:id_cliente', async (req, res) => {
+  try {
+    const { id_cliente } = req.params
+    const { nombre, telefono, email } = req.body
+    await db.query(`
+      UPDATE clientes 
+      SET nombre=?, telefono=?, email=?
+      WHERE id_cliente=?
+    `, [nombre, telefono, email, id_cliente])
+    res.json({ success: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// =============================
+// RUTAS
+// =============================
+app.get('/rutas', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM rutas')
+    res.json(rows)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// =============================
+// VENDEDORES
+// =============================
+app.get('/vendedores', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM vendedores')
+    res.json(rows)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // =============================
 // PRODUCTOS
 // =============================
 app.get('/productos', async (req, res) => {
   try {
     const [rows] = await db.query(`
-      SELECT id_producto, nombre, precio
+      SELECT 
+        id_producto,
+        nombre,
+        precio,
+        activo
       FROM productos
       WHERE activo = 1
       ORDER BY nombre ASC
     `)
     res.json(rows)
   } catch (err) {
+    console.error("ERROR PRODUCTOS:", err)
     res.status(500).json({ error: err.message })
   }
 })
 
 // =============================
-// CHOFERES
-// =============================
-app.get('/choferes', async (req, res) => {
-  try {
-    const [rows] = await db.query(`
-      SELECT id_chofer, nombre, apellido1, apellido2
-      FROM choferes
-      WHERE activo = 1
-    `)
-    res.json(rows)
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
-
-// =============================
-// UNIDADES
-// =============================
-app.get('/unidades', async (req, res) => {
-  try {
-    const [rows] = await db.query(`
-      SELECT id_unidad, nombre, placas
-      FROM unidades
-      WHERE activo = 1
-    `)
-    res.json(rows)
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
-
-// =============================
-// PEDIDOS
-// =============================
-app.get('/pedidos', async (req, res) => {
-  try {
-    const [rows] = await db.query(`
-      SELECT 
-        p.*,
-        CONCAT(c.nombre,' ',c.apellido1) AS cliente
-      FROM pedidos p
-      LEFT JOIN clientes c ON p.id_cliente = c.id_cliente
-      ORDER BY p.fecha DESC
-    `)
-    res.json(rows)
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
-
-// =============================
-// DETALLE PEDIDO (para modal)
-// =============================
-app.get('/pedidos/:id/detalle', async (req, res) => {
-  try {
-    const { id } = req.params
-
-    const [rows] = await db.query(`
-      SELECT 
-        pd.id_producto,
-        pr.nombre,
-        pd.cantidad AS cantidad_pedida,
-        pd.precio_unitario
-      FROM pedido_detalle pd
-      JOIN productos pr ON pd.id_producto = pr.id_producto
-      WHERE pd.id_pedido = ?
-    `, [id])
-
-    res.json(rows)
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
-
-// =============================
-// CREAR PEDIDO
+// PEDIDO COMPLETO (PRO)
 // =============================
 app.post('/pedidos-completo', async (req, res) => {
   const conn = await db.getConnection()
@@ -182,9 +165,21 @@ app.post('/pedidos-completo', async (req, res) => {
       WHERE id_pedido = ?
     `, [total, id_pedido])
 
+    if (p.tipo_pedido === 'credito') {
+      await conn.query(`
+        UPDATE pedidos
+        SET fecha_vencimiento = DATE_ADD(fecha, INTERVAL ? DAY)
+        WHERE id_pedido = ?
+      `, [p.dias_credito || 0, id_pedido])
+    }
+
     await conn.commit()
 
-    res.json({ success: true, id_pedido, total })
+    res.json({
+      success: true,
+      id_pedido,
+      total
+    })
 
   } catch (err) {
     await conn.rollback()
@@ -195,37 +190,75 @@ app.post('/pedidos-completo', async (req, res) => {
 })
 
 // =============================
-// 🚚 CREAR ENTREGA (OFICINA)
+// LISTAR PEDIDOS
 // =============================
-app.post('/entregas', async (req, res) => {
-  const conn = await db.getConnection()
+app.get('/pedidos', async (req, res) => {
   try {
-    const e = req.body
+    const [rows] = await db.query(`
+      SELECT 
+        p.*,
+        CONCAT(c.nombre,' ',c.apellido1) AS cliente
+      FROM pedidos p
+      LEFT JOIN clientes c 
+      ON p.id_cliente = c.id_cliente
+      ORDER BY p.fecha DESC
+    `)
+    res.json(rows)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// =============================
+// PEDIDOS POR CLIENTE
+// =============================
+app.get('/pedidos/cliente/:id_cliente', async (req, res) => {
+  try {
+    const { id_cliente } = req.params
+    const [rows] = await db.query(`
+      SELECT *
+      FROM pedidos
+      WHERE id_cliente = ?
+      AND estado = 'entregado'
+      ORDER BY fecha DESC
+    `,[id_cliente])
+    res.json(rows)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// =============================
+// 🔥 NUEVO: PEDIDO EN CURSO (EMBARQUE)
+// =============================
+app.post('/pedidos/:id/en-curso', async (req, res) => {
+  const conn = await db.getConnection()
+
+  try {
+    const { id } = req.params
+    const { id_chofer, id_unidad, productos, comentario } = req.body
+
     await conn.beginTransaction()
 
-    // 1. Crear entrega
     const [entregaResult] = await conn.query(`
       INSERT INTO entregas (
         id_pedido,
         id_chofer,
         id_unidad,
-        comentario
+        comentario,
+        estado
       )
-      VALUES (?, ?, ?, ?)
-    `, [
-      e.id_pedido,
-      e.id_chofer,
-      e.id_unidad,
-      e.comentario || null
-    ])
+      VALUES (?, ?, ?, ?, 'en_ruta')
+    `, [id, id_chofer, id_unidad, comentario || null])
 
     const id_entrega = entregaResult.insertId
 
-    // 2. Insertar detalle
-    for (const item of e.productos) {
+    for (const item of productos) {
 
-      if (item.cantidad_entregada !== item.cantidad_pedida && !e.comentario) {
-        throw new Error('Debes agregar comentario por diferencias')
+      const diferencia = item.cantidad_entregada - item.cantidad_pedida
+
+      if (diferencia !== 0 && !item.comentario) {
+        throw new Error(`Comentario obligatorio en producto ${item.id_producto}`)
       }
 
       await conn.query(`
@@ -244,17 +277,18 @@ app.post('/entregas', async (req, res) => {
       ])
     }
 
-    // 3. Pedido → en ruta
     await conn.query(`
       UPDATE pedidos
-      SET estado = 'en_ruta',
-          id_chofer = ?
+      SET id_chofer = ?
       WHERE id_pedido = ?
-    `, [e.id_chofer, e.id_pedido])
+    `, [id_chofer, id])
 
     await conn.commit()
 
-    res.json({ success: true, id_entrega })
+    res.json({
+      success: true,
+      id_entrega
+    })
 
   } catch (err) {
     await conn.rollback()
@@ -265,24 +299,70 @@ app.post('/entregas', async (req, res) => {
 })
 
 // =============================
-// FINALIZAR ENTREGA (REAL)
+// ENTREGAR PEDIDO (NO SE TOCA)
 // =============================
 app.put('/pedidos/:id/entregar', async (req, res) => {
   try {
     const { id } = req.params
-
-    await db.query(`
+    const [result] = await db.query(`
       UPDATE pedidos
       SET estado = 'entregado',
           fecha_entrega = CURRENT_DATE()
       WHERE id_pedido = ?
-    `, [id])
+      AND estado = 'pendiente'
+    `,[id])
 
-    res.json({ success: true })
+    if (!result.affectedRows) {
+      return res.status(400).json({ error: 'Ya procesado' })
+    }
+
+    const [rows] = await db.query(
+      'SELECT * FROM pedidos WHERE id_pedido = ?',
+      [id]
+    )
+
+    res.json(rows[0])
 
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
+})
+
+// =============================
+// CANCELAR PEDIDO
+// =============================
+app.put('/pedidos/:id/cancelar', async (req, res) => {
+  try {
+    const { id } = req.params
+    const [result] = await db.query(`
+      UPDATE pedidos
+      SET estado = 'cancelado',
+          fecha_cancelacion = NOW()
+      WHERE id_pedido = ?
+      AND estado = 'pendiente'
+    `,[id])
+
+    if (!result.affectedRows) {
+      return res.status(400).json({ error: 'Ya procesado' })
+    }
+
+    const [rows] = await db.query(
+      'SELECT * FROM pedidos WHERE id_pedido = ?',
+      [id]
+    )
+
+    res.json(rows[0])
+
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// =============================
+// 404
+// =============================
+app.use((req,res)=>{
+  res.status(404).json({ error:'Ruta no encontrada' })
 })
 
 // =============================
