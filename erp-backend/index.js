@@ -139,7 +139,6 @@ app.post('/pedidos-completo', async (req, res) => {
     const id_pedido = pedidoResult.insertId
 
     let total = 0
-
     for (const item of p.productos) {
       total += item.cantidad * item.precio
 
@@ -229,11 +228,10 @@ app.get('/pedidos/cliente/:id_cliente', async (req, res) => {
 })
 
 // =============================
-// 🔥 NUEVO: PEDIDO EN CURSO (EMBARQUE)
+// 🔥 PEDIDO EN CURSO (CORREGIDO)
 // =============================
 app.post('/pedidos/:id/en-curso', async (req, res) => {
   const conn = await db.getConnection()
-
   try {
     const { id } = req.params
     const { id_chofer, id_unidad, productos, comentario } = req.body
@@ -254,7 +252,6 @@ app.post('/pedidos/:id/en-curso', async (req, res) => {
     const id_entrega = entregaResult.insertId
 
     for (const item of productos) {
-
       const diferencia = item.cantidad_entregada - item.cantidad_pedida
 
       if (diferencia !== 0 && !item.comentario) {
@@ -277,9 +274,12 @@ app.post('/pedidos/:id/en-curso', async (req, res) => {
       ])
     }
 
+    // 🔥 CORRECCIÓN IMPORTANTE
     await conn.query(`
       UPDATE pedidos
-      SET id_chofer = ?
+      SET 
+        id_chofer = ?,
+        estado = 'en_ruta'
       WHERE id_pedido = ?
     `, [id_chofer, id])
 
@@ -299,15 +299,71 @@ app.post('/pedidos/:id/en-curso', async (req, res) => {
 })
 
 // =============================
-// ENTREGAR PEDIDO (NO SE TOCA)
+// ENTREGAR PEDIDO (MEJORADO)
 // =============================
 app.put('/pedidos/:id/entregar', async (req, res) => {
   try {
     const { id } = req.params
+
     const [result] = await db.query(`
       UPDATE pedidos
       SET estado = 'entregado',
           fecha_entrega = CURRENT_DATE()
+      WHERE id_pedido = ?
+      AND estado IN ('pendiente','en_ruta')
+    `,[id])
+
+    if (!result.affectedRows) {
+      return res.status(400).json({ error: 'Ya procesado' })
+    }
+
+    const [rows] = await db.query(
+      'SELECT * FROM pedidos WHERE id_pedido = ?',
+      [id]
+    )
+
+    res.json(rows[0])
+
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// =============================
+// DETALLE DE PEDIDO
+// =============================
+app.get('/pedidos/:id/detalle', async (req, res) => {
+  try {
+    const { id } = req.params
+
+    const [rows] = await db.query(`
+      SELECT 
+        pd.*,
+        p.nombre
+      FROM pedido_detalle pd
+      LEFT JOIN productos p 
+      ON pd.id_producto = p.id_producto
+      WHERE pd.id_pedido = ?
+    `, [id])
+
+    res.json(rows)
+
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// =============================
+// CANCELAR PEDIDO
+// =============================
+app.put('/pedidos/:id/cancelar', async (req, res) => {
+  try {
+    const { id } = req.params
+
+    const [result] = await db.query(`
+      UPDATE pedidos
+      SET estado = 'cancelado',
+          fecha_cancelacion = NOW()
       WHERE id_pedido = ?
       AND estado = 'pendiente'
     `,[id])
@@ -329,30 +385,24 @@ app.put('/pedidos/:id/entregar', async (req, res) => {
 })
 
 // =============================
-// CANCELAR PEDIDO
+// CHOFERES
 // =============================
-app.put('/pedidos/:id/cancelar', async (req, res) => {
+app.get('/choferes', async (req, res) => {
   try {
-    const { id } = req.params
-    const [result] = await db.query(`
-      UPDATE pedidos
-      SET estado = 'cancelado',
-          fecha_cancelacion = NOW()
-      WHERE id_pedido = ?
-      AND estado = 'pendiente'
-    `,[id])
+    const [rows] = await db.query('SELECT * FROM choferes WHERE activo = 1')
+    res.json(rows)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
 
-    if (!result.affectedRows) {
-      return res.status(400).json({ error: 'Ya procesado' })
-    }
-
-    const [rows] = await db.query(
-      'SELECT * FROM pedidos WHERE id_pedido = ?',
-      [id]
-    )
-
-    res.json(rows[0])
-
+// =============================
+// UNIDADES
+// =============================
+app.get('/unidades', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM unidades WHERE activo = 1')
+    res.json(rows)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
