@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 const API = 'https://erp-proyecto-production.up.railway.app'
-
 const vino = '#8B1E1E'
 
 function ConsultarPedidos() {
@@ -13,7 +12,6 @@ function ConsultarPedidos() {
   const [detalle, setDetalle] = useState([])
   const [choferes, setChoferes] = useState([])
   const [unidades, setUnidades] = useState([])
-
   const [form, setForm] = useState({
     id_chofer: '',
     id_unidad: '',
@@ -38,6 +36,17 @@ function ConsultarPedidos() {
   }, [])
 
   // =============================
+  // CALCULAR DIAS 🔥
+  // =============================
+  const calcularDias = (fecha) => {
+    if (!fecha) return 0
+    const inicio = new Date(fecha)
+    const hoy = new Date()
+    const diff = hoy - inicio
+    return Math.floor(diff / (1000 * 60 * 60 * 24))
+  }
+
+  // =============================
   // ABRIR MODAL ENTREGA
   // =============================
   const abrirEntrega = async (id) => {
@@ -60,8 +69,8 @@ function ConsultarPedidos() {
       comentario: '',
       productos: data.map(p => ({
         id_producto: p.id_producto,
-        cantidad_pedida: p.cantidad_pedida,
-        cantidad_entregada: p.cantidad_pedida
+        cantidad_pedida: p.cantidad,
+        cantidad_entregada: p.cantidad
       }))
     })
 
@@ -70,7 +79,7 @@ function ConsultarPedidos() {
   }
 
   // =============================
-  // GUARDAR ENTREGA
+  // GUARDAR ENTREGA (USA TU ENDPOINT)
   // =============================
   const guardarEntrega = async () => {
     if (!form.id_chofer || !form.id_unidad) {
@@ -85,13 +94,10 @@ function ConsultarPedidos() {
       return alert("Debes agregar comentario por diferencias")
     }
 
-    const res = await fetch(`${urlLimpia}/entregas`, {
+    const res = await fetch(`${urlLimpia}/pedidos/${pedidoSeleccionado}/en-curso`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id_pedido: pedidoSeleccionado,
-        ...form
-      })
+      body: JSON.stringify(form)
     })
 
     if (!res.ok) {
@@ -126,9 +132,7 @@ function ConsultarPedidos() {
   // =============================
   return (
     <div style={{ padding: 20 }}>
-
       <button onClick={() => navigate('/')}>⬅ Volver</button>
-
       <h2>Consultar pedidos</h2>
 
       <input
@@ -142,6 +146,8 @@ function ConsultarPedidos() {
           <tr>
             <th>ID</th>
             <th>Cliente</th>
+            <th>Fecha</th> {/* 🔥 agregado */}
+            <th>Días</th>  {/* 🔥 agregado */}
             <th>Estado</th>
             <th>Acciones</th>
           </tr>
@@ -152,6 +158,17 @@ function ConsultarPedidos() {
             <tr key={p.id_pedido}>
               <td>{p.id_pedido}</td>
               <td>{p.cliente}</td>
+
+              {/* 🔥 FECHA */}
+              <td>
+                {p.fecha
+                  ? new Date(p.fecha).toLocaleDateString()
+                  : '-'}
+              </td>
+
+              {/* 🔥 DIAS */}
+              <td>{calcularDias(p.fecha)}</td>
+
               <td>{p.estado}</td>
 
               <td>
@@ -187,7 +204,6 @@ function ConsultarPedidos() {
           alignItems:'center'
         }}>
           <div style={{ background:'#fff', padding:20, width:600 }}>
-
             <h3>Preparar entrega</h3>
 
             {form.productos.map((p, i) => (
@@ -232,7 +248,6 @@ function ConsultarPedidos() {
 
             <button onClick={guardarEntrega}>Guardar</button>
             <button onClick={() => setModalEntrega(false)}>Cerrar</button>
-
           </div>
         </div>
       )}
