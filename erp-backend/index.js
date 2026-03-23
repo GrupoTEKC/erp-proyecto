@@ -364,14 +364,21 @@ app.get('/pedidos/:id/detalle', async (req, res) => {
 app.put('/pedidos/:id/cancelar', async (req, res) => {
   try {
     const { id } = req.params
+    const { comentario } = req.body
+
+    if (!comentario || !comentario.trim()) {
+      return res.status(400).json({ error: 'Comentario obligatorio' })
+    }
 
     const [result] = await db.query(`
       UPDATE pedidos
-      SET estado = 'cancelado',
-          fecha_cancelacion = NOW()
+      SET 
+        estado = 'cancelado',
+        fecha_cancelacion = NOW(),
+        observaciones_cancelacion = ?
       WHERE id_pedido = ?
       AND estado = 'pendiente'
-    `,[id])
+    `, [comentario, id])
 
     if (!result.affectedRows) {
       return res.status(400).json({ error: 'Ya procesado' })
@@ -388,7 +395,6 @@ app.put('/pedidos/:id/cancelar', async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
-
 // =============================
 // CHOFERES
 // =============================
