@@ -109,7 +109,7 @@ function Menu() {
           <Link to="/pedidos/consultar" style={styles.link}>
             <button style={styles.button}>
               <span style={styles.icon}>🔍</span>
-              Consultar pedidos
+              Embarques
             </button>
           </Link>
 
