@@ -230,18 +230,47 @@ app.get('/pedidos/cliente/:id_cliente', async (req, res) => {
 // =============================
 // 🔥 PEDIDO EN CURSO (CORREGIDO)
 // =============================
-// =============================
-// 🔥 PEDIDO EN CURSO (CORREGIDO BIEN)
-// =============================
-app.post('/pedidos/:id/en-curso', async (req, res) => {
-  const conn = await db.getConnection()
 
+// =========app.post('/pedidos/:id/en-curso', async (req, res) => {
+  const conn = await db.getConnection()
   try {
     const { id } = req.params
-    const { id_chofer, id_unidad, productos, comentario } = req.body
+
+    // 🔥 NUEVO: recibimos campos extra
+    const { 
+      id_chofer, 
+      id_unidad, 
+      productos, 
+      comentario,
+      otro_chofer,
+      nombre_chofer,
+      apellido_paterno,
+      apellido_materno
+    } = req.body
 
     await conn.beginTransaction()
 
+    // 🔥 NUEVO: determinar chofer final
+    let idChoferFinal = id_chofer
+
+    if (otro_chofer) {
+      if (!nombre_chofer || !apellido_paterno || !apellido_materno) {
+        throw new Error('Datos de chofer incompletos')
+      }
+
+      const [nuevoChofer] = await conn.query(`
+        INSERT INTO choferes (nombre, apellido1, apellido2, activo)
+        VALUES (?, ?, ?, 1)
+      `, [
+        nombre_chofer,
+        apellido_paterno,
+        apellido_materno
+      ])
+
+      idChoferFinal = nuevoChofer.insertId
+    }
+
+    // 🔥 SOLO cambiamos id_chofer por idChoferFinal
     const [entregaResult] = await conn.query(`
       INSERT INTO entregas (
         id_pedido,
@@ -251,13 +280,11 @@ app.post('/pedidos/:id/en-curso', async (req, res) => {
         estado
       )
       VALUES (?, ?, ?, ?, 'en_ruta')
-    `, [id, id_chofer, id_unidad, comentario || null])
+    `, [id, idChoferFinal, id_unidad, comentario || null])
 
     const id_entrega = entregaResult.insertId
 
-    // 🔥 AQUÍ ESTABA EL ERROR
     for (const item of productos) {
-
       const diferencia = item.cantidad_entregada - item.cantidad_pedida
 
       if (diferencia !== 0 && !comentario?.trim()) {
@@ -286,7 +313,7 @@ app.post('/pedidos/:id/en-curso', async (req, res) => {
         id_chofer = ?,
         estado = 'en_ruta'
       WHERE id_pedido = ?
-    `, [id_chofer, id])
+    `, [idChoferFinal, id]) // 🔥 aquí también
 
     await conn.commit()
 
@@ -303,7 +330,7 @@ app.post('/pedidos/:id/en-curso', async (req, res) => {
   }
 })
 
-// =============================
+
 // ENTREGAR PEDIDO (MEJORADO)
 // =============================
 app.put('/pedidos/:id/entregar', async (req, res) => {
