@@ -47,18 +47,32 @@ function ControlEnviosDetalle() {
   const navigate = useNavigate()
 
   const [pedidos, setPedidos] = useState([])
+  const [folio, setFolio] = useState('')
 
   useEffect(() => {
     const cargarPedidos = async () => {
       try {
         const res = await fetch(`${API}/control-envios/${id_chofer}`)
         const data = await res.json()
-        setPedidos(data)
+
+        // 🔥 inicializar campos nuevos SIN romper nada
+        const inicializados = data.map(p => ({
+          ...p,
+          productos: p.productos.map(prod => ({
+            ...prod,
+            tipo: 'ninguno',
+            motivo: '',
+            accion: 'ninguna',
+            comentario: '',
+            id_cliente_destino: null
+          }))
+        }))
+
+        setPedidos(inicializados)
       } catch (err) {
         console.error(err)
       }
     }
-
     cargarPedidos()
   }, [id_chofer])
 
@@ -66,6 +80,46 @@ function ControlEnviosDetalle() {
     const copia = [...pedidos]
     copia[pIndex].productos[dIndex].cantidad_entregada = Number(value)
     setPedidos(copia)
+  }
+
+  // 🔥 NUEVAS FUNCIONES
+  const actualizarCampo = (pIndex, dIndex, campo, valor) => {
+    const copia = [...pedidos]
+    copia[pIndex].productos[dIndex][campo] = valor
+    setPedidos(copia)
+  }
+
+  const finalizarEntrega = async (pedido) => {
+    try {
+      if (!folio.trim()) {
+        alert('Folio obligatorio')
+        return
+      }
+
+      const res = await fetch(`${API}/control-envios/finalizar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id_entrega: pedido.id_entrega,
+          folio,
+          productos: pedido.productos
+        })
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        alert(data.error)
+        return
+      }
+
+      alert('Entrega finalizada')
+      navigate(-1)
+
+    } catch (err) {
+      console.error(err)
+      alert('Error al finalizar')
+    }
   }
 
   return (
@@ -77,9 +131,18 @@ function ControlEnviosDetalle() {
 
       <h2 style={styles.title}>Pedidos del chofer</h2>
 
+      {/* 🔥 FOLIO */}
+      <div style={{ marginBottom: 20 }}>
+        <input
+          placeholder="Folio de entrega"
+          value={folio}
+          onChange={e => setFolio(e.target.value)}
+          style={{ padding: 8, width: 200 }}
+        />
+      </div>
+
       {pedidos.map((p, i) => (
         <div key={i} style={styles.card}>
-
           <div style={styles.header}>
             Cliente: {p.cliente} | Tienda: {p.tienda}
             <br />
@@ -92,29 +155,111 @@ function ControlEnviosDetalle() {
                 <th style={styles.th}>Producto</th>
                 <th style={styles.th}>Embarcado</th>
                 <th style={styles.th}>Entregado</th>
+                <th style={styles.th}>Tipo</th>
+                <th style={styles.th}>Motivo</th>
+                <th style={styles.th}>Acción</th>
+                <th style={styles.th}>Comentario</th>
               </tr>
             </thead>
 
             <tbody>
-              {p.productos.map((prod, j) => (
-                <tr key={j}>
-                  <td style={styles.td}>{prod.nombre}</td>
-                  <td style={styles.td}>{prod.cantidad_pedida}</td>
-                  <td style={styles.td}>
-                    <input
-                      style={styles.input}
-                      type="number"
-                      value={prod.cantidad_entregada}
-                      onChange={e =>
-                        actualizarCantidad(i, j, e.target.value)
-                      }
-                    />
-                  </td>
-                </tr>
-              ))}
+              {p.productos.map((prod, j) => {
+                const diferencia = prod.cantidad_entregada - prod.cantidad_pedida
+
+                return (
+                  <tr key={j}>
+                    <td style={styles.td}>{prod.nombre}</td>
+                    <td style={styles.td}>{prod.cantidad_pedida}</td>
+
+                    <td style={styles.td}>
+                      <input
+                        style={styles.input}
+                        type="number"
+                        value={prod.cantidad_entregada}
+                        onChange={e =>
+                          actualizarCantidad(i, j, e.target.value)
+                        }
+                      />
+                    </td>
+
+                    {/* 🔥 SOLO SI HAY DIFERENCIA */}
+                    {diferencia !== 0 ? (
+                      <>
+                        <td style={styles.td}>
+                          <select
+                            value={prod.tipo}
+                            onChange={e =>
+                              actualizarCampo(i, j, 'tipo', e.target.value)
+                            }
+                          >
+                            <option value="ninguno">--</option>
+                            <option value="faltante">Faltante</option>
+                            <option value="sobrante">Sobrante</option>
+                          </select>
+                        </td>
+
+                        <td style={styles.td}>
+                          <select
+                            value={prod.motivo}
+                            onChange={e =>
+                              actualizarCampo(i, j, 'motivo', e.target.value)
+                            }
+                          >
+                            <option value="">--</option>
+                            <option value="error">Error</option>
+                            <option value="prestado">Prestado</option>
+                            <option value="dañado">Dañado</option>
+                          </select>
+                        </td>
+
+                        <td style={styles.td}>
+                          <select
+                            value={prod.accion}
+                            onChange={e =>
+                              actualizarCampo(i, j, 'accion', e.target.value)
+                            }
+                          >
+                            <option value="ninguna">--</option>
+                            <option value="pendiente">Pendiente</option>
+                            <option value="cancelado">Cancelado</option>
+                          </select>
+                        </td>
+
+                        <td style={styles.td}>
+                          <input
+                            placeholder="Comentario"
+                            value={prod.comentario}
+                            onChange={e =>
+                              actualizarCampo(i, j, 'comentario', e.target.value)
+                            }
+                          />
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td colSpan="4">OK</td>
+                      </>
+                    )}
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
 
+          {/* 🔥 BOTÓN FINALIZAR */}
+          <button
+            onClick={() => finalizarEntrega(p)}
+            style={{
+              marginTop: 10,
+              backgroundColor: '#8B1E1E',
+              color: '#fff',
+              padding: 10,
+              border: 'none',
+              cursor: 'pointer'
+            }}
+          >
+            Finalizar entrega
+          </button>
         </div>
       ))}
     </div>
