@@ -446,6 +446,54 @@ app.get('/unidades', async (req, res) => {
   }
 })
 
+app.get('/control-envios/:id_chofer', async (req, res) => {
+  const conn = await db.getConnection()
+  try {
+    const { id_chofer } = req.params
+
+    // 🔹 Obtener pedidos en ruta con info general
+    const [pedidos] = await conn.query(`
+      SELECT 
+        p.id_pedido,
+        c.nombre AS cliente,
+        c.nombre_tienda AS tienda,
+        r.nombre AS ruta,
+        e.fecha_salida,
+        e.id_entrega
+      FROM pedidos p
+      INNER JOIN clientes c ON p.id_cliente = c.id_cliente
+      LEFT JOIN rutas r ON p.id_ruta = r.id_ruta
+      INNER JOIN entregas e ON p.id_pedido = e.id_pedido
+      WHERE p.id_chofer = ?
+      AND p.estado = 'en_ruta'
+    `, [id_chofer])
+
+    // 🔹 Para cada pedido, traer productos
+    for (const pedido of pedidos) {
+      const [productos] = await conn.query(`
+        SELECT 
+          ed.id_producto,
+          pr.nombre,
+          ed.cantidad_pedida,
+          ed.cantidad_entregada
+        FROM entrega_detalle ed
+        INNER JOIN productos pr ON ed.id_producto = pr.id_producto
+        WHERE ed.id_entrega = ?
+      `, [pedido.id_entrega])
+
+      pedido.productos = productos
+    }
+
+    res.json(pedidos)
+
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: err.message })
+  } finally {
+    conn.release()
+  }
+})
+
 // =============================
 // 404
 // =============================
