@@ -85,20 +85,18 @@ function Menu() {
         
         <div style={styles.header}>
           <div style={styles.title}>SCAE-MT</div>
-
           <img
             src={logo}
             alt="Logo empresa"
             style={styles.logo}
           />
-
           <div style={styles.subtitle}>
             Menú principal
           </div>
         </div>
 
         <nav style={styles.menu}>
-
+          
           <Link to="/pedidos" style={styles.link}>
             <button style={styles.button}>
               <span style={styles.icon}>📄</span>
@@ -110,6 +108,14 @@ function Menu() {
             <button style={styles.button}>
               <span style={styles.icon}>🔍</span>
               Embarques
+            </button>
+          </Link>
+
+          {/* 🔥 NUEVO MÓDULO */}
+          <Link to="/control-envios" style={styles.link}>
+            <button style={styles.button}>
+              <span style={styles.icon}>🚚</span>
+              Control de envíos
             </button>
           </Link>
 
@@ -128,7 +134,6 @@ function Menu() {
           </Link>
 
         </nav>
-
       </aside>
 
       <main style={styles.content}>
