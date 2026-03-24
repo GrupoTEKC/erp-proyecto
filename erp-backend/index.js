@@ -494,6 +494,118 @@ app.get('/control-envios/:id_chofer', async (req, res) => {
   }
 })
 
+app.post('/control-envios/finalizar', async (req, res) => {
+  const conn = await db.getConnection()
+  try {
+    const { id_entrega, productos, folio } = req.body
+
+    if (!folio) {
+      throw new Error('Folio obligatorio')
+    }
+
+    await conn.beginTransaction()
+
+    // 🔴 VALIDAR ENTREGA EXISTENTE Y ESTADO
+    const [entregaCheck] = await conn.query(
+      'SELECT estado FROM entregas WHERE id_entrega = ?',
+      [id_entrega]
+    )
+
+    if (!entregaCheck.length || entregaCheck[0].estado !== 'en_ruta') {
+      throw new Error('Entrega ya procesada o no válida')
+    }
+
+    // 🔴 VALIDAR FOLIO ÚNICO
+    const [folioExiste] = await conn.query(
+      'SELECT id_entrega FROM entregas WHERE folio = ?',
+      [folio]
+    )
+
+    if (folioExiste.length) {
+      throw new Error('El folio ya existe')
+    }
+
+    for (const item of productos) {
+      const diferencia = item.cantidad_entregada - item.cantidad_pedida
+
+      // 🔴 VALIDACIONES
+      if (diferencia !== 0) {
+        if (!item.tipo || item.tipo === 'ninguno') {
+          throw new Error(`Tipo obligatorio en producto ${item.id_producto}`)
+        }
+
+        if (!item.comentario?.trim()) {
+          throw new Error(`Comentario obligatorio en producto ${item.id_producto}`)
+        }
+
+        // 🔴 NUEVO: validar acción en faltantes
+        if (item.tipo === 'faltante') {
+          if (!item.accion || item.accion === 'ninguna') {
+            throw new Error(`Acción requerida en producto ${item.id_producto}`)
+          }
+        }
+
+        // faltante con préstamo
+        if (item.tipo === 'faltante' && item.motivo === 'prestado') {
+          if (!item.id_cliente_destino) {
+            throw new Error(`Cliente destino requerido en producto ${item.id_producto}`)
+          }
+        }
+      }
+
+      // 🔹 UPDATE detalle
+      await conn.query(`
+        UPDATE entrega_detalle
+        SET 
+          cantidad_entregada = ?,
+          tipo = ?,
+          motivo = ?,
+          id_cliente_destino = ?,
+          accion = ?,
+          comentario = ?
+        WHERE id_entrega = ? AND id_producto = ?
+      `, [
+        item.cantidad_entregada,
+        item.tipo || 'ninguno',
+        item.motivo || null,
+        item.id_cliente_destino || null,
+        item.accion || 'ninguna',
+        item.comentario || null,
+        id_entrega,
+        item.id_producto
+      ])
+    }
+
+    // 🔹 cerrar entrega (AGREGAMOS fecha_entrega)
+    await conn.query(`
+      UPDATE entregas
+      SET 
+        estado = 'entregado',
+        folio = ?,
+        fecha_entrega = NOW()
+      WHERE id_entrega = ?
+    `, [folio, id_entrega])
+
+    // 🔹 cerrar pedido
+    await conn.query(`
+      UPDATE pedidos
+      SET estado = 'entregado'
+      WHERE id_pedido = (
+        SELECT id_pedido FROM entregas WHERE id_entrega = ?
+      )
+    `, [id_entrega])
+
+    await conn.commit()
+
+    res.json({ success: true })
+
+  } catch (err) {
+    await conn.rollback()
+    res.status(500).json({ error: err.message })
+  } finally {
+    conn.release()
+  }
+})
 // =============================
 // 404
 // =============================
