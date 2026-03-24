@@ -45,9 +45,7 @@ const styles = {
 function ControlEnviosDetalle() {
   const { id_chofer } = useParams()
   const navigate = useNavigate()
-
   const [pedidos, setPedidos] = useState([])
-  const [folio, setFolio] = useState('')
 
   useEffect(() => {
     const cargarPedidos = async () => {
@@ -55,9 +53,11 @@ function ControlEnviosDetalle() {
         const res = await fetch(`${API}/control-envios/${id_chofer}`)
         const data = await res.json()
 
-        // 🔥 inicializar campos nuevos SIN romper nada
+        // 🔥 inicialización sin romper nada + folio y pin por pedido
         const inicializados = data.map(p => ({
           ...p,
+          folio: '',
+          pin: '',
           productos: p.productos.map(prod => ({
             ...prod,
             tipo: 'ninguno',
@@ -73,6 +73,7 @@ function ControlEnviosDetalle() {
         console.error(err)
       }
     }
+
     cargarPedidos()
   }, [id_chofer])
 
@@ -82,17 +83,34 @@ function ControlEnviosDetalle() {
     setPedidos(copia)
   }
 
-  // 🔥 NUEVAS FUNCIONES
   const actualizarCampo = (pIndex, dIndex, campo, valor) => {
     const copia = [...pedidos]
     copia[pIndex].productos[dIndex][campo] = valor
     setPedidos(copia)
   }
 
+  // 🔥 actualizar folio / pin por pedido
+  const actualizarPedido = (index, campo, valor) => {
+    const copia = [...pedidos]
+    copia[index][campo] = valor
+    setPedidos(copia)
+  }
+
   const finalizarEntrega = async (pedido) => {
     try {
-      if (!folio.trim()) {
+      // 🔴 folio obligatorio por pedido
+      if (!pedido.folio.trim()) {
         alert('Folio obligatorio')
+        return
+      }
+
+      // 🔴 validar PIN si hay cancelados
+      const hayCancelado = pedido.productos.some(
+        p => p.accion === 'cancelado'
+      )
+
+      if (hayCancelado && !pedido.pin.trim()) {
+        alert('PIN obligatorio para cancelaciones')
         return
       }
 
@@ -101,7 +119,8 @@ function ControlEnviosDetalle() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id_entrega: pedido.id_entrega,
-          folio,
+          folio: pedido.folio,
+          pin: pedido.pin,
           productos: pedido.productos
         })
       })
@@ -124,29 +143,37 @@ function ControlEnviosDetalle() {
 
   return (
     <div style={styles.container}>
-      
+
       <div style={styles.back} onClick={() => navigate(-1)}>
         ⬅ Volver
       </div>
 
       <h2 style={styles.title}>Pedidos del chofer</h2>
 
-      {/* 🔥 FOLIO */}
-      <div style={{ marginBottom: 20 }}>
-        <input
-          placeholder="Folio de entrega"
-          value={folio}
-          onChange={e => setFolio(e.target.value)}
-          style={{ padding: 8, width: 200 }}
-        />
-      </div>
-
       {pedidos.map((p, i) => (
         <div key={i} style={styles.card}>
+
           <div style={styles.header}>
             Cliente: {p.cliente} | Tienda: {p.tienda}
             <br />
             Ruta: {p.ruta} | Fecha salida: {p.fecha_salida}
+          </div>
+
+          {/* 🔥 FOLIO + PIN POR PEDIDO */}
+          <div style={{ marginBottom: 10 }}>
+            <input
+              placeholder="Folio"
+              value={p.folio}
+              onChange={e => actualizarPedido(i, 'folio', e.target.value)}
+              style={{ padding: 6, marginRight: 10 }}
+            />
+
+            <input
+              placeholder="PIN (solo cancelación)"
+              value={p.pin}
+              onChange={e => actualizarPedido(i, 'pin', e.target.value)}
+              style={{ padding: 6 }}
+            />
           </div>
 
           <table style={styles.table} border="1">
@@ -164,7 +191,8 @@ function ControlEnviosDetalle() {
 
             <tbody>
               {p.productos.map((prod, j) => {
-                const diferencia = prod.cantidad_entregada - prod.cantidad_pedida
+                const diferencia =
+                  prod.cantidad_entregada - prod.cantidad_pedida
 
                 return (
                   <tr key={j}>
@@ -182,7 +210,6 @@ function ControlEnviosDetalle() {
                       />
                     </td>
 
-                    {/* 🔥 SOLO SI HAY DIFERENCIA */}
                     {diferencia !== 0 ? (
                       <>
                         <td style={styles.td}>
@@ -194,7 +221,7 @@ function ControlEnviosDetalle() {
                           >
                             <option value="ninguno">--</option>
                             <option value="faltante">Faltante</option>
-                            <option value="sobrante">Sobrante</option>
+                            <option value="roto">Roto</option>
                           </select>
                         </td>
 
@@ -220,8 +247,8 @@ function ControlEnviosDetalle() {
                             }
                           >
                             <option value="ninguna">--</option>
-                            <option value="pendiente">Pendiente</option>
-                            <option value="cancelado">Cancelado</option>
+                            <option value="pendiente">Confirmar</option>
+                            <option value="cancelado">Cancelar</option>
                           </select>
                         </td>
 
@@ -236,9 +263,7 @@ function ControlEnviosDetalle() {
                         </td>
                       </>
                     ) : (
-                      <>
-                        <td colSpan="4">OK</td>
-                      </>
+                      <td colSpan="4">OK</td>
                     )}
                   </tr>
                 )
@@ -246,7 +271,6 @@ function ControlEnviosDetalle() {
             </tbody>
           </table>
 
-          {/* 🔥 BOTÓN FINALIZAR */}
           <button
             onClick={() => finalizarEntrega(p)}
             style={{
