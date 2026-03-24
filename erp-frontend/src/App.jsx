@@ -7,7 +7,7 @@ import ConsultarPedidos from './pages/ConsultarPedidos'
 import EditarCliente from './pages/EditarCliente'
 import Pagos from './pages/Pagos'
 import ControlEnvios from './pages/ControlEnvios'
-
+import ControlEnviosDetalle from './pages/ControlEnviosDetalle'
 function App() {
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial' }}>
@@ -20,7 +20,7 @@ function App() {
         <Route path="/clientes/editar/:id_cliente" element={<EditarCliente />} />
         <Route path="/pagos" element={<Pagos />} />
         <Route path="/control-envios" element={<ControlEnvios />} />
-      
+        <Route path="/control-envios/:id_chofer" element={<ControlEnviosDetalle />} />
       </Routes>
     </div>
   )
