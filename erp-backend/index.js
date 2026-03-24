@@ -231,7 +231,7 @@ app.get('/pedidos/cliente/:id_cliente', async (req, res) => {
 // 🔥 PEDIDO EN CURSO (CORREGIDO)
 // =============================
 
-// =========app.post('/pedidos/:id/en-curso', async (req, res) => {
+app.post('/pedidos/:id/en-curso', async (req, res) => {
   const conn = await db.getConnection()
   try {
     const { id } = req.params
