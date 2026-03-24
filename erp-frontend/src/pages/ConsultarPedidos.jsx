@@ -15,8 +15,6 @@ const styles = {
   button: { padding: '6px 10px', margin: '2px', borderRadius: '6px', border: 'none', cursor: 'pointer' },
   primary: { backgroundColor: '#8B1E1E', color: '#fff' },
   secondary: { backgroundColor: '#fff', border: '1px solid #8B1E1E', color: '#8B1E1E' },
-
-  // 🔥 NUEVO: estados
   estado: (estado) => ({
     color: '#fff',
     padding: '4px 8px',
@@ -40,10 +38,16 @@ function ConsultarPedidos() {
   const [choferes, setChoferes] = useState([])
   const [unidades, setUnidades] = useState([])
   const [comentarioCancelacion, setComentarioCancelacion] = useState('')
+
+  // 🔥 SOLO AQUÍ SE AGREGÓ LO NUEVO
   const [form, setForm] = useState({
     id_chofer: '',
     id_unidad: '',
     comentario: '',
+    otro_chofer: false,
+    nombre_chofer: '',
+    apellido_paterno: '',
+    apellido_materno: '',
     productos: []
   })
 
@@ -84,6 +88,10 @@ function ConsultarPedidos() {
       id_chofer: '',
       id_unidad: '',
       comentario: '',
+      otro_chofer: false,
+      nombre_chofer: '',
+      apellido_paterno: '',
+      apellido_materno: '',
       productos: data.map(p => ({
         id_producto: p.id_producto,
         nombre: p.nombre,
@@ -97,8 +105,20 @@ function ConsultarPedidos() {
   }
 
   const guardarEntrega = async () => {
-    if (!form.id_chofer || !form.id_unidad) {
-      return alert("Selecciona chofer y unidad")
+
+    // 🔥 VALIDACIÓN NUEVA
+    if (form.otro_chofer) {
+      if (!form.nombre_chofer || !form.apellido_paterno || !form.apellido_materno) {
+        return alert("Completa los datos del chofer")
+      }
+    }
+
+    if (!form.id_unidad) {
+      return alert("Selecciona unidad")
+    }
+
+    if (!form.id_chofer && !form.otro_chofer) {
+      return alert("Selecciona chofer")
     }
 
     const hayDiferencias = form.productos.some(
@@ -196,7 +216,6 @@ function ConsultarPedidos() {
               </td>
               <td style={styles.td}>{calcularDias(p.fecha)}</td>
 
-              {/* 🔥 ESTADO CON COLOR */}
               <td style={styles.td}>
                 <span style={styles.estado(p.estado)}>
                   {p.estado}
@@ -254,17 +273,60 @@ function ConsultarPedidos() {
               </div>
             ))}
 
+            {/* 🔥 SELECT CON OTRO */}
             <select
               style={styles.field}
-              onChange={e => setForm({ ...form, id_chofer: e.target.value })}
+              onChange={e => {
+                const value = e.target.value
+
+                if (value === 'otro') {
+                  setForm({
+                    ...form,
+                    id_chofer: '',
+                    otro_chofer: true
+                  })
+                } else {
+                  setForm({
+                    ...form,
+                    id_chofer: value,
+                    otro_chofer: false
+                  })
+                }
+              }}
             >
               <option value="">Chofer</option>
+
               {choferes.map(c => (
                 <option key={c.id_chofer} value={c.id_chofer}>
                   {c.nombre}
                 </option>
               ))}
+
+              <option value="otro">Otro</option>
             </select>
+
+            {/* 🔥 INPUTS DINÁMICOS */}
+            {form.otro_chofer && (
+              <div>
+                <input
+                  style={styles.field}
+                  placeholder="Nombre"
+                  onChange={e => setForm({ ...form, nombre_chofer: e.target.value })}
+                />
+
+                <input
+                  style={styles.field}
+                  placeholder="Apellido paterno"
+                  onChange={e => setForm({ ...form, apellido_paterno: e.target.value })}
+                />
+
+                <input
+                  style={styles.field}
+                  placeholder="Apellido materno"
+                  onChange={e => setForm({ ...form, apellido_materno: e.target.value })}
+                />
+              </div>
+            )}
 
             <select
               style={styles.field}
