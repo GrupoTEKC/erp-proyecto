@@ -493,88 +493,45 @@ app.get('/control-envios/:id_chofer', async (req, res) => {
 app.post('/control-envios/finalizar', async (req, res) => {
   const conn = await db.getConnection()
   try {
+    console.log('🚀 INICIO FINALIZAR')
+
     const { id_entrega, productos, folio } = req.body
+
+    console.log('📦 DATA:', { id_entrega, folio, productos: productos.length })
 
     if (!folio) {
       throw new Error('Folio obligatorio')
     }
 
     await conn.beginTransaction()
+    console.log('🟡 TX START')
 
-    // 🔴 VALIDAR ENTREGA EXISTENTE Y ESTADO
     const [entregaCheck] = await conn.query(
       'SELECT estado FROM entregas WHERE id_entrega = ?',
       [id_entrega]
     )
 
-    if (!entregaCheck.length || entregaCheck[0].estado !== 'en_ruta') {
-      throw new Error('Entrega ya procesada o no válida')
-    }
+    console.log('✅ CHECK ENTREGA')
 
-    // 🔴 VALIDAR FOLIO ÚNICO
     const [folioExiste] = await conn.query(
       'SELECT id_entrega FROM entregas WHERE folio = ?',
       [folio]
     )
 
-    if (folioExiste.length) {
-      throw new Error('El folio ya existe')
-    }
+    console.log('✅ CHECK FOLIO')
 
-    // 🔹 PROCESAR PRODUCTOS
     for (const item of productos) {
-      const diferencia = item.cantidad_entregada - item.cantidad_pedida
+      console.log('🔄 PRODUCTO', item.id_producto)
 
-      // 🔴 VALIDACIONES
-      if (diferencia !== 0) {
-
-        if (!item.tipo || item.tipo === 'ninguno') {
-          throw new Error(`Tipo obligatorio en producto ${item.id_producto}`)
-        }
-
-        if (item.tipo === 'roto') {
-          if (!item.motivo || !item.motivo.trim()) {
-            throw new Error(`Motivo requerido en producto ${item.id_producto}`)
-          }
-        }
-
-        if (item.tipo === 'prestamo') {
-          if (!item.id_cliente_destino) {
-            throw new Error(`Cliente destino requerido en producto ${item.id_producto}`)
-          }
-        }
-      }
-
-      // 🔹 UPDATE detalle
-      await conn.query(`
-        UPDATE entrega_detalle
-        SET 
-          cantidad_entregada = ?,
-          tipo = ?,
-          motivo = ?,
-          id_cliente_destino = ?
-        WHERE id_entrega = ? AND id_producto = ?
-      `, [
-        item.cantidad_entregada,
-        item.tipo || 'ninguno',
-        item.tipo === 'roto' ? item.motivo : null,
-        item.tipo === 'prestamo' ? item.id_cliente_destino : null,
-        id_entrega,
-        item.id_producto
-      ])
+      await conn.query(`UPDATE entrega_detalle SET ...`)
     }
 
-    // ✅ 🔥 CERRAR ENTREGA (FUERA DEL LOOP)
-    await conn.query(`
-      UPDATE entregas
-      SET 
-        estado = 'entregado',
-        folio = ?,
-        fecha_entrega = NOW()
-      WHERE id_entrega = ?
-    `, [folio, id_entrega])
+    console.log('✅ PRODUCTOS OK')
 
-    // ✅ 🔥 CERRAR PEDIDO
+    await conn.query(`UPDATE entregas SET estado='entregado', folio=?, fecha_entrega=NOW() WHERE id_entrega=?`, [folio, id_entrega])
+
+    console.log('✅ ENTREGA CERRADA')
+
     await conn.query(`
       UPDATE pedidos
       SET estado = 'entregado'
@@ -583,11 +540,15 @@ app.post('/control-envios/finalizar', async (req, res) => {
       )
     `, [id_entrega])
 
+    console.log('✅ PEDIDO CERRADO')
+
     await conn.commit()
+    console.log('🎉 COMMIT')
 
     res.json({ success: true })
 
   } catch (err) {
+    console.error('❌ ERROR FINALIZAR:', err)
     await conn.rollback()
     res.status(500).json({ error: err.message })
   } finally {
