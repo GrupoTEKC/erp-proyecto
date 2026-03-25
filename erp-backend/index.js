@@ -13,15 +13,13 @@ const corsOptions = {
     'https://believable-education-production-bec4.up.railway.app'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type']
+  allowedHeaders: ['Content-Type', 'Authorization']
 }
 
-// 🔥 MUY IMPORTANTE: preflight (OPTIONS)
-app.options('*', cors(corsOptions))
+// ✅ FIX AQUÍ
+app.options('/*', cors(corsOptions))
 
-// 🔥 CORS configurado
 app.use(cors(corsOptions))
-
 app.use(express.json())
 
 // =============================
