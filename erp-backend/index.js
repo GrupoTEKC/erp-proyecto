@@ -7,7 +7,21 @@ const mysql = require('mysql2/promise')
 const cors = require('cors')
 
 const app = express()
-app.use(cors())
+
+const corsOptions = {
+  origin: [
+    'https://believable-education-production-bec4.up.railway.app'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type']
+}
+
+// 🔥 MUY IMPORTANTE: preflight (OPTIONS)
+app.options('*', cors(corsOptions))
+
+// 🔥 CORS configurado
+app.use(cors(corsOptions))
+
 app.use(express.json())
 
 // =============================
