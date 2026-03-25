@@ -3,6 +3,15 @@ import { useParams, useNavigate } from 'react-router-dom'
 
 const API = 'https://erp-proyecto-production.up.railway.app'
 
+const styles = {
+  page: { backgroundColor: '#ffffff', minHeight: '100vh', padding: '20px', fontFamily: 'Arial, sans-serif' },
+  header: { marginBottom: '20px' },
+  backButton: { display: 'inline-flex', alignItems: 'center', padding: '10px 14px', fontSize: '14px', backgroundColor: '#fff', color: '#8B1E1E', border: '1px solid #8B1E1E', borderRadius: '6px', cursor: 'pointer' },
+  title: { marginTop: '20px', marginBottom: '15px', color: '#071849', fontWeight: 'bold' },
+  field: { width: '200px', padding: '6px', border: '1px solid #8B1E1E', borderRadius: '6px' },
+  guardar: { marginTop: '10px', padding: '10px 16px', backgroundColor: '#8B1E1E', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }
+}
+
 function ControlEnviosDetalle() {
   const { id_chofer } = useParams()
   const navigate = useNavigate()
@@ -10,6 +19,7 @@ function ControlEnviosDetalle() {
   const [pedidos, setPedidos] = useState([])
   const [clientes, setClientes] = useState([])
   const [busquedas, setBusquedas] = useState({})
+  const [mensaje, setMensaje] = useState(null)
 
   useEffect(() => {
     const cargarPedidos = async () => {
@@ -48,7 +58,6 @@ function ControlEnviosDetalle() {
 
   const buscarClientes = async (texto, pIndex, dIndex) => {
     const key = `${pIndex}-${dIndex}`
-
     setBusquedas(prev => ({ ...prev, [key]: texto }))
 
     if (!texto) {
@@ -65,7 +74,7 @@ function ControlEnviosDetalle() {
     for (let prod of pedido.productos) {
 
       if (prod.cantidad_entregada === '') {
-        return 'Falta cantidad entregada'
+        return `Falta cantidad entregada en ${prod.nombre}`
       }
 
       const diferencia =
@@ -73,14 +82,24 @@ function ControlEnviosDetalle() {
 
       if (diferencia !== 0) {
 
-        if (!prod.tipo) return 'Falta tipo'
-
-        if (prod.tipo === 'roto' && !prod.motivo) {
-          return 'Falta motivo de roto'
+        if (!prod.tipo) {
+          return `Falta tipo en ${prod.nombre}`
         }
 
-        if (prod.tipo === 'prestamo' && !prod.id_cliente_destino) {
-          return 'Falta cliente destino'
+        if (prod.tipo === 'roto' && !prod.motivo) {
+          return `Falta motivo en ${prod.nombre}`
+        }
+
+        if (prod.tipo === 'prestamo') {
+          if (!prod.id_cliente_destino) {
+            return `Selecciona cliente en ${prod.nombre}`
+          }
+
+          // 🔴 validar que exista en lista
+          const existe = clientes.find(c => c.id_cliente === prod.id_cliente_destino)
+          if (!existe) {
+            return `Cliente inválido en ${prod.nombre}`
+          }
         }
       }
     }
@@ -89,64 +108,90 @@ function ControlEnviosDetalle() {
   }
 
   const finalizarEntrega = async (pedido) => {
+    setMensaje(null)
 
     const error = validarPedido(pedido)
 
     if (error) {
-      alert(error)
+      setMensaje({ tipo: 'error', texto: error })
       return
     }
 
     if (!pedido.folio.trim()) {
-      alert('Folio obligatorio')
+      setMensaje({ tipo: 'error', texto: 'Folio obligatorio' })
       return
     }
 
-    const res = await fetch(`${API}/control-envios/finalizar`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id_entrega: pedido.id_entrega,
-        folio: pedido.folio,
-        productos: pedido.productos.map(p => ({
-          ...p,
-          cantidad_entregada: Number(p.cantidad_entregada)
-        }))
+    try {
+      const res = await fetch(`${API}/control-envios/finalizar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id_entrega: pedido.id_entrega,
+          folio: pedido.folio,
+          productos: pedido.productos.map(p => ({
+            ...p,
+            cantidad_entregada: Number(p.cantidad_entregada)
+          }))
+        })
       })
-    })
 
-    const data = await res.json()
+      const data = await res.json()
 
-    if (!res.ok) {
-      alert(data.error)
-      return
+      if (!res.ok) {
+        setMensaje({ tipo: 'error', texto: data.error || 'Error al guardar' })
+        return
+      }
+
+      setMensaje({ tipo: 'ok', texto: 'Entrega finalizada correctamente' })
+
+      setTimeout(() => {
+        navigate(-1)
+      }, 1200)
+
+    } catch (err) {
+      setMensaje({ tipo: 'error', texto: 'Error de conexión' })
     }
-
-    alert('Entrega finalizada')
-    navigate(-1)
   }
 
   return (
-    <div style={{ padding: 20 }}>
+    <div style={styles.page}>
 
-      <h2>Pedidos del chofer</h2>
+      <div style={styles.header}>
+        <button style={styles.backButton} onClick={() => navigate(-1)}>
+          ← Volver
+        </button>
+        <h2 style={styles.title}>Control de envíos</h2>
+      </div>
+
+      {mensaje && (
+        <div style={{
+          padding: '10px',
+          marginBottom: '15px',
+          borderRadius: '6px',
+          color: mensaje.tipo === 'error' ? '#721c24' : '#155724',
+          backgroundColor: mensaje.tipo === 'error' ? '#f8d7da' : '#d4edda'
+        }}>
+          {mensaje.texto}
+        </div>
+      )}
 
       {pedidos.map((p, i) => (
         <div key={i} style={{ marginBottom: 30, border: '1px solid #ccc', padding: 15 }}>
 
-          <div>
-            Cliente: {p.cliente} | Tienda: {p.tienda}
-            <br />
+          <div style={{ marginBottom: 10 }}>
+            <b>{p.cliente}</b> | {p.tienda} <br />
             Ruta: {p.ruta}
           </div>
 
           <input
+            style={styles.field}
             placeholder="Folio"
             value={p.folio}
             onChange={e => actualizarFolio(i, e.target.value)}
           />
 
-          <table border="1" width="100%">
+          <table border="1" width="100%" style={{ marginTop: 10 }}>
             <thead>
               <tr>
                 <th>Producto</th>
@@ -170,6 +215,7 @@ function ControlEnviosDetalle() {
                     <td>
                       <input
                         type="number"
+                        style={styles.field}
                         value={prod.cantidad_entregada}
                         onChange={e =>
                           actualizarCampo(i, j, 'cantidad_entregada', e.target.value)
@@ -181,6 +227,7 @@ function ControlEnviosDetalle() {
                       <>
                         <td>
                           <select
+                            style={styles.field}
                             value={prod.tipo}
                             onChange={e =>
                               actualizarCampo(i, j, 'tipo', e.target.value)
@@ -193,9 +240,9 @@ function ControlEnviosDetalle() {
                         </td>
 
                         <td>
-
                           {prod.tipo === 'roto' && (
                             <input
+                              style={styles.field}
                               placeholder="Motivo"
                               value={prod.motivo}
                               onChange={e =>
@@ -207,6 +254,7 @@ function ControlEnviosDetalle() {
                           {prod.tipo === 'prestamo' && (
                             <>
                               <input
+                                style={styles.field}
                                 placeholder="Buscar cliente"
                                 value={busquedas[`${i}-${j}`] || ''}
                                 onChange={e =>
@@ -225,14 +273,13 @@ function ControlEnviosDetalle() {
                                     }))
                                     setClientes([])
                                   }}
-                                  style={{ cursor: 'pointer', background: '#eee' }}
+                                  style={{ cursor: 'pointer', background: '#eee', padding: '4px' }}
                                 >
                                   {c.nombre} - {c.nombre_tienda}
                                 </div>
                               ))}
                             </>
                           )}
-
                         </td>
                       </>
                     ) : (
@@ -244,13 +291,12 @@ function ControlEnviosDetalle() {
             </tbody>
           </table>
 
-          <button onClick={() => finalizarEntrega(p)}>
+          <button style={styles.guardar} onClick={() => finalizarEntrega(p)}>
             Finalizar entrega
           </button>
 
         </div>
       ))}
-
     </div>
   )
 }
