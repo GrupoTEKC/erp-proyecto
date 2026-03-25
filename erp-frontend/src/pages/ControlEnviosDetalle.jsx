@@ -45,6 +45,7 @@ const styles = {
 function ControlEnviosDetalle() {
   const { id_chofer } = useParams()
   const navigate = useNavigate()
+
   const [pedidos, setPedidos] = useState([])
 
   useEffect(() => {
@@ -53,18 +54,16 @@ function ControlEnviosDetalle() {
         const res = await fetch(`${API}/control-envios/${id_chofer}`)
         const data = await res.json()
 
-        // 🔥 inicialización sin romper nada + folio y pin por pedido
         const inicializados = data.map(p => ({
           ...p,
           folio: '',
-          pin: '',
           productos: p.productos.map(prod => ({
             ...prod,
-            tipo: 'ninguno',
+            cantidad_entregada: '', // 🔥 vacío obligatorio
+            tipo: '',
             motivo: '',
-            accion: 'ninguna',
-            comentario: '',
-            id_cliente_destino: null
+            accion: '',
+            cliente_destino: ''
           }))
         }))
 
@@ -77,50 +76,73 @@ function ControlEnviosDetalle() {
     cargarPedidos()
   }, [id_chofer])
 
-  const actualizarCantidad = (pIndex, dIndex, value) => {
-    const copia = [...pedidos]
-    copia[pIndex].productos[dIndex].cantidad_entregada = Number(value)
-    setPedidos(copia)
-  }
-
   const actualizarCampo = (pIndex, dIndex, campo, valor) => {
     const copia = [...pedidos]
     copia[pIndex].productos[dIndex][campo] = valor
     setPedidos(copia)
   }
 
-  // 🔥 actualizar folio / pin por pedido
-  const actualizarPedido = (index, campo, valor) => {
+  const actualizarFolio = (pIndex, value) => {
     const copia = [...pedidos]
-    copia[index][campo] = valor
+    copia[pIndex].folio = value
     setPedidos(copia)
   }
 
+  const validarPedido = (pedido) => {
+    for (let prod of pedido.productos) {
+      // ❗ cantidad obligatoria
+      if (prod.cantidad_entregada === '' || prod.cantidad_entregada === null) {
+        return 'Falta cantidad entregada'
+      }
+
+      const diferencia =
+        Number(prod.cantidad_entregada) - Number(prod.cantidad_pedida)
+
+      if (diferencia !== 0) {
+        // ❗ tipo obligatorio
+        if (!prod.tipo) return 'Falta tipo'
+
+        if (prod.tipo === 'prestamo') {
+          if (!prod.cliente_destino) {
+            return 'Falta cliente destino en préstamo'
+          }
+        }
+
+        if (prod.tipo === 'roto') {
+          if (!prod.motivo) {
+            return 'Falta motivo de roto'
+          }
+        }
+
+        if (!prod.accion) {
+          return 'Falta confirmar o cancelar'
+        }
+      }
+    }
+
+    return null
+  }
+
   const finalizarEntrega = async (pedido) => {
+    const error = validarPedido(pedido)
+
+    if (error) {
+      alert(error)
+      return
+    }
+
+    if (!pedido.folio.trim()) {
+      alert('Folio obligatorio')
+      return
+    }
+
     try {
-      // 🔴 folio obligatorio por pedido
-      if (!pedido.folio.trim()) {
-        alert('Folio obligatorio')
-        return
-      }
-
-      // 🔴 validar PIN si hay cancelados
-      const hayCancelado = pedido.productos.some(
-        p => p.accion === 'cancelado'
-      )
-
-      if (hayCancelado && !pedido.pin.trim()) {
-        alert('PIN obligatorio para cancelaciones')
-        return
-      }
-
       const res = await fetch(`${API}/control-envios/finalizar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id_entrega: pedido.id_entrega,
           folio: pedido.folio,
-          pin: pedido.pin,
           productos: pedido.productos
         })
       })
@@ -159,22 +181,13 @@ function ControlEnviosDetalle() {
             Ruta: {p.ruta} | Fecha salida: {p.fecha_salida}
           </div>
 
-          {/* 🔥 FOLIO + PIN POR PEDIDO */}
-          <div style={{ marginBottom: 10 }}>
-            <input
-              placeholder="Folio"
-              value={p.folio}
-              onChange={e => actualizarPedido(i, 'folio', e.target.value)}
-              style={{ padding: 6, marginRight: 10 }}
-            />
-
-            <input
-              placeholder="PIN (solo cancelación)"
-              value={p.pin}
-              onChange={e => actualizarPedido(i, 'pin', e.target.value)}
-              style={{ padding: 6 }}
-            />
-          </div>
+          {/* 🔥 FOLIO POR PEDIDO */}
+          <input
+            placeholder="Folio"
+            value={p.folio}
+            onChange={e => actualizarFolio(i, e.target.value)}
+            style={{ padding: 8, marginBottom: 10 }}
+          />
 
           <table style={styles.table} border="1">
             <thead>
@@ -183,35 +196,37 @@ function ControlEnviosDetalle() {
                 <th style={styles.th}>Embarcado</th>
                 <th style={styles.th}>Entregado</th>
                 <th style={styles.th}>Tipo</th>
-                <th style={styles.th}>Motivo</th>
+                <th style={styles.th}>Detalle</th>
                 <th style={styles.th}>Acción</th>
-                <th style={styles.th}>Comentario</th>
               </tr>
             </thead>
 
             <tbody>
               {p.productos.map((prod, j) => {
                 const diferencia =
-                  prod.cantidad_entregada - prod.cantidad_pedida
+                  Number(prod.cantidad_entregada || 0) - Number(prod.cantidad_pedida)
 
                 return (
                   <tr key={j}>
                     <td style={styles.td}>{prod.nombre}</td>
+
                     <td style={styles.td}>{prod.cantidad_pedida}</td>
 
+                    {/* 🔥 ENTREGADO MANUAL */}
                     <td style={styles.td}>
                       <input
                         style={styles.input}
                         type="number"
                         value={prod.cantidad_entregada}
                         onChange={e =>
-                          actualizarCantidad(i, j, e.target.value)
+                          actualizarCampo(i, j, 'cantidad_entregada', e.target.value)
                         }
                       />
                     </td>
 
                     {diferencia !== 0 ? (
                       <>
+                        {/* 🔥 TIPO */}
                         <td style={styles.td}>
                           <select
                             value={prod.tipo}
@@ -219,51 +234,56 @@ function ControlEnviosDetalle() {
                               actualizarCampo(i, j, 'tipo', e.target.value)
                             }
                           >
-                            <option value="ninguno">--</option>
-                            <option value="faltante">Faltante</option>
+                            <option value="">--</option>
+                            <option value="prestamo">Préstamo</option>
                             <option value="roto">Roto</option>
                           </select>
                         </td>
 
+                        {/* 🔥 DETALLE */}
                         <td style={styles.td}>
-                          <select
-                            value={prod.motivo}
-                            onChange={e =>
-                              actualizarCampo(i, j, 'motivo', e.target.value)
-                            }
-                          >
-                            <option value="">--</option>
-                            <option value="error">Error</option>
-                            <option value="prestado">Prestado</option>
-                            <option value="dañado">Dañado</option>
-                          </select>
+                          {prod.tipo === 'prestamo' && (
+                            <input
+                              placeholder="Cliente destino"
+                              value={prod.cliente_destino}
+                              onChange={e =>
+                                actualizarCampo(i, j, 'cliente_destino', e.target.value)
+                              }
+                            />
+                          )}
+
+                          {prod.tipo === 'roto' && (
+                            <input
+                              placeholder="Motivo del daño"
+                              value={prod.motivo}
+                              onChange={e =>
+                                actualizarCampo(i, j, 'motivo', e.target.value)
+                              }
+                            />
+                          )}
                         </td>
 
+                        {/* 🔥 ACCIONES */}
                         <td style={styles.td}>
-                          <select
-                            value={prod.accion}
-                            onChange={e =>
-                              actualizarCampo(i, j, 'accion', e.target.value)
+                          <button
+                            onClick={() =>
+                              actualizarCampo(i, j, 'accion', 'confirmado')
                             }
                           >
-                            <option value="ninguna">--</option>
-                            <option value="pendiente">Confirmar</option>
-                            <option value="cancelado">Cancelar</option>
-                          </select>
-                        </td>
+                            Confirmar
+                          </button>
 
-                        <td style={styles.td}>
-                          <input
-                            placeholder="Comentario"
-                            value={prod.comentario}
-                            onChange={e =>
-                              actualizarCampo(i, j, 'comentario', e.target.value)
+                          <button
+                            onClick={() =>
+                              actualizarCampo(i, j, 'accion', 'cancelado')
                             }
-                          />
+                          >
+                            Cancelar
+                          </button>
                         </td>
                       </>
                     ) : (
-                      <td colSpan="4">OK</td>
+                      <td colSpan="3">OK</td>
                     )}
                   </tr>
                 )
@@ -284,8 +304,10 @@ function ControlEnviosDetalle() {
           >
             Finalizar entrega
           </button>
+
         </div>
       ))}
+
     </div>
   )
 }
