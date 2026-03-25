@@ -3,74 +3,32 @@ import { useParams, useNavigate } from 'react-router-dom'
 
 const API = 'https://erp-proyecto-production.up.railway.app'
 
-const styles = {
-  container: { padding: 20 },
-  title: { fontSize: 22, marginBottom: 20, color: '#071849' },
-  card: {
-    border: '1px solid #8B1E1E',
-    borderRadius: 8,
-    padding: 15,
-    marginBottom: 15
-  },
-  header: {
-    marginBottom: 10,
-    fontWeight: 'bold',
-    color: '#8B1E1E'
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-    marginTop: 10
-  },
-  th: {
-    backgroundColor: '#8B1E1E',
-    color: '#fff',
-    padding: 8
-  },
-  td: {
-    padding: 8,
-    textAlign: 'center'
-  },
-  input: {
-    width: '80px',
-    padding: 5
-  },
-  back: {
-    marginBottom: 15,
-    cursor: 'pointer',
-    color: '#8B1E1E'
-  }
-}
-
 function ControlEnviosDetalle() {
   const { id_chofer } = useParams()
   const navigate = useNavigate()
 
   const [pedidos, setPedidos] = useState([])
+  const [clientes, setClientes] = useState([])
+  const [busquedas, setBusquedas] = useState({})
 
   useEffect(() => {
     const cargarPedidos = async () => {
-      try {
-        const res = await fetch(`${API}/control-envios/${id_chofer}`)
-        const data = await res.json()
+      const res = await fetch(`${API}/control-envios/${id_chofer}`)
+      const data = await res.json()
 
-        const inicializados = data.map(p => ({
-          ...p,
-          folio: '',
-          productos: p.productos.map(prod => ({
-            ...prod,
-            cantidad_entregada: '', // 🔥 vacío obligatorio
-            tipo: '',
-            motivo: '',
-            accion: '',
-            cliente_destino: ''
-          }))
+      const inicializados = data.map(p => ({
+        ...p,
+        folio: '',
+        productos: p.productos.map(prod => ({
+          ...prod,
+          cantidad_entregada: '',
+          tipo: '',
+          motivo: '',
+          id_cliente_destino: null
         }))
+      }))
 
-        setPedidos(inicializados)
-      } catch (err) {
-        console.error(err)
-      }
+      setPedidos(inicializados)
     }
 
     cargarPedidos()
@@ -88,34 +46,41 @@ function ControlEnviosDetalle() {
     setPedidos(copia)
   }
 
+  const buscarClientes = async (texto, pIndex, dIndex) => {
+    const key = `${pIndex}-${dIndex}`
+
+    setBusquedas(prev => ({ ...prev, [key]: texto }))
+
+    if (!texto) {
+      setClientes([])
+      return
+    }
+
+    const res = await fetch(`${API}/clientes?search=${texto}`)
+    const data = await res.json()
+    setClientes(data)
+  }
+
   const validarPedido = (pedido) => {
     for (let prod of pedido.productos) {
-      // ❗ cantidad obligatoria
-      if (prod.cantidad_entregada === '' || prod.cantidad_entregada === null) {
+
+      if (prod.cantidad_entregada === '') {
         return 'Falta cantidad entregada'
       }
 
       const diferencia =
-        Number(prod.cantidad_entregada) - Number(prod.cantidad_pedida)
+        Number(prod.cantidad_entregada) - prod.cantidad_pedida
 
       if (diferencia !== 0) {
-        // ❗ tipo obligatorio
+
         if (!prod.tipo) return 'Falta tipo'
 
-        if (prod.tipo === 'prestamo') {
-          if (!prod.cliente_destino) {
-            return 'Falta cliente destino en préstamo'
-          }
+        if (prod.tipo === 'roto' && !prod.motivo) {
+          return 'Falta motivo de roto'
         }
 
-        if (prod.tipo === 'roto') {
-          if (!prod.motivo) {
-            return 'Falta motivo de roto'
-          }
-        }
-
-        if (!prod.accion) {
-          return 'Falta confirmar o cancelar'
+        if (prod.tipo === 'prestamo' && !prod.id_cliente_destino) {
+          return 'Falta cliente destino'
         }
       }
     }
@@ -124,6 +89,7 @@ function ControlEnviosDetalle() {
   }
 
   const finalizarEntrega = async (pedido) => {
+
     const error = validarPedido(pedido)
 
     if (error) {
@@ -136,86 +102,73 @@ function ControlEnviosDetalle() {
       return
     }
 
-    try {
-      const res = await fetch(`${API}/control-envios/finalizar`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id_entrega: pedido.id_entrega,
-          folio: pedido.folio,
-          productos: pedido.productos
-        })
+    const res = await fetch(`${API}/control-envios/finalizar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id_entrega: pedido.id_entrega,
+        folio: pedido.folio,
+        productos: pedido.productos.map(p => ({
+          ...p,
+          cantidad_entregada: Number(p.cantidad_entregada)
+        }))
       })
+    })
 
-      const data = await res.json()
+    const data = await res.json()
 
-      if (!res.ok) {
-        alert(data.error)
-        return
-      }
-
-      alert('Entrega finalizada')
-      navigate(-1)
-
-    } catch (err) {
-      console.error(err)
-      alert('Error al finalizar')
+    if (!res.ok) {
+      alert(data.error)
+      return
     }
+
+    alert('Entrega finalizada')
+    navigate(-1)
   }
 
   return (
-    <div style={styles.container}>
+    <div style={{ padding: 20 }}>
 
-      <div style={styles.back} onClick={() => navigate(-1)}>
-        ⬅ Volver
-      </div>
-
-      <h2 style={styles.title}>Pedidos del chofer</h2>
+      <h2>Pedidos del chofer</h2>
 
       {pedidos.map((p, i) => (
-        <div key={i} style={styles.card}>
+        <div key={i} style={{ marginBottom: 30, border: '1px solid #ccc', padding: 15 }}>
 
-          <div style={styles.header}>
+          <div>
             Cliente: {p.cliente} | Tienda: {p.tienda}
             <br />
-            Ruta: {p.ruta} | Fecha salida: {p.fecha_salida}
+            Ruta: {p.ruta}
           </div>
 
-          {/* 🔥 FOLIO POR PEDIDO */}
           <input
             placeholder="Folio"
             value={p.folio}
             onChange={e => actualizarFolio(i, e.target.value)}
-            style={{ padding: 8, marginBottom: 10 }}
           />
 
-          <table style={styles.table} border="1">
+          <table border="1" width="100%">
             <thead>
               <tr>
-                <th style={styles.th}>Producto</th>
-                <th style={styles.th}>Embarcado</th>
-                <th style={styles.th}>Entregado</th>
-                <th style={styles.th}>Tipo</th>
-                <th style={styles.th}>Detalle</th>
-                <th style={styles.th}>Acción</th>
+                <th>Producto</th>
+                <th>Embarcado</th>
+                <th>Entregado</th>
+                <th>Tipo</th>
+                <th>Detalle</th>
               </tr>
             </thead>
 
             <tbody>
               {p.productos.map((prod, j) => {
                 const diferencia =
-                  Number(prod.cantidad_entregada || 0) - Number(prod.cantidad_pedida)
+                  Number(prod.cantidad_entregada || 0) - prod.cantidad_pedida
 
                 return (
                   <tr key={j}>
-                    <td style={styles.td}>{prod.nombre}</td>
+                    <td>{prod.nombre}</td>
+                    <td>{prod.cantidad_pedida}</td>
 
-                    <td style={styles.td}>{prod.cantidad_pedida}</td>
-
-                    {/* 🔥 ENTREGADO MANUAL */}
-                    <td style={styles.td}>
+                    <td>
                       <input
-                        style={styles.input}
                         type="number"
                         value={prod.cantidad_entregada}
                         onChange={e =>
@@ -226,8 +179,7 @@ function ControlEnviosDetalle() {
 
                     {diferencia !== 0 ? (
                       <>
-                        {/* 🔥 TIPO */}
-                        <td style={styles.td}>
+                        <td>
                           <select
                             value={prod.tipo}
                             onChange={e =>
@@ -240,50 +192,51 @@ function ControlEnviosDetalle() {
                           </select>
                         </td>
 
-                        {/* 🔥 DETALLE */}
-                        <td style={styles.td}>
-                          {prod.tipo === 'prestamo' && (
-                            <input
-                              placeholder="Cliente destino"
-                              value={prod.cliente_destino}
-                              onChange={e =>
-                                actualizarCampo(i, j, 'cliente_destino', e.target.value)
-                              }
-                            />
-                          )}
+                        <td>
 
                           {prod.tipo === 'roto' && (
                             <input
-                              placeholder="Motivo del daño"
+                              placeholder="Motivo"
                               value={prod.motivo}
                               onChange={e =>
                                 actualizarCampo(i, j, 'motivo', e.target.value)
                               }
                             />
                           )}
-                        </td>
 
-                        {/* 🔥 ACCIONES */}
-                        <td style={styles.td}>
-                          <button
-                            onClick={() =>
-                              actualizarCampo(i, j, 'accion', 'confirmado')
-                            }
-                          >
-                            Confirmar
-                          </button>
+                          {prod.tipo === 'prestamo' && (
+                            <>
+                              <input
+                                placeholder="Buscar cliente"
+                                value={busquedas[`${i}-${j}`] || ''}
+                                onChange={e =>
+                                  buscarClientes(e.target.value, i, j)
+                                }
+                              />
 
-                          <button
-                            onClick={() =>
-                              actualizarCampo(i, j, 'accion', 'cancelado')
-                            }
-                          >
-                            Cancelar
-                          </button>
+                              {clientes.map(c => (
+                                <div
+                                  key={c.id_cliente}
+                                  onClick={() => {
+                                    actualizarCampo(i, j, 'id_cliente_destino', c.id_cliente)
+                                    setBusquedas(prev => ({
+                                      ...prev,
+                                      [`${i}-${j}`]: `${c.nombre} - ${c.nombre_tienda}`
+                                    }))
+                                    setClientes([])
+                                  }}
+                                  style={{ cursor: 'pointer', background: '#eee' }}
+                                >
+                                  {c.nombre} - {c.nombre_tienda}
+                                </div>
+                              ))}
+                            </>
+                          )}
+
                         </td>
                       </>
                     ) : (
-                      <td colSpan="3">OK</td>
+                      <td colSpan="2">OK</td>
                     )}
                   </tr>
                 )
@@ -291,17 +244,7 @@ function ControlEnviosDetalle() {
             </tbody>
           </table>
 
-          <button
-            onClick={() => finalizarEntrega(p)}
-            style={{
-              marginTop: 10,
-              backgroundColor: '#8B1E1E',
-              color: '#fff',
-              padding: 10,
-              border: 'none',
-              cursor: 'pointer'
-            }}
-          >
+          <button onClick={() => finalizarEntrega(p)}>
             Finalizar entrega
           </button>
 
