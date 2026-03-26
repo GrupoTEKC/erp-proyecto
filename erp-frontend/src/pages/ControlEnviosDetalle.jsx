@@ -13,7 +13,6 @@ const styles = {
 }
 
 function ControlEnviosDetalle() {
-
   const { id_chofer } = useParams()
   const navigate = useNavigate()
 
@@ -26,6 +25,7 @@ function ControlEnviosDetalle() {
   const [comentarioCancelacion, setComentarioCancelacion] = useState('')
   const [busquedaProducto, setBusquedaProducto] = useState('')
   const [resultadosProductos, setResultadosProductos] = useState([])
+  const [loading, setLoading] = useState(true)
 
   const esMovil = window.innerWidth < 768
 
@@ -36,6 +36,7 @@ function ControlEnviosDetalle() {
 
   useEffect(() => {
     const cargarPedidos = async () => {
+      setLoading(true)
       const res = await fetch(`${API}/control-envios/${id_chofer}`)
       const data = await res.json()
 
@@ -52,6 +53,7 @@ function ControlEnviosDetalle() {
       }))
 
       setPedidos(inicializados)
+      setLoading(false)
     }
 
     cargarPedidos()
@@ -59,7 +61,6 @@ function ControlEnviosDetalle() {
 
   const buscarProductos = async (texto) => {
     setBusquedaProducto(texto)
-
     if (!texto) {
       setResultadosProductos([])
       return
@@ -127,10 +128,8 @@ function ControlEnviosDetalle() {
     setClientes(filtrados)
   }
 
-  // ✅ FIX AQUÍ (SIN JSX ROTO)
   const validarPedido = (pedido) => {
     for (let prod of pedido.productos) {
-
       if (prod.tipo === 'agregado') {
         if (!prod.cantidad_pedida) return `Falta embarcado en ${prod.nombre}`
         if (!prod.cantidad_entregada) return `Falta entregado en ${prod.nombre}`
@@ -166,7 +165,6 @@ function ControlEnviosDetalle() {
     setMensaje(null)
 
     const error = validarPedido(pedido)
-
     if (error) {
       setMensaje({ tipo: 'error', texto: error })
       return
@@ -212,6 +210,7 @@ function ControlEnviosDetalle() {
         <button style={styles.backButton} onClick={() => navigate(-1)}>
           ← Volver
         </button>
+
         <h2 style={styles.title}>Control de envíos</h2>
       </div>
 
@@ -224,6 +223,33 @@ function ControlEnviosDetalle() {
           backgroundColor: mensaje.tipo === 'error' ? '#f8d7da' : '#d4edda'
         }}>
           {mensaje.texto}
+        </div>
+      )}
+
+      {/* ✅ MENSAJE CUANDO NO HAY PEDIDOS */}
+      {!loading && pedidos.length === 0 && (
+        <div style={{
+          padding: '30px',
+          border: '1px dashed #8B1E1E',
+          borderRadius: '10px',
+          color: '#8B1E1E',
+          textAlign: 'center',
+          background: '#fff5f5'
+        }}>
+          <div style={{ fontSize: '40px' }}>📦</div>
+          <div style={{ fontWeight: 'bold', marginTop: 10 }}>
+            No tienes entregas pendientes
+          </div>
+          <div style={{ fontSize: 13 }}>
+            Todo está al día 👍
+          </div>
+        </div>
+      )}
+
+      {/* ✅ LOADING */}
+      {loading && (
+        <div style={{ textAlign: 'center', marginTop: 40 }}>
+          Cargando pedidos...
         </div>
       )}
 
@@ -255,278 +281,6 @@ function ControlEnviosDetalle() {
             marginBottom: 20,
             border: '1px solid #ccc',
             padding: esMovil ? 10 : 15,
-            borderRadius: '8px'
+            borderRadius: '8px',
+            overflowX: esMovil ? 'auto' : 'visible' // ✅ FIX MOBILE TABLA
           }}>
-
-            <div>
-              <b>{p.cliente}</b> | {p.tienda}<br />
-              Ruta: {p.ruta}
-            </div>
-
-            <input
-              style={fieldResponsive}
-              placeholder="Folio"
-              value={p.folio}
-              onChange={e => actualizarFolio(i, e.target.value)}
-            />
-
-            <div style={{ marginTop: 10 }}>
-              <input
-                style={fieldResponsive}
-                placeholder="Buscar producto"
-                value={busquedaProducto}
-                onChange={e => buscarProductos(e.target.value)}
-              />
-
-              {resultadosProductos.map(prod => (
-                <div
-                  key={prod.id_producto}
-                  onClick={() => agregarProducto(i, prod)}
-                  style={{ cursor: 'pointer', background: '#eee', padding: '5px' }}
-                >
-                  {prod.nombre}
-                </div>
-              ))}
-            </div>
-
-            <table border="1" width="100%" style={{ marginTop: 10, fontSize: esMovil ? '12px' : '14px' }}>
-              <thead>
-                <tr>
-                  <th>Producto</th>
-                  <th>Precio</th>
-                  <th>Embarcado</th>
-                  <th>Entregado</th>
-                  <th>Subtotal</th>
-                  <th>Tipo</th>
-                  <th>Detalle</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {p.productos.map((prod, j) => {
-
-                  const precio = parseFloat(prod.precio_unitario) || 0
-                  const entregada = Number(prod.cantidad_entregada) || 0
-                  const pedida = Number(prod.cantidad_pedida) || 0
-                  const diferencia = entregada - pedida
-                  const subtotal = entregada * precio
-
-                  return (
-                    <tr key={j}>
-                      <td>{prod.nombre}</td>
-
-                      <td>
-                        {prod.tipo === 'agregado' ? (
-                          <input
-                            type="number"
-                            style={fieldResponsive}
-                            value={prod.precio_unitario}
-                            onChange={e =>
-                              actualizarCampo(i, j, 'precio_unitario', e.target.value)
-                            }
-                          />
-                        ) : (
-                          `$${precio.toFixed(2)}`
-                        )}
-                      </td>
-
-                      <td>
-                        {prod.tipo === 'agregado' ? (
-                          <input
-                            type="number"
-                            style={fieldResponsive}
-                            value={prod.cantidad_pedida}
-                            onChange={e =>
-                              actualizarCampo(i, j, 'cantidad_pedida', e.target.value)
-                            }
-                          />
-                        ) : (
-                          pedida
-                        )}
-                      </td>
-
-                      <td>
-                        <input
-                          type="number"
-                          style={fieldResponsive}
-                          value={prod.cantidad_entregada}
-                          onChange={e =>
-                            actualizarCampo(i, j, 'cantidad_entregada', e.target.value)
-                          }
-                        />
-                      </td>
-
-                      <td>${subtotal.toFixed(2)}</td>
-
-                      {(diferencia !== 0 || prod.tipo === 'agregado') ? (
-                        <>
-                          <td>
-                            {prod.tipo === 'agregado' ? (
-                              <div>Agregado</div>
-                            ) : (
-                              <select
-                                style={fieldResponsive}
-                                value={prod.tipo}
-                                onChange={e =>
-                                  actualizarCampo(i, j, 'tipo', e.target.value)
-                                }
-                              >
-                                <option value="">--</option>
-                                <option value="prestamo">Préstamo</option>
-                                <option value="roto">Roto</option>
-                              </select>
-                            )}
-                          </td>
-
-                          <td>
-                            {prod.tipo === 'agregado' && (
-                              <input
-                                style={fieldResponsive}
-                                placeholder="Comentario"
-                                value={prod.motivo}
-                                onChange={e =>
-                                  actualizarCampo(i, j, 'motivo', e.target.value)
-                                }
-                              />
-                            )}
-
-                            {prod.tipo === 'roto' && (
-                              <input
-                                style={fieldResponsive}
-                                placeholder="Motivo"
-                                value={prod.motivo}
-                                onChange={e =>
-                                  actualizarCampo(i, j, 'motivo', e.target.value)
-                                }
-                              />
-                            )}
-
-                            {prod.tipo === 'prestamo' && (
-                              <>
-                                <input
-                                  style={fieldResponsive}
-                                  placeholder="Buscar cliente"
-                                  value={busquedas[`${i}-${j}`] || ''}
-                                  onChange={e =>
-                                    buscarClientes(e.target.value, i, j)
-                                  }
-                                />
-                                {clientes.map(c => (
-                                  <div
-                                    key={c.id_cliente}
-                                    onClick={() => {
-                                      actualizarCampo(i, j, 'id_cliente_destino', c.id_cliente)
-                                      setBusquedas(prev => ({
-                                        ...prev,
-                                        [`${i}-${j}`]: `${c.nombre} - ${c.nombre_tienda}`
-                                      }))
-                                      setClientes([])
-                                    }}
-                                    style={{ cursor: 'pointer', background: '#eee', padding: '4px' }}
-                                  >
-                                    {c.nombre} - {c.nombre_tienda}
-                                  </div>
-                                ))}
-                              </>
-                            )}
-                          </td>
-                        </>
-                      ) : (
-                        <td colSpan="2">OK</td>
-                      )}
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-
-            <div style={{ marginTop: 10 }}>
-              <div><b>Total pedido:</b> ${totalPedido.toFixed(2)}</div>
-              <div style={{ color: '#8B1E1E' }}>
-                <b>Descuento:</b> -${totalDescuento.toFixed(2)}
-              </div>
-              <div style={{ fontWeight: 'bold' }}>
-                Total a cobrar: ${totalFinal.toFixed(2)}
-              </div>
-            </div>
-
-            <button style={styles.guardar} onClick={() => finalizarEntrega(p)}>
-              Finalizar entrega
-            </button>
-
-            <button
-              style={{ ...styles.guardar, backgroundColor: '#6c757d', marginLeft: 10 }}
-              onClick={() => setShowPin(i)}
-            >
-              Cancelar
-            </button>
-
-            {showPin === i && (
-              <div style={{
-                marginTop: 10,
-                padding: 15,
-                border: '1px solid #ccc',
-                borderRadius: '8px'
-              }}>
-                <input
-                  type="password"
-                  placeholder="PIN"
-                  style={fieldResponsive}
-                  value={pin}
-                  onChange={e => setPin(e.target.value)}
-                />
-                <textarea
-                  placeholder="Comentario obligatorio"
-                  style={{ width: '100%', marginTop: 10 }}
-                  value={comentarioCancelacion}
-                  onChange={e => setComentarioCancelacion(e.target.value)}
-                />
-
-                <button
-                  style={{ ...styles.guardar, marginTop: 10 }}
-                  onClick={async () => {
-                    if (pin !== 'Em#GTFPteg9') return alert('PIN incorrecto')
-                    if (!comentarioCancelacion.trim()) return alert('Comentario obligatorio')
-                    if (!window.confirm('¿Seguro que deseas cancelar este pedido?')) return
-
-                    try {
-                      const res = await fetch(`${API}/control-envios/cancelar`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          id_entrega: p.id_entrega,
-                          comentario: comentarioCancelacion
-                        })
-                      })
-
-                      const data = await res.json()
-
-                      if (!res.ok) {
-                        alert(data.error || 'Error al cancelar')
-                        return
-                      }
-
-                      alert('Pedido cancelado correctamente')
-
-                      setPedidos(prev => prev.filter((_, index) => index !== i))
-                      setShowPin(null)
-                      setPin('')
-                      setComentarioCancelacion('')
-
-                    } catch {
-                      alert('Error de conexión')
-                    }
-                  }}
-                >
-                  Confirmar cancelación
-                </button>
-              </div>
-            )}
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-export default ControlEnviosDetalle
