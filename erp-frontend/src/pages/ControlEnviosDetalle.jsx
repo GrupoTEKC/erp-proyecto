@@ -58,7 +58,6 @@ function ControlEnviosDetalle() {
 
   const buscarClientes = async (texto, pIndex, dIndex) => {
     const key = `${pIndex}-${dIndex}`
-
     setBusquedas(prev => ({ ...prev, [key]: texto }))
 
     if (!texto) {
@@ -77,13 +76,10 @@ function ControlEnviosDetalle() {
         return `Falta cantidad entregada en ${prod.nombre}`
       }
 
-      const diferencia =
-        Number(prod.cantidad_entregada) - prod.cantidad_pedida
+      const diferencia = Number(prod.cantidad_entregada) - prod.cantidad_pedida
 
       if (diferencia !== 0) {
-        if (!prod.tipo) {
-          return `Falta tipo en ${prod.nombre}`
-        }
+        if (!prod.tipo) return `Falta tipo en ${prod.nombre}`
 
         if (prod.tipo === 'roto' && !prod.motivo) {
           return `Falta motivo en ${prod.nombre}`
@@ -92,12 +88,6 @@ function ControlEnviosDetalle() {
         if (prod.tipo === 'prestamo') {
           if (!prod.id_cliente_destino) {
             return `Selecciona cliente en ${prod.nombre}`
-          }
-
-          const existe = clientes.find(c => c.id_cliente === prod.id_cliente_destino)
-
-          if (!existe) {
-            return `Cliente inválido en ${prod.nombre}`
           }
         }
       }
@@ -110,7 +100,6 @@ function ControlEnviosDetalle() {
     setMensaje(null)
 
     const error = validarPedido(pedido)
-
     if (error) {
       setMensaje({ tipo: 'error', texto: error })
       return
@@ -144,18 +133,15 @@ function ControlEnviosDetalle() {
 
       setMensaje({ tipo: 'ok', texto: 'Entrega finalizada correctamente' })
 
-      setTimeout(() => {
-        navigate(-1)
-      }, 1200)
+      setTimeout(() => navigate(-1), 1200)
 
-    } catch (err) {
+    } catch {
       setMensaje({ tipo: 'error', texto: 'Error de conexión' })
     }
   }
 
   return (
     <div style={styles.page}>
-
       <div style={styles.header}>
         <button style={styles.backButton} onClick={() => navigate(-1)}>
           ← Volver
@@ -175,27 +161,15 @@ function ControlEnviosDetalle() {
         </div>
       )}
 
-      {pedidos.length === 0 && (
-        <div style={{
-          padding: '20px',
-          border: '1px dashed #8B1E1E',
-          borderRadius: '6px',
-          color: '#8B1E1E'
-        }}>
-          No tienes entregas pendientes
-        </div>
-      )}
-
       {pedidos.map((p, i) => {
 
-        // ✅ CALCULO EN TIEMPO REAL
         let totalPedido = 0
         let totalDescuento = 0
 
         p.productos.forEach(prod => {
-          const precio = prod.precio_unitario || 0
-          const pedida = prod.cantidad_pedida || 0
-          const entregada = Number(prod.cantidad_entregada || 0)
+          const precio = parseFloat(prod.precio_unitario) || 0
+          const pedida = Number(prod.cantidad_pedida) || 0
+          const entregada = Number(prod.cantidad_entregada) || 0
 
           totalPedido += pedida * precio
 
@@ -211,8 +185,8 @@ function ControlEnviosDetalle() {
         return (
           <div key={i} style={{ marginBottom: 30, border: '1px solid #ccc', padding: 15 }}>
 
-            <div style={{ marginBottom: 10 }}>
-              <b>{p.cliente}</b> | {p.tienda} <br />
+            <div>
+              <b>{p.cliente}</b> | {p.tienda}<br />
               Ruta: {p.ruta}
             </div>
 
@@ -238,19 +212,21 @@ function ControlEnviosDetalle() {
 
               <tbody>
                 {p.productos.map((prod, j) => {
-                  const diferencia =
-                    Number(prod.cantidad_entregada || 0) - prod.cantidad_pedida
 
-                  const subtotal =
-                    Number(prod.cantidad_entregada || 0) * (prod.precio_unitario || 0)
+                  const precio = parseFloat(prod.precio_unitario) || 0
+                  const entregada = Number(prod.cantidad_entregada) || 0
+                  const pedida = Number(prod.cantidad_pedida) || 0
+
+                  const diferencia = entregada - pedida
+                  const subtotal = entregada * precio
 
                   return (
                     <tr key={j}>
                       <td>{prod.nombre}</td>
 
-                      <td>${prod.precio_unitario?.toFixed(2)}</td>
+                      <td>${precio.toFixed(2)}</td>
 
-                      <td>{prod.cantidad_pedida}</td>
+                      <td>{pedida}</td>
 
                       <td>
                         <input
@@ -334,15 +310,12 @@ function ControlEnviosDetalle() {
               </tbody>
             </table>
 
-            {/* ✅ TOTALES DINÁMICOS */}
-            <div style={{ marginTop: 10, color: '#071849' }}>
+            <div style={{ marginTop: 10 }}>
               <div><b>Total pedido:</b> ${totalPedido.toFixed(2)}</div>
-
               <div style={{ color: '#8B1E1E' }}>
                 <b>Descuento:</b> -${totalDescuento.toFixed(2)}
               </div>
-
-              <div style={{ marginTop: 5, fontWeight: 'bold' }}>
+              <div style={{ fontWeight: 'bold' }}>
                 Total a cobrar: ${totalFinal.toFixed(2)}
               </div>
             </div>
