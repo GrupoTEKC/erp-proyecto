@@ -25,14 +25,18 @@ const styles = {
   },
 
   volver: {
-  marginBottom: 15,
-  padding: '6px 12px',
-  border: 'none',
-  borderRadius: 6,
-  backgroundColor: '#071849',
-  color: '#fff',
-  cursor: 'pointer'
+  display: 'inline-flex',
+  alignItems: 'center',
+  padding: '10px 14px',
+  fontSize: '14px',
+  backgroundColor: '#fff',
+  color: '#8B1E1E',
+  border: '1px solid #8B1E1E',
+  borderRadius: '6px',
+  cursor: 'pointer',
+  marginBottom: '20px'
 },
+  
   boton: {
     marginTop: 10,
     padding: '6px 10px',
