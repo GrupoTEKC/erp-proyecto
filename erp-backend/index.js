@@ -626,13 +626,66 @@ app.post('/control-envios/finalizar', async (req, res) => {
   }
 })
 
-// =============================
-// 404
-// =============================
-app.use((req,res)=>{
-  res.status(404).json({ error:'Ruta no encontrada' })
-})
+app.post('/control-envios/cancelar', async (req, res) => {
+  const conn = await db.getConnection()
+  try {
+    const { id_entrega, comentario } = req.body
 
+    if (!id_entrega) {
+      return res.status(400).json({ error: 'id_entrega requerido' })
+    }
+
+    if (!comentario || !comentario.trim()) {
+      return res.status(400).json({ error: 'Comentario obligatorio' })
+    }
+
+    await conn.beginTransaction()
+
+    // 🔍 validar entrega
+    const [entrega] = await conn.query(`
+      SELECT id_pedido, estado FROM entregas WHERE id_entrega = ?
+    `, [id_entrega])
+
+    if (!entrega.length) {
+      throw new Error('Entrega no existe')
+    }
+
+    if (entrega[0].estado === 'entregado') {
+      throw new Error('No se puede cancelar, ya fue entregado')
+    }
+
+    const id_pedido = entrega[0].id_pedido
+
+    // 🚚 cancelar entrega (PROTEGIDO)
+    await conn.query(`
+      UPDATE entregas
+      SET estado = 'no_entregado'
+      WHERE id_entrega = ?
+      AND estado != 'entregado'
+    `, [id_entrega])
+
+    // 📄 cancelar pedido (PROTEGIDO)
+    await conn.query(`
+      UPDATE pedidos
+      SET 
+        estado = 'cancelado',
+        fecha_cancelacion = NOW(),
+        observaciones_cancelacion = ?
+      WHERE id_pedido = ?
+      AND estado IN ('pendiente','en_ruta')
+    `, [comentario, id_pedido])
+
+    await conn.commit()
+
+    res.json({ success: true })
+
+  } catch (err) {
+    await conn.rollback()
+    res.status(500).json({ error: err.message })
+  } finally {
+    conn.release()
+  }
+})
 // =============================
 // SERVER
 // =============================
