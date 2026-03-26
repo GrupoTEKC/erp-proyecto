@@ -21,6 +21,18 @@ function ControlEnviosDetalle() {
   const [busquedas, setBusquedas] = useState({})
   const [mensaje, setMensaje] = useState(null)
 
+  // 🔐 nuevos estados cancelación
+  const [showPin, setShowPin] = useState(null)
+  const [pin, setPin] = useState('')
+  const [comentarioCancelacion, setComentarioCancelacion] = useState('')
+
+  // 📱 responsive
+  const esMovil = window.innerWidth < 768
+  const fieldResponsive = {
+    ...styles.field,
+    width: esMovil ? '90px' : '200px'
+  }
+
   useEffect(() => {
     const cargarPedidos = async () => {
       const res = await fetch(`${API}/control-envios/${id_chofer}`)
@@ -132,7 +144,6 @@ function ControlEnviosDetalle() {
       }
 
       setMensaje({ tipo: 'ok', texto: 'Entrega finalizada correctamente' })
-
       setTimeout(() => navigate(-1), 1200)
 
     } catch {
@@ -161,8 +172,27 @@ function ControlEnviosDetalle() {
         </div>
       )}
 
-      {pedidos.map((p, i) => {
+      {/* 📦 SIN PEDIDOS */}
+      {pedidos.length === 0 && (
+        <div style={{
+          padding: '30px',
+          border: '1px dashed #8B1E1E',
+          borderRadius: '10px',
+          color: '#8B1E1E',
+          textAlign: 'center',
+          background: '#fff5f5'
+        }}>
+          <div style={{ fontSize: '40px' }}>📦</div>
+          <div style={{ fontWeight: 'bold', marginTop: 10 }}>
+            No tienes entregas pendientes
+          </div>
+          <div style={{ fontSize: 13 }}>
+            Todo está al día 👍
+          </div>
+        </div>
+      )}
 
+      {pedidos.map((p, i) => {
         let totalPedido = 0
         let totalDescuento = 0
 
@@ -174,7 +204,6 @@ function ControlEnviosDetalle() {
           totalPedido += pedida * precio
 
           const diferencia = pedida - entregada
-
           if (diferencia > 0 && prod.tipo !== 'prestamo') {
             totalDescuento += diferencia * precio
           }
@@ -183,21 +212,25 @@ function ControlEnviosDetalle() {
         const totalFinal = totalPedido - totalDescuento
 
         return (
-          <div key={i} style={{ marginBottom: 30, border: '1px solid #ccc', padding: 15 }}>
-
+          <div key={i} style={{
+            marginBottom: 20,
+            border: '1px solid #ccc',
+            padding: esMovil ? 10 : 15,
+            borderRadius: '8px'
+          }}>
             <div>
               <b>{p.cliente}</b> | {p.tienda}<br />
               Ruta: {p.ruta}
             </div>
 
             <input
-              style={styles.field}
+              style={fieldResponsive}
               placeholder="Folio"
               value={p.folio}
               onChange={e => actualizarFolio(i, e.target.value)}
             />
 
-            <table border="1" width="100%" style={{ marginTop: 10 }}>
+            <table border="1" width="100%" style={{ marginTop: 10, fontSize: esMovil ? '12px' : '14px' }}>
               <thead>
                 <tr>
                   <th>Producto</th>
@@ -212,26 +245,22 @@ function ControlEnviosDetalle() {
 
               <tbody>
                 {p.productos.map((prod, j) => {
-
                   const precio = parseFloat(prod.precio_unitario) || 0
                   const entregada = Number(prod.cantidad_entregada) || 0
                   const pedida = Number(prod.cantidad_pedida) || 0
-
                   const diferencia = entregada - pedida
                   const subtotal = entregada * precio
 
                   return (
                     <tr key={j}>
                       <td>{prod.nombre}</td>
-
                       <td>${precio.toFixed(2)}</td>
-
                       <td>{pedida}</td>
 
                       <td>
                         <input
                           type="number"
-                          style={styles.field}
+                          style={fieldResponsive}
                           value={prod.cantidad_entregada}
                           onChange={e =>
                             actualizarCampo(i, j, 'cantidad_entregada', e.target.value)
@@ -245,7 +274,7 @@ function ControlEnviosDetalle() {
                         <>
                           <td>
                             <select
-                              style={styles.field}
+                              style={fieldResponsive}
                               value={prod.tipo}
                               onChange={e =>
                                 actualizarCampo(i, j, 'tipo', e.target.value)
@@ -260,7 +289,7 @@ function ControlEnviosDetalle() {
                           <td>
                             {prod.tipo === 'roto' && (
                               <input
-                                style={styles.field}
+                                style={fieldResponsive}
                                 placeholder="Motivo"
                                 value={prod.motivo}
                                 onChange={e =>
@@ -272,7 +301,7 @@ function ControlEnviosDetalle() {
                             {prod.tipo === 'prestamo' && (
                               <>
                                 <input
-                                  style={styles.field}
+                                  style={fieldResponsive}
                                   placeholder="Buscar cliente"
                                   value={busquedas[`${i}-${j}`] || ''}
                                   onChange={e =>
@@ -303,7 +332,6 @@ function ControlEnviosDetalle() {
                       ) : (
                         <td colSpan="2">OK</td>
                       )}
-
                     </tr>
                   )
                 })}
@@ -324,6 +352,55 @@ function ControlEnviosDetalle() {
               Finalizar entrega
             </button>
 
+            {/* 🔐 CANCELAR */}
+            <button
+              style={{ ...styles.guardar, backgroundColor: '#6c757d', marginLeft: 10 }}
+              onClick={() => setShowPin(i)}
+            >
+              Cancelar
+            </button>
+
+            {showPin === i && (
+              <div style={{
+                marginTop: 10,
+                padding: 15,
+                border: '1px solid #ccc',
+                borderRadius: '8px'
+              }}>
+                <input
+                  type="password"
+                  placeholder="PIN"
+                  style={fieldResponsive}
+                  value={pin}
+                  onChange={e => setPin(e.target.value)}
+                />
+
+                <textarea
+                  placeholder="Comentario obligatorio"
+                  style={{ width: '100%', marginTop: 10 }}
+                  value={comentarioCancelacion}
+                  onChange={e => setComentarioCancelacion(e.target.value)}
+                />
+
+                <button
+                  style={{ ...styles.guardar, marginTop: 10 }}
+                  onClick={() => {
+                    if (pin !== 'Em#GTFPteg9') return alert('PIN incorrecto')
+                    if (!comentarioCancelacion.trim()) return alert('Comentario obligatorio')
+
+                    if (!window.confirm('¿Seguro que deseas cancelar este pedido?')) return
+
+                    alert('Pedido cancelado')
+
+                    setShowPin(null)
+                    setPin('')
+                    setComentarioCancelacion('')
+                  }}
+                >
+                  Confirmar cancelación
+                </button>
+              </div>
+            )}
           </div>
         )
       })}
