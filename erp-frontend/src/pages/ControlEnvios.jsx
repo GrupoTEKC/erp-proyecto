@@ -23,6 +23,16 @@ const styles = {
     fontWeight: 'bold',
     color: '#8B1E1E'
   },
+
+  volver: {
+  marginBottom: 15,
+  padding: '6px 12px',
+  border: 'none',
+  borderRadius: 6,
+  backgroundColor: '#071849',
+  color: '#fff',
+  cursor: 'pointer'
+},
   boton: {
     marginTop: 10,
     padding: '6px 10px',
@@ -52,26 +62,34 @@ function ControlEnvios() {
     cargarChoferes()
   }, [])
 
-  return (
-    <div style={styles.container}>
-      <h2 style={styles.title}>Control de envíos</h2>
+ return (
+  <div style={styles.container}>
+    
+    <button
+      style={styles.volver}
+      onClick={() => navigate('/')}
+    >
+      ← Volver al menú
+    </button>
 
-      {choferes.map(c => (
-        <div key={c.id_chofer} style={styles.card}>
-          <div style={styles.nombre}>
-            {c.nombre} {c.apellido1} {c.apellido2}
-          </div>
+    <h2 style={styles.title}>Control de envíos</h2>
 
-          <button
-            style={styles.boton}
-            onClick={() => navigate(`/control-envios/${c.id_chofer}`)}
-          >
-            Ver pedidos asignados
-          </button>
+    {choferes.map(c => (
+      <div key={c.id_chofer} style={styles.card}>
+        <div style={styles.nombre}>
+          {c.nombre} {c.apellido1} {c.apellido2}
         </div>
-      ))}
-    </div>
-  )
+        <button
+          style={styles.boton}
+          onClick={() => navigate(`/control-envios/${c.id_chofer}`)}
+        >
+          Ver pedidos asignados
+        </button>
+      </div>
+    ))}
+    
+  </div>
+)
 }
 
 export default ControlEnvios
