@@ -175,7 +175,6 @@ function ControlEnviosDetalle() {
         </div>
       )}
 
-      {/* ✅ NUEVO: MENSAJE SI NO HAY PEDIDOS */}
       {pedidos.length === 0 && (
         <div style={{
           padding: '20px',
@@ -187,141 +186,174 @@ function ControlEnviosDetalle() {
         </div>
       )}
 
-      {pedidos.map((p, i) => (
-        <div key={i} style={{ marginBottom: 30, border: '1px solid #ccc', padding: 15 }}>
+      {pedidos.map((p, i) => {
 
-          <div style={{ marginBottom: 10 }}>
-            <b>{p.cliente}</b> | {p.tienda} <br />
-            Ruta: {p.ruta}
-          </div>
+        // ✅ CALCULO EN TIEMPO REAL
+        let totalPedido = 0
+        let totalDescuento = 0
 
-          <input
-            style={styles.field}
-            placeholder="Folio"
-            value={p.folio}
-            onChange={e => actualizarFolio(i, e.target.value)}
-          />
+        p.productos.forEach(prod => {
+          const precio = prod.precio_unitario || 0
+          const pedida = prod.cantidad_pedida || 0
+          const entregada = Number(prod.cantidad_entregada || 0)
 
-          <table border="1" width="100%" style={{ marginTop: 10 }}>
-            <thead>
-              <tr>
-                <th>Producto</th>
-                <th>Embarcado</th>
-                <th>Entregado</th>
-                <th>Tipo</th>
-                <th>Detalle</th>
-              </tr>
-            </thead>
+          totalPedido += pedida * precio
 
-            <tbody>
-              {p.productos.map((prod, j) => {
-                const diferencia =
-                  Number(prod.cantidad_entregada || 0) - prod.cantidad_pedida
+          const diferencia = pedida - entregada
 
-                return (
-                  <tr key={j}>
-                    <td>{prod.nombre}</td>
-                    <td>{prod.cantidad_pedida}</td>
+          if (diferencia > 0 && prod.tipo !== 'prestamo') {
+            totalDescuento += diferencia * precio
+          }
+        })
 
-                    <td>
-                      <input
-                        type="number"
-                        style={styles.field}
-                        value={prod.cantidad_entregada}
-                        onChange={e =>
-                          actualizarCampo(i, j, 'cantidad_entregada', e.target.value)
-                        }
-                      />
-                    </td>
+        const totalFinal = totalPedido - totalDescuento
 
-                    {diferencia !== 0 ? (
-                      <>
-                        <td>
-                          <select
-                            style={styles.field}
-                            value={prod.tipo}
-                            onChange={e =>
-                              actualizarCampo(i, j, 'tipo', e.target.value)
-                            }
-                          >
-                            <option value="">--</option>
-                            <option value="prestamo">Préstamo</option>
-                            <option value="roto">Roto</option>
-                          </select>
-                        </td>
+        return (
+          <div key={i} style={{ marginBottom: 30, border: '1px solid #ccc', padding: 15 }}>
 
-                        <td>
-                          {prod.tipo === 'roto' && (
-                            <input
+            <div style={{ marginBottom: 10 }}>
+              <b>{p.cliente}</b> | {p.tienda} <br />
+              Ruta: {p.ruta}
+            </div>
+
+            <input
+              style={styles.field}
+              placeholder="Folio"
+              value={p.folio}
+              onChange={e => actualizarFolio(i, e.target.value)}
+            />
+
+            <table border="1" width="100%" style={{ marginTop: 10 }}>
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th>Precio</th>
+                  <th>Embarcado</th>
+                  <th>Entregado</th>
+                  <th>Subtotal</th>
+                  <th>Tipo</th>
+                  <th>Detalle</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {p.productos.map((prod, j) => {
+                  const diferencia =
+                    Number(prod.cantidad_entregada || 0) - prod.cantidad_pedida
+
+                  const subtotal =
+                    Number(prod.cantidad_entregada || 0) * (prod.precio_unitario || 0)
+
+                  return (
+                    <tr key={j}>
+                      <td>{prod.nombre}</td>
+
+                      <td>${prod.precio_unitario?.toFixed(2)}</td>
+
+                      <td>{prod.cantidad_pedida}</td>
+
+                      <td>
+                        <input
+                          type="number"
+                          style={styles.field}
+                          value={prod.cantidad_entregada}
+                          onChange={e =>
+                            actualizarCampo(i, j, 'cantidad_entregada', e.target.value)
+                          }
+                        />
+                      </td>
+
+                      <td>${subtotal.toFixed(2)}</td>
+
+                      {diferencia !== 0 ? (
+                        <>
+                          <td>
+                            <select
                               style={styles.field}
-                              placeholder="Motivo"
-                              value={prod.motivo}
+                              value={prod.tipo}
                               onChange={e =>
-                                actualizarCampo(i, j, 'motivo', e.target.value)
+                                actualizarCampo(i, j, 'tipo', e.target.value)
                               }
-                            />
-                          )}
+                            >
+                              <option value="">--</option>
+                              <option value="prestamo">Préstamo</option>
+                              <option value="roto">Roto</option>
+                            </select>
+                          </td>
 
-                          {prod.tipo === 'prestamo' && (
-                            <>
+                          <td>
+                            {prod.tipo === 'roto' && (
                               <input
                                 style={styles.field}
-                                placeholder="Buscar cliente"
-                                value={busquedas[`${i}-${j}`] || ''}
+                                placeholder="Motivo"
+                                value={prod.motivo}
                                 onChange={e =>
-                                  buscarClientes(e.target.value, i, j)
+                                  actualizarCampo(i, j, 'motivo', e.target.value)
                                 }
                               />
+                            )}
 
-                              {clientes.map(c => (
-                                <div
-                                  key={c.id_cliente}
-                                  onClick={() => {
-                                    actualizarCampo(i, j, 'id_cliente_destino', c.id_cliente)
-                                    setBusquedas(prev => ({
-                                      ...prev,
-                                      [`${i}-${j}`]: `${c.nombre} - ${c.nombre_tienda}`
-                                    }))
-                                    setClientes([])
-                                  }}
-                                  style={{ cursor: 'pointer', background: '#eee', padding: '4px' }}
-                                >
-                                  {c.nombre} - {c.nombre_tienda}
-                                </div>
-                              ))}
-                            </>
-                          )}
-                        </td>
-                      </>
-                    ) : (
-                      <td colSpan="2">OK</td>
-                    )}
+                            {prod.tipo === 'prestamo' && (
+                              <>
+                                <input
+                                  style={styles.field}
+                                  placeholder="Buscar cliente"
+                                  value={busquedas[`${i}-${j}`] || ''}
+                                  onChange={e =>
+                                    buscarClientes(e.target.value, i, j)
+                                  }
+                                />
 
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+                                {clientes.map(c => (
+                                  <div
+                                    key={c.id_cliente}
+                                    onClick={() => {
+                                      actualizarCampo(i, j, 'id_cliente_destino', c.id_cliente)
+                                      setBusquedas(prev => ({
+                                        ...prev,
+                                        [`${i}-${j}`]: `${c.nombre} - ${c.nombre_tienda}`
+                                      }))
+                                      setClientes([])
+                                    }}
+                                    style={{ cursor: 'pointer', background: '#eee', padding: '4px' }}
+                                  >
+                                    {c.nombre} - {c.nombre_tienda}
+                                  </div>
+                                ))}
+                              </>
+                            )}
+                          </td>
+                        </>
+                      ) : (
+                        <td colSpan="2">OK</td>
+                      )}
 
-          {/* ✅ NUEVO: TOTALES */}
-          <div style={{ marginTop: 10, color: '#071849' }}>
-            <div><b>Total pedido:</b> ${p.total_pedido?.toFixed(2)}</div>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
 
-            <div style={{ color: '#8B1E1E' }}>
-              <b>Descuento:</b> -${p.total_descuento?.toFixed(2)}
+            {/* ✅ TOTALES DINÁMICOS */}
+            <div style={{ marginTop: 10, color: '#071849' }}>
+              <div><b>Total pedido:</b> ${totalPedido.toFixed(2)}</div>
+
+              <div style={{ color: '#8B1E1E' }}>
+                <b>Descuento:</b> -${totalDescuento.toFixed(2)}
+              </div>
+
+              <div style={{ marginTop: 5, fontWeight: 'bold' }}>
+                Total a cobrar: ${totalFinal.toFixed(2)}
+              </div>
             </div>
 
-            <div style={{ marginTop: 5, fontWeight: 'bold' }}>
-              Total a cobrar: ${p.total_final?.toFixed(2)}
-            </div>
+            <button style={styles.guardar} onClick={() => finalizarEntrega(p)}>
+              Finalizar entrega
+            </button>
+
           </div>
-
-          <button style={styles.guardar} onClick={() => finalizarEntrega(p)}>
-            Finalizar entrega
-          </button>
-
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
