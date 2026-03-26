@@ -20,6 +20,7 @@ function ControlEnviosDetalle() {
   const [clientes, setClientes] = useState([])
   const [busquedas, setBusquedas] = useState({})
   const [mensaje, setMensaje] = useState(null)
+
   const [showPin, setShowPin] = useState(null)
   const [pin, setPin] = useState('')
   const [comentarioCancelacion, setComentarioCancelacion] = useState('')
@@ -66,8 +67,10 @@ function ControlEnviosDetalle() {
     setPedidos(copia)
   }
 
+  // 🔥 FIX CLIENTES (SIN BACKEND SEARCH)
   const buscarClientes = async (texto, pIndex, dIndex) => {
     const key = `${pIndex}-${dIndex}`
+
     setBusquedas(prev => ({ ...prev, [key]: texto }))
 
     if (!texto) {
@@ -88,7 +91,6 @@ function ControlEnviosDetalle() {
 
   const validarPedido = (pedido) => {
     for (let prod of pedido.productos) {
-
       if (prod.cantidad_entregada === '') {
         return `Falta cantidad entregada en ${prod.nombre}`
       }
@@ -106,11 +108,6 @@ function ControlEnviosDetalle() {
           if (!prod.id_cliente_destino) {
             return `Selecciona cliente en ${prod.nombre}`
           }
-        }
-
-        // 🔥 NUEVO
-        if (prod.tipo === 'agregado' && !prod.motivo) {
-          return `Falta motivo en ${prod.nombre}`
         }
       }
     }
@@ -182,6 +179,25 @@ function ControlEnviosDetalle() {
         </div>
       )}
 
+      {pedidos.length === 0 && (
+        <div style={{
+          padding: '30px',
+          border: '1px dashed #8B1E1E',
+          borderRadius: '10px',
+          color: '#8B1E1E',
+          textAlign: 'center',
+          background: '#fff5f5'
+        }}>
+          <div style={{ fontSize: '40px' }}>📦</div>
+          <div style={{ fontWeight: 'bold', marginTop: 10 }}>
+            No tienes entregas pendientes
+          </div>
+          <div style={{ fontSize: 13 }}>
+            Todo está al día 👍
+          </div>
+        </div>
+      )}
+
       {pedidos.map((p, i) => {
 
         let totalPedido = 0
@@ -194,18 +210,9 @@ function ControlEnviosDetalle() {
 
           totalPedido += pedida * precio
 
-          // 🔥 SUMA AGREGADOS
-          if (prod.tipo === 'agregado') {
-            totalPedido += entregada * precio
-          }
-
           const diferencia = pedida - entregada
 
-          if (
-            diferencia > 0 &&
-            prod.tipo !== 'prestamo' &&
-            prod.tipo !== 'agregado'
-          ) {
+          if (diferencia > 0 && prod.tipo !== 'prestamo') {
             totalDescuento += diferencia * precio
           }
         })
@@ -232,7 +239,7 @@ function ControlEnviosDetalle() {
               onChange={e => actualizarFolio(i, e.target.value)}
             />
 
-            <table border="1" width="100%" style={{ marginTop: 10 }}>
+            <table border="1" width="100%" style={{ marginTop: 10, fontSize: esMovil ? '12px' : '14px' }}>
               <thead>
                 <tr>
                   <th>Producto</th>
@@ -285,7 +292,6 @@ function ControlEnviosDetalle() {
                               <option value="">--</option>
                               <option value="prestamo">Préstamo</option>
                               <option value="roto">Roto</option>
-                              <option value="agregado">Agregado</option>
                             </select>
                           </td>
 
@@ -294,17 +300,6 @@ function ControlEnviosDetalle() {
                               <input
                                 style={fieldResponsive}
                                 placeholder="Motivo"
-                                value={prod.motivo}
-                                onChange={e =>
-                                  actualizarCampo(i, j, 'motivo', e.target.value)
-                                }
-                              />
-                            )}
-
-                            {prod.tipo === 'agregado' && (
-                              <input
-                                style={fieldResponsive}
-                                placeholder="Motivo agregado"
                                 value={prod.motivo}
                                 onChange={e =>
                                   actualizarCampo(i, j, 'motivo', e.target.value)
@@ -366,13 +361,78 @@ function ControlEnviosDetalle() {
               Finalizar entrega
             </button>
 
-            {/* 🔥 CANCELAR INTACTO */}
             <button
               style={{ ...styles.guardar, backgroundColor: '#6c757d', marginLeft: 10 }}
               onClick={() => setShowPin(i)}
             >
               Cancelar
             </button>
+
+            {showPin === i && (
+              <div style={{
+                marginTop: 10,
+                padding: 15,
+                border: '1px solid #ccc',
+                borderRadius: '8px'
+              }}>
+                <input
+                  type="password"
+                  placeholder="PIN"
+                  style={fieldResponsive}
+                  value={pin}
+                  onChange={e => setPin(e.target.value)}
+                />
+
+                <textarea
+                  placeholder="Comentario obligatorio"
+                  style={{ width: '100%', marginTop: 10 }}
+                  value={comentarioCancelacion}
+                  onChange={e => setComentarioCancelacion(e.target.value)}
+                />
+
+                <button
+                  style={{ ...styles.guardar, marginTop: 10 }}
+                  onClick={async () => {
+
+                    if (pin !== 'Em#GTFPteg9') return alert('PIN incorrecto')
+                    if (!comentarioCancelacion.trim()) return alert('Comentario obligatorio')
+                    if (!window.confirm('¿Seguro que deseas cancelar este pedido?')) return
+
+                    try {
+                      const res = await fetch(`${API}/control-envios/cancelar`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          id_entrega: p.id_entrega,
+                          comentario: comentarioCancelacion
+                        })
+                      })
+
+                      const data = await res.json()
+
+                      if (!res.ok) {
+                        alert(data.error || 'Error al cancelar')
+                        return
+                      }
+
+                      alert('Pedido cancelado correctamente')
+
+                      setPedidos(prev => prev.filter((_, index) => index !== i))
+
+                      setShowPin(null)
+                      setPin('')
+                      setComentarioCancelacion('')
+
+                    } catch {
+                      alert('Error de conexión')
+                    }
+
+                  }}
+                >
+                  Confirmar cancelación
+                </button>
+              </div>
+            )}
 
           </div>
         )
