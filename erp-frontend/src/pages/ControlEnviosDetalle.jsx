@@ -24,10 +24,6 @@ function ControlEnviosDetalle() {
   const [pin, setPin] = useState('')
   const [comentarioCancelacion, setComentarioCancelacion] = useState('')
 
-  // 🔥 NUEVO (NO INTERFIERE)
-  const [productosDB, setProductosDB] = useState([])
-  const [busquedaProducto, setBusquedaProducto] = useState({})
-
   const esMovil = window.innerWidth < 768
 
   const fieldResponsive = {
@@ -39,19 +35,22 @@ function ControlEnviosDetalle() {
     const cargarPedidos = async () => {
       const res = await fetch(`${API}/control-envios/${id_chofer}`)
       const data = await res.json()
+
       const inicializados = data.map(p => ({
         ...p,
         folio: '',
         productos: p.productos.map(prod => ({
           ...prod,
           cantidad_entregada: '',
-          tipo: '',
+          tipo: prod.tipo || '', // respeta si viene agregado
           motivo: '',
           id_cliente_destino: null
         }))
       }))
+
       setPedidos(inicializados)
     }
+
     cargarPedidos()
   }, [id_chofer])
 
@@ -70,69 +69,47 @@ function ControlEnviosDetalle() {
   const buscarClientes = async (texto, pIndex, dIndex) => {
     const key = `${pIndex}-${dIndex}`
     setBusquedas(prev => ({ ...prev, [key]: texto }))
+
     if (!texto) {
       setClientes([])
       return
     }
+
     const res = await fetch(`${API}/clientes`)
     const data = await res.json()
+
     const filtrados = data.filter(c =>
       (c.nombre || '').toLowerCase().includes(texto.toLowerCase()) ||
       (c.nombre_tienda || '').toLowerCase().includes(texto.toLowerCase())
     )
+
     setClientes(filtrados)
-  }
-
-  // 🔥 NUEVO
-  const buscarProductos = async (texto, pIndex) => {
-    setBusquedaProducto(prev => ({ ...prev, [pIndex]: texto }))
-
-    if (!texto) {
-      setProductosDB([])
-      return
-    }
-
-    const res = await fetch(`${API}/productos`)
-    const data = await res.json()
-
-    const filtrados = data.filter(p =>
-      (p.nombre || '').toLowerCase().includes(texto.toLowerCase())
-    )
-
-    setProductosDB(filtrados)
-  }
-
-  // 🔥 NUEVO (PRECIO CORRECTO)
-  const agregarProducto = (pIndex, producto) => {
-    const copia = [...pedidos]
-
-    copia[pIndex].productos.push({
-      id_producto: producto.id_producto,
-      nombre: producto.nombre,
-      precio_unitario: producto.precio_unitario || producto.precio || 0,
-      cantidad_pedida: 0,
-      cantidad_entregada: '',
-      tipo: 'agregado',
-      motivo: '',
-      id_cliente_destino: null
-    })
-
-    setPedidos(copia)
-    setProductosDB([])
-    setBusquedaProducto(prev => ({ ...prev, [pIndex]: '' }))
   }
 
   const validarPedido = (pedido) => {
     for (let prod of pedido.productos) {
+
+      // 🔥 AGREGADOS
+      if (prod.tipo === 'agregado') {
+        if (!prod.cantidad_pedida) return `Falta embarcado en ${prod.nombre}`
+        if (!prod.cantidad_entregada) return `Falta entregado en ${prod.nombre}`
+        if (!prod.motivo) return `Falta motivo en ${prod.nombre}`
+        continue
+      }
+
       if (prod.cantidad_entregada === '') {
         return `Falta cantidad entregada en ${prod.nombre}`
       }
+
       const diferencia = Number(prod.cantidad_entregada) - prod.cantidad_pedida
+
       if (diferencia !== 0) {
         if (!prod.tipo) return `Falta tipo en ${prod.nombre}`
+
         if (prod.tipo === 'roto' && !prod.motivo) {
           return `Falta motivo en ${prod.nombre}`
         }
+
         if (prod.tipo === 'prestamo') {
           if (!prod.id_cliente_destino) {
             return `Selecciona cliente en ${prod.nombre}`
@@ -140,20 +117,24 @@ function ControlEnviosDetalle() {
         }
       }
     }
+
     return null
   }
 
   const finalizarEntrega = async (pedido) => {
     setMensaje(null)
+
     const error = validarPedido(pedido)
     if (error) {
       setMensaje({ tipo: 'error', texto: error })
       return
     }
+
     if (!pedido.folio.trim()) {
       setMensaje({ tipo: 'error', texto: 'Folio obligatorio' })
       return
     }
+
     try {
       const res = await fetch(`${API}/control-envios/finalizar`, {
         method: 'POST',
@@ -167,13 +148,17 @@ function ControlEnviosDetalle() {
           }))
         })
       })
+
       const data = await res.json()
+
       if (!res.ok) {
         setMensaje({ tipo: 'error', texto: data.error || 'Error al guardar' })
         return
       }
+
       setMensaje({ tipo: 'ok', texto: 'Entrega finalizada correctamente' })
       setTimeout(() => navigate(-1), 1200)
+
     } catch {
       setMensaje({ tipo: 'error', texto: 'Error de conexión' })
     }
@@ -185,6 +170,7 @@ function ControlEnviosDetalle() {
         <button style={styles.backButton} onClick={() => navigate(-1)}>
           ← Volver
         </button>
+
         <h2 style={styles.title}>Control de envíos</h2>
       </div>
 
@@ -200,6 +186,22 @@ function ControlEnviosDetalle() {
         </div>
       )}
 
+      {pedidos.length === 0 && (
+        <div style={{
+          padding: '30px',
+          border: '1px dashed #8B1E1E',
+          borderRadius: '10px',
+          color: '#8B1E1E',
+          textAlign: 'center',
+          background: '#fff5f5'
+        }}>
+          <div style={{ fontSize: '40px' }}>📦</div>
+          <div style={{ fontWeight: 'bold', marginTop: 10 }}>
+            No tienes entregas pendientes
+          </div>
+        </div>
+      )}
+
       {pedidos.map((p, i) => {
 
         let totalPedido = 0
@@ -209,8 +211,12 @@ function ControlEnviosDetalle() {
           const precio = parseFloat(prod.precio_unitario) || 0
           const pedida = Number(prod.cantidad_pedida) || 0
           const entregada = Number(prod.cantidad_entregada) || 0
-          totalPedido += pedida * precio
+
+          const cantidadBase = prod.tipo === 'agregado' ? entregada : pedida
+          totalPedido += cantidadBase * precio
+
           const diferencia = pedida - entregada
+
           if (diferencia > 0 && prod.tipo !== 'prestamo') {
             totalDescuento += diferencia * precio
           }
@@ -219,12 +225,7 @@ function ControlEnviosDetalle() {
         const totalFinal = totalPedido - totalDescuento
 
         return (
-          <div key={i} style={{
-            marginBottom: 20,
-            border: '1px solid #ccc',
-            padding: esMovil ? 10 : 15,
-            borderRadius: '8px'
-          }}>
+          <div key={i} style={{ marginBottom: 20, border: '1px solid #ccc', padding: 15 }}>
 
             <div>
               <b>{p.cliente}</b> | {p.tienda}<br />
@@ -238,33 +239,7 @@ function ControlEnviosDetalle() {
               onChange={e => actualizarFolio(i, e.target.value)}
             />
 
-            {/* 🔥 NUEVO BUSCADOR */}
-            <div style={{ marginTop: 10 }}>
-              <input
-                style={fieldResponsive}
-                placeholder="Agregar producto..."
-                value={busquedaProducto[i] || ''}
-                onChange={e => buscarProductos(e.target.value, i)}
-              />
-
-              {productosDB.map(prod => (
-                <div
-                  key={prod.id_producto}
-                  onClick={() => agregarProducto(i, prod)}
-                  style={{
-                    cursor: 'pointer',
-                    background: '#eee',
-                    padding: '4px',
-                    marginTop: 2
-                  }}
-                >
-                  {prod.nombre}
-                </div>
-              ))}
-            </div>
-
-            {/* 🔥 TU TABLA ORIGINAL INTACTA */}
-            <table border="1" width="100%" style={{ marginTop: 10, fontSize: esMovil ? '12px' : '14px' }}>
+            <table border="1" width="100%" style={{ marginTop: 10 }}>
               <thead>
                 <tr>
                   <th>Producto</th>
@@ -279,6 +254,7 @@ function ControlEnviosDetalle() {
 
               <tbody>
                 {p.productos.map((prod, j) => {
+
                   const precio = parseFloat(prod.precio_unitario) || 0
                   const entregada = Number(prod.cantidad_entregada) || 0
                   const pedida = Number(prod.cantidad_pedida) || 0
@@ -289,7 +265,20 @@ function ControlEnviosDetalle() {
                     <tr key={j}>
                       <td>{prod.nombre}</td>
                       <td>${precio.toFixed(2)}</td>
-                      <td>{pedida}</td>
+
+                      {/* 🔥 EMBARCADO EDITABLE SI ES AGREGADO */}
+                      <td>
+                        {prod.tipo === 'agregado' ? (
+                          <input
+                            type="number"
+                            style={fieldResponsive}
+                            value={prod.cantidad_pedida}
+                            onChange={e =>
+                              actualizarCampo(i, j, 'cantidad_pedida', e.target.value)
+                            }
+                          />
+                        ) : pedida}
+                      </td>
 
                       <td>
                         <input
@@ -304,24 +293,39 @@ function ControlEnviosDetalle() {
 
                       <td>${subtotal.toFixed(2)}</td>
 
-                      {diferencia !== 0 ? (
+                      {(diferencia !== 0 || prod.tipo === 'agregado') ? (
                         <>
                           <td>
-                            <select
-                              style={fieldResponsive}
-                              value={prod.tipo}
-                              onChange={e =>
-                                actualizarCampo(i, j, 'tipo', e.target.value)
-                              }
-                            >
-                              <option value="">--</option>
-                              <option value="prestamo">Préstamo</option>
-                              <option value="roto">Roto</option>
-                            </select>
+                            {prod.tipo === 'agregado' ? (
+                              <div>Agregado</div>
+                            ) : (
+                              <select
+                                style={fieldResponsive}
+                                value={prod.tipo}
+                                onChange={e =>
+                                  actualizarCampo(i, j, 'tipo', e.target.value)
+                                }
+                              >
+                                <option value="">--</option>
+                                <option value="prestamo">Préstamo</option>
+                                <option value="roto">Roto</option>
+                              </select>
+                            )}
                           </td>
 
                           <td>
                             {prod.tipo === 'roto' && (
+                              <input
+                                style={fieldResponsive}
+                                placeholder="Motivo"
+                                value={prod.motivo}
+                                onChange={e =>
+                                  actualizarCampo(i, j, 'motivo', e.target.value)
+                                }
+                              />
+                            )}
+
+                            {prod.tipo === 'agregado' && (
                               <input
                                 style={fieldResponsive}
                                 placeholder="Motivo"
@@ -342,7 +346,6 @@ function ControlEnviosDetalle() {
                                     buscarClientes(e.target.value, i, j)
                                   }
                                 />
-
                                 {clientes.map(c => (
                                   <div
                                     key={c.id_cliente}
@@ -386,6 +389,7 @@ function ControlEnviosDetalle() {
               Finalizar entrega
             </button>
 
+            {/* 🚫 CANCELAR NO TOCADO */}
             <button
               style={{ ...styles.guardar, backgroundColor: '#6c757d', marginLeft: 10 }}
               onClick={() => setShowPin(i)}
