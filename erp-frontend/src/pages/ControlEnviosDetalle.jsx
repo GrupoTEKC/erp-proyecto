@@ -58,6 +58,7 @@ function ControlEnviosDetalle() {
 
   const buscarClientes = async (texto, pIndex, dIndex) => {
     const key = `${pIndex}-${dIndex}`
+
     setBusquedas(prev => ({ ...prev, [key]: texto }))
 
     if (!texto) {
@@ -72,7 +73,6 @@ function ControlEnviosDetalle() {
 
   const validarPedido = (pedido) => {
     for (let prod of pedido.productos) {
-
       if (prod.cantidad_entregada === '') {
         return `Falta cantidad entregada en ${prod.nombre}`
       }
@@ -81,7 +81,6 @@ function ControlEnviosDetalle() {
         Number(prod.cantidad_entregada) - prod.cantidad_pedida
 
       if (diferencia !== 0) {
-
         if (!prod.tipo) {
           return `Falta tipo en ${prod.nombre}`
         }
@@ -95,8 +94,8 @@ function ControlEnviosDetalle() {
             return `Selecciona cliente en ${prod.nombre}`
           }
 
-          // 🔴 validar que exista en lista
           const existe = clientes.find(c => c.id_cliente === prod.id_cliente_destino)
+
           if (!existe) {
             return `Cliente inválido en ${prod.nombre}`
           }
@@ -173,6 +172,18 @@ function ControlEnviosDetalle() {
           backgroundColor: mensaje.tipo === 'error' ? '#f8d7da' : '#d4edda'
         }}>
           {mensaje.texto}
+        </div>
+      )}
+
+      {/* ✅ NUEVO: MENSAJE SI NO HAY PEDIDOS */}
+      {pedidos.length === 0 && (
+        <div style={{
+          padding: '20px',
+          border: '1px dashed #8B1E1E',
+          borderRadius: '6px',
+          color: '#8B1E1E'
+        }}>
+          No tienes entregas pendientes
         </div>
       )}
 
@@ -285,11 +296,25 @@ function ControlEnviosDetalle() {
                     ) : (
                       <td colSpan="2">OK</td>
                     )}
+
                   </tr>
                 )
               })}
             </tbody>
           </table>
+
+          {/* ✅ NUEVO: TOTALES */}
+          <div style={{ marginTop: 10, color: '#071849' }}>
+            <div><b>Total pedido:</b> ${p.total_pedido?.toFixed(2)}</div>
+
+            <div style={{ color: '#8B1E1E' }}>
+              <b>Descuento:</b> -${p.total_descuento?.toFixed(2)}
+            </div>
+
+            <div style={{ marginTop: 5, fontWeight: 'bold' }}>
+              Total a cobrar: ${p.total_final?.toFixed(2)}
+            </div>
+          </div>
 
           <button style={styles.guardar} onClick={() => finalizarEntrega(p)}>
             Finalizar entrega
