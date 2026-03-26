@@ -466,18 +466,47 @@ app.get('/control-envios/:id_chofer', async (req, res) => {
 
     // 🔹 Para cada pedido, traer productos
     for (const pedido of pedidos) {
-      const [productos] = await conn.query(`
-        SELECT 
-          ed.id_producto,
-          pr.nombre,
-          ed.cantidad_pedida,
-          ed.cantidad_entregada
-        FROM entrega_detalle ed
-        INNER JOIN productos pr ON ed.id_producto = pr.id_producto
-        WHERE ed.id_entrega = ?
-      `, [pedido.id_entrega])
-
+     const [productos] = await conn.query(`
+  SELECT 
+    ed.id_producto,
+    pr.nombre,
+    ed.cantidad_pedida,
+    ed.cantidad_entregada,
+    ed.tipo,
+    pd.precio_unitario
+  FROM entrega_detalle ed
+  INNER JOIN productos pr 
+    ON ed.id_producto = pr.id_producto
+  INNER JOIN entregas e 
+    ON ed.id_entrega = e.id_entrega
+  INNER JOIN pedido_detalle pd 
+    ON pd.id_pedido = e.id_pedido 
+    AND pd.id_producto = ed.id_producto
+  WHERE ed.id_entrega = ?
+`, [pedido.id_entrega])
       pedido.productos = productos
+      let totalPedido = 0
+let totalDescuento = 0
+
+for (const item of productos) {
+  const precio = item.precio_unitario || 0
+  const pedida = item.cantidad_pedida || 0
+  const entregada = item.cantidad_entregada || 0
+
+  totalPedido += pedida * precio
+
+  const diferencia = pedida - entregada
+
+  // 🔥 regla: NO descontar prestamos
+  if (diferencia > 0 && item.tipo !== 'prestamo') {
+    totalDescuento += diferencia * precio
+  }
+}
+
+pedido.total_pedido = totalPedido
+pedido.total_descuento = totalDescuento
+pedido.total_final = totalPedido - totalDescuento
+   
     }
 
     res.json(pedidos)
