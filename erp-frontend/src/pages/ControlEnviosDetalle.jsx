@@ -88,6 +88,7 @@ function ControlEnviosDetalle() {
 
   const validarPedido = (pedido) => {
     for (let prod of pedido.productos) {
+
       if (prod.cantidad_entregada === '') {
         return `Falta cantidad entregada en ${prod.nombre}`
       }
@@ -107,12 +108,13 @@ function ControlEnviosDetalle() {
           }
         }
 
-        // 🔥 NUEVO: VALIDACIÓN AGREGADO
+        // 🔥 NUEVO
         if (prod.tipo === 'agregado' && !prod.motivo) {
           return `Falta motivo en ${prod.nombre}`
         }
       }
     }
+
     return null
   }
 
@@ -180,25 +182,6 @@ function ControlEnviosDetalle() {
         </div>
       )}
 
-      {pedidos.length === 0 && (
-        <div style={{
-          padding: '30px',
-          border: '1px dashed #8B1E1E',
-          borderRadius: '10px',
-          color: '#8B1E1E',
-          textAlign: 'center',
-          background: '#fff5f5'
-        }}>
-          <div style={{ fontSize: '40px' }}>📦</div>
-          <div style={{ fontWeight: 'bold', marginTop: 10 }}>
-            No tienes entregas pendientes
-          </div>
-          <div style={{ fontSize: 13 }}>
-            Todo está al día 👍
-          </div>
-        </div>
-      )}
-
       {pedidos.map((p, i) => {
 
         let totalPedido = 0
@@ -211,7 +194,7 @@ function ControlEnviosDetalle() {
 
           totalPedido += pedida * precio
 
-          // 🔥 AGREGADOS SUMAN
+          // 🔥 SUMA AGREGADOS
           if (prod.tipo === 'agregado') {
             totalPedido += entregada * precio
           }
@@ -383,7 +366,14 @@ function ControlEnviosDetalle() {
               Finalizar entrega
             </button>
 
-            {/* CANCELAR NO SE TOCA */}
+            {/* 🔥 CANCELAR INTACTO */}
+            <button
+              style={{ ...styles.guardar, backgroundColor: '#6c757d', marginLeft: 10 }}
+              onClick={() => setShowPin(i)}
+            >
+              Cancelar
+            </button>
+
           </div>
         )
       })}
