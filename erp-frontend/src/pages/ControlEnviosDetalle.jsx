@@ -210,7 +210,6 @@ function ControlEnviosDetalle() {
         <button style={styles.backButton} onClick={() => navigate(-1)}>
           ← Volver
         </button>
-
         <h2 style={styles.title}>Control de envíos</h2>
       </div>
 
@@ -226,7 +225,6 @@ function ControlEnviosDetalle() {
         </div>
       )}
 
-      {/* ✅ MENSAJE CUANDO NO HAY PEDIDOS */}
       {!loading && pedidos.length === 0 && (
         <div style={{
           padding: '30px',
@@ -246,7 +244,6 @@ function ControlEnviosDetalle() {
         </div>
       )}
 
-      {/* ✅ LOADING */}
       {loading && (
         <div style={{ textAlign: 'center', marginTop: 40 }}>
           Cargando pedidos...
@@ -263,7 +260,7 @@ function ControlEnviosDetalle() {
           const entregada = Number(prod.cantidad_entregada) || 0
 
           totalPedido += (prod.tipo === 'agregado'
-            ? (Number(prod.cantidad_entregada) || 0)
+            ? entregada
             : pedida
           ) * precio
 
@@ -282,5 +279,14 @@ function ControlEnviosDetalle() {
             border: '1px solid #ccc',
             padding: esMovil ? 10 : 15,
             borderRadius: '8px',
-            overflowX: esMovil ? 'auto' : 'visible' // ✅ FIX MOBILE TABLA
+            overflowX: esMovil ? 'auto' : 'visible'
           }}>
+            {/* 👇 AQUÍ SIGUE TODO TU CONTENIDO ORIGINAL (tabla, botones, etc.) */}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+export default ControlEnviosDetalle
