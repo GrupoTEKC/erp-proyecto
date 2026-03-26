@@ -20,7 +20,6 @@ function ControlEnviosDetalle() {
   const [clientes, setClientes] = useState([])
   const [busquedas, setBusquedas] = useState({})
   const [mensaje, setMensaje] = useState(null)
-
   const [showPin, setShowPin] = useState(null)
   const [pin, setPin] = useState('')
   const [comentarioCancelacion, setComentarioCancelacion] = useState('')
@@ -67,10 +66,8 @@ function ControlEnviosDetalle() {
     setPedidos(copia)
   }
 
-  // 🔥 FIX CLIENTES (SIN BACKEND SEARCH)
   const buscarClientes = async (texto, pIndex, dIndex) => {
     const key = `${pIndex}-${dIndex}`
-
     setBusquedas(prev => ({ ...prev, [key]: texto }))
 
     if (!texto) {
@@ -109,9 +106,13 @@ function ControlEnviosDetalle() {
             return `Selecciona cliente en ${prod.nombre}`
           }
         }
+
+        // 🔥 NUEVO: VALIDACIÓN AGREGADO
+        if (prod.tipo === 'agregado' && !prod.motivo) {
+          return `Falta motivo en ${prod.nombre}`
+        }
       }
     }
-
     return null
   }
 
@@ -210,9 +211,18 @@ function ControlEnviosDetalle() {
 
           totalPedido += pedida * precio
 
+          // 🔥 AGREGADOS SUMAN
+          if (prod.tipo === 'agregado') {
+            totalPedido += entregada * precio
+          }
+
           const diferencia = pedida - entregada
 
-          if (diferencia > 0 && prod.tipo !== 'prestamo') {
+          if (
+            diferencia > 0 &&
+            prod.tipo !== 'prestamo' &&
+            prod.tipo !== 'agregado'
+          ) {
             totalDescuento += diferencia * precio
           }
         })
@@ -239,7 +249,7 @@ function ControlEnviosDetalle() {
               onChange={e => actualizarFolio(i, e.target.value)}
             />
 
-            <table border="1" width="100%" style={{ marginTop: 10, fontSize: esMovil ? '12px' : '14px' }}>
+            <table border="1" width="100%" style={{ marginTop: 10 }}>
               <thead>
                 <tr>
                   <th>Producto</th>
@@ -292,6 +302,7 @@ function ControlEnviosDetalle() {
                               <option value="">--</option>
                               <option value="prestamo">Préstamo</option>
                               <option value="roto">Roto</option>
+                              <option value="agregado">Agregado</option>
                             </select>
                           </td>
 
@@ -300,6 +311,17 @@ function ControlEnviosDetalle() {
                               <input
                                 style={fieldResponsive}
                                 placeholder="Motivo"
+                                value={prod.motivo}
+                                onChange={e =>
+                                  actualizarCampo(i, j, 'motivo', e.target.value)
+                                }
+                              />
+                            )}
+
+                            {prod.tipo === 'agregado' && (
+                              <input
+                                style={fieldResponsive}
+                                placeholder="Motivo agregado"
                                 value={prod.motivo}
                                 onChange={e =>
                                   actualizarCampo(i, j, 'motivo', e.target.value)
@@ -361,79 +383,7 @@ function ControlEnviosDetalle() {
               Finalizar entrega
             </button>
 
-            <button
-              style={{ ...styles.guardar, backgroundColor: '#6c757d', marginLeft: 10 }}
-              onClick={() => setShowPin(i)}
-            >
-              Cancelar
-            </button>
-
-            {showPin === i && (
-              <div style={{
-                marginTop: 10,
-                padding: 15,
-                border: '1px solid #ccc',
-                borderRadius: '8px'
-              }}>
-                <input
-                  type="password"
-                  placeholder="PIN"
-                  style={fieldResponsive}
-                  value={pin}
-                  onChange={e => setPin(e.target.value)}
-                />
-
-                <textarea
-                  placeholder="Comentario obligatorio"
-                  style={{ width: '100%', marginTop: 10 }}
-                  value={comentarioCancelacion}
-                  onChange={e => setComentarioCancelacion(e.target.value)}
-                />
-
-                <button
-                  style={{ ...styles.guardar, marginTop: 10 }}
-                  onClick={async () => {
-
-                    if (pin !== 'Em#GTFPteg9') return alert('PIN incorrecto')
-                    if (!comentarioCancelacion.trim()) return alert('Comentario obligatorio')
-                    if (!window.confirm('¿Seguro que deseas cancelar este pedido?')) return
-
-                    try {
-                      const res = await fetch(`${API}/control-envios/cancelar`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          id_entrega: p.id_entrega,
-                          comentario: comentarioCancelacion
-                        })
-                      })
-
-                      const data = await res.json()
-
-                      if (!res.ok) {
-                        alert(data.error || 'Error al cancelar')
-                        return
-                      }
-
-                      alert('Pedido cancelado correctamente')
-
-                      setPedidos(prev => prev.filter((_, index) => index !== i))
-
-                      setShowPin(null)
-                      setPin('')
-                      setComentarioCancelacion('')
-
-                    } catch {
-                      alert('Error de conexión')
-                    }
-
-                  }}
-                >
-                  Confirmar cancelación
-                </button>
-              </div>
-            )}
-
+            {/* CANCELAR NO SE TOCA */}
           </div>
         )
       })}
