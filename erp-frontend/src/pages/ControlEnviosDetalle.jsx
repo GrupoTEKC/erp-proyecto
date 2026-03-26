@@ -21,13 +21,12 @@ function ControlEnviosDetalle() {
   const [busquedas, setBusquedas] = useState({})
   const [mensaje, setMensaje] = useState(null)
 
-  // 🔐 nuevos estados cancelación
   const [showPin, setShowPin] = useState(null)
   const [pin, setPin] = useState('')
   const [comentarioCancelacion, setComentarioCancelacion] = useState('')
 
-  // 📱 responsive
   const esMovil = window.innerWidth < 768
+
   const fieldResponsive = {
     ...styles.field,
     width: esMovil ? '90px' : '200px'
@@ -68,8 +67,10 @@ function ControlEnviosDetalle() {
     setPedidos(copia)
   }
 
+  // 🔥 FIX CLIENTES (SIN BACKEND SEARCH)
   const buscarClientes = async (texto, pIndex, dIndex) => {
     const key = `${pIndex}-${dIndex}`
+
     setBusquedas(prev => ({ ...prev, [key]: texto }))
 
     if (!texto) {
@@ -77,9 +78,15 @@ function ControlEnviosDetalle() {
       return
     }
 
-    const res = await fetch(`${API}/clientes?search=${texto}`)
+    const res = await fetch(`${API}/clientes`)
     const data = await res.json()
-    setClientes(data)
+
+    const filtrados = data.filter(c =>
+      (c.nombre || '').toLowerCase().includes(texto.toLowerCase()) ||
+      (c.nombre_tienda || '').toLowerCase().includes(texto.toLowerCase())
+    )
+
+    setClientes(filtrados)
   }
 
   const validarPedido = (pedido) => {
@@ -172,7 +179,6 @@ function ControlEnviosDetalle() {
         </div>
       )}
 
-      {/* 📦 SIN PEDIDOS */}
       {pedidos.length === 0 && (
         <div style={{
           padding: '30px',
@@ -193,6 +199,7 @@ function ControlEnviosDetalle() {
       )}
 
       {pedidos.map((p, i) => {
+
         let totalPedido = 0
         let totalDescuento = 0
 
@@ -204,6 +211,7 @@ function ControlEnviosDetalle() {
           totalPedido += pedida * precio
 
           const diferencia = pedida - entregada
+
           if (diferencia > 0 && prod.tipo !== 'prestamo') {
             totalDescuento += diferencia * precio
           }
@@ -218,6 +226,7 @@ function ControlEnviosDetalle() {
             padding: esMovil ? 10 : 15,
             borderRadius: '8px'
           }}>
+
             <div>
               <b>{p.cliente}</b> | {p.tienda}<br />
               Ruta: {p.ruta}
@@ -352,7 +361,6 @@ function ControlEnviosDetalle() {
               Finalizar entrega
             </button>
 
-            {/* 🔐 CANCELAR */}
             <button
               style={{ ...styles.guardar, backgroundColor: '#6c757d', marginLeft: 10 }}
               onClick={() => setShowPin(i)}
@@ -384,23 +392,48 @@ function ControlEnviosDetalle() {
 
                 <button
                   style={{ ...styles.guardar, marginTop: 10 }}
-                  onClick={() => {
+                  onClick={async () => {
+
                     if (pin !== 'Em#GTFPteg9') return alert('PIN incorrecto')
                     if (!comentarioCancelacion.trim()) return alert('Comentario obligatorio')
-
                     if (!window.confirm('¿Seguro que deseas cancelar este pedido?')) return
 
-                    alert('Pedido cancelado')
+                    try {
+                      const res = await fetch(`${API}/control-envios/cancelar`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          id_entrega: p.id_entrega,
+                          comentario: comentarioCancelacion
+                        })
+                      })
 
-                    setShowPin(null)
-                    setPin('')
-                    setComentarioCancelacion('')
+                      const data = await res.json()
+
+                      if (!res.ok) {
+                        alert(data.error || 'Error al cancelar')
+                        return
+                      }
+
+                      alert('Pedido cancelado correctamente')
+
+                      setPedidos(prev => prev.filter((_, index) => index !== i))
+
+                      setShowPin(null)
+                      setPin('')
+                      setComentarioCancelacion('')
+
+                    } catch {
+                      alert('Error de conexión')
+                    }
+
                   }}
                 >
                   Confirmar cancelación
                 </button>
               </div>
             )}
+
           </div>
         )
       })}
