@@ -466,47 +466,59 @@ app.get('/control-envios/:id_chofer', async (req, res) => {
 
     // 🔹 Para cada pedido, traer productos
     for (const pedido of pedidos) {
-     const [productos] = await conn.query(`
-  SELECT 
-    ed.id_producto,
-    pr.nombre,
-    ed.cantidad_pedida,
-    ed.cantidad_entregada,
-    ed.tipo,
-    pd.precio_unitario
-  FROM entrega_detalle ed
-  INNER JOIN productos pr 
-    ON ed.id_producto = pr.id_producto
-  INNER JOIN entregas e 
-    ON ed.id_entrega = e.id_entrega
-  INNER JOIN pedido_detalle pd 
-    ON pd.id_pedido = e.id_pedido 
-    AND pd.id_producto = ed.id_producto
-  WHERE ed.id_entrega = ?
-`, [pedido.id_entrega])
+
+      const [productos] = await conn.query(`
+        SELECT 
+          ed.id_producto,
+          pr.nombre,
+          ed.cantidad_pedida,
+          ed.cantidad_entregada,
+          ed.tipo,
+          COALESCE(pd.precio_unitario, pr.precio) AS precio_unitario
+        FROM entrega_detalle ed
+        INNER JOIN productos pr 
+          ON ed.id_producto = pr.id_producto
+        INNER JOIN entregas e 
+          ON ed.id_entrega = e.id_entrega
+        LEFT JOIN pedido_detalle pd 
+          ON pd.id_pedido = e.id_pedido 
+          AND pd.id_producto = ed.id_producto
+        WHERE ed.id_entrega = ?
+      `, [pedido.id_entrega])
+
       pedido.productos = productos
+
       let totalPedido = 0
-let totalDescuento = 0
+      let totalDescuento = 0
 
-for (const item of productos) {
-  const precio = item.precio_unitario || 0
-  const pedida = item.cantidad_pedida || 0
-  const entregada = item.cantidad_entregada || 0
+      for (const item of productos) {
+        const precio = item.precio_unitario || 0
+        const pedida = item.cantidad_pedida || 0
+        const entregada = item.cantidad_entregada || 0
 
-  totalPedido += pedida * precio
+        // 🔹 Pedido original
+        totalPedido += pedida * precio
 
-  const diferencia = pedida - entregada
+        // 🔥 AGREGADOS SUMAN COMO VENTA EXTRA
+        if (item.tipo === 'agregado') {
+          totalPedido += entregada * precio
+        }
 
-  // 🔥 regla: NO descontar prestamos
-  if (diferencia > 0 && item.tipo !== 'prestamo') {
-    totalDescuento += diferencia * precio
-  }
-}
+        const diferencia = pedida - entregada
 
-pedido.total_pedido = totalPedido
-pedido.total_descuento = totalDescuento
-pedido.total_final = totalPedido - totalDescuento
-   
+        // 🔥 NO descontar prestamos NI agregados
+        if (
+          diferencia > 0 &&
+          item.tipo !== 'prestamo' &&
+          item.tipo !== 'agregado'
+        ) {
+          totalDescuento += diferencia * precio
+        }
+      }
+
+      pedido.total_pedido = totalPedido
+      pedido.total_descuento = totalDescuento
+      pedido.total_final = totalPedido - totalDescuento
     }
 
     res.json(pedidos)
@@ -521,13 +533,11 @@ pedido.total_final = totalPedido - totalDescuento
 
 app.post('/control-envios/finalizar', async (req, res) => {
   const conn = await db.getConnection()
-
   try {
     console.log('🚀 INICIO FINALIZAR')
 
     const { id_entrega, productos, folio } = req.body
 
-    // 🔒 Validaciones básicas (sin romper tu flujo)
     if (!id_entrega) throw new Error('id_entrega requerido')
     if (!folio) throw new Error('Folio obligatorio')
     if (!Array.isArray(productos) || productos.length === 0) {
@@ -539,7 +549,6 @@ app.post('/control-envios/finalizar', async (req, res) => {
     await conn.beginTransaction()
     console.log('🟡 TX START')
 
-    // 🔍 Validar entrega
     const [entregaCheck] = await conn.query(
       'SELECT estado FROM entregas WHERE id_entrega = ?',
       [id_entrega]
@@ -551,7 +560,6 @@ app.post('/control-envios/finalizar', async (req, res) => {
 
     console.log('✅ CHECK ENTREGA')
 
-    // 🔍 Validar folio duplicado
     const [folioExiste] = await conn.query(
       'SELECT id_entrega FROM entregas WHERE folio = ? AND id_entrega != ?',
       [folio, id_entrega]
@@ -563,31 +571,85 @@ app.post('/control-envios/finalizar', async (req, res) => {
 
     console.log('✅ CHECK FOLIO')
 
-    // 🔄 ACTUALIZAR PRODUCTOS
+    // 🔥 PROCESO DE PRODUCTOS
     for (const item of productos) {
       console.log('🔄 PRODUCTO', item.id_producto)
 
-      await conn.query(`
-        UPDATE entrega_detalle
-        SET 
-          cantidad_entregada = ?,
-          tipo = ?,
-          motivo = ?,
-          id_cliente_destino = ?
-        WHERE id_entrega = ? AND id_producto = ?
-      `, [
-        item.cantidad_entregada || 0,
-        item.tipo || 'ninguno',
-        item.tipo === 'roto' ? (item.motivo || null) : null,
-        item.tipo === 'prestamo' ? (item.id_cliente_destino || null) : null,
-        id_entrega,
-        item.id_producto
-      ])
+      if (item.tipo === 'agregado') {
+
+        // 🔥 VALIDACIÓN EXTRA (no rompe nada)
+        if (!item.cantidad_entregada || item.cantidad_entregada <= 0) {
+          throw new Error('Cantidad inválida en producto agregado')
+        }
+
+        console.log('🆕 INSERT/UPDATE AGREGADO')
+
+        const [existe] = await conn.query(`
+          SELECT id_producto 
+          FROM entrega_detalle
+          WHERE id_entrega = ? 
+          AND id_producto = ? 
+          AND tipo = 'agregado'
+        `, [id_entrega, item.id_producto])
+
+        if (existe.length > 0) {
+          // 🔁 YA EXISTE → SUMAR
+          await conn.query(`
+            UPDATE entrega_detalle
+            SET cantidad_entregada = cantidad_entregada + ?
+            WHERE id_entrega = ? 
+            AND id_producto = ? 
+            AND tipo = 'agregado'
+          `, [
+            item.cantidad_entregada || 0,
+            id_entrega,
+            item.id_producto
+          ])
+        } else {
+          // 🆕 NUEVO
+          await conn.query(`
+            INSERT INTO entrega_detalle (
+              id_entrega,
+              id_producto,
+              cantidad_pedida,
+              cantidad_entregada,
+              tipo,
+              motivo
+            )
+            VALUES (?, ?, 0, ?, 'agregado', ?)
+          `, [
+            id_entrega,
+            item.id_producto,
+            item.cantidad_entregada || 0,
+            item.motivo || null
+          ])
+        }
+
+      } else {
+
+        console.log('✏️ UPDATE NORMAL')
+
+        await conn.query(`
+          UPDATE entrega_detalle
+          SET 
+            cantidad_entregada = ?,
+            tipo = ?,
+            motivo = ?,
+            id_cliente_destino = ?
+          WHERE id_entrega = ? AND id_producto = ?
+        `, [
+          item.cantidad_entregada || 0,
+          item.tipo || 'ninguno',
+          item.tipo === 'roto' ? (item.motivo || null) : null,
+          item.tipo === 'prestamo' ? (item.id_cliente_destino || null) : null,
+          id_entrega,
+          item.id_producto
+        ])
+      }
     }
 
     console.log('✅ PRODUCTOS OK')
 
-    // 📦 Cerrar entrega
     await conn.query(`
       UPDATE entregas 
       SET estado = 'entregado', folio = ?, fecha_entrega = NOW() 
@@ -596,7 +658,6 @@ app.post('/control-envios/finalizar', async (req, res) => {
 
     console.log('✅ ENTREGA CERRADA')
 
-    // 📄 Cerrar pedido relacionado
     await conn.query(`
       UPDATE pedidos
       SET estado = 'entregado'
@@ -614,13 +675,10 @@ app.post('/control-envios/finalizar', async (req, res) => {
 
   } catch (err) {
     console.error('❌ ERROR FINALIZAR:', err)
-
     await conn.rollback()
-
     res.status(500).json({
       error: err.message
     })
-
   } finally {
     conn.release()
   }
