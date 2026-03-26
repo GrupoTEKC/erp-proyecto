@@ -492,46 +492,82 @@ app.get('/control-envios/:id_chofer', async (req, res) => {
 
 app.post('/control-envios/finalizar', async (req, res) => {
   const conn = await db.getConnection()
+
   try {
     console.log('🚀 INICIO FINALIZAR')
 
     const { id_entrega, productos, folio } = req.body
 
-    console.log('📦 DATA:', { id_entrega, folio, productos: productos.length })
-
-    if (!folio) {
-      throw new Error('Folio obligatorio')
+    // 🔒 Validaciones básicas (sin romper tu flujo)
+    if (!id_entrega) throw new Error('id_entrega requerido')
+    if (!folio) throw new Error('Folio obligatorio')
+    if (!Array.isArray(productos) || productos.length === 0) {
+      throw new Error('Productos inválidos')
     }
+
+    console.log('📦 DATA:', { id_entrega, folio, productos: productos.length })
 
     await conn.beginTransaction()
     console.log('🟡 TX START')
 
+    // 🔍 Validar entrega
     const [entregaCheck] = await conn.query(
       'SELECT estado FROM entregas WHERE id_entrega = ?',
       [id_entrega]
     )
 
+    if (entregaCheck.length === 0) {
+      throw new Error('Entrega no existe')
+    }
+
     console.log('✅ CHECK ENTREGA')
 
+    // 🔍 Validar folio duplicado
     const [folioExiste] = await conn.query(
-      'SELECT id_entrega FROM entregas WHERE folio = ?',
-      [folio]
+      'SELECT id_entrega FROM entregas WHERE folio = ? AND id_entrega != ?',
+      [folio, id_entrega]
     )
+
+    if (folioExiste.length > 0) {
+      throw new Error('Folio ya existe')
+    }
 
     console.log('✅ CHECK FOLIO')
 
+    // 🔄 ACTUALIZAR PRODUCTOS
     for (const item of productos) {
       console.log('🔄 PRODUCTO', item.id_producto)
 
-      await conn.query(`UPDATE entrega_detalle SET ...`)
+      await conn.query(`
+        UPDATE entrega_detalle
+        SET 
+          cantidad_entregada = ?,
+          tipo = ?,
+          motivo = ?,
+          id_cliente_destino = ?
+        WHERE id_entrega = ? AND id_producto = ?
+      `, [
+        item.cantidad_entregada || 0,
+        item.tipo || 'ninguno',
+        item.tipo === 'roto' ? (item.motivo || null) : null,
+        item.tipo === 'prestamo' ? (item.id_cliente_destino || null) : null,
+        id_entrega,
+        item.id_producto
+      ])
     }
 
     console.log('✅ PRODUCTOS OK')
 
-    await conn.query(`UPDATE entregas SET estado='entregado', folio=?, fecha_entrega=NOW() WHERE id_entrega=?`, [folio, id_entrega])
+    // 📦 Cerrar entrega
+    await conn.query(`
+      UPDATE entregas 
+      SET estado = 'entregado', folio = ?, fecha_entrega = NOW() 
+      WHERE id_entrega = ?
+    `, [folio, id_entrega])
 
     console.log('✅ ENTREGA CERRADA')
 
+    // 📄 Cerrar pedido relacionado
     await conn.query(`
       UPDATE pedidos
       SET estado = 'entregado'
@@ -549,12 +585,18 @@ app.post('/control-envios/finalizar', async (req, res) => {
 
   } catch (err) {
     console.error('❌ ERROR FINALIZAR:', err)
+
     await conn.rollback()
-    res.status(500).json({ error: err.message })
+
+    res.status(500).json({
+      error: err.message
+    })
+
   } finally {
     conn.release()
   }
 })
+
 // =============================
 // 404
 // =============================
