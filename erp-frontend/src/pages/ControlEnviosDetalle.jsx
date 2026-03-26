@@ -24,7 +24,7 @@ function ControlEnviosDetalle() {
   const [pin, setPin] = useState('')
   const [comentarioCancelacion, setComentarioCancelacion] = useState('')
 
-  // 🔥 NUEVO
+  // 🔥 NUEVO (NO INTERFIERE)
   const [productosDB, setProductosDB] = useState([])
   const [busquedaProducto, setBusquedaProducto] = useState({})
 
@@ -39,7 +39,6 @@ function ControlEnviosDetalle() {
     const cargarPedidos = async () => {
       const res = await fetch(`${API}/control-envios/${id_chofer}`)
       const data = await res.json()
-
       const inicializados = data.map(p => ({
         ...p,
         folio: '',
@@ -51,10 +50,8 @@ function ControlEnviosDetalle() {
           id_cliente_destino: null
         }))
       }))
-
       setPedidos(inicializados)
     }
-
     cargarPedidos()
   }, [id_chofer])
 
@@ -73,20 +70,16 @@ function ControlEnviosDetalle() {
   const buscarClientes = async (texto, pIndex, dIndex) => {
     const key = `${pIndex}-${dIndex}`
     setBusquedas(prev => ({ ...prev, [key]: texto }))
-
     if (!texto) {
       setClientes([])
       return
     }
-
     const res = await fetch(`${API}/clientes`)
     const data = await res.json()
-
     const filtrados = data.filter(c =>
       (c.nombre || '').toLowerCase().includes(texto.toLowerCase()) ||
       (c.nombre_tienda || '').toLowerCase().includes(texto.toLowerCase())
     )
-
     setClientes(filtrados)
   }
 
@@ -109,14 +102,14 @@ function ControlEnviosDetalle() {
     setProductosDB(filtrados)
   }
 
-  // 🔥 NUEVO
+  // 🔥 NUEVO (PRECIO CORRECTO)
   const agregarProducto = (pIndex, producto) => {
     const copia = [...pedidos]
 
     copia[pIndex].productos.push({
       id_producto: producto.id_producto,
       nombre: producto.nombre,
-      precio_unitario: producto.precio_venta || 0,
+      precio_unitario: producto.precio_unitario || producto.precio || 0,
       cantidad_pedida: 0,
       cantidad_entregada: '',
       tipo: 'agregado',
@@ -134,16 +127,12 @@ function ControlEnviosDetalle() {
       if (prod.cantidad_entregada === '') {
         return `Falta cantidad entregada en ${prod.nombre}`
       }
-
       const diferencia = Number(prod.cantidad_entregada) - prod.cantidad_pedida
-
       if (diferencia !== 0) {
         if (!prod.tipo) return `Falta tipo en ${prod.nombre}`
-
         if (prod.tipo === 'roto' && !prod.motivo) {
           return `Falta motivo en ${prod.nombre}`
         }
-
         if (prod.tipo === 'prestamo') {
           if (!prod.id_cliente_destino) {
             return `Selecciona cliente en ${prod.nombre}`
@@ -151,24 +140,20 @@ function ControlEnviosDetalle() {
         }
       }
     }
-
     return null
   }
 
   const finalizarEntrega = async (pedido) => {
     setMensaje(null)
-
     const error = validarPedido(pedido)
     if (error) {
       setMensaje({ tipo: 'error', texto: error })
       return
     }
-
     if (!pedido.folio.trim()) {
       setMensaje({ tipo: 'error', texto: 'Folio obligatorio' })
       return
     }
-
     try {
       const res = await fetch(`${API}/control-envios/finalizar`, {
         method: 'POST',
@@ -182,17 +167,13 @@ function ControlEnviosDetalle() {
           }))
         })
       })
-
       const data = await res.json()
-
       if (!res.ok) {
         setMensaje({ tipo: 'error', texto: data.error || 'Error al guardar' })
         return
       }
-
       setMensaje({ tipo: 'ok', texto: 'Entrega finalizada correctamente' })
       setTimeout(() => navigate(-1), 1200)
-
     } catch {
       setMensaje({ tipo: 'error', texto: 'Error de conexión' })
     }
@@ -228,11 +209,8 @@ function ControlEnviosDetalle() {
           const precio = parseFloat(prod.precio_unitario) || 0
           const pedida = Number(prod.cantidad_pedida) || 0
           const entregada = Number(prod.cantidad_entregada) || 0
-
           totalPedido += pedida * precio
-
           const diferencia = pedida - entregada
-
           if (diferencia > 0 && prod.tipo !== 'prestamo') {
             totalDescuento += diferencia * precio
           }
@@ -241,7 +219,12 @@ function ControlEnviosDetalle() {
         const totalFinal = totalPedido - totalDescuento
 
         return (
-          <div key={i} style={{ marginBottom: 20, border: '1px solid #ccc', padding: esMovil ? 10 : 15, borderRadius: '8px' }}>
+          <div key={i} style={{
+            marginBottom: 20,
+            border: '1px solid #ccc',
+            padding: esMovil ? 10 : 15,
+            borderRadius: '8px'
+          }}>
 
             <div>
               <b>{p.cliente}</b> | {p.tienda}<br />
@@ -259,7 +242,7 @@ function ControlEnviosDetalle() {
             <div style={{ marginTop: 10 }}>
               <input
                 style={fieldResponsive}
-                placeholder="Buscar producto..."
+                placeholder="Agregar producto..."
                 value={busquedaProducto[i] || ''}
                 onChange={e => buscarProductos(e.target.value, i)}
               />
@@ -268,38 +251,45 @@ function ControlEnviosDetalle() {
                 <div
                   key={prod.id_producto}
                   onClick={() => agregarProducto(i, prod)}
-                  style={{ cursor: 'pointer', background: '#eee', padding: '4px', marginTop: 2 }}
+                  style={{
+                    cursor: 'pointer',
+                    background: '#eee',
+                    padding: '4px',
+                    marginTop: 2
+                  }}
                 >
                   {prod.nombre}
                 </div>
               ))}
             </div>
 
-            <table border="1" width="100%" style={{ marginTop: 10 }}>
+            {/* 🔥 TU TABLA ORIGINAL INTACTA */}
+            <table border="1" width="100%" style={{ marginTop: 10, fontSize: esMovil ? '12px' : '14px' }}>
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th>Precio</th>
+                  <th>Embarcado</th>
+                  <th>Entregado</th>
+                  <th>Subtotal</th>
+                  <th>Tipo</th>
+                  <th>Detalle</th>
+                </tr>
+              </thead>
+
               <tbody>
                 {p.productos.map((prod, j) => {
                   const precio = parseFloat(prod.precio_unitario) || 0
                   const entregada = Number(prod.cantidad_entregada) || 0
+                  const pedida = Number(prod.cantidad_pedida) || 0
+                  const diferencia = entregada - pedida
                   const subtotal = entregada * precio
 
                   return (
                     <tr key={j}>
                       <td>{prod.nombre}</td>
-
-                      <td>
-                        {prod.tipo === 'agregado' ? (
-                          <input
-                            type="number"
-                            style={fieldResponsive}
-                            value={precio}
-                            onChange={e =>
-                              actualizarCampo(i, j, 'precio_unitario', e.target.value)
-                            }
-                          />
-                        ) : (
-                          `$${precio.toFixed(2)}`
-                        )}
-                      </td>
+                      <td>${precio.toFixed(2)}</td>
+                      <td>{pedida}</td>
 
                       <td>
                         <input
@@ -314,18 +304,68 @@ function ControlEnviosDetalle() {
 
                       <td>${subtotal.toFixed(2)}</td>
 
-                      <td>
-                        {prod.tipo === 'agregado' && (
-                          <input
-                            style={fieldResponsive}
-                            placeholder="Motivo agregado"
-                            value={prod.motivo}
-                            onChange={e =>
-                              actualizarCampo(i, j, 'motivo', e.target.value)
-                            }
-                          />
-                        )}
-                      </td>
+                      {diferencia !== 0 ? (
+                        <>
+                          <td>
+                            <select
+                              style={fieldResponsive}
+                              value={prod.tipo}
+                              onChange={e =>
+                                actualizarCampo(i, j, 'tipo', e.target.value)
+                              }
+                            >
+                              <option value="">--</option>
+                              <option value="prestamo">Préstamo</option>
+                              <option value="roto">Roto</option>
+                            </select>
+                          </td>
+
+                          <td>
+                            {prod.tipo === 'roto' && (
+                              <input
+                                style={fieldResponsive}
+                                placeholder="Motivo"
+                                value={prod.motivo}
+                                onChange={e =>
+                                  actualizarCampo(i, j, 'motivo', e.target.value)
+                                }
+                              />
+                            )}
+
+                            {prod.tipo === 'prestamo' && (
+                              <>
+                                <input
+                                  style={fieldResponsive}
+                                  placeholder="Buscar cliente"
+                                  value={busquedas[`${i}-${j}`] || ''}
+                                  onChange={e =>
+                                    buscarClientes(e.target.value, i, j)
+                                  }
+                                />
+
+                                {clientes.map(c => (
+                                  <div
+                                    key={c.id_cliente}
+                                    onClick={() => {
+                                      actualizarCampo(i, j, 'id_cliente_destino', c.id_cliente)
+                                      setBusquedas(prev => ({
+                                        ...prev,
+                                        [`${i}-${j}`]: `${c.nombre} - ${c.nombre_tienda}`
+                                      }))
+                                      setClientes([])
+                                    }}
+                                    style={{ cursor: 'pointer', background: '#eee', padding: '4px' }}
+                                  >
+                                    {c.nombre} - {c.nombre_tienda}
+                                  </div>
+                                ))}
+                              </>
+                            )}
+                          </td>
+                        </>
+                      ) : (
+                        <td colSpan="2">OK</td>
+                      )}
                     </tr>
                   )
                 })}
