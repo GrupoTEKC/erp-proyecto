@@ -126,10 +126,10 @@ function Menu() {
             </button>
           </Link>
 
-          <Link to="/pagos" style={styles.link}>
+         <Link to="/pagos-login" style={styles.link}>
             <button style={styles.button}>
               <span style={styles.icon}>💵</span>
-              Pagos
+              Cuentas por cobrar 
             </button>
           </Link>
 
