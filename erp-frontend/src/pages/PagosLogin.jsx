@@ -77,7 +77,7 @@ function PagosLogin() {
         {/* 🔵 LOGO EN CÍRCULO */}
         <img src={logo} alt="Grupo TEKC" style={styles.logo} />
 
-        <h2 style={styles.title}>Módulo de Pagos</h2>
+        <h2 style={styles.title}>Cuentas por cobrar</h2>
 
         {error && <div style={styles.error}>{error}</div>}
 
