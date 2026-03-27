@@ -40,8 +40,7 @@ const styles = {
     border: '1px solid #ddd',
     borderRadius: '6px',
     padding: '12px',
-    marginBottom: '10px',
-    cursor: 'pointer'
+    marginBottom: '10px'
   },
   cardPedido: {
     border: '1px solid #ddd',
@@ -51,6 +50,16 @@ const styles = {
   },
   rojo: {
     border: '2px solid red'
+  },
+  botonAccion: {
+    marginTop: '8px',
+    padding: '8px 12px',
+    fontSize: '13px',
+    backgroundColor: '#8B1E1E',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer'
   }
 }
 
@@ -87,7 +96,7 @@ function Pagos() {
     setPedidos(data)
   }
 
-  /* ================= VALIDAR ROJO (30 días) ================= */
+  /* ================= VALIDAR ROJO ================= */
   const esVencido = (fecha_vencimiento) => {
     if (!fecha_vencimiento) return false
     const hoy = new Date()
@@ -103,39 +112,47 @@ function Pagos() {
         <button style={styles.backButton} onClick={() => navigate("/")}>
           ⬅ Volver
         </button>
-
         <h2 style={styles.title}>Cuentas por cobrar</h2>
       </div>
 
-      {/* BUSCADOR */}
-      <input
-        type="text"
-        placeholder="Buscar cliente o tienda..."
-        value={busqueda}
-        onChange={(e) => setBusqueda(e.target.value)}
-        style={styles.field}
-      />
+      {/* 🔍 BUSCADOR SOLO SI NO HAY CLIENTE SELECCIONADO */}
+      {!clienteSeleccionado && (
+        <input
+          type="text"
+          placeholder="Buscar cliente o tienda..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          style={styles.field}
+        />
+      )}
 
-      {/* LISTA CLIENTES */}
+      {/* ================= CLIENTES ================= */}
       {!clienteSeleccionado && (
         <div style={{ marginTop: 20 }}>
           {clientesFiltrados.map(c => (
-            <div
-              key={c.id_cliente}
-              style={styles.card}
-              onClick={() => cargarPedidos(c)}
-            >
+            <div key={c.id_cliente} style={styles.card}>
+              
               <b>{c.nombre} {c.apellido1}</b>
               <br />
               {c.nombre_tienda}
               <br />
               💰 Saldo: ${c.saldo_actual || 0}
+
+              {/* 🔥 BOTÓN CLARO */}
+              <br />
+              <button
+                style={styles.botonAccion}
+                onClick={() => cargarPedidos(c)}
+              >
+                Estado de cuenta
+              </button>
+
             </div>
           ))}
         </div>
       )}
 
-      {/* PEDIDOS DEL CLIENTE */}
+      {/* ================= PEDIDOS ================= */}
       {clienteSeleccionado && (
         <div style={{ marginTop: 20 }}>
 
@@ -143,9 +160,13 @@ function Pagos() {
             {clienteSeleccionado.nombre} {clienteSeleccionado.apellido1}
           </h3>
 
+          {/* 🔥 SOLO ESTE BOTÓN */}
           <button
             style={{ ...styles.backButton, marginBottom: 15 }}
-            onClick={() => setClienteSeleccionado(null)}
+            onClick={() => {
+              setClienteSeleccionado(null)
+              setPedidos([])
+            }}
           >
             ⬅ Volver a clientes
           </button>
@@ -158,7 +179,9 @@ function Pagos() {
                 ...(esVencido(p.fecha_vencimiento) ? styles.rojo : {})
               }}
             >
-              <b>Folio #{p.id_pedido}</b>
+              {/* 🔥 USAR FOLIO REAL */}
+              <b>Folio: {p.folio || p.id_pedido}</b>
+
               <br />
               📅 Entrega: {p.fecha_entrega || "-"}
               <br />
@@ -166,9 +189,9 @@ function Pagos() {
               <br />
               💰 Total: ${p.total}
               <br />
-              💸 Pagado: ${p.total_pagado}
+              💸 Pagado: ${p.total_pagado || 0}
               <br />
-              🔻 Saldo: ${p.saldo}
+              🔻 Saldo: ${p.saldo || p.total}
             </div>
           ))}
         </div>
