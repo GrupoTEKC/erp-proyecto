@@ -214,14 +214,22 @@ app.get('/pedidos', async (req, res) => {
 app.get('/pedidos/cliente/:id_cliente', async (req, res) => {
   try {
     const { id_cliente } = req.params
+
     const [rows] = await db.query(`
-      SELECT *
-      FROM pedidos
-      WHERE id_cliente = ?
-      AND estado = 'entregado'
-      ORDER BY fecha DESC
+      SELECT 
+        p.*,
+        MAX(e.folio) AS folio
+      FROM pedidos p
+      LEFT JOIN entregas e 
+        ON p.id_pedido = e.id_pedido
+      WHERE p.id_cliente = ?
+      AND p.estado = 'entregado'
+      GROUP BY p.id_pedido
+      ORDER BY p.fecha DESC
     `,[id_cliente])
+
     res.json(rows)
+
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
