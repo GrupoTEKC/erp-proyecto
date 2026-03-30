@@ -236,13 +236,6 @@ app.get('/pedidos/cliente/:id_cliente', async (req, res) => {
   }
 })
 
-    res.json(rows)
-
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
-
 // =============================
 // 🔥 PEDIDO EN CURSO (CORREGIDO)
 // =============================
