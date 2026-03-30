@@ -218,15 +218,23 @@ app.get('/pedidos/cliente/:id_cliente', async (req, res) => {
     const [rows] = await db.query(`
       SELECT 
         p.*,
-        MAX(e.folio) AS folio
+        e.folio,
+        e.fecha_entrega
       FROM pedidos p
-      LEFT JOIN entregas e 
+      INNER JOIN entregas e 
         ON p.id_pedido = e.id_pedido
       WHERE p.id_cliente = ?
       AND p.estado = 'entregado'
-      GROUP BY p.id_pedido
-      ORDER BY p.fecha DESC
-    `,[id_cliente])
+      AND e.estado = 'entregado'
+      ORDER BY e.fecha_entrega DESC
+    `, [id_cliente])
+
+    res.json(rows)
+
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
 
     res.json(rows)
 
