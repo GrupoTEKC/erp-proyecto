@@ -666,13 +666,15 @@ app.post('/control-envios/finalizar', async (req, res) => {
 
     console.log('✅ ENTREGA CERRADA')
 
-    await conn.query(`
-      UPDATE pedidos
-      SET estado = 'entregado'
-      WHERE id_pedido = (
-        SELECT id_pedido FROM entregas WHERE id_entrega = ?
-      )
-    `, [id_entrega])
+   await conn.query(`
+  UPDATE pedidos
+  SET 
+    estado = 'entregado',
+    fecha_entrega = NOW()
+  WHERE id_pedido = (
+    SELECT id_pedido FROM entregas WHERE id_entrega = ?
+  )
+`, [id_entrega])
 
     console.log('✅ PEDIDO CERRADO')
 
