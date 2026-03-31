@@ -5,7 +5,9 @@ const API = 'https://erp-proyecto-production.up.railway.app'
 
 function EditarCliente() {
   const navigate = useNavigate()
-  const { id } = useParams()
+
+  // 🔥 CORREGIDO AQUÍ
+  const { id_cliente } = useParams()
 
   const [rutas, setRutas] = useState([])
   const [loading, setLoading] = useState(true)
@@ -39,16 +41,27 @@ function EditarCliente() {
   useEffect(() => {
     const cargarDatos = async () => {
       try {
-        // rutas
+        console.log('ID PARAM:', id_cliente)
+
+        // 🔹 rutas
         const rutasRes = await fetch(`${API}/rutas`)
         const rutasData = await rutasRes.json()
         setRutas(Array.isArray(rutasData) ? rutasData : [])
 
-        // cliente
-        const res = await fetch(`${API}/clientes/${id}`)
+        // 🔹 cliente
+        const res = await fetch(`${API}/clientes/${id_cliente}`)
+
+        if (!res.ok) {
+          throw new Error('Cliente no encontrado')
+        }
+
         const data = await res.json()
 
         console.log('CLIENTE:', data)
+
+        if (!data) {
+          throw new Error('Sin datos')
+        }
 
         setForm({
           nombre: data.nombre || '',
@@ -59,8 +72,8 @@ function EditarCliente() {
           categoria: data.categoria || '',
           categoria_otro: data.categoria_otro || '',
           nombre_tienda: data.nombre_tienda || '',
-          telefono: data.telefono || data.telefono_dueno || '',
-          telefono_local: data.telefono_local || data.telefono_tienda || '',
+          telefono: data.telefono || '',
+          telefono_local: data.telefono_local || '',
           calle: data.calle || '',
           numero: data.numero || '',
           cp: data.cp || '',
@@ -69,19 +82,25 @@ function EditarCliente() {
           entre_calles: data.entre_calles || '',
           referencia: data.referencia || '',
           correo_usuario: data.email ? data.email.split('@')[0] : '',
-          correo_dominio: data.email ? '@' + data.email.split('@')[1] : '@gmail.com',
+          correo_dominio: data.email
+            ? '@' + data.email.split('@')[1]
+            : '@gmail.com',
           id_ruta: data.id_ruta || ''
         })
 
       } catch (err) {
-        console.error('ERROR:', err)
+        console.error('ERROR CARGA:', err)
+        alert('❌ Error cargando cliente')
       } finally {
         setLoading(false)
       }
     }
 
-    cargarDatos()
-  }, [id])
+    if (id_cliente) {
+      cargarDatos()
+    }
+
+  }, [id_cliente])
 
   // =========================
   // FORMATEO
@@ -138,19 +157,6 @@ function EditarCliente() {
       return false
     }
 
-    if (
-      (form.telefono && form.telefono.length !== 10) ||
-      (form.telefono_local && form.telefono_local.length !== 10)
-    ) {
-      alert('Los teléfonos deben tener exactamente 10 dígitos')
-      return false
-    }
-
-    if (form.rfc && form.rfc.length < 12) {
-      alert('RFC incompleto')
-      return false
-    }
-
     return true
   }
 
@@ -168,7 +174,7 @@ function EditarCliente() {
     }
 
     try {
-      const res = await fetch(`${API}/clientes/${id}`, {
+      const res = await fetch(`${API}/clientes/${id_cliente}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -184,13 +190,14 @@ function EditarCliente() {
       alert('✅ Cliente actualizado')
       navigate('/clientes')
 
-    } catch {
+    } catch (err) {
+      console.error(err)
       alert('❌ Error al actualizar')
     }
   }
 
   // =========================
-  // 🚨 BLOQUEO DE RENDER
+  // LOADING
   // =========================
   if (loading) {
     return <p style={{ padding: 20 }}>Cargando cliente...</p>
@@ -263,6 +270,7 @@ function EditarCliente() {
         <button style={styles.save} onClick={actualizarCliente}>
           Actualizar Cliente
         </button>
+
         <button style={styles.cancel} onClick={() => navigate('/clientes')}>
           Cancelar
         </button>
@@ -271,7 +279,9 @@ function EditarCliente() {
   )
 }
 
-// reutilizable
+// =========================
+// COMPONENTE CAMPO
+// =========================
 function Campo({ label, name, form, onChange }) {
   return (
     <div style={styles.field}>
@@ -281,8 +291,11 @@ function Campo({ label, name, form, onChange }) {
   )
 }
 
-// estilos
+// =========================
+// ESTILOS
+// =========================
 const vino = '#8B1E1E'
+
 const styles = {
   page: { padding: 20, maxWidth: 900, margin: 'auto', fontFamily: 'Arial' },
   title: { color: '#071849' },
