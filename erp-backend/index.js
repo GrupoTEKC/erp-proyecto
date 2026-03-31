@@ -49,13 +49,112 @@ app.get('/clientes/:id_cliente', async (req, res) => {
 app.put('/clientes/:id_cliente', async (req, res) => {
   try {
     const { id_cliente } = req.params
-    const { nombre, telefono, email } = req.body
+
+    let {
+      nombre,
+      apellido1,
+      apellido2,
+      telefono,
+      telefono_local,
+      nombre_tienda,
+      apodo,
+      rfc,
+      categoria,
+      categoria_otro,
+      calle,
+      numero,
+      cp,
+      municipio,
+      estado,
+      entre_calles,
+      referencia,
+      email,
+      id_ruta
+    } = req.body
+
+    const toUpper = (val) => val ? val.toUpperCase() : null
+
+    // 🔠 NORMALIZAR
+    nombre = toUpper(nombre)
+    apellido1 = toUpper(apellido1)
+    apellido2 = toUpper(apellido2)
+    nombre_tienda = nombre_tienda
+      ? nombre_tienda.trim().replace(/\s+/g, ' ').toUpperCase()
+      : null
+    apodo = toUpper(apodo)
+    rfc = toUpper(rfc)
+    categoria = toUpper(categoria)
+    categoria_otro = toUpper(categoria_otro)
+    calle = toUpper(calle)
+    numero = toUpper(numero)
+    cp = toUpper(cp)
+    municipio = toUpper(municipio)
+    estado = toUpper(estado)
+    entre_calles = toUpper(entre_calles)
+    referencia = toUpper(referencia)
+
+    // 🔥 VALIDAR NOMBRE TIENDA ÚNICO (EXCLUYENDO EL MISMO CLIENTE)
+    const [existe] = await db.query(`
+      SELECT id_cliente 
+      FROM clientes 
+      WHERE TRIM(UPPER(nombre_tienda)) = ?
+      AND id_cliente != ?
+    `, [nombre_tienda, id_cliente])
+
+    if (existe.length > 0) {
+      return res.status(400).json({ 
+        error: 'Ya existe una tienda con ese nombre' 
+      })
+    }
+
+    // 💾 UPDATE COMPLETO
     await db.query(`
-      UPDATE clientes 
-      SET nombre=?, telefono=?, email=?
+      UPDATE clientes SET
+        nombre=?,
+        apellido1=?,
+        apellido2=?,
+        telefono=?,
+        telefono_local=?,
+        nombre_tienda=?,
+        apodo=?,
+        rfc=?,
+        categoria=?,
+        categoria_otro=?,
+        calle=?,
+        numero=?,
+        cp=?,
+        municipio=?,
+        estado=?,
+        entre_calles=?,
+        referencia=?,
+        email=?,
+        id_ruta=?
       WHERE id_cliente=?
-    `, [nombre, telefono, email, id_cliente])
+    `, [
+      nombre,
+      apellido1,
+      apellido2,
+      telefono || null,
+      telefono_local || null,
+      nombre_tienda,
+      apodo || null,
+      rfc || null,
+      categoria,
+      categoria === 'OTROS' ? categoria_otro : null,
+      calle,
+      numero,
+      cp,
+      municipio,
+      estado,
+      entre_calles,
+      referencia,
+      email || null,
+      id_ruta,
+      id_cliente
+    ])
+
     res.json({ success: true })
+
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
