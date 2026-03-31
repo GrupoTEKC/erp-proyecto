@@ -25,7 +25,9 @@ const db = mysql.createPool({
 // =============================
 app.get('/clientes', async (req, res) => {
   try {
-    const [rows] = await db.query('SELECT * FROM clientes')
+    const [rows] = await db.query(
+      'SELECT * FROM clientes WHERE activo = 1'
+    )
     res.json(rows)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -152,6 +154,22 @@ app.put('/clientes/:id_cliente', async (req, res) => {
       id_ruta,
       id_cliente
     ])
+
+    res.json({ success: true })
+
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+app.delete('/clientes/:id_cliente', async (req, res) => {
+  try {
+    const { id_cliente } = req.params
+
+    await db.query(
+      'UPDATE clientes SET activo = 0 WHERE id_cliente = ?',
+      [id_cliente]
+    )
 
     res.json({ success: true })
 
