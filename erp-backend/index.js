@@ -61,6 +61,194 @@ app.put('/clientes/:id_cliente', async (req, res) => {
   }
 })
 
+app.post('/clientes', async (req, res) => {
+  try {
+    let {
+      nombre,
+      apellido1,
+      apellido2,
+      telefono,
+      telefono_local,
+      nombre_tienda,
+      apodo,
+      rfc,
+      categoria,
+      categoria_otro,
+      calle,
+      numero,
+      cp,
+      municipio,
+      estado,
+      entre_calles,
+      referencia,
+      email,
+      id_ruta
+    } = req.body
+
+    const toUpper = (val) => val ? val.toUpperCase() : null
+
+    // =============================
+    // 🔠 NORMALIZAR
+    // =============================
+    nombre = toUpper(nombre)
+    apellido1 = toUpper(apellido1)
+    apellido2 = toUpper(apellido2)
+
+    nombre_tienda = nombre_tienda
+      ? nombre_tienda.trim().replace(/\s+/g, ' ').toUpperCase()
+      : null
+
+    apodo = toUpper(apodo)
+    rfc = toUpper(rfc)
+    categoria = toUpper(categoria)
+    categoria_otro = toUpper(categoria_otro)
+
+    calle = toUpper(calle)
+    numero = toUpper(numero)
+    cp = toUpper(cp)
+    municipio = toUpper(municipio)
+    estado = toUpper(estado)
+    entre_calles = toUpper(entre_calles)
+    referencia = toUpper(referencia)
+
+    // =============================
+    // ✅ VALIDACIONES PRIMERO
+    // =============================
+    if (!nombre || !apellido1 || !apellido2) {
+      return res.status(400).json({ error: 'Nombre completo obligatorio' })
+    }
+
+    if (!categoria) {
+      return res.status(400).json({ error: 'Categoría obligatoria' })
+    }
+
+    if (categoria === 'OTROS' && !categoria_otro) {
+      return res.status(400).json({ 
+        error: 'Debe especificar la categoría en "otros"' 
+      })
+    }
+
+    if (!nombre_tienda) {
+      return res.status(400).json({ error: 'Nombre de negocio obligatorio' })
+    }
+
+    if (!calle || !numero || !cp || !municipio || !estado) {
+      return res.status(400).json({ error: 'Dirección incompleta' })
+    }
+
+    if (!entre_calles) {
+      return res.status(400).json({ error: 'Entre calles obligatorio' })
+    }
+
+    if (!referencia) {
+      return res.status(400).json({ error: 'Referencia obligatoria' })
+    }
+
+    if (!id_ruta) {
+      return res.status(400).json({ error: 'Ruta obligatoria' })
+    }
+
+    // =============================
+    // 📞 TELÉFONOS
+    // =============================
+    if (!telefono && !telefono_local) {
+      return res.status(400).json({ 
+        error: 'Debe capturar al menos un teléfono' 
+      })
+    }
+
+    const validarTel = (tel) => /^\d{10}$/.test(tel)
+
+    if (telefono && !validarTel(telefono)) {
+      return res.status(400).json({ 
+        error: 'Teléfono dueño inválido' 
+      })
+    }
+
+    if (telefono_local && !validarTel(telefono_local)) {
+      return res.status(400).json({ 
+        error: 'Teléfono tienda inválido' 
+      })
+    }
+
+    if (rfc && (rfc.length < 12 || rfc.length > 13)) {
+      return res.status(400).json({ error: 'RFC inválido' })
+    }
+
+    // =============================
+    // 🔥 VALIDACIÓN NOMBRE TIENDA ÚNICO
+    // =============================
+    const [existe] = await db.query(`
+      SELECT id_cliente 
+      FROM clientes 
+      WHERE TRIM(UPPER(nombre_tienda)) = ?
+    `, [nombre_tienda])
+
+    if (existe.length > 0) {
+      return res.status(400).json({ 
+        error: 'Ya existe una tienda con ese nombre' 
+      })
+    }
+
+    // =============================
+    // 💾 INSERT
+    // =============================
+    const [result] = await db.query(`
+      INSERT INTO clientes (
+        nombre,
+        apellido1,
+        apellido2,
+        telefono,
+        telefono_local,
+        nombre_tienda,
+        apodo,
+        rfc,
+        categoria,
+        categoria_otro,
+        calle,
+        numero,
+        cp,
+        municipio,
+        estado,
+        entre_calles,
+        referencia,
+        email,
+        id_ruta
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      nombre,
+      apellido1,
+      apellido2,
+      telefono || null,
+      telefono_local || null,
+      nombre_tienda,
+      apodo || null,
+      rfc || null,
+      categoria,
+      categoria === 'OTROS' ? categoria_otro : null,
+      calle,
+      numero,
+      cp,
+      municipio,
+      estado,
+      entre_calles,
+      referencia,
+      email || null,
+      id_ruta
+    ])
+
+    res.json({
+      success: true,
+      id_cliente: result.insertId
+    })
+
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // =============================
 // RUTAS
 // =============================
