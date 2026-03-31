@@ -8,6 +8,8 @@ function EditarCliente() {
   const { id } = useParams()
 
   const [rutas, setRutas] = useState([])
+  const [loading, setLoading] = useState(true)
+
   const [form, setForm] = useState({
     nombre: '',
     apellido1: '',
@@ -35,24 +37,54 @@ function EditarCliente() {
   // CARGAR DATOS
   // =========================
   useEffect(() => {
-    fetch(`${API}/rutas`)
-      .then(r => r.json())
-      .then(data => setRutas(Array.isArray(data) ? data : []))
-      .catch(() => setRutas([]))
+    const cargarDatos = async () => {
+      try {
+        // rutas
+        const rutasRes = await fetch(`${API}/rutas`)
+        const rutasData = await rutasRes.json()
+        setRutas(Array.isArray(rutasData) ? rutasData : [])
 
-    fetch(`${API}/clientes/${id}`)
-      .then(r => r.json())
-      .then(data => {
+        // cliente
+        const res = await fetch(`${API}/clientes/${id}`)
+        const data = await res.json()
+
+        console.log('CLIENTE:', data)
+
         setForm({
-          ...data,
+          nombre: data.nombre || '',
+          apellido1: data.apellido1 || '',
+          apellido2: data.apellido2 || '',
+          apodo: data.apodo || '',
+          rfc: data.rfc || '',
+          categoria: data.categoria || '',
+          categoria_otro: data.categoria_otro || '',
+          nombre_tienda: data.nombre_tienda || '',
+          telefono: data.telefono || data.telefono_dueno || '',
+          telefono_local: data.telefono_local || data.telefono_tienda || '',
+          calle: data.calle || '',
+          numero: data.numero || '',
+          cp: data.cp || '',
+          municipio: data.municipio || '',
+          estado: data.estado || '',
+          entre_calles: data.entre_calles || '',
+          referencia: data.referencia || '',
           correo_usuario: data.email ? data.email.split('@')[0] : '',
-          correo_dominio: data.email ? '@' + data.email.split('@')[1] : '@gmail.com'
+          correo_dominio: data.email ? '@' + data.email.split('@')[1] : '@gmail.com',
+          id_ruta: data.id_ruta || ''
         })
-      })
+
+      } catch (err) {
+        console.error('ERROR:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    cargarDatos()
   }, [id])
 
   // =========================
-  // FORMATEO (IGUAL)
+  // FORMATEO
   // =========================
   const upper = v => v.toUpperCase().trim().replace(/\s+/g, ' ')
 
@@ -80,7 +112,7 @@ function EditarCliente() {
   }
 
   // =========================
-  // VALIDAR (IGUAL)
+  // VALIDAR
   // =========================
   const validar = () => {
     if (
@@ -151,13 +183,21 @@ function EditarCliente() {
 
       alert('✅ Cliente actualizado')
       navigate('/clientes')
+
     } catch {
       alert('❌ Error al actualizar')
     }
   }
 
   // =========================
-  // UI (MISMO DISEÑO)
+  // 🚨 BLOQUEO DE RENDER
+  // =========================
+  if (loading) {
+    return <p style={{ padding: 20 }}>Cargando cliente...</p>
+  }
+
+  // =========================
+  // UI
   // =========================
   return (
     <div style={styles.page}>
@@ -241,7 +281,7 @@ function Campo({ label, name, form, onChange }) {
   )
 }
 
-// estilos SIN CAMBIOS
+// estilos
 const vino = '#8B1E1E'
 const styles = {
   page: { padding: 20, maxWidth: 900, margin: 'auto', fontFamily: 'Arial' },
