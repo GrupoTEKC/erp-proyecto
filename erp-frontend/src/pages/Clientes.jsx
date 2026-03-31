@@ -136,8 +136,8 @@ function Clientes() {
                       {c.categoria}{c.categoria_otro ? ` (${c.categoria_otro})` : ''}
                     </td>
                     <td style={td}>{c.nombre_tienda}</td>
-                    <td style={td}>{c.telefono_dueno}</td>
-                    <td style={td}>{c.telefono_tienda}</td>
+                    <td style={td}>{c.telefono || '-'}</td>
+                    <td style={td}>{c.telefono_local || '-'}</td>
                     <td style={td}>{c.calle}</td>
                     <td style={td}>{c.numero}</td>
                     <td style={td}>{c.cp}</td>
