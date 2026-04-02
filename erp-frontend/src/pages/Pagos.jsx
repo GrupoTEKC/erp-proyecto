@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom"
 
 const API = "https://erp-proyecto-production.up.railway.app"
 
-/* ================= ESTILOS ================= */
 const styles = {
   page: {
     backgroundColor: '#ffffff',
@@ -38,27 +37,15 @@ const styles = {
     borderRadius: '6px',
     border: '1px solid #8B1E1E'
   },
-  card: {
-    border: '1px solid #ddd',
-    borderRadius: '6px',
-    padding: '12px',
-    marginBottom: '10px'
-  },
   cardPedido: {
     border: '1px solid #ddd',
     borderRadius: '6px',
     padding: '12px',
     marginBottom: '10px'
   },
-  rojo: {
-    border: '2px solid red'
-  },
-  amarillo: {
-    border: '2px solid #FFD600'
-  },
-  gris: {
-    border: '2px solid #ccc'
-  },
+  rojo: { border: '2px solid red' },
+  amarillo: { border: '2px solid #FFD600' },
+  gris: { border: '2px solid #ccc', backgroundColor: '#f5f5f5' },
   botonAccion: {
     marginTop: '8px',
     padding: '8px 12px',
@@ -73,34 +60,36 @@ const styles = {
 
 function Pagos() {
   const navigate = useNavigate()
+
   const [clientes, setClientes] = useState([])
   const [busqueda, setBusqueda] = useState("")
   const [clienteSeleccionado, setClienteSeleccionado] = useState(null)
   const [pedidos, setPedidos] = useState([])
   const [busquedaFolio, setBusquedaFolio] = useState("")
 
-  // 🔥 NUEVOS STATES (pagos)
+  // 🔥 pagos
   const [mostrarPago, setMostrarPago] = useState(null)
   const [monto, setMonto] = useState("")
   const [metodo, setMetodo] = useState("efectivo")
   const [cuenta, setCuenta] = useState("")
+  const [nombreEntrega, setNombreEntrega] = useState("")
 
-  /* ================= CARGAR CLIENTES ================= */
+  // 🔥 detalles
+  const [detalles, setDetalles] = useState([])
+  const [verDetalles, setVerDetalles] = useState(null)
+
   useEffect(() => {
     fetch(`${API}/clientes`)
       .then(res => res.json())
-      .then(data => setClientes(data))
-      .catch(err => console.error(err))
+      .then(setClientes)
   }, [])
 
-  /* ================= FILTRO CLIENTES ================= */
   const clientesFiltrados = clientes.filter(c =>
     `${c.nombre} ${c.apellido1} ${c.apellido2} ${c.nombre_tienda} ${c.apodo}`
       .toLowerCase()
       .includes(busqueda.toLowerCase())
   )
 
-  /* ================= CARGAR PEDIDOS ================= */
   const cargarPedidos = async (cliente) => {
     setClienteSeleccionado(cliente)
     const res = await fetch(`${API}/pedidos/cliente/${cliente.id_cliente}`)
@@ -108,73 +97,58 @@ function Pagos() {
     setPedidos(data)
   }
 
-  /* ================= FORMATEAR FECHA ================= */
-  const formatearFecha = (fecha) => {
-    if (!fecha) return "-"
-    return new Date(fecha).toLocaleDateString()
+  const cargarDetalles = async (id_pedido) => {
+    const res = await fetch(`${API}/pagos/${id_pedido}`)
+    const data = await res.json()
+    setDetalles(data)
+    setVerDetalles(id_pedido)
   }
 
-  /* ================= LÓGICA DE COLORES ================= */
-  const obtenerEstadoPago = (p) => {
-    if (p.tipo_pedido === 'contado') return 'contado'
-    if (!p.fecha_entrega) return 'sin_fecha'
-    const hoy = new Date()
-    const entrega = new Date(p.fecha_entrega)
-    const dias = Math.floor((hoy - entrega) / (1000 * 60 * 60 * 24))
-    if (dias >= 30) return 'vencido'
-    if (dias >= 15) return 'medio'
-    return 'normal'
-  }
-
-  /* ================= REGISTRAR PAGO ================= */
   const registrarPago = async (pedido) => {
-    try {
-      const res = await fetch(`${API}/pagos`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id_pedido: pedido.id_pedido,
-          monto,
-          metodo,
-          cuenta_destino: metodo === "transferencia" ? cuenta : null,
-          id_usuario: 1,
-          tipo_usuario: "vendedor",
-          nombre_usuario: "Sistema"
-        })
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        alert(data.error)
-        return
-      }
-
-      alert("Pago registrado ✅")
-
-      cargarPedidos(clienteSeleccionado)
-
-      setMostrarPago(null)
-      setMonto("")
-      setMetodo("efectivo")
-      setCuenta("")
-
-    } catch (err) {
-      console.error(err)
-      alert("Error al pagar")
+    if (metodo === "efectivo" && !nombreEntrega.trim()) {
+      alert("Debes poner quién entrega el dinero")
+      return
     }
+
+    const res = await fetch(`${API}/pagos`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id_pedido: pedido.id_pedido,
+        monto,
+        metodo,
+        cuenta_destino: metodo === "transferencia" ? cuenta : null,
+        id_usuario: 1,
+        tipo_usuario: "vendedor",
+        nombre_usuario: metodo === "efectivo" ? nombreEntrega : null
+      })
+    })
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      alert(data.error)
+      return
+    }
+
+    alert("Abono registrado ✅")
+    cargarPedidos(clienteSeleccionado)
+
+    setMostrarPago(null)
+    setMonto("")
+    setMetodo("efectivo")
+    setCuenta("")
+    setNombreEntrega("")
   }
 
-  /* ================= FILTRO FOLIO ================= */
   const pedidosFiltrados = pedidos.filter(p =>
     `${p.folio || p.id_pedido}`.toString().includes(busquedaFolio)
   )
 
   return (
     <div style={styles.page}>
-
       <button style={styles.backTop} onClick={() => navigate("/")}>
-        ⬅ Volver a clientes
+        ⬅ Volver
       </button>
 
       <h2 style={styles.titleCenter}>CUENTAS POR COBRAR</h2>
@@ -182,111 +156,90 @@ function Pagos() {
       {!clienteSeleccionado && (
         <>
           <input
-            type="text"
-            placeholder="Buscar cliente o tienda..."
+            placeholder="Buscar cliente..."
             value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
+            onChange={e => setBusqueda(e.target.value)}
             style={styles.field}
           />
 
-          <div style={{ marginTop: 20 }}>
-            {clientesFiltrados.map(c => (
-              <div key={c.id_cliente} style={styles.card}>
-                <b>{c.nombre} {c.apellido1}</b>
-                <br />
-                {c.nombre_tienda}
-                <br />
-                💰 Saldo: ${c.saldo_actual || 0}
-                <br />
-                <button
-                  style={styles.botonAccion}
-                  onClick={() => cargarPedidos(c)}
-                >
-                  Estado de cuenta
-                </button>
-              </div>
-            ))}
-          </div>
+          {clientesFiltrados.map(c => (
+            <div key={c.id_cliente}>
+              <b>{c.nombre} {c.apellido1}</b>
+              <br />
+              {c.nombre_tienda}
+              <br />
+              <button onClick={() => cargarPedidos(c)} style={styles.botonAccion}>
+                Estado de cuenta
+              </button>
+            </div>
+          ))}
         </>
       )}
 
       {clienteSeleccionado && (
-        <div style={{ marginTop: 20 }}>
-          <h3>
-            {clienteSeleccionado.nombre} {clienteSeleccionado.apellido1}
-          </h3>
+        <>
+          <h3>{clienteSeleccionado.nombre}</h3>
 
           <input
-            type="text"
             placeholder="Buscar folio..."
             value={busquedaFolio}
-            onChange={(e) => setBusquedaFolio(e.target.value)}
-            style={{ ...styles.field, marginBottom: '15px' }}
+            onChange={e => setBusquedaFolio(e.target.value)}
+            style={styles.field}
           />
 
           {pedidosFiltrados.map(p => {
-            const estado = obtenerEstadoPago(p)
+            const pagado = (p.total_pagado || 0) >= p.total
 
             return (
               <div
                 key={p.id_pedido}
                 style={{
                   ...styles.cardPedido,
-                  ...(estado === 'vencido' ? styles.rojo : {}),
-                  ...(estado === 'medio' ? styles.amarillo : {}),
-                  ...(estado === 'contado' ? styles.gris : {})
+                  ...(pagado ? styles.gris : {})
                 }}
               >
                 <b>Folio: {p.folio || p.id_pedido}</b>
-                <br />
-                📅 Entrega: {formatearFecha(p.fecha_entrega)}
-                <br />
-
-                {p.tipo_pedido === 'contado' ? (
-                  <div style={{ color: '#555', fontSize: '13px' }}>
-                    VENCIMIENTO: No aplica (contado)
-                  </div>
-                ) : (
-                  <div style={{ fontSize: '13px' }}>
-                    Días desde entrega: {
-                      p.fecha_entrega
-                        ? Math.floor((new Date() - new Date(p.fecha_entrega)) / (1000 * 60 * 60 * 24))
-                        : "-"
-                    }
-                  </div>
-                )}
-
                 <br />
                 💰 Total: ${p.total}
                 <br />
                 💸 Pagado: ${p.total_pagado || 0}
                 <br />
-                🔻 Saldo: ${p.saldo || p.total}
 
-                {/* 🔥 BOTÓN PAGAR */}
+                {pagado && (
+                  <div style={{ color: 'green', fontWeight: 'bold' }}>
+                    ✅ PAGADO
+                  </div>
+                )}
+
+                {!pagado && (
+                  <button
+                    style={styles.botonAccion}
+                    onClick={() => setMostrarPago(p.id_pedido)}
+                  >
+                    Agregar abono
+                  </button>
+                )}
+
                 <button
-                  style={styles.botonAccion}
-                  onClick={() => setMostrarPago(p.id_pedido)}
+                  style={{ ...styles.botonAccion, backgroundColor: '#444' }}
+                  onClick={() => cargarDetalles(p.id_pedido)}
                 >
-                  Registrar pago
+                  Ver detalles
                 </button>
 
-                {/* 🔥 FORMULARIO */}
                 {mostrarPago === p.id_pedido && (
-                  <div style={{ marginTop: 10 }}>
-
+                  <div>
                     <input
-                      type="number"
                       placeholder="Monto"
                       value={monto}
-                      onChange={(e) => setMonto(e.target.value)}
+                      onChange={e => setMonto(e.target.value)}
                       style={styles.field}
                     />
 
                     <select
                       value={metodo}
-                      onChange={(e) => setMetodo(e.target.value)}
-                      style={{ ...styles.field, marginTop: 5 }}
+                      onChange={e => setMetodo(e.target.value)}
+                      style={styles.field}
                     >
                       <option value="efectivo">Efectivo</option>
                       <option value="transferencia">Transferencia</option>
@@ -295,37 +248,45 @@ function Pagos() {
                     {metodo === "transferencia" && (
                       <select
                         value={cuenta}
-                        onChange={(e) => setCuenta(e.target.value)}
-                        style={{ ...styles.field, marginTop: 5 }}
+                        onChange={e => setCuenta(e.target.value)}
+                        style={styles.field}
                       >
-                        <option value="">Selecciona cuenta</option>
+                        <option value="">Cuenta</option>
                         <option value="fiscal">Fiscal</option>
                         <option value="yair">Yair</option>
                         <option value="rosario">Rosario</option>
                       </select>
                     )}
 
-                    <button
-                      style={styles.botonAccion}
-                      onClick={() => registrarPago(p)}
-                    >
+                    {metodo === "efectivo" && (
+                      <input
+                        placeholder="Quién entrega"
+                        value={nombreEntrega}
+                        onChange={e => setNombreEntrega(e.target.value)}
+                        style={styles.field}
+                      />
+                    )}
+
+                    <button onClick={() => registrarPago(p)} style={styles.botonAccion}>
                       Confirmar
                     </button>
-
-                    <button
-                      style={{ ...styles.botonAccion, backgroundColor: '#999', marginLeft: 5 }}
-                      onClick={() => setMostrarPago(null)}
-                    >
-                      Cancelar
-                    </button>
-
                   </div>
                 )}
 
+                {verDetalles === p.id_pedido && (
+                  <div style={{ marginTop: 10 }}>
+                    <b>Historial:</b>
+                    {detalles.map(d => (
+                      <div key={d.id_pago}>
+                        ${d.monto} - {d.metodo} - {d.nombre_usuario || '-'}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )
           })}
-        </div>
+        </>
       )}
     </div>
   )
