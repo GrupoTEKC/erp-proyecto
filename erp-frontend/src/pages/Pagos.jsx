@@ -73,12 +73,17 @@ const styles = {
 
 function Pagos() {
   const navigate = useNavigate()
-
   const [clientes, setClientes] = useState([])
   const [busqueda, setBusqueda] = useState("")
   const [clienteSeleccionado, setClienteSeleccionado] = useState(null)
   const [pedidos, setPedidos] = useState([])
   const [busquedaFolio, setBusquedaFolio] = useState("")
+
+  // 🔥 NUEVOS STATES (pagos)
+  const [mostrarPago, setMostrarPago] = useState(null)
+  const [monto, setMonto] = useState("")
+  const [metodo, setMetodo] = useState("efectivo")
+  const [cuenta, setCuenta] = useState("")
 
   /* ================= CARGAR CLIENTES ================= */
   useEffect(() => {
@@ -113,16 +118,51 @@ function Pagos() {
   const obtenerEstadoPago = (p) => {
     if (p.tipo_pedido === 'contado') return 'contado'
     if (!p.fecha_entrega) return 'sin_fecha'
-
     const hoy = new Date()
     const entrega = new Date(p.fecha_entrega)
-
     const dias = Math.floor((hoy - entrega) / (1000 * 60 * 60 * 24))
-
     if (dias >= 30) return 'vencido'
     if (dias >= 15) return 'medio'
-
     return 'normal'
+  }
+
+  /* ================= REGISTRAR PAGO ================= */
+  const registrarPago = async (pedido) => {
+    try {
+      const res = await fetch(`${API}/pagos`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id_pedido: pedido.id_pedido,
+          monto,
+          metodo,
+          cuenta_destino: metodo === "transferencia" ? cuenta : null,
+          id_usuario: 1,
+          tipo_usuario: "vendedor",
+          nombre_usuario: "Sistema"
+        })
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        alert(data.error)
+        return
+      }
+
+      alert("Pago registrado ✅")
+
+      cargarPedidos(clienteSeleccionado)
+
+      setMostrarPago(null)
+      setMonto("")
+      setMetodo("efectivo")
+      setCuenta("")
+
+    } catch (err) {
+      console.error(err)
+      alert("Error al pagar")
+    }
   }
 
   /* ================= FILTRO FOLIO ================= */
@@ -133,15 +173,12 @@ function Pagos() {
   return (
     <div style={styles.page}>
 
-      {/* BOTÓN ARRIBA IZQUIERDA */}
       <button style={styles.backTop} onClick={() => navigate("/")}>
         ⬅ Volver a clientes
       </button>
 
-      {/* TÍTULO */}
       <h2 style={styles.titleCenter}>CUENTAS POR COBRAR</h2>
 
-      {/* ================= CLIENTES ================= */}
       {!clienteSeleccionado && (
         <>
           <input
@@ -160,7 +197,6 @@ function Pagos() {
                 {c.nombre_tienda}
                 <br />
                 💰 Saldo: ${c.saldo_actual || 0}
-
                 <br />
                 <button
                   style={styles.botonAccion}
@@ -174,15 +210,12 @@ function Pagos() {
         </>
       )}
 
-      {/* ================= PEDIDOS ================= */}
       {clienteSeleccionado && (
         <div style={{ marginTop: 20 }}>
-
           <h3>
             {clienteSeleccionado.nombre} {clienteSeleccionado.apellido1}
           </h3>
 
-          {/* 🔍 BUSCADOR FOLIO */}
           <input
             type="text"
             placeholder="Buscar folio..."
@@ -206,11 +239,9 @@ function Pagos() {
               >
                 <b>Folio: {p.folio || p.id_pedido}</b>
                 <br />
-
                 📅 Entrega: {formatearFecha(p.fecha_entrega)}
                 <br />
 
-                {/* CONTADO */}
                 {p.tipo_pedido === 'contado' ? (
                   <div style={{ color: '#555', fontSize: '13px' }}>
                     VENCIMIENTO: No aplica (contado)
@@ -231,6 +262,66 @@ function Pagos() {
                 💸 Pagado: ${p.total_pagado || 0}
                 <br />
                 🔻 Saldo: ${p.saldo || p.total}
+
+                {/* 🔥 BOTÓN PAGAR */}
+                <button
+                  style={styles.botonAccion}
+                  onClick={() => setMostrarPago(p.id_pedido)}
+                >
+                  Registrar pago
+                </button>
+
+                {/* 🔥 FORMULARIO */}
+                {mostrarPago === p.id_pedido && (
+                  <div style={{ marginTop: 10 }}>
+
+                    <input
+                      type="number"
+                      placeholder="Monto"
+                      value={monto}
+                      onChange={(e) => setMonto(e.target.value)}
+                      style={styles.field}
+                    />
+
+                    <select
+                      value={metodo}
+                      onChange={(e) => setMetodo(e.target.value)}
+                      style={{ ...styles.field, marginTop: 5 }}
+                    >
+                      <option value="efectivo">Efectivo</option>
+                      <option value="transferencia">Transferencia</option>
+                    </select>
+
+                    {metodo === "transferencia" && (
+                      <select
+                        value={cuenta}
+                        onChange={(e) => setCuenta(e.target.value)}
+                        style={{ ...styles.field, marginTop: 5 }}
+                      >
+                        <option value="">Selecciona cuenta</option>
+                        <option value="fiscal">Fiscal</option>
+                        <option value="yair">Yair</option>
+                        <option value="rosario">Rosario</option>
+                      </select>
+                    )}
+
+                    <button
+                      style={styles.botonAccion}
+                      onClick={() => registrarPago(p)}
+                    >
+                      Confirmar
+                    </button>
+
+                    <button
+                      style={{ ...styles.botonAccion, backgroundColor: '#999', marginLeft: 5 }}
+                      onClick={() => setMostrarPago(null)}
+                    >
+                      Cancelar
+                    </button>
+
+                  </div>
+                )}
+
               </div>
             )
           })}
