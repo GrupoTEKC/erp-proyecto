@@ -1060,6 +1060,179 @@ app.post('/control-envios/cancelar', async (req, res) => {
     conn.release()
   }
 })
+
+// =============================
+// 💰 PAGOS (ABONOS)
+// =============================
+app.post('/pagos', async (req, res) => {
+  const conn = await db.getConnection()
+  try {
+    const {
+      id_pedido,
+      monto,
+      metodo,
+      cuenta_destino,
+      id_usuario,
+      tipo_usuario,
+      nombre_usuario
+    } = req.body
+
+    // =============================
+    // 🔥 NORMALIZAR MONTO
+    // =============================
+    const montoNum = Number(monto)
+
+    // =============================
+    // 🔥 VALIDACIONES
+    // =============================
+    if (!id_pedido || !metodo || !id_usuario || !tipo_usuario) {
+      return res.status(400).json({
+        error: 'Datos incompletos'
+      })
+    }
+
+    if (isNaN(montoNum) || montoNum <= 0) {
+      return res.status(400).json({
+        error: 'Monto inválido'
+      })
+    }
+
+    if (!['efectivo', 'transferencia'].includes(metodo)) {
+      return res.status(400).json({
+        error: 'Método inválido'
+      })
+    }
+
+    if (!['chofer', 'vendedor'].includes(tipo_usuario)) {
+      return res.status(400).json({
+        error: 'Tipo usuario inválido'
+      })
+    }
+
+    // 🔥 VALIDAR CUENTA DESTINO
+    if (metodo === 'transferencia') {
+      const cuentasValidas = ['fiscal', 'yair', 'rosario']
+
+      if (!cuenta_destino || !cuentasValidas.includes(cuenta_destino)) {
+        return res.status(400).json({
+          error: 'Cuenta destino inválida'
+        })
+      }
+    }
+
+    // si es efectivo → limpiar cuenta
+    const cuentaFinal = metodo === 'efectivo' ? null : cuenta_destino
+
+    await conn.beginTransaction()
+
+    // =============================
+    // 🔎 OBTENER PEDIDO
+    // =============================
+    const [pedidoRows] = await conn.query(`
+      SELECT total, total_pagado, estado
+      FROM pedidos 
+      WHERE id_pedido = ?
+    `, [id_pedido])
+
+    if (!pedidoRows.length) {
+      throw new Error('Pedido no existe')
+    }
+
+    const pedido = pedidoRows[0]
+
+    // 🚫 NO PAGAR CANCELADOS
+    if (pedido.estado === 'cancelado') {
+      throw new Error('No se puede pagar un pedido cancelado')
+    }
+
+    const total = Number(pedido.total || 0)
+    const total_pagado = Number(pedido.total_pagado || 0)
+
+    const nuevoTotalPagado = total_pagado + montoNum
+
+    // 🚨 NO PERMITIR SOBREPAGO
+    if (nuevoTotalPagado > total) {
+      throw new Error('El pago excede el total del pedido')
+    }
+
+    // =============================
+    // 💾 INSERTAR PAGO
+    // =============================
+    await conn.query(`
+      INSERT INTO pagos (
+        id_pedido,
+        fecha_pago,
+        monto,
+        metodo,
+        cuenta_destino,
+        id_usuario,
+        tipo_usuario,
+        nombre_usuario
+      )
+      VALUES (?, CURRENT_DATE(), ?, ?, ?, ?, ?, ?)
+    `, [
+      id_pedido,
+      montoNum,
+      metodo,
+      cuentaFinal,
+      id_usuario,
+      tipo_usuario,
+      nombre_usuario || null
+    ])
+
+    // =============================
+    // 🔄 ACTUALIZAR PEDIDO
+    // =============================
+    await conn.query(`
+      UPDATE pedidos
+      SET total_pagado = total_pagado + ?
+      WHERE id_pedido = ?
+    `, [montoNum, id_pedido])
+
+    await conn.commit()
+
+    res.json({
+      success: true,
+      total,
+      total_pagado: nuevoTotalPagado,
+      saldo_restante: total - nuevoTotalPagado
+    })
+
+  } catch (err) {
+    await conn.rollback()
+    res.status(500).json({
+      error: err.message
+    })
+  } finally {
+    conn.release()
+  }
+})
+
+app.get('/pagos/:id_pedido', async (req, res) => {
+  try {
+    const { id_pedido } = req.params
+
+    const [rows] = await db.query(`
+      SELECT 
+        id_pago,
+        fecha_pago,
+        monto,
+        metodo,
+        cuenta_destino,
+        tipo_usuario,
+        nombre_usuario
+      FROM pagos
+      WHERE id_pedido = ?
+      ORDER BY fecha_pago DESC
+    `, [id_pedido])
+
+    res.json(rows)
+
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // =============================
 // SERVER
 // =============================
