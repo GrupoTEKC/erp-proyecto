@@ -141,9 +141,17 @@ function Pagos() {
     setNombreEntrega("")
   }
 
-  const pedidosFiltrados = pedidos.filter(p =>
-    `${p.folio || p.id_pedido}`.toString().includes(busquedaFolio)
-  )
+  // 🔥 ORDENAR: pendientes arriba, pagados abajo
+  const pedidosFiltrados = pedidos
+    .filter(p =>
+      `${p.folio || p.id_pedido}`.toString().includes(busquedaFolio)
+    )
+    .sort((a, b) => {
+      const pagadoA = (a.total_pagado || 0) >= a.total
+      const pagadoB = (b.total_pagado || 0) >= b.total
+      if (pagadoA === pagadoB) return 0
+      return pagadoA ? 1 : -1
+    })
 
   return (
     <div style={styles.page}>
@@ -278,7 +286,12 @@ function Pagos() {
                     <b>Historial:</b>
                     {detalles.map(d => (
                       <div key={d.id_pago}>
-                        ${d.monto} - {d.metodo} - {d.nombre_usuario || '-'}
+                        ${d.monto} - {d.metodo}
+                        {d.metodo === 'transferencia' && d.cuenta_destino && (
+                          <> ({d.cuenta_destino})</>
+                        )}
+                        {" - "}
+                        {d.nombre_usuario || '-'}
                       </div>
                     ))}
                   </div>
