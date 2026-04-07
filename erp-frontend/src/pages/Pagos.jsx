@@ -298,10 +298,11 @@ function Pagos() {
                         onChange={e => setPagoField(p.id_pedido, "cuenta", e.target.value)}
                         style={styles.field}
                       >
-                        <option value="">Cuenta</option>
-                        <option value="fiscal">Fiscal</option>
-                        <option value="yair">Yair</option>
-                        <option value="rosario">Rosario</option>
+                       <option value="fiscal">Fiscal</option>
+<option value="yair">Yair</option>
+<option value="natanael">Natanael</option>
+<option value="giovanny">Giovanny</option>
+<option value="rosario">Rosario</option>
                       </select>
                     )}
 
