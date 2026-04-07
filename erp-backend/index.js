@@ -177,6 +177,7 @@ app.delete('/clientes/:id_cliente', async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
+
 app.post('/clientes', async (req, res) => {
   try {
     let {
@@ -202,7 +203,7 @@ app.post('/clientes', async (req, res) => {
     } = req.body
 
     // =============================
-    // 🔠 NORMALIZADOR SEGURO
+    // 🔠 NORMALIZADOR
     // =============================
     const toUpper = (val) => 
       val ? String(val).toUpperCase() : null
@@ -229,35 +230,37 @@ app.post('/clientes', async (req, res) => {
     referencia = toUpper(referencia)
 
     // =============================
-    // ✅ VALIDACIONES FLEXIBLES
+    // ✅ VALIDACIONES (TUS REGLAS)
     // =============================
 
-    // 🔥 SOLO NOMBRE
+    // 🔥 OBLIGATORIOS
     if (!nombre) {
       return res.status(400).json({ error: 'Nombre obligatorio' })
     }
 
-    // 🔥 CATEGORÍA
     if (!categoria) {
       return res.status(400).json({ error: 'Categoría obligatoria' })
     }
 
-    if (categoria === 'OTROS' && !categoria_otro) {
-      return res.status(400).json({ 
-        error: 'Debe especificar la categoría en "otros"' 
-      })
+    if (!nombre_tienda) {
+      return res.status(400).json({ error: 'Nombre de tienda obligatorio' })
     }
 
-    // 🔥 UBICACIÓN
     if (!municipio || !estado) {
       return res.status(400).json({ 
         error: 'Municipio y estado obligatorios' 
       })
     }
 
-    // 🔥 RUTA
     if (!id_ruta) {
       return res.status(400).json({ error: 'Ruta obligatoria' })
+    }
+
+    // 🔥 CATEGORÍA OTROS
+    if (categoria === 'OTROS' && !categoria_otro) {
+      return res.status(400).json({ 
+        error: 'Debe especificar la categoría en "otros"' 
+      })
     }
 
     // =============================
@@ -285,20 +288,18 @@ app.post('/clientes', async (req, res) => {
     }
 
     // =============================
-    // 🔥 NOMBRE TIENDA (ÚNICO SI EXISTE)
+    // 🔥 VALIDAR NOMBRE TIENDA ÚNICO
     // =============================
-    if (nombre_tienda) {
-      const [existe] = await db.query(`
-        SELECT id_cliente 
-        FROM clientes 
-        WHERE TRIM(UPPER(nombre_tienda)) = ?
-      `, [nombre_tienda])
+    const [existe] = await db.query(`
+      SELECT id_cliente 
+      FROM clientes 
+      WHERE TRIM(UPPER(nombre_tienda)) = ?
+    `, [nombre_tienda])
 
-      if (existe.length > 0) {
-        return res.status(400).json({ 
-          error: 'Ya existe una tienda con ese nombre' 
-        })
-      }
+    if (existe.length > 0) {
+      return res.status(400).json({ 
+        error: 'Ya existe una tienda con ese nombre' 
+      })
     }
 
     // =============================
@@ -329,8 +330,8 @@ app.post('/clientes', async (req, res) => {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       nombre,
-      apellido1,
-      apellido2,
+      apellido1 || null,
+      apellido2 || null,
       telefono || null,
       telefono_local || null,
       nombre_tienda,
@@ -338,13 +339,13 @@ app.post('/clientes', async (req, res) => {
       rfc || null,
       categoria,
       categoria === 'OTROS' ? categoria_otro : null,
-      calle,
-      numero,
-      cp,
+      calle || null,
+      numero || null,
+      cp || null,
       municipio,
       estado,
-      entre_calles,
-      referencia,
+      entre_calles || null,
+      referencia || null,
       email || null,
       id_ruta
     ])
