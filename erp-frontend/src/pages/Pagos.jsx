@@ -218,11 +218,11 @@ function Pagos() {
               >
                 <b>Folio: {p.folio || p.id_pedido}</b>
                 <br />
-                💰 Total: ${p.total}
+                💰 Monto total: ${p.total}
                 <br />
-                💸 Pagado: ${p.total_pagado || 0}
+                💸 Monto pagado: ${p.total_pagado || 0}
                 <br />
-                💳 Saldo: ${saldo}
+                💳 Saldo pendiente: ${saldo}
                 <br />
 
                 {pagado && (
