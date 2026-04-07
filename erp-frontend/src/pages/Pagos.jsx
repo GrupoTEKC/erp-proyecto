@@ -44,6 +44,8 @@ const styles = {
     marginBottom: '10px'
   },
   gris: { border: '2px solid #ccc', backgroundColor: '#f5f5f5' },
+  amarillo: { border: '2px solid #FFD600', backgroundColor: '#fff9c4' },
+  rojo: { border: '2px solid red', backgroundColor: '#ffe5e5' },
   botonAccion: {
     marginTop: '8px',
     padding: '8px 12px',
@@ -56,6 +58,25 @@ const styles = {
   }
 }
 
+// 🔥 calcular días desde entrega
+const calcularDias = (fecha_entrega) => {
+  if (!fecha_entrega) return 0
+
+  const hoy = new Date()
+  const entrega = new Date(fecha_entrega + "T00:00:00")
+
+  const diff = Math.floor((hoy - entrega) / (1000 * 60 * 60 * 24))
+  return diff > 0 ? diff : 0
+}
+
+// 🔥 colores
+const getColorStyle = (dias, pagado) => {
+  if (pagado) return styles.gris
+  if (dias >= 30) return styles.rojo
+  if (dias >= 15) return styles.amarillo
+  return {}
+}
+
 function Pagos() {
   const navigate = useNavigate()
 
@@ -65,11 +86,9 @@ function Pagos() {
   const [pedidos, setPedidos] = useState([])
   const [busquedaFolio, setBusquedaFolio] = useState("")
 
-  // 🔥 estado por pedido (PRO)
   const [pagosData, setPagosData] = useState({})
   const [mostrarPago, setMostrarPago] = useState(null)
 
-  // 🔥 detalles
   const [detalles, setDetalles] = useState([])
   const [verDetalles, setVerDetalles] = useState(null)
 
@@ -99,7 +118,6 @@ function Pagos() {
     setVerDetalles(id_pedido)
   }
 
-  // 🔥 manejar inputs por pedido
   const setPagoField = (id, field, value) => {
     setPagosData(prev => ({
       ...prev,
@@ -143,14 +161,12 @@ function Pagos() {
     cargarPedidos(clienteSeleccionado)
     setMostrarPago(null)
 
-    // limpiar solo ese pedido
     setPagosData(prev => ({
       ...prev,
       [pedido.id_pedido]: {}
     }))
   }
 
-  // 🔥 ordenar
   const pedidosFiltrados = pedidos
     .filter(p =>
       `${p.folio || p.id_pedido}`.toString().includes(busquedaFolio)
@@ -204,25 +220,36 @@ function Pagos() {
           />
 
           {pedidosFiltrados.map(p => {
-            const pagado = (p.total_pagado || 0) >= p.total
+            const totalPagado = p.total_pagado || 0
+            const saldo = p.total - totalPagado
+            const pagado = saldo <= 0
+
+            const dias = calcularDias(p.fecha_entrega)
+            const colorStyle = getColorStyle(dias, pagado)
+
             const dataPago = pagosData[p.id_pedido] || {}
-            const saldo = p.total - (p.total_pagado || 0)
 
             return (
               <div
                 key={p.id_pedido}
                 style={{
                   ...styles.cardPedido,
-                  ...(pagado ? styles.gris : {})
+                  ...colorStyle
                 }}
               >
                 <b>Folio: {p.folio || p.id_pedido}</b>
                 <br />
+
                 💰 Monto total: ${p.total}
                 <br />
-                💸 Monto pagado: ${p.total_pagado || 0}
+                💸 Monto pagado: ${totalPagado}
                 <br />
                 💳 Saldo pendiente: ${saldo}
+                <br />
+
+                📦 Entregado: {p.fecha_entrega || '—'}
+                <br />
+                📅 {dias > 0 ? `${dias} días desde entrega` : 'Hoy / reciente'}
                 <br />
 
                 {pagado && (
