@@ -202,11 +202,7 @@ app.post('/clientes', async (req, res) => {
       id_ruta
     } = req.body
 
-    // =============================
-    // 🔠 NORMALIZADOR
-    // =============================
-    const toUpper = (val) => 
-      val ? String(val).toUpperCase() : null
+    const toUpper = (val) => val ? val.toUpperCase() : null
 
     // =============================
     // 🔠 NORMALIZAR
@@ -214,13 +210,16 @@ app.post('/clientes', async (req, res) => {
     nombre = toUpper(nombre)
     apellido1 = toUpper(apellido1)
     apellido2 = toUpper(apellido2)
+
     nombre_tienda = nombre_tienda
       ? nombre_tienda.trim().replace(/\s+/g, ' ').toUpperCase()
       : null
+
     apodo = toUpper(apodo)
     rfc = toUpper(rfc)
     categoria = toUpper(categoria)
     categoria_otro = toUpper(categoria_otro)
+
     calle = toUpper(calle)
     numero = toUpper(numero)
     cp = toUpper(cp)
@@ -230,42 +229,51 @@ app.post('/clientes', async (req, res) => {
     referencia = toUpper(referencia)
 
     // =============================
-    // ✅ VALIDACIONES (TUS REGLAS)
+    // ✅ VALIDACIONES PRIMERO
     // =============================
-
-    // 🔥 OBLIGATORIOS
-    if (!nombre) {
-      return res.status(400).json({ error: 'Nombre obligatorio' })
+    if (!nombre || !apellido1 || !apellido2) {
+      return res.status(400).json({ error: 'Nombre completo obligatorio' })
     }
 
     if (!categoria) {
       return res.status(400).json({ error: 'Categoría obligatoria' })
     }
 
-    if (!nombre_tienda) {
-      return res.status(400).json({ error: 'Nombre de tienda obligatorio' })
-    }
-
-    if (!municipio || !estado) {
-      return res.status(400).json({ 
-        error: 'Municipio y estado obligatorios' 
-      })
-    }
-
-    if (!id_ruta) {
-      return res.status(400).json({ error: 'Ruta obligatoria' })
-    }
-
-    // 🔥 CATEGORÍA OTROS
     if (categoria === 'OTROS' && !categoria_otro) {
       return res.status(400).json({ 
         error: 'Debe especificar la categoría en "otros"' 
       })
     }
 
+    if (!nombre_tienda) {
+      return res.status(400).json({ error: 'Nombre de negocio obligatorio' })
+    }
+
+    if (!calle || !numero || !cp || !municipio || !estado) {
+      return res.status(400).json({ error: 'Dirección incompleta' })
+    }
+
+    if (!entre_calles) {
+      return res.status(400).json({ error: 'Entre calles obligatorio' })
+    }
+
+    if (!referencia) {
+      return res.status(400).json({ error: 'Referencia obligatoria' })
+    }
+
+    if (!id_ruta) {
+      return res.status(400).json({ error: 'Ruta obligatoria' })
+    }
+
     // =============================
-    // 📞 TELÉFONOS (OPCIONALES)
+    // 📞 TELÉFONOS
     // =============================
+    if (!telefono && !telefono_local) {
+      return res.status(400).json({ 
+        error: 'Debe capturar al menos un teléfono' 
+      })
+    }
+
     const validarTel = (tel) => /^\d{10}$/.test(tel)
 
     if (telefono && !validarTel(telefono)) {
@@ -280,15 +288,12 @@ app.post('/clientes', async (req, res) => {
       })
     }
 
-    // =============================
-    // RFC (OPCIONAL)
-    // =============================
     if (rfc && (rfc.length < 12 || rfc.length > 13)) {
       return res.status(400).json({ error: 'RFC inválido' })
     }
 
     // =============================
-    // 🔥 VALIDAR NOMBRE TIENDA ÚNICO
+    // 🔥 VALIDACIÓN NOMBRE TIENDA ÚNICO
     // =============================
     const [existe] = await db.query(`
       SELECT id_cliente 
@@ -330,8 +335,8 @@ app.post('/clientes', async (req, res) => {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       nombre,
-      apellido1 || null,
-      apellido2 || null,
+      apellido1,
+      apellido2,
       telefono || null,
       telefono_local || null,
       nombre_tienda,
@@ -339,13 +344,13 @@ app.post('/clientes', async (req, res) => {
       rfc || null,
       categoria,
       categoria === 'OTROS' ? categoria_otro : null,
-      calle || null,
-      numero || null,
-      cp || null,
+      calle,
+      numero,
+      cp,
       municipio,
       estado,
-      entre_calles || null,
-      referencia || null,
+      entre_calles,
+      referencia,
       email || null,
       id_ruta
     ])
@@ -356,7 +361,7 @@ app.post('/clientes', async (req, res) => {
     })
 
   } catch (err) {
-    console.error('❌ ERROR CLIENTE:', err)
+    console.error(err)
     res.status(500).json({ error: err.message })
   }
 })
