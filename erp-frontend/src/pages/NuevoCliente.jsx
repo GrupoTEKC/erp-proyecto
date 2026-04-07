@@ -6,7 +6,6 @@ const API = 'https://erp-proyecto-production.up.railway.app'
 function NuevoCliente() {
   const navigate = useNavigate()
   const [rutas, setRutas] = useState([])
-
   const [form, setForm] = useState({
     nombre: '',
     apellido1: '',
@@ -66,39 +65,38 @@ function NuevoCliente() {
   }
 
   // =========================
-  // VALIDACIONES
+  // VALIDACIONES (CORRECTO)
   // =========================
   const validar = () => {
-  if (
-    !form.nombre ||
-    !form.categoria ||
-    (form.categoria === 'OTROS' && !form.categoria_otro) ||
-    !form.nombre_tienda ||
-    !form.municipio ||
-    !form.estado ||
-    !form.id_ruta
-  ) {
-    alert('Complete todos los campos obligatorios')
-    return false
+    if (
+      !form.nombre ||
+      !form.categoria ||
+      (form.categoria === 'OTROS' && !form.categoria_otro) ||
+      !form.nombre_tienda ||
+      !form.municipio ||
+      !form.estado ||
+      !form.id_ruta
+    ) {
+      alert('Complete todos los campos obligatorios')
+      return false
+    }
+
+    if (
+      (form.telefono && form.telefono.length !== 10) ||
+      (form.telefono_local && form.telefono_local.length !== 10)
+    ) {
+      alert('Los teléfonos deben tener exactamente 10 dígitos')
+      return false
+    }
+
+    if (form.rfc && form.rfc.length < 12) {
+      alert('RFC incompleto')
+      return false
+    }
+
+    return true
   }
 
-  // teléfonos opcionales (solo validar si vienen)
-  if (
-    (form.telefono && form.telefono.length !== 10) ||
-    (form.telefono_local && form.telefono_local.length !== 10)
-  ) {
-    alert('Los teléfonos deben tener exactamente 10 dígitos')
-    return false
-  }
-
-  // RFC opcional
-  if (form.rfc && form.rfc.length < 12) {
-    alert('RFC incompleto')
-    return false
-  }
-
-  return true
-}
   // =========================
   // GUARDAR
   // =========================
@@ -144,19 +142,16 @@ function NuevoCliente() {
       <p style={{ ...styles.aviso, textAlign: 'justify' }}>
         <strong>INSTRUCCIONES DE LLENADO</strong>
         <br /><br />
-        * Todos los datos deben escribirse en <strong>MAYÚSCULAS</strong> (excepto correo).
+        * Solo algunos campos son obligatorios.
         <br /><br />
-        * Capturar únicamente información del dueño y la tienda.
-        <br /><br />
-        * El RFC debe ingresarse completo (12–13 caracteres).
-        <br /><br />
-        * Teléfonos deben contener exactamente 10 dígitos.
+        * Todos los datos en MAYÚSCULAS (excepto correo).
       </p>
 
       <div style={styles.grid}>
+
         <Campo label="Nombre dueño *" name="nombre" form={form} onChange={handleChange}/>
-        <Campo label="Primer apellido *" name="apellido1" form={form} onChange={handleChange}/>
-        <Campo label="Segundo apellido *" name="apellido2" form={form} onChange={handleChange}/>
+        <Campo label="Primer apellido" name="apellido1" form={form} onChange={handleChange}/>
+        <Campo label="Segundo apellido" name="apellido2" form={form} onChange={handleChange}/>
         <Campo label="Apodo" name="apodo" form={form} onChange={handleChange}/>
         <Campo label="RFC" name="rfc" form={form} onChange={handleChange}/>
 
@@ -178,11 +173,14 @@ function NuevoCliente() {
         <Campo label="Nombre negocio *" name="nombre_tienda" form={form} onChange={handleChange}/>
         <Campo label="Teléfono dueño" name="telefono" form={form} onChange={handleChange}/>
         <Campo label="Teléfono tienda" name="telefono_local" form={form} onChange={handleChange}/>
-        <Campo label="Calle *" name="calle" form={form} onChange={handleChange}/>
-        <Campo label="Número *" name="numero" form={form} onChange={handleChange}/>
-        <Campo label="CP *" name="cp" form={form} onChange={handleChange}/>
+
+        <Campo label="Calle" name="calle" form={form} onChange={handleChange}/>
+        <Campo label="Número" name="numero" form={form} onChange={handleChange}/>
+        <Campo label="CP" name="cp" form={form} onChange={handleChange}/>
+
         <Campo label="Municipio *" name="municipio" form={form} onChange={handleChange}/>
         <Campo label="Estado *" name="estado" form={form} onChange={handleChange}/>
+
         <Campo label="Entre calles" name="entre_calles" form={form} onChange={handleChange}/>
         <Campo label="Referencia" name="referencia" form={form} onChange={handleChange}/>
 
@@ -207,12 +205,14 @@ function NuevoCliente() {
             ))}
           </select>
         </div>
+
       </div>
 
       <div style={styles.buttons}>
         <button style={styles.save} onClick={guardarCliente}>
           Guardar Cliente
         </button>
+
         <button style={styles.cancel} onClick={() => navigate('/clientes')}>
           Cancelar
         </button>
