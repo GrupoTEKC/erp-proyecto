@@ -6,6 +6,7 @@ const API = 'https://erp-proyecto-production.up.railway.app'
 function NuevoCliente() {
   const navigate = useNavigate()
   const [rutas, setRutas] = useState([])
+
   const [form, setForm] = useState({
     nombre: '',
     apellido1: '',
@@ -70,14 +71,24 @@ function NuevoCliente() {
   const validar = () => {
     if (
       !form.nombre ||
+      !form.apellido1 ||
+      !form.apellido2 ||
       !form.categoria ||
       (form.categoria === 'OTROS' && !form.categoria_otro) ||
       !form.nombre_tienda ||
+      !form.calle ||
+      !form.numero ||
+      !form.cp ||
       !form.municipio ||
       !form.estado ||
       !form.id_ruta
     ) {
       alert('Complete todos los campos obligatorios')
+      return false
+    }
+
+    if (!form.telefono && !form.telefono_local) {
+      alert('Debe ingresar al menos un teléfono')
       return false
     }
 
@@ -142,18 +153,19 @@ function NuevoCliente() {
       <p style={{ ...styles.aviso, textAlign: 'justify' }}>
         <strong>INSTRUCCIONES DE LLENADO</strong>
         <br /><br />
-        * Solo algunos campos son obligatorios.
+        * Todos los datos deben escribirse en <strong>MAYÚSCULAS</strong> (excepto correo).
         <br /><br />
-        * Capturar solo el NOMBRE (no es necesario nombre completo).
+        * Capturar únicamente información del dueño y la tienda.
         <br /><br />
-        * Todos los datos en MAYÚSCULAS (excepto correo).
+        * El RFC debe ingresarse completo (12–13 caracteres).
+        <br /><br />
+        * Teléfonos deben contener exactamente 10 dígitos.
       </p>
 
       <div style={styles.grid}>
-
-        <Campo label="Nombre *" name="nombre" form={form} onChange={handleChange}/>
-        <Campo label="Primer apellido" name="apellido1" form={form} onChange={handleChange}/>
-        <Campo label="Segundo apellido" name="apellido2" form={form} onChange={handleChange}/>
+        <Campo label="Nombre dueño *" name="nombre" form={form} onChange={handleChange}/>
+        <Campo label="Primer apellido *" name="apellido1" form={form} onChange={handleChange}/>
+        <Campo label="Segundo apellido *" name="apellido2" form={form} onChange={handleChange}/>
         <Campo label="Apodo" name="apodo" form={form} onChange={handleChange}/>
         <Campo label="RFC" name="rfc" form={form} onChange={handleChange}/>
 
@@ -175,14 +187,11 @@ function NuevoCliente() {
         <Campo label="Nombre negocio *" name="nombre_tienda" form={form} onChange={handleChange}/>
         <Campo label="Teléfono dueño" name="telefono" form={form} onChange={handleChange}/>
         <Campo label="Teléfono tienda" name="telefono_local" form={form} onChange={handleChange}/>
-
-        <Campo label="Calle" name="calle" form={form} onChange={handleChange}/>
-        <Campo label="Número" name="numero" form={form} onChange={handleChange}/>
-        <Campo label="CP" name="cp" form={form} onChange={handleChange}/>
-
+        <Campo label="Calle *" name="calle" form={form} onChange={handleChange}/>
+        <Campo label="Número *" name="numero" form={form} onChange={handleChange}/>
+        <Campo label="CP *" name="cp" form={form} onChange={handleChange}/>
         <Campo label="Municipio *" name="municipio" form={form} onChange={handleChange}/>
         <Campo label="Estado *" name="estado" form={form} onChange={handleChange}/>
-
         <Campo label="Entre calles" name="entre_calles" form={form} onChange={handleChange}/>
         <Campo label="Referencia" name="referencia" form={form} onChange={handleChange}/>
 
@@ -207,14 +216,12 @@ function NuevoCliente() {
             ))}
           </select>
         </div>
-
       </div>
 
       <div style={styles.buttons}>
         <button style={styles.save} onClick={guardarCliente}>
           Guardar Cliente
         </button>
-
         <button style={styles.cancel} onClick={() => navigate('/clientes')}>
           Cancelar
         </button>
@@ -236,7 +243,7 @@ function Campo({ label, name, form, onChange }) {
 }
 
 // =========================
-// ESTILOS
+// ESTILOS (SIN CAMBIOS)
 // =========================
 const vino = '#8B1E1E'
 
