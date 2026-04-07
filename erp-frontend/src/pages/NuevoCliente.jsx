@@ -69,45 +69,36 @@ function NuevoCliente() {
   // VALIDACIONES
   // =========================
   const validar = () => {
-    if (
-      !form.nombre ||
-      !form.apellido1 ||
-      !form.apellido2 ||
-      !form.categoria ||
-      (form.categoria === 'OTROS' && !form.categoria_otro) ||
-      !form.nombre_tienda ||
-      !form.calle ||
-      !form.numero ||
-      !form.cp ||
-      !form.municipio ||
-      !form.estado ||
-      !form.id_ruta
-    ) {
-      alert('Complete todos los campos obligatorios')
-      return false
-    }
-
-    if (!form.telefono && !form.telefono_local) {
-      alert('Debe ingresar al menos un teléfono')
-      return false
-    }
-
-    if (
-      (form.telefono && form.telefono.length !== 10) ||
-      (form.telefono_local && form.telefono_local.length !== 10)
-    ) {
-      alert('Los teléfonos deben tener exactamente 10 dígitos')
-      return false
-    }
-
-    if (form.rfc && form.rfc.length < 12) {
-      alert('RFC incompleto')
-      return false
-    }
-
-    return true
+  if (
+    !form.nombre ||
+    !form.categoria ||
+    (form.categoria === 'OTROS' && !form.categoria_otro) ||
+    !form.nombre_tienda ||
+    !form.municipio ||
+    !form.estado ||
+    !form.id_ruta
+  ) {
+    alert('Complete todos los campos obligatorios')
+    return false
   }
 
+  // teléfonos opcionales (solo validar si vienen)
+  if (
+    (form.telefono && form.telefono.length !== 10) ||
+    (form.telefono_local && form.telefono_local.length !== 10)
+  ) {
+    alert('Los teléfonos deben tener exactamente 10 dígitos')
+    return false
+  }
+
+  // RFC opcional
+  if (form.rfc && form.rfc.length < 12) {
+    alert('RFC incompleto')
+    return false
+  }
+
+  return true
+}
   // =========================
   // GUARDAR
   // =========================
