@@ -65,7 +65,7 @@ function NuevoCliente() {
   }
 
   // =========================
-  // VALIDACIONES (CORRECTO)
+  // VALIDACIONES
   // =========================
   const validar = () => {
     if (
@@ -144,12 +144,14 @@ function NuevoCliente() {
         <br /><br />
         * Solo algunos campos son obligatorios.
         <br /><br />
+        * Capturar solo el NOMBRE (no es necesario nombre completo).
+        <br /><br />
         * Todos los datos en MAYÚSCULAS (excepto correo).
       </p>
 
       <div style={styles.grid}>
 
-        <Campo label="Nombre dueño *" name="nombre" form={form} onChange={handleChange}/>
+        <Campo label="Nombre *" name="nombre" form={form} onChange={handleChange}/>
         <Campo label="Primer apellido" name="apellido1" form={form} onChange={handleChange}/>
         <Campo label="Segundo apellido" name="apellido2" form={form} onChange={handleChange}/>
         <Campo label="Apodo" name="apodo" form={form} onChange={handleChange}/>
@@ -234,7 +236,7 @@ function Campo({ label, name, form, onChange }) {
 }
 
 // =========================
-// ESTILOS (SIN CAMBIOS)
+// ESTILOS
 // =========================
 const vino = '#8B1E1E'
 
