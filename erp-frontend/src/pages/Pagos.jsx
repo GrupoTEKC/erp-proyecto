@@ -58,13 +58,11 @@ const styles = {
   }
 }
 
-// 🔥 calcular días desde entrega
+// 🔥 calcular días (se sigue usando para colores)
 const calcularDias = (fecha_entrega) => {
   if (!fecha_entrega) return 0
-
   const hoy = new Date()
   const entrega = new Date(fecha_entrega + "T00:00:00")
-
   const diff = Math.floor((hoy - entrega) / (1000 * 60 * 60 * 24))
   return diff > 0 ? diff : 0
 }
@@ -254,12 +252,9 @@ function Pagos() {
                 }
                 <br />
 
-                📅 {dias} días desde entrega
-                <br />
-
                 {pagado && (
                   <div style={{ color: 'green', fontWeight: 'bold' }}>
-                    ✅ PAGADO (días congelados)
+                    ✅ PAGADO
                   </div>
                 )}
 
