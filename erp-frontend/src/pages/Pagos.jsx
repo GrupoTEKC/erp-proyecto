@@ -27,7 +27,6 @@ const styles = {
     fontSize: '22px',
     fontWeight: 'bold',
     color: '#071849',
-    letterSpacing: '1px',
     marginBottom: '20px'
   },
   field: {
@@ -35,7 +34,8 @@ const styles = {
     maxWidth: '400px',
     padding: '10px',
     borderRadius: '6px',
-    border: '1px solid #8B1E1E'
+    border: '1px solid #8B1E1E',
+    marginTop: '5px'
   },
   cardPedido: {
     border: '1px solid #ddd',
@@ -43,8 +43,6 @@ const styles = {
     padding: '12px',
     marginBottom: '10px'
   },
-  rojo: { border: '2px solid red' },
-  amarillo: { border: '2px solid #FFD600' },
   gris: { border: '2px solid #ccc', backgroundColor: '#f5f5f5' },
   botonAccion: {
     marginTop: '8px',
@@ -67,12 +65,9 @@ function Pagos() {
   const [pedidos, setPedidos] = useState([])
   const [busquedaFolio, setBusquedaFolio] = useState("")
 
-  // 🔥 pagos
+  // 🔥 estado por pedido (PRO)
+  const [pagosData, setPagosData] = useState({})
   const [mostrarPago, setMostrarPago] = useState(null)
-  const [monto, setMonto] = useState("")
-  const [metodo, setMetodo] = useState("efectivo")
-  const [cuenta, setCuenta] = useState("")
-  const [nombreEntrega, setNombreEntrega] = useState("")
 
   // 🔥 detalles
   const [detalles, setDetalles] = useState([])
@@ -104,8 +99,21 @@ function Pagos() {
     setVerDetalles(id_pedido)
   }
 
+  // 🔥 manejar inputs por pedido
+  const setPagoField = (id, field, value) => {
+    setPagosData(prev => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        [field]: value
+      }
+    }))
+  }
+
   const registrarPago = async (pedido) => {
-    if (metodo === "efectivo" && !nombreEntrega.trim()) {
+    const dataPago = pagosData[pedido.id_pedido] || {}
+
+    if (dataPago.metodo === "efectivo" && !dataPago.nombreEntrega?.trim()) {
       alert("Debes poner quién entrega el dinero")
       return
     }
@@ -115,12 +123,12 @@ function Pagos() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         id_pedido: pedido.id_pedido,
-        monto,
-        metodo,
-        cuenta_destino: metodo === "transferencia" ? cuenta : null,
+        monto: dataPago.monto,
+        metodo: dataPago.metodo,
+        cuenta_destino: dataPago.metodo === "transferencia" ? dataPago.cuenta : null,
         id_usuario: 1,
         tipo_usuario: "vendedor",
-        nombre_usuario: metodo === "efectivo" ? nombreEntrega : null
+        nombre_usuario: dataPago.metodo === "efectivo" ? dataPago.nombreEntrega : null
       })
     })
 
@@ -133,15 +141,16 @@ function Pagos() {
 
     alert("Abono registrado ✅")
     cargarPedidos(clienteSeleccionado)
-
     setMostrarPago(null)
-    setMonto("")
-    setMetodo("efectivo")
-    setCuenta("")
-    setNombreEntrega("")
+
+    // limpiar solo ese pedido
+    setPagosData(prev => ({
+      ...prev,
+      [pedido.id_pedido]: {}
+    }))
   }
 
-  // 🔥 ORDENAR: pendientes arriba, pagados abajo
+  // 🔥 ordenar
   const pedidosFiltrados = pedidos
     .filter(p =>
       `${p.folio || p.id_pedido}`.toString().includes(busquedaFolio)
@@ -149,8 +158,7 @@ function Pagos() {
     .sort((a, b) => {
       const pagadoA = (a.total_pagado || 0) >= a.total
       const pagadoB = (b.total_pagado || 0) >= b.total
-      if (pagadoA === pagadoB) return 0
-      return pagadoA ? 1 : -1
+      return pagadoA === pagadoB ? 0 : pagadoA ? 1 : -1
     })
 
   return (
@@ -197,6 +205,8 @@ function Pagos() {
 
           {pedidosFiltrados.map(p => {
             const pagado = (p.total_pagado || 0) >= p.total
+            const dataPago = pagosData[p.id_pedido] || {}
+            const saldo = p.total - (p.total_pagado || 0)
 
             return (
               <div
@@ -211,6 +221,8 @@ function Pagos() {
                 💰 Total: ${p.total}
                 <br />
                 💸 Pagado: ${p.total_pagado || 0}
+                <br />
+                💳 Saldo: ${saldo}
                 <br />
 
                 {pagado && (
@@ -239,24 +251,24 @@ function Pagos() {
                   <div>
                     <input
                       placeholder="Monto"
-                      value={monto}
-                      onChange={e => setMonto(e.target.value)}
+                      value={dataPago.monto || ""}
+                      onChange={e => setPagoField(p.id_pedido, "monto", e.target.value)}
                       style={styles.field}
                     />
 
                     <select
-                      value={metodo}
-                      onChange={e => setMetodo(e.target.value)}
+                      value={dataPago.metodo || "efectivo"}
+                      onChange={e => setPagoField(p.id_pedido, "metodo", e.target.value)}
                       style={styles.field}
                     >
                       <option value="efectivo">Efectivo</option>
                       <option value="transferencia">Transferencia</option>
                     </select>
 
-                    {metodo === "transferencia" && (
+                    {dataPago.metodo === "transferencia" && (
                       <select
-                        value={cuenta}
-                        onChange={e => setCuenta(e.target.value)}
+                        value={dataPago.cuenta || ""}
+                        onChange={e => setPagoField(p.id_pedido, "cuenta", e.target.value)}
                         style={styles.field}
                       >
                         <option value="">Cuenta</option>
@@ -266,11 +278,11 @@ function Pagos() {
                       </select>
                     )}
 
-                    {metodo === "efectivo" && (
+                    {dataPago.metodo === "efectivo" && (
                       <input
                         placeholder="Quién entrega"
-                        value={nombreEntrega}
-                        onChange={e => setNombreEntrega(e.target.value)}
+                        value={dataPago.nombreEntrega || ""}
+                        onChange={e => setPagoField(p.id_pedido, "nombreEntrega", e.target.value)}
                         style={styles.field}
                       />
                     )}
