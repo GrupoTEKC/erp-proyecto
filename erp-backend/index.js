@@ -529,7 +529,7 @@ app.get('/pedidos/cliente/:id_cliente', async (req, res) => {
       INNER JOIN entregas e 
         ON p.id_pedido = e.id_pedido
       WHERE p.id_cliente = ?
-      AND p.estado = 'entregado'
+      AND p.estado IN ('entregado','pagado') -- 🔥 CORRECCIÓN CLAVE
       AND e.estado = 'entregado'
       ORDER BY e.fecha_entrega DESC
     `, [id_cliente])
