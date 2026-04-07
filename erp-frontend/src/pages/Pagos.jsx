@@ -247,14 +247,19 @@ function Pagos() {
                 💳 Saldo pendiente: ${saldo}
                 <br />
 
-                📦 Entregado: {p.fecha_entrega || '—'}
+                📦 Entregado: {
+                  p.fecha_entrega
+                    ? new Date(p.fecha_entrega).toLocaleDateString()
+                    : '—'
+                }
                 <br />
-                📅 {dias > 0 ? `${dias} días desde entrega` : 'Hoy / reciente'}
+
+                📅 {dias} días desde entrega
                 <br />
 
                 {pagado && (
                   <div style={{ color: 'green', fontWeight: 'bold' }}>
-                    ✅ PAGADO
+                    ✅ PAGADO (días congelados)
                   </div>
                 )}
 
