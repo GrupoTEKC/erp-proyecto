@@ -6,7 +6,9 @@ import NuevoCliente from './pages/NuevoCliente'
 import ConsultarPedidos from './pages/ConsultarPedidos'
 import EditarCliente from './pages/EditarCliente'
 import Pagos from './pages/Pagos'
-import PagosLogin from './pages/PagosLogin' // ✅ NUEVO
+import PagosLogin from './pages/PagosLogin'
+import PedidosLogin from './pages/PedidosLogin' // ✅ NUEVO
+import NuevoPedido from './pages/NuevoPedido'   // ✅ (si ya lo tienes)
 import ControlEnvios from './pages/ControlEnvios'
 import ControlEnviosDetalle from './pages/ControlEnviosDetalle'
 
@@ -15,8 +17,18 @@ function App() {
     <div style={{ padding: '20px', fontFamily: 'Arial' }}>
       <Routes>
         <Route path="/" element={<Menu />} />
+
+        {/* 📦 PEDIDOS */}
         <Route path="/pedidos" element={<Pedidos />} />
         <Route path="/pedidos/consultar" element={<ConsultarPedidos />} />
+
+        {/* 🔐 LOGIN PEDIDOS */}
+        <Route path="/login-pedidos" element={<PedidosLogin />} />
+
+        {/* 🧾 NUEVO PEDIDO */}
+        <Route path="/nuevo-pedido" element={<NuevoPedido />} />
+
+        {/* 👥 CLIENTES */}
         <Route path="/clientes" element={<Clientes />} />
         <Route path="/clientes/nuevo" element={<NuevoCliente />} />
         <Route path="/clientes/editar/:id_cliente" element={<EditarCliente />} />
@@ -24,9 +36,10 @@ function App() {
         {/* 🔐 LOGIN PAGOS */}
         <Route path="/pagos-login" element={<PagosLogin />} />
 
-        {/* 💵 MÓDULO PAGOS */}
+        {/* 💵 PAGOS */}
         <Route path="/pagos" element={<Pagos />} />
 
+        {/* 🚚 ENVÍOS */}
         <Route path="/control-envios" element={<ControlEnvios />} />
         <Route path="/control-envios/:id_chofer" element={<ControlEnviosDetalle />} />
       </Routes>
