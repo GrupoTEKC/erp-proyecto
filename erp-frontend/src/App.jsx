@@ -7,8 +7,7 @@ import ConsultarPedidos from './pages/ConsultarPedidos'
 import EditarCliente from './pages/EditarCliente'
 import Pagos from './pages/Pagos'
 import PagosLogin from './pages/PagosLogin'
-import PedidosLogin from './pages/PedidosLogin' // ✅ NUEVO
-import NuevoPedido from './pages/NuevoPedido'   // ✅ (si ya lo tienes)
+import PedidosLogin from './pages/PedidosLogin'
 import ControlEnvios from './pages/ControlEnvios'
 import ControlEnviosDetalle from './pages/ControlEnviosDetalle'
 
@@ -24,9 +23,6 @@ function App() {
 
         {/* 🔐 LOGIN PEDIDOS */}
         <Route path="/login-pedidos" element={<PedidosLogin />} />
-
-        {/* 🧾 NUEVO PEDIDO */}
-        <Route path="/nuevo-pedido" element={<NuevoPedido />} />
 
         {/* 👥 CLIENTES */}
         <Route path="/clientes" element={<Clientes />} />
