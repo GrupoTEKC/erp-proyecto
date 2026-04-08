@@ -97,7 +97,7 @@ function Menu() {
 
         <nav style={styles.menu}>
           
-          <Link to="/pedidos" style={styles.link}>
+          <Link to="/login-pedidos" style={styles.link}>
             <button style={styles.button}>
               <span style={styles.icon}>📄</span>
               Nuevo pedido
