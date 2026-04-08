@@ -64,7 +64,7 @@ function PedidosLogin() {
       usuario === 'vendedor#01' &&
       password === 'Npddven26!_'
     ) {
-      navigate('/nuevo-pedido') // 👈 ruta a tu módulo de pedidos
+      navigate('/pedidos') // 👈 ruta a tu módulo de pedidos
     } else {
       setError('Usuario o contraseña incorrectos')
     }
