@@ -9,12 +9,31 @@ const styles = {
   backButton: { display: 'inline-flex', alignItems: 'center', padding: '10px 14px', fontSize: '14px', backgroundColor: '#fff', color: '#8B1E1E', border: '1px solid #8B1E1E', borderRadius: '6px', cursor: 'pointer' },
   title: { marginTop: '20px', marginBottom: '15px', color: '#071849', fontWeight: 'bold' },
   field: { width: '260px', padding: '8px 10px', fontSize: '14px', borderRadius: '6px', border: '1px solid #8B1E1E', boxSizing: 'border-box', marginBottom: 15 },
-  table: { width: '100%', borderCollapse: 'collapse', marginTop: 10 },
-  th: { backgroundColor: '#8B1E1E', color: '#fff', padding: 8 },
-  td: { padding: 8, textAlign: 'center' },
+
+  // 🔥 NUEVO DISEÑO
+  columnas: {
+    display: 'flex',
+    gap: '15px',
+    overflowX: 'auto'
+  },
+  columna: {
+    minWidth: '320px',
+    background: '#f4f6f8',
+    borderRadius: '10px',
+    padding: '10px'
+  },
+  tarjeta: {
+    border: '1px solid #ddd',
+    borderRadius: '8px',
+    padding: '10px',
+    marginBottom: '10px',
+    backgroundColor: '#fff'
+  },
+
   button: { padding: '6px 10px', margin: '2px', borderRadius: '6px', border: 'none', cursor: 'pointer' },
   primary: { backgroundColor: '#8B1E1E', color: '#fff' },
   secondary: { backgroundColor: '#fff', border: '1px solid #8B1E1E', color: '#8B1E1E' },
+
   estado: (estado) => ({
     color: '#fff',
     padding: '4px 8px',
@@ -39,7 +58,6 @@ function ConsultarPedidos() {
   const [unidades, setUnidades] = useState([])
   const [comentarioCancelacion, setComentarioCancelacion] = useState('')
 
-  // 🔥 SOLO AQUÍ SE AGREGÓ LO NUEVO
   const [form, setForm] = useState({
     id_chofer: '',
     id_unidad: '',
@@ -72,11 +90,26 @@ function ConsultarPedidos() {
     return Math.floor(diff / (1000 * 60 * 60 * 24))
   }
 
+  // 🔥 AGRUPAR POR RUTA
+  const pedidosFiltrados = pedidos.filter(p =>
+    p.id_pedido.toString().includes(busqueda) ||
+    (p.cliente || '').toLowerCase().includes(busqueda.toLowerCase())
+  )
+
+  const pedidosPorRuta = pedidosFiltrados.reduce((acc, pedido) => {
+    const ruta = pedido.id_ruta || 'SIN RUTA'
+    if (!acc[ruta]) acc[ruta] = []
+    acc[ruta].push(pedido)
+    return acc
+  }, {})
+
   const abrirEntrega = async (id) => {
     const res = await fetch(`${urlLimpia}/pedidos/${id}/detalle`)
     const data = await res.json()
+
     const ch = await fetch(`${urlLimpia}/choferes`)
     const chData = await ch.json()
+
     const un = await fetch(`${urlLimpia}/unidades`)
     const unData = await un.json()
 
@@ -105,21 +138,14 @@ function ConsultarPedidos() {
   }
 
   const guardarEntrega = async () => {
-
-    // 🔥 VALIDACIÓN NUEVA
     if (form.otro_chofer) {
       if (!form.nombre_chofer || !form.apellido_paterno || !form.apellido_materno) {
         return alert("Completa los datos del chofer")
       }
     }
 
-    if (!form.id_unidad) {
-      return alert("Selecciona unidad")
-    }
-
-    if (!form.id_chofer && !form.otro_chofer) {
-      return alert("Selecciona chofer")
-    }
+    if (!form.id_unidad) return alert("Selecciona unidad")
+    if (!form.id_chofer && !form.otro_chofer) return alert("Selecciona chofer")
 
     const hayDiferencias = form.productos.some(
       p => p.cantidad_entregada !== p.cantidad_pedida
@@ -172,11 +198,6 @@ function ConsultarPedidos() {
     cargarPedidos()
   }
 
-  const pedidosFiltrados = pedidos.filter(p =>
-    p.id_pedido.toString().includes(busqueda) ||
-    (p.cliente || '').toLowerCase().includes(busqueda.toLowerCase())
-  )
-
   return (
     <div style={styles.page}>
       <div style={styles.header}>
@@ -194,57 +215,59 @@ function ConsultarPedidos() {
         onChange={e => setBusqueda(e.target.value)}
       />
 
-      <table style={styles.table} border="1">
-        <thead>
-          <tr>
-            <th style={styles.th}>ID</th>
-            <th style={styles.th}>Cliente</th>
-            <th style={styles.th}>Fecha</th>
-            <th style={styles.th}>Días</th>
-            <th style={styles.th}>Estado</th>
-            <th style={styles.th}>Acciones</th>
-          </tr>
-        </thead>
+      {/* 🔥 COLUMNAS POR RUTA */}
+      <div style={styles.columnas}>
+        {Object.entries(pedidosPorRuta).map(([ruta, lista]) => (
+          <div key={ruta} style={styles.columna}>
+            <h3 style={{ textAlign: 'center' }}>Ruta {ruta}</h3>
 
-        <tbody>
-          {pedidosFiltrados.map(p => (
-            <tr key={p.id_pedido}>
-              <td style={styles.td}>{p.id_pedido}</td>
-              <td style={styles.td}>{p.cliente}</td>
-              <td style={styles.td}>
-                {p.fecha ? new Date(p.fecha).toLocaleDateString() : '-'}
-              </td>
-              <td style={styles.td}>{calcularDias(p.fecha)}</td>
+            {lista.map(p => {
+              const dias = calcularDias(p.fecha)
+              const alerta = dias > 7
 
-              <td style={styles.td}>
-                <span style={styles.estado(p.estado)}>
-                  {p.estado}
-                </span>
-              </td>
-
-              <td style={styles.td}>
-                <button
-                  style={{ ...styles.button, ...styles.primary }}
-                  disabled={p.estado !== 'pendiente'}
-                  onClick={() => abrirEntrega(p.id_pedido)}
+              return (
+                <div
+                  key={p.id_pedido}
+                  style={{
+                    ...styles.tarjeta,
+                    backgroundColor: alerta ? '#ffe5e5' : '#fff'
+                  }}
                 >
-                  Preparar envío
-                </button>
+                  <strong>ID:</strong> {p.id_pedido} <br />
+                  <strong>Cliente:</strong> {p.cliente} <br />
+                  <strong>Tienda:</strong> {p.nombre_tienda || '-'} <br />
+                  <strong>Fecha:</strong> {p.fecha ? new Date(p.fecha).toLocaleDateString() : '-'} <br />
+                  <strong>Días:</strong> {dias} <br />
 
-                <button
-                  style={{ ...styles.button, ...styles.secondary }}
-                  disabled={p.estado !== 'pendiente'}
-                  onClick={() => abrirCancelar(p.id_pedido)}
-                >
-                  Cancelar
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                  <span style={styles.estado(p.estado)}>
+                    {p.estado}
+                  </span>
 
-      {/* MODAL ENTREGA */}
+                  <div style={{ marginTop: 8 }}>
+                    <button
+                      style={{ ...styles.button, ...styles.primary }}
+                      disabled={p.estado !== 'pendiente'}
+                      onClick={() => abrirEntrega(p.id_pedido)}
+                    >
+                      Preparar envío
+                    </button>
+
+                    <button
+                      style={{ ...styles.button, ...styles.secondary }}
+                      disabled={p.estado !== 'pendiente'}
+                      onClick={() => abrirCancelar(p.id_pedido)}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ))}
+      </div>
+
+      {/* 🔥 MODALES (NO SE TOCAN) */}
       {modalEntrega && (
         <div style={{
           position:'fixed', top:0,left:0,right:0,bottom:0,
@@ -273,58 +296,31 @@ function ConsultarPedidos() {
               </div>
             ))}
 
-            {/* 🔥 SELECT CON OTRO */}
             <select
               style={styles.field}
               onChange={e => {
                 const value = e.target.value
-
                 if (value === 'otro') {
-                  setForm({
-                    ...form,
-                    id_chofer: '',
-                    otro_chofer: true
-                  })
+                  setForm({ ...form, id_chofer: '', otro_chofer: true })
                 } else {
-                  setForm({
-                    ...form,
-                    id_chofer: value,
-                    otro_chofer: false
-                  })
+                  setForm({ ...form, id_chofer: value, otro_chofer: false })
                 }
               }}
             >
               <option value="">Chofer</option>
-
               {choferes.map(c => (
                 <option key={c.id_chofer} value={c.id_chofer}>
                   {c.nombre}
                 </option>
               ))}
-
               <option value="otro">Otro</option>
             </select>
 
-            {/* 🔥 INPUTS DINÁMICOS */}
             {form.otro_chofer && (
               <div>
-                <input
-                  style={styles.field}
-                  placeholder="Nombre"
-                  onChange={e => setForm({ ...form, nombre_chofer: e.target.value })}
-                />
-
-                <input
-                  style={styles.field}
-                  placeholder="Apellido paterno"
-                  onChange={e => setForm({ ...form, apellido_paterno: e.target.value })}
-                />
-
-                <input
-                  style={styles.field}
-                  placeholder="Apellido materno"
-                  onChange={e => setForm({ ...form, apellido_materno: e.target.value })}
-                />
+                <input style={styles.field} placeholder="Nombre" onChange={e => setForm({ ...form, nombre_chofer: e.target.value })} />
+                <input style={styles.field} placeholder="Apellido paterno" onChange={e => setForm({ ...form, apellido_paterno: e.target.value })} />
+                <input style={styles.field} placeholder="Apellido materno" onChange={e => setForm({ ...form, apellido_materno: e.target.value })} />
               </div>
             )}
 
@@ -342,11 +338,9 @@ function ConsultarPedidos() {
 
             <textarea
               style={{ ...styles.field, width:'100%', height:80 }}
-              placeholder="Comentario (obligatorio si hay diferencias)"
+              placeholder="Comentario"
               onChange={e => setForm({ ...form, comentario: e.target.value })}
             />
-
-            <br />
 
             <button style={{ ...styles.button, ...styles.primary }} onClick={guardarEntrega}>
               Guardar
@@ -359,7 +353,6 @@ function ConsultarPedidos() {
         </div>
       )}
 
-      {/* MODAL CANCELAR */}
       {modalCancelar && (
         <div style={{
           position:'fixed', top:0,left:0,right:0,bottom:0,
@@ -371,7 +364,7 @@ function ConsultarPedidos() {
 
             <textarea
               style={{ ...styles.field, width:'100%', height:100 }}
-              placeholder="Motivo de cancelación"
+              placeholder="Motivo"
               value={comentarioCancelacion}
               onChange={e => setComentarioCancelacion(e.target.value)}
             />
