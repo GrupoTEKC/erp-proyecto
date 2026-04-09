@@ -8,13 +8,46 @@ const styles = {
   header: { marginBottom: '20px' },
   backButton: { display: 'inline-flex', alignItems: 'center', padding: '10px 14px', fontSize: '14px', backgroundColor: '#fff', color: '#8B1E1E', border: '1px solid #8B1E1E', borderRadius: '6px', cursor: 'pointer' },
   title: { marginTop: '20px', marginBottom: '15px', color: '#071849', fontWeight: 'bold' },
-  field: { width: '260px', padding: '8px 10px', fontSize: '14px', borderRadius: '6px', border: '1px solid #8B1E1E', boxSizing: 'border-box', marginBottom: 15 },
 
-  filtroBox: {
-    marginBottom: '15px',
+  field: { width: '260px', padding: '8px 10px', fontSize: '14px', borderRadius: '6px', border: '1px solid #8B1E1E', boxSizing: 'border-box' },
+
+  // 🔥 NUEVO CONTENEDOR
+  topBar: {
+    display: 'flex',
+    gap: '10px',
+    alignItems: 'center',
+    marginBottom: '15px'
+  },
+
+  // 🔥 DROPDOWN
+  dropdown: {
+    position: 'relative',
+    width: '260px'
+  },
+
+  dropdownButton: {
+    width: '100%',
+    padding: '8px 10px',
+    fontSize: '14px',
+    borderRadius: '6px',
+    border: '1px solid #8B1E1E',
+    background: '#fff',
+    cursor: 'pointer',
+    textAlign: 'left'
+  },
+
+  dropdownContent: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    width: '100%',
+    background: '#fff',
+    border: '1px solid #ddd',
+    borderRadius: '6px',
     padding: '10px',
-    background: '#f4f6f8',
-    borderRadius: '8px'
+    zIndex: 10,
+    maxHeight: '200px',
+    overflowY: 'auto'
   },
 
   columnas: {
@@ -58,25 +91,9 @@ const styles = {
 function ConsultarPedidos() {
   const [pedidos, setPedidos] = useState([])
   const [rutas, setRutas] = useState([])
-  const [rutasSeleccionadas, setRutasSeleccionadas] = useState([]) // 🔥 NUEVO
+  const [rutasSeleccionadas, setRutasSeleccionadas] = useState([])
   const [busqueda, setBusqueda] = useState('')
-  const [modalEntrega, setModalEntrega] = useState(false)
-  const [modalCancelar, setModalCancelar] = useState(false)
-  const [pedidoSeleccionado, setPedidoSeleccionado] = useState(null)
-  const [detalle, setDetalle] = useState([])
-  const [choferes, setChoferes] = useState([])
-  const [unidades, setUnidades] = useState([])
-  const [comentarioCancelacion, setComentarioCancelacion] = useState('')
-  const [form, setForm] = useState({
-    id_chofer: '',
-    id_unidad: '',
-    comentario: '',
-    otro_chofer: false,
-    nombre_chofer: '',
-    apellido_paterno: '',
-    apellido_materno: '',
-    productos: []
-  })
+  const [mostrarDropdown, setMostrarDropdown] = useState(false)
 
   const navigate = useNavigate()
   const urlLimpia = API?.endsWith('/') ? API.slice(0, -1) : API
@@ -102,8 +119,7 @@ function ConsultarPedidos() {
     if (!fecha) return 0
     const inicio = new Date(fecha)
     const hoy = new Date()
-    const diff = hoy - inicio
-    return Math.floor(diff / (1000 * 60 * 60 * 24))
+    return Math.floor((hoy - inicio) / (1000 * 60 * 60 * 24))
   }
 
   const obtenerNombreRuta = (id) => {
@@ -111,7 +127,6 @@ function ConsultarPedidos() {
     return ruta ? ruta.nombre : ''
   }
 
-  // 🔥 MANEJAR CHECKBOX
   const toggleRuta = (id) => {
     if (rutasSeleccionadas.includes(id)) {
       setRutasSeleccionadas(rutasSeleccionadas.filter(r => r !== id))
@@ -142,35 +157,49 @@ function ConsultarPedidos() {
 
       <h2 style={styles.title}>Consultar pedidos</h2>
 
-      <input
-        style={styles.field}
-        placeholder="Buscar..."
-        value={busqueda}
-        onChange={e => setBusqueda(e.target.value)}
-      />
+      {/* 🔥 BARRA SUPERIOR */}
+      <div style={styles.topBar}>
 
-      {/* 🔥 FILTRO DE RUTAS */}
-      <div style={styles.filtroBox}>
-        <strong>Seleccionar rutas:</strong><br />
+        {/* BUSCADOR */}
+        <input
+          style={styles.field}
+          placeholder="Buscar..."
+          value={busqueda}
+          onChange={e => setBusqueda(e.target.value)}
+        />
 
-        {rutas.map(r => (
-          <label key={r.id_ruta} style={{ display: 'block' }}>
-            <input
-              type="checkbox"
-              checked={rutasSeleccionadas.includes(r.id_ruta)}
-              onChange={() => toggleRuta(r.id_ruta)}
-            />
-            {' '}Ruta {r.id_ruta} - {r.nombre}
-          </label>
-        ))}
+        {/* 🔥 DROPDOWN */}
+        <div style={styles.dropdown}>
+          <div
+            style={styles.dropdownButton}
+            onClick={() => setMostrarDropdown(!mostrarDropdown)}
+          >
+            Seleccionar rutas
+          </div>
 
-        {/* 🔥 BOTÓN VER TODAS */}
-        <button
-          style={{ ...styles.button, ...styles.secondary, marginTop: 5 }}
-          onClick={() => setRutasSeleccionadas([])}
-        >
-          Ver todas
-        </button>
+          {mostrarDropdown && (
+            <div style={styles.dropdownContent}>
+              {rutas.map(r => (
+                <label key={r.id_ruta} style={{ display: 'block' }}>
+                  <input
+                    type="checkbox"
+                    checked={rutasSeleccionadas.includes(r.id_ruta)}
+                    onChange={() => toggleRuta(r.id_ruta)}
+                  />
+                  {' '}Ruta {r.id_ruta} - {r.nombre}
+                </label>
+              ))}
+
+              <button
+                style={{ ...styles.button, ...styles.secondary, marginTop: 5 }}
+                onClick={() => setRutasSeleccionadas([])}
+              >
+                Ver todas
+              </button>
+            </div>
+          )}
+        </div>
+
       </div>
 
       {/* 🔥 COLUMNAS */}
