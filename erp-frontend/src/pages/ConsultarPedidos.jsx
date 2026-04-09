@@ -250,24 +250,22 @@ function ConsultarPedidos() {
 
       <h2 style={styles.title}>Consultar pedidos</h2>
 
-      {/* 🔥 BUSCADOR + DROPDOWN */}
-      <div style={styles.topBar}>
-
-        <input
-          style={styles.field}
-          placeholder="Buscar..."
-          value={busqueda}
-          onChange={e => setBusqueda(e.target.value)}
-        />
-
-        <div style={styles.dropdown}>
-          <div
-            style={styles.dropdownButton}
-            onClick={() => setMostrarDropdown(!mostrarDropdown)}
-          >
-            Seleccionar rutas ▼
-          </div>
-
+   {/* 🔥 BUSCADOR + DROPDOWN */}
+<div style={styles.topBar}>
+  <input
+    style={{ ...styles.field, marginBottom: 0 }}
+    placeholder="Buscar..."
+    value={busqueda}
+    onChange={e => setBusqueda(e.target.value)}
+  />
+  <div style={styles.dropdown}>
+    <div
+      style={styles.dropdownButton}
+      onClick={() => setMostrarDropdown(!mostrarDropdown)}
+    >
+      Seleccionar rutas ▼
+    </div>
+    
           {mostrarDropdown && (
             <div style={styles.dropdownContent}>
               {rutas.map(r => (
