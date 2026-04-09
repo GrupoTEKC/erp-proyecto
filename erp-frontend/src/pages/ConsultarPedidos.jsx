@@ -277,7 +277,7 @@ function ConsultarPedidos() {
                     checked={rutasSeleccionadas.includes(r.id_ruta)}
                     onChange={() => toggleRuta(r.id_ruta)}
                   />
-                  {' '}Ruta {r.id_ruta} - {r.nombre.replace(`Ruta ${r.id_ruta} - `, '')}
+                 {' '}Ruta {r.id_ruta} - {r.nombre.replace(/^Ruta\s*\d+\s*-\s*/i, '')}
                 </label>
               ))}
 
