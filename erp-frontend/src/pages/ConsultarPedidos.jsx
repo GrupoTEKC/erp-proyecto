@@ -11,7 +11,6 @@ const styles = {
 
   field: { width: '260px', padding: '8px 10px', fontSize: '14px', borderRadius: '6px', border: '1px solid #8B1E1E', boxSizing: 'border-box' },
 
-  // 🔥 NUEVO CONTENEDOR
   topBar: {
     display: 'flex',
     gap: '10px',
@@ -19,7 +18,6 @@ const styles = {
     marginBottom: '15px'
   },
 
-  // 🔥 DROPDOWN
   dropdown: {
     position: 'relative',
     width: '260px'
@@ -157,7 +155,7 @@ function ConsultarPedidos() {
 
       <h2 style={styles.title}>Consultar pedidos</h2>
 
-      {/* 🔥 BARRA SUPERIOR */}
+      {/* 🔥 BARRA */}
       <div style={styles.topBar}>
 
         {/* BUSCADOR */}
@@ -174,7 +172,7 @@ function ConsultarPedidos() {
             style={styles.dropdownButton}
             onClick={() => setMostrarDropdown(!mostrarDropdown)}
           >
-            Seleccionar rutas
+            Seleccionar rutas ▼
           </div>
 
           {mostrarDropdown && (
