@@ -501,10 +501,14 @@ app.get('/pedidos', async (req, res) => {
     const [rows] = await db.query(`
       SELECT 
         p.*,
-        CONCAT(c.nombre,' ',c.apellido1) AS cliente
+        CONCAT(c.nombre,' ',c.apellido1) AS cliente,
+        c.nombre_tienda,
+        r.nombre AS ruta
       FROM pedidos p
       LEFT JOIN clientes c 
-      ON p.id_cliente = c.id_cliente
+        ON p.id_cliente = c.id_cliente
+      LEFT JOIN rutas r
+        ON p.id_ruta = r.id_ruta
       ORDER BY p.fecha DESC
     `)
     res.json(rows)
