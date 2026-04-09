@@ -10,7 +10,6 @@ const styles = {
   title: { marginTop: '20px', marginBottom: '15px', color: '#071849', fontWeight: 'bold' },
   field: { width: '260px', padding: '8px 10px', fontSize: '14px', borderRadius: '6px', border: '1px solid #8B1E1E', boxSizing: 'border-box', marginBottom: 15 },
 
-  // 🔥 NUEVO DISEÑO
   columnas: {
     display: 'flex',
     gap: '15px',
@@ -49,6 +48,7 @@ const styles = {
 
 function ConsultarPedidos() {
   const [pedidos, setPedidos] = useState([])
+  const [rutas, setRutas] = useState([]) // 🔥 NUEVO
   const [busqueda, setBusqueda] = useState('')
   const [modalEntrega, setModalEntrega] = useState(false)
   const [modalCancelar, setModalCancelar] = useState(false)
@@ -78,8 +78,19 @@ function ConsultarPedidos() {
     setPedidos(data)
   }
 
+  const cargarRutas = async () => {
+    try {
+      const res = await fetch(`${urlLimpia}/rutas`)
+      const data = await res.json()
+      setRutas(data)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
   useEffect(() => {
     cargarPedidos()
+    cargarRutas() // 🔥 NUEVO
   }, [])
 
   const calcularDias = (fecha) => {
@@ -90,7 +101,12 @@ function ConsultarPedidos() {
     return Math.floor(diff / (1000 * 60 * 60 * 24))
   }
 
-  // 🔥 AGRUPAR POR RUTA
+  // 🔥 OBTENER NOMBRE DE RUTA
+  const obtenerNombreRuta = (id) => {
+    const ruta = rutas.find(r => r.id_ruta === Number(id))
+    return ruta ? ruta.nombre : ''
+  }
+
   const pedidosFiltrados = pedidos.filter(p =>
     p.id_pedido.toString().includes(busqueda) ||
     (p.cliente || '').toLowerCase().includes(busqueda.toLowerCase())
@@ -215,11 +231,18 @@ function ConsultarPedidos() {
         onChange={e => setBusqueda(e.target.value)}
       />
 
-      {/* 🔥 COLUMNAS POR RUTA */}
       <div style={styles.columnas}>
         {Object.entries(pedidosPorRuta).map(([ruta, lista]) => (
           <div key={ruta} style={styles.columna}>
-            <h3 style={{ textAlign: 'center' }}>Ruta {ruta}</h3>
+
+            {/* 🔥 AQUÍ ESTÁ EL CAMBIO */}
+            <h3 style={{ textAlign: 'center' }}>
+              Ruta {ruta}
+              <br />
+              <span style={{ fontSize: '13px', color: '#555' }}>
+                {obtenerNombreRuta(ruta)}
+              </span>
+            </h3>
 
             {lista.map(p => {
               const dias = calcularDias(p.fecha)
@@ -267,7 +290,7 @@ function ConsultarPedidos() {
         ))}
       </div>
 
-      {/* 🔥 MODALES (NO SE TOCAN) */}
+      {/* MODALES IGUAL (SIN CAMBIOS) */}
       {modalEntrega && (
         <div style={{
           position:'fixed', top:0,left:0,right:0,bottom:0,
