@@ -158,7 +158,6 @@ function ConsultarPedidos() {
       {/* 🔥 BARRA */}
       <div style={styles.topBar}>
 
-        {/* BUSCADOR */}
         <input
           style={styles.field}
           placeholder="Buscar..."
@@ -184,7 +183,7 @@ function ConsultarPedidos() {
                     checked={rutasSeleccionadas.includes(r.id_ruta)}
                     onChange={() => toggleRuta(r.id_ruta)}
                   />
-                  {' '}Ruta {r.id_ruta} - {r.nombre}
+                  {' '}Ruta {r.id_ruta} - {r.nombre.replace(`Ruta ${r.id_ruta} - `, '')}
                 </label>
               ))}
 
@@ -235,9 +234,11 @@ function ConsultarPedidos() {
                     <strong>Fecha:</strong> {p.fecha ? new Date(p.fecha).toLocaleDateString() : '-'} <br />
                     <strong>Días:</strong> {dias} <br />
 
+                    {/* 🔴 AQUÍ NO SE TOCÓ NADA DE TUS BOTONES */}
                     <span style={styles.estado(p.estado)}>
                       {p.estado}
                     </span>
+
                   </div>
                 )
               })}
