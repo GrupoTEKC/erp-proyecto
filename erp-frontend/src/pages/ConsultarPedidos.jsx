@@ -24,6 +24,9 @@ const styles = {
       estado === 'pendiente' ? '#c0392b' :
       estado === 'en_ruta' ? '#27ae60' :
       estado === 'cancelado' ? '#7f8c8d' :
+      estado === 'programado' ? '#2980b9' :
+      estado === 'entregado' ? '#16a085' :
+      estado === 'pagado' ? '#8e44ad' :
       '#34495e'
   }),
   topBar: { display: 'flex', gap: '10px', alignItems: 'center' },
@@ -50,6 +53,12 @@ const styles = {
     zIndex: 10,
     maxHeight: '200px',
     overflowY: 'auto'
+  },
+  empty: {
+    textAlign: 'center',
+    padding: '40px',
+    color: '#777',
+    fontSize: '16px'
   }
 }
 
@@ -57,32 +66,10 @@ function ConsultarPedidos() {
 
   const [pedidos, setPedidos] = useState([])
   const [rutas, setRutas] = useState([])
-
   const [rutasSeleccionadas, setRutasSeleccionadas] = useState([])
   const [mostrarDropdown, setMostrarDropdown] = useState(false)
   const [busqueda, setBusqueda] = useState('')
-
-  // 🔥 NUEVO (estatus)
   const [estadoSeleccionado, setEstadoSeleccionado] = useState('')
-
-  const [modalEntrega, setModalEntrega] = useState(false)
-  const [modalCancelar, setModalCancelar] = useState(false)
-  const [pedidoSeleccionado, setPedidoSeleccionado] = useState(null)
-  const [detalle, setDetalle] = useState([])
-  const [choferes, setChoferes] = useState([])
-  const [unidades, setUnidades] = useState([])
-  const [comentarioCancelacion, setComentarioCancelacion] = useState('')
-
-  const [form, setForm] = useState({
-    id_chofer: '',
-    id_unidad: '',
-    comentario: '',
-    otro_chofer: false,
-    nombre_chofer: '',
-    apellido_paterno: '',
-    apellido_materno: '',
-    productos: []
-  })
 
   const navigate = useNavigate()
   const urlLimpia = API?.endsWith('/') ? API.slice(0, -1) : API
@@ -128,7 +115,6 @@ function ConsultarPedidos() {
     }
   }
 
-  // 🔥 FILTRO CORRECTO (NO rompe nada)
   const pedidosFiltrados = pedidos.filter(p =>
     (
       p.id_pedido.toString().includes(busqueda) ||
@@ -146,6 +132,8 @@ function ConsultarPedidos() {
     acc[ruta].push(pedido)
     return acc
   }, {})
+
+  const hayPedidos = Object.keys(pedidosPorRuta).length > 0
 
   return (
     <div style={styles.page}>
@@ -167,7 +155,6 @@ function ConsultarPedidos() {
           onChange={e => setBusqueda(e.target.value)}
         />
 
-        {/* 🔥 NUEVO SELECT ESTATUS */}
         <select
           style={{ ...styles.field, marginBottom: 0 }}
           value={estadoSeleccionado}
@@ -175,7 +162,10 @@ function ConsultarPedidos() {
         >
           <option value="">Seleccionar por estatus</option>
           <option value="pendiente">Pendiente</option>
+          <option value="programado">Programado</option>
           <option value="en_ruta">En ruta</option>
+          <option value="entregado">Entregado</option>
+          <option value="pagado">Pagado</option>
           <option value="cancelado">Cancelado</option>
         </select>
 
@@ -210,6 +200,12 @@ function ConsultarPedidos() {
         </div>
 
       </div>
+
+      {!hayPedidos && (
+        <div style={styles.empty}>
+          📦 No se tienen pedidos en este estado
+        </div>
+      )}
 
       <div style={styles.columnas}>
         {Object.entries(pedidosPorRuta)
