@@ -1264,6 +1264,131 @@ app.get('/pagos/:id_pedido', async (req, res) => {
 })
 
 // =============================
+// 📅 PROGRAMAR PEDIDO
+// =============================
+app.post('/pedidos/:id/programar', async (req, res) => {
+  const { id } = req.params
+  const { fecha_programada } = req.body
+
+  try {
+    if (!fecha_programada) {
+      return res.status(400).json({ error: 'Fecha requerida' })
+    }
+
+    // 🔥 desactivar anteriores
+    await db.query(`
+      UPDATE programaciones_pedido 
+      SET activo = 0 
+      WHERE id_pedido = ?
+    `, [id])
+
+    // 🔥 insertar nueva
+    await db.query(`
+      INSERT INTO programaciones_pedido (id_pedido, fecha_programada)
+      VALUES (?, ?)
+    `, [id, fecha_programada])
+
+    // 🔥 cambiar estado
+    await db.query(`
+      UPDATE pedidos 
+      SET estado = 'programado'
+      WHERE id_pedido = ?
+    `, [id])
+
+    res.json({ success: true })
+
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// =============================
+// 📅 PEDIDOS CON FILTRO (NORMAL + PROGRAMADOS)
+// =============================
+app.get('/pedidos-filtrados', async (req, res) => {
+  try {
+    const { fecha, tipo } = req.query
+    // tipo puede ser: normal | programado | todos
+
+    let query = `
+      SELECT 
+        p.*,
+        CONCAT(c.nombre,' ',c.apellido1) AS cliente,
+        c.nombre_tienda,
+        r.nombre AS ruta,
+        pp.fecha_programada
+      FROM pedidos p
+      LEFT JOIN clientes c 
+        ON p.id_cliente = c.id_cliente
+      LEFT JOIN rutas r
+        ON p.id_ruta = r.id_ruta
+      LEFT JOIN programaciones_pedido pp
+        ON p.id_pedido = pp.id_pedido
+        AND pp.activo = 1
+      WHERE 1=1
+    `
+
+    const params = []
+
+    // 🔥 FILTRO POR TIPO
+    if (tipo === 'programado') {
+      query += ` AND p.estado = 'programado'`
+    }
+
+    if (tipo === 'normal') {
+      query += ` AND (p.estado != 'programado' OR p.estado IS NULL)`
+    }
+
+    // 🔥 FILTRO POR FECHA
+    if (fecha) {
+      query += `
+        AND (
+          DATE(p.fecha) = ?
+          OR pp.fecha_programada = ?
+        )
+      `
+      params.push(fecha, fecha)
+    }
+
+    query += ` ORDER BY p.fecha DESC`
+
+    const [rows] = await db.query(query, params)
+
+    res.json(rows)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// =============================
+// 📅 SOLO PROGRAMADOS
+// =============================
+app.get('/pedidos-programados', async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT 
+        p.*,
+        CONCAT(c.nombre,' ',c.apellido1) AS cliente,
+        c.nombre_tienda,
+        r.nombre AS ruta,
+        pp.fecha_programada
+      FROM pedidos p
+      INNER JOIN programaciones_pedido pp
+        ON p.id_pedido = pp.id_pedido
+      LEFT JOIN clientes c 
+        ON p.id_cliente = c.id_cliente
+      LEFT JOIN rutas r
+        ON p.id_ruta = r.id_ruta
+      WHERE pp.activo = 1
+      ORDER BY pp.fecha_programada ASC
+    `)
+
+    res.json(rows)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+// =============================
 // SERVER
 // =============================
 const PORT = process.env.PORT || 3000
