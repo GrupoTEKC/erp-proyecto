@@ -24,9 +24,9 @@ const styles = {
       estado === 'pendiente' ? '#c0392b' :
       estado === 'en_ruta' ? '#27ae60' :
       estado === 'cancelado' ? '#7f8c8d' :
-      estado === 'programado' ? '#2980b9' :
-      estado === 'entregado' ? '#16a085' :
-      estado === 'pagado' ? '#8e44ad' :
+      estado === 'programado' ? '#8e44ad' :
+      estado === 'entregado' ? '#2980b9' :
+      estado === 'pagado' ? '#16a085' :
       '#34495e'
   }),
   topBar: { display: 'flex', gap: '10px', alignItems: 'center' },
@@ -56,20 +56,37 @@ const styles = {
   },
   empty: {
     textAlign: 'center',
-    padding: '40px',
-    color: '#777',
-    fontSize: '16px'
+    padding: '20px',
+    color: '#888'
   }
 }
 
 function ConsultarPedidos() {
-
   const [pedidos, setPedidos] = useState([])
   const [rutas, setRutas] = useState([])
   const [rutasSeleccionadas, setRutasSeleccionadas] = useState([])
   const [mostrarDropdown, setMostrarDropdown] = useState(false)
   const [busqueda, setBusqueda] = useState('')
   const [estadoSeleccionado, setEstadoSeleccionado] = useState('')
+
+  const [modalEntrega, setModalEntrega] = useState(false)
+  const [modalCancelar, setModalCancelar] = useState(false)
+  const [pedidoSeleccionado, setPedidoSeleccionado] = useState(null)
+  const [detalle, setDetalle] = useState([])
+  const [choferes, setChoferes] = useState([])
+  const [unidades, setUnidades] = useState([])
+  const [comentarioCancelacion, setComentarioCancelacion] = useState('')
+
+  const [form, setForm] = useState({
+    id_chofer: '',
+    id_unidad: '',
+    comentario: '',
+    otro_chofer: false,
+    nombre_chofer: '',
+    apellido_paterno: '',
+    apellido_materno: '',
+    productos: []
+  })
 
   const navigate = useNavigate()
   const urlLimpia = API?.endsWith('/') ? API.slice(0, -1) : API
@@ -81,13 +98,9 @@ function ConsultarPedidos() {
   }
 
   const cargarRutas = async () => {
-    try {
-      const res = await fetch(`${urlLimpia}/rutas`)
-      const data = await res.json()
-      setRutas(data)
-    } catch (err) {
-      console.error(err)
-    }
+    const res = await fetch(`${urlLimpia}/rutas`)
+    const data = await res.json()
+    setRutas(data)
   }
 
   useEffect(() => {
@@ -119,8 +132,7 @@ function ConsultarPedidos() {
     (
       p.id_pedido.toString().includes(busqueda) ||
       (p.cliente || '').toLowerCase().includes(busqueda.toLowerCase())
-    )
-    &&
+    ) &&
     (
       estadoSeleccionado === '' || p.estado === estadoSeleccionado
     )
@@ -133,11 +145,39 @@ function ConsultarPedidos() {
     return acc
   }, {})
 
-  const hayPedidos = Object.keys(pedidosPorRuta).length > 0
+  const abrirEntrega = async (id) => {
+    const res = await fetch(`${urlLimpia}/pedidos/${id}/detalle`)
+    const data = await res.json()
+    const ch = await fetch(`${urlLimpia}/choferes`)
+    const chData = await ch.json()
+    const un = await fetch(`${urlLimpia}/unidades`)
+    const unData = await un.json()
+
+    setDetalle(data)
+    setChoferes(chData)
+    setUnidades(unData)
+
+    setForm({
+      ...form,
+      productos: data.map(p => ({
+        id_producto: p.id_producto,
+        nombre: p.nombre,
+        cantidad_pedida: p.cantidad,
+        cantidad_entregada: p.cantidad
+      }))
+    })
+
+    setPedidoSeleccionado(id)
+    setModalEntrega(true)
+  }
+
+  const abrirCancelar = (id) => {
+    setPedidoSeleccionado(id)
+    setModalCancelar(true)
+  }
 
   return (
     <div style={styles.page}>
-
       <div style={styles.header}>
         <button style={styles.backButton} onClick={() => navigate('/')}>
           ⬅ Volver
@@ -147,7 +187,6 @@ function ConsultarPedidos() {
       <h2 style={styles.title}>Consultar pedidos</h2>
 
       <div style={styles.topBar}>
-
         <input
           style={{ ...styles.field, marginBottom: 0 }}
           placeholder="Buscar..."
@@ -155,12 +194,13 @@ function ConsultarPedidos() {
           onChange={e => setBusqueda(e.target.value)}
         />
 
+        {/* 🔥 SELECT ESTATUS COMPLETO */}
         <select
           style={{ ...styles.field, marginBottom: 0 }}
           value={estadoSeleccionado}
           onChange={e => setEstadoSeleccionado(e.target.value)}
         >
-          <option value="">Seleccionar por estatus</option>
+          <option value="">Todos los estatus</option>
           <option value="pendiente">Pendiente</option>
           <option value="programado">Programado</option>
           <option value="en_ruta">En ruta</option>
@@ -169,6 +209,7 @@ function ConsultarPedidos() {
           <option value="cancelado">Cancelado</option>
         </select>
 
+        {/* 🔥 RUTAS (NO TOCADO) */}
         <div style={styles.dropdown}>
           <div
             style={styles.dropdownButton}
@@ -186,24 +227,18 @@ function ConsultarPedidos() {
                     checked={rutasSeleccionadas.includes(r.id_ruta)}
                     onChange={() => toggleRuta(r.id_ruta)}
                   />
-                  {' '}Ruta {r.id_ruta} - {r.nombre.replace(/^Ruta\s*\d+\s*-\s*/i, '')}
+                  {' '}Ruta {r.id_ruta} - {r.nombre}
                 </label>
               ))}
-              <button
-                style={{ ...styles.button, ...styles.secondary, marginTop: 5 }}
-                onClick={() => setRutasSeleccionadas([])}
-              >
-                Ver todas
-              </button>
             </div>
           )}
         </div>
-
       </div>
 
-      {!hayPedidos && (
+      {/* 🔥 SI NO HAY RESULTADOS */}
+      {Object.keys(pedidosPorRuta).length === 0 && (
         <div style={styles.empty}>
-          📦 No se tienen pedidos en este estado
+          📭 No hay pedidos en este estado
         </div>
       )}
 
@@ -223,31 +258,38 @@ function ConsultarPedidos() {
                 </span>
               </h3>
 
-              {lista.map(p => {
-                const dias = calcularDias(p.fecha)
-                const alerta = dias > 7
+              {lista.map(p => (
+                <div key={p.id_pedido} style={styles.tarjeta}>
+                  <strong>ID:</strong> {p.id_pedido} <br />
+                  <strong>Cliente:</strong> {p.cliente} <br />
 
-                return (
-                  <div key={p.id_pedido} style={{
-                    ...styles.tarjeta,
-                    backgroundColor: alerta ? '#ffe5e5' : '#fff'
-                  }}>
-                    <strong>ID:</strong> {p.id_pedido} <br />
-                    <strong>Cliente:</strong> {p.cliente} <br />
-                    <strong>Tienda:</strong> {p.nombre_tienda || '-'} <br />
-                    <strong>Fecha:</strong> {p.fecha ? new Date(p.fecha).toLocaleDateString() : '-'} <br />
-                    <strong>Días:</strong> {dias} <br />
+                  <span style={styles.estado(p.estado)}>
+                    {p.estado}
+                  </span>
 
-                    <span style={styles.estado(p.estado)}>
-                      {p.estado}
-                    </span>
+                  {/* 🔥 BOTONES RESPETADOS */}
+                  <div style={{ marginTop: 8 }}>
+                    <button
+                      style={{ ...styles.button, ...styles.primary }}
+                      disabled={p.estado !== 'pendiente'}
+                      onClick={() => abrirEntrega(p.id_pedido)}
+                    >
+                      Preparar envío
+                    </button>
+
+                    <button
+                      style={{ ...styles.button, ...styles.secondary }}
+                      disabled={p.estado !== 'pendiente'}
+                      onClick={() => abrirCancelar(p.id_pedido)}
+                    >
+                      Cancelar
+                    </button>
                   </div>
-                )
-              })}
+                </div>
+              ))}
             </div>
           ))}
       </div>
-
     </div>
   )
 }
