@@ -50,13 +50,6 @@ const styles = {
     zIndex: 10,
     maxHeight: '200px',
     overflowY: 'auto'
-  },
-  empty: {
-    width: '100%',
-    textAlign: 'center',
-    padding: '40px',
-    color: '#777',
-    fontSize: '16px'
   }
 }
 
@@ -66,6 +59,8 @@ function ConsultarPedidos() {
   const [rutasSeleccionadas, setRutasSeleccionadas] = useState([])
   const [mostrarDropdown, setMostrarDropdown] = useState(false)
   const [busqueda, setBusqueda] = useState('')
+
+  // 🔥 NUEVO
   const [estadoSeleccionado, setEstadoSeleccionado] = useState('')
 
   const [modalEntrega, setModalEntrega] = useState(false)
@@ -75,7 +70,6 @@ function ConsultarPedidos() {
   const [choferes, setChoferes] = useState([])
   const [unidades, setUnidades] = useState([])
   const [comentarioCancelacion, setComentarioCancelacion] = useState('')
-
   const [form, setForm] = useState({
     id_chofer: '',
     id_unidad: '',
@@ -90,11 +84,6 @@ function ConsultarPedidos() {
   const navigate = useNavigate()
   const urlLimpia = API?.endsWith('/') ? API.slice(0, -1) : API
 
-  useEffect(() => {
-    cargarPedidos()
-    cargarRutas()
-  }, [])
-
   const cargarPedidos = async () => {
     const res = await fetch(`${urlLimpia}/pedidos`)
     const data = await res.json()
@@ -102,10 +91,19 @@ function ConsultarPedidos() {
   }
 
   const cargarRutas = async () => {
-    const res = await fetch(`${urlLimpia}/rutas`)
-    const data = await res.json()
-    setRutas(data)
+    try {
+      const res = await fetch(`${urlLimpia}/rutas`)
+      const data = await res.json()
+      setRutas(data)
+    } catch (err) {
+      console.error(err)
+    }
   }
+
+  useEffect(() => {
+    cargarPedidos()
+    cargarRutas()
+  }, [])
 
   const calcularDias = (fecha) => {
     if (!fecha) return 0
@@ -148,7 +146,6 @@ function ConsultarPedidos() {
     return acc
   }, {})
 
-  // 🔥 FUNCIONES BOTONES (RESTAURADAS)
   const abrirEntrega = async (id) => {
     const res = await fetch(`${urlLimpia}/pedidos/${id}/detalle`)
     const data = await res.json()
@@ -156,11 +153,9 @@ function ConsultarPedidos() {
     const chData = await ch.json()
     const un = await fetch(`${urlLimpia}/unidades`)
     const unData = await un.json()
-
     setDetalle(data)
     setChoferes(chData)
     setUnidades(unData)
-
     setForm({
       id_chofer: '',
       id_unidad: '',
@@ -176,15 +171,68 @@ function ConsultarPedidos() {
         cantidad_entregada: p.cantidad
       }))
     })
-
     setPedidoSeleccionado(id)
     setModalEntrega(true)
+  }
+
+  const guardarEntrega = async () => {
+    if (form.otro_chofer) {
+      if (!form.nombre_chofer || !form.apellido_paterno || !form.apellido_materno) {
+        return alert("Completa los datos del chofer")
+      }
+    }
+    if (!form.id_unidad) return alert("Selecciona unidad")
+    if (!form.id_chofer && !form.otro_chofer) return alert("Selecciona chofer")
+
+    const hayDiferencias = form.productos.some(
+      p => p.cantidad_entregada !== p.cantidad_pedida
+    )
+
+    if (hayDiferencias && !form.comentario) {
+      return alert("Debes agregar comentario por diferencias")
+    }
+
+    const res = await fetch(`${urlLimpia}/pedidos/${pedidoSeleccionado}/en-curso`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form)
+    })
+
+    if (!res.ok) {
+      const err = await res.json()
+      return alert(err.error)
+    }
+
+    setModalEntrega(false)
+    cargarPedidos()
   }
 
   const abrirCancelar = (id) => {
     setPedidoSeleccionado(id)
     setComentarioCancelacion('')
     setModalCancelar(true)
+  }
+
+  const confirmarCancelacion = async () => {
+    if (!comentarioCancelacion.trim()) {
+      return alert("Debes escribir el motivo de cancelación")
+    }
+
+    const res = await fetch(`${urlLimpia}/pedidos/${pedidoSeleccionado}/cancelar`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        comentario: comentarioCancelacion
+      })
+    })
+
+    if (!res.ok) {
+      const err = await res.json()
+      return alert(err.error)
+    }
+
+    setModalCancelar(false)
+    cargarPedidos()
   }
 
   return (
@@ -205,6 +253,7 @@ function ConsultarPedidos() {
           onChange={e => setBusqueda(e.target.value)}
         />
 
+        {/* 🔥 SELECT ESTATUS */}
         <select
           style={{ ...styles.field, marginBottom: 0 }}
           value={estadoSeleccionado}
@@ -237,17 +286,25 @@ function ConsultarPedidos() {
                     checked={rutasSeleccionadas.includes(r.id_ruta)}
                     onChange={() => toggleRuta(r.id_ruta)}
                   />
-                  {' '}Ruta {r.id_ruta} - {r.nombre}
+                  {' '}Ruta {r.id_ruta} - {r.nombre.replace(/^Ruta\s*\d+\s*-\s*/i, '')}
                 </label>
               ))}
+              <button
+                style={{ ...styles.button, ...styles.secondary, marginTop: 5 }}
+                onClick={() => setRutasSeleccionadas([])}
+              >
+                Ver todas
+              </button>
             </div>
           )}
         </div>
       </div>
 
       <div style={styles.columnas}>
-        {Object.keys(pedidosPorRuta).length === 0 && (
-          <div style={styles.empty}>
+
+        {/* 🔥 MENSAJE VACÍO */}
+        {Object.entries(pedidosPorRuta).length === 0 && (
+          <div style={{ textAlign:'center', padding:'20px', color:'#777' }}>
             📭 No hay pedidos en este estado
           </div>
         )}
@@ -261,6 +318,10 @@ function ConsultarPedidos() {
             <div key={ruta} style={styles.columna}>
               <h3 style={{ textAlign: 'center' }}>
                 Ruta {ruta}
+                <br />
+                <span style={{ fontSize: '13px', color: '#555' }}>
+                  {obtenerNombreRuta(ruta)}
+                </span>
               </h3>
 
               {lista.map(p => {
@@ -274,6 +335,9 @@ function ConsultarPedidos() {
                   }}>
                     <strong>ID:</strong> {p.id_pedido} <br />
                     <strong>Cliente:</strong> {p.cliente} <br />
+                    <strong>Tienda:</strong> {p.nombre_tienda || '-'} <br />
+                    <strong>Fecha:</strong> {p.fecha ? new Date(p.fecha).toLocaleDateString() : '-'} <br />
+                    <strong>Días:</strong> {dias} <br />
 
                     <span style={styles.estado(p.estado)}>
                       {p.estado}
@@ -302,6 +366,108 @@ function ConsultarPedidos() {
             </div>
           ))}
       </div>
+
+         {/* 🔥 MODAL ENTREGA COMPLETO */}
+      {modalEntrega && (
+        <div style={{
+          position:'fixed', top:0,left:0,right:0,bottom:0,
+          background:'rgba(0,0,0,0.5)',
+          display:'flex', justifyContent:'center', alignItems:'center'
+        }}>
+          <div style={{ background:'#fff', padding:20, width:600, borderRadius:10 }}>
+            <h3 style={styles.title}>Preparar entrega</h3>
+
+            {form.productos.map((p, i) => (
+              <div key={i} style={{ marginBottom: 10 }}>
+                <strong>{p.nombre}</strong><br />
+                Pedido: {p.cantidad_pedida}
+                <input
+                  style={styles.field}
+                  type="number"
+                  value={p.cantidad_entregada}
+                  onChange={e => {
+                    const copia = [...form.productos]
+                    copia[i].cantidad_entregada = Number(e.target.value)
+                    setForm({ ...form, productos: copia })
+                  }}
+                />
+              </div>
+            ))}
+
+            <select style={styles.field} onChange={e => {
+              const value = e.target.value
+              if (value === 'otro') {
+                setForm({ ...form, id_chofer: '', otro_chofer: true })
+              } else {
+                setForm({ ...form, id_chofer: value, otro_chofer: false })
+              }
+            }}>
+              <option value="">Chofer</option>
+              {choferes.map(c => (
+                <option key={c.id_chofer} value={c.id_chofer}>{c.nombre}</option>
+              ))}
+              <option value="otro">Otro</option>
+            </select>
+
+            {form.otro_chofer && (
+              <div>
+                <input style={styles.field} placeholder="Nombre" onChange={e => setForm({ ...form, nombre_chofer: e.target.value })} />
+                <input style={styles.field} placeholder="Apellido paterno" onChange={e => setForm({ ...form, apellido_paterno: e.target.value })} />
+                <input style={styles.field} placeholder="Apellido materno" onChange={e => setForm({ ...form, apellido_materno: e.target.value })} />
+              </div>
+            )}
+
+            <select style={styles.field} onChange={e => setForm({ ...form, id_unidad: e.target.value })}>
+              <option value="">Unidad</option>
+              {unidades.map(u => (
+                <option key={u.id_unidad} value={u.id_unidad}>{u.nombre}</option>
+              ))}
+            </select>
+
+            <textarea
+              style={{ ...styles.field, width:'100%', height:80 }}
+              placeholder="Comentario"
+              onChange={e => setForm({ ...form, comentario: e.target.value })}
+            />
+
+            <button style={{ ...styles.button, ...styles.primary }} onClick={guardarEntrega}>
+              Guardar
+            </button>
+
+            <button style={{ ...styles.button, ...styles.secondary }} onClick={() => setModalEntrega(false)}>
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 🔥 MODAL CANCELAR COMPLETO */}
+      {modalCancelar && (
+        <div style={{
+          position:'fixed', top:0,left:0,right:0,bottom:0,
+          background:'rgba(0,0,0,0.5)',
+          display:'flex', justifyContent:'center', alignItems:'center'
+        }}>
+          <div style={{ background:'#fff', padding:20, width:400, borderRadius:10 }}>
+            <h3 style={styles.title}>Cancelar pedido</h3>
+
+            <textarea
+              style={{ ...styles.field, width:'100%', height:100 }}
+              placeholder="Motivo"
+              value={comentarioCancelacion}
+              onChange={e => setComentarioCancelacion(e.target.value)}
+            />
+
+            <button style={{ ...styles.button, ...styles.primary }} onClick={confirmarCancelacion}>
+              Confirmar
+            </button>
+
+            <button style={{ ...styles.button, ...styles.secondary }} onClick={() => setModalCancelar(false)}>
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
