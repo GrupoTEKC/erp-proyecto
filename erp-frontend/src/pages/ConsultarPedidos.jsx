@@ -52,9 +52,11 @@ const styles = {
     overflowY: 'auto'
   },
   empty: {
+    width: '100%',
     textAlign: 'center',
-    padding: '20px',
-    color: '#777'
+    padding: '40px',
+    color: '#777',
+    fontSize: '16px'
   }
 }
 
@@ -64,8 +66,6 @@ function ConsultarPedidos() {
   const [rutasSeleccionadas, setRutasSeleccionadas] = useState([])
   const [mostrarDropdown, setMostrarDropdown] = useState(false)
   const [busqueda, setBusqueda] = useState('')
-  
-  // 🔥 NUEVO ESTADO
   const [estadoSeleccionado, setEstadoSeleccionado] = useState('')
 
   const [modalEntrega, setModalEntrega] = useState(false)
@@ -75,6 +75,7 @@ function ConsultarPedidos() {
   const [choferes, setChoferes] = useState([])
   const [unidades, setUnidades] = useState([])
   const [comentarioCancelacion, setComentarioCancelacion] = useState('')
+
   const [form, setForm] = useState({
     id_chofer: '',
     id_unidad: '',
@@ -89,6 +90,11 @@ function ConsultarPedidos() {
   const navigate = useNavigate()
   const urlLimpia = API?.endsWith('/') ? API.slice(0, -1) : API
 
+  useEffect(() => {
+    cargarPedidos()
+    cargarRutas()
+  }, [])
+
   const cargarPedidos = async () => {
     const res = await fetch(`${urlLimpia}/pedidos`)
     const data = await res.json()
@@ -100,11 +106,6 @@ function ConsultarPedidos() {
     const data = await res.json()
     setRutas(data)
   }
-
-  useEffect(() => {
-    cargarPedidos()
-    cargarRutas()
-  }, [])
 
   const calcularDias = (fecha) => {
     if (!fecha) return 0
@@ -147,6 +148,45 @@ function ConsultarPedidos() {
     return acc
   }, {})
 
+  // 🔥 FUNCIONES BOTONES (RESTAURADAS)
+  const abrirEntrega = async (id) => {
+    const res = await fetch(`${urlLimpia}/pedidos/${id}/detalle`)
+    const data = await res.json()
+    const ch = await fetch(`${urlLimpia}/choferes`)
+    const chData = await ch.json()
+    const un = await fetch(`${urlLimpia}/unidades`)
+    const unData = await un.json()
+
+    setDetalle(data)
+    setChoferes(chData)
+    setUnidades(unData)
+
+    setForm({
+      id_chofer: '',
+      id_unidad: '',
+      comentario: '',
+      otro_chofer: false,
+      nombre_chofer: '',
+      apellido_paterno: '',
+      apellido_materno: '',
+      productos: data.map(p => ({
+        id_producto: p.id_producto,
+        nombre: p.nombre,
+        cantidad_pedida: p.cantidad,
+        cantidad_entregada: p.cantidad
+      }))
+    })
+
+    setPedidoSeleccionado(id)
+    setModalEntrega(true)
+  }
+
+  const abrirCancelar = (id) => {
+    setPedidoSeleccionado(id)
+    setComentarioCancelacion('')
+    setModalCancelar(true)
+  }
+
   return (
     <div style={styles.page}>
       <div style={styles.header}>
@@ -165,7 +205,6 @@ function ConsultarPedidos() {
           onChange={e => setBusqueda(e.target.value)}
         />
 
-        {/* 🔥 SELECT ESTATUS */}
         <select
           style={{ ...styles.field, marginBottom: 0 }}
           value={estadoSeleccionado}
@@ -198,22 +237,16 @@ function ConsultarPedidos() {
                     checked={rutasSeleccionadas.includes(r.id_ruta)}
                     onChange={() => toggleRuta(r.id_ruta)}
                   />
-                  {' '}Ruta {r.id_ruta} - {r.nombre.replace(/^Ruta\s*\d+\s*-\s*/i, '')}
+                  {' '}Ruta {r.id_ruta} - {r.nombre}
                 </label>
               ))}
-              <button
-                style={{ ...styles.button, ...styles.secondary, marginTop: 5 }}
-                onClick={() => setRutasSeleccionadas([])}
-              >
-                Ver todas
-              </button>
             </div>
           )}
         </div>
       </div>
 
       <div style={styles.columnas}>
-        {Object.entries(pedidosPorRuta).length === 0 && (
+        {Object.keys(pedidosPorRuta).length === 0 && (
           <div style={styles.empty}>
             📭 No hay pedidos en este estado
           </div>
@@ -228,10 +261,6 @@ function ConsultarPedidos() {
             <div key={ruta} style={styles.columna}>
               <h3 style={{ textAlign: 'center' }}>
                 Ruta {ruta}
-                <br />
-                <span style={{ fontSize: '13px', color: '#555' }}>
-                  {obtenerNombreRuta(ruta)}
-                </span>
               </h3>
 
               {lista.map(p => {
@@ -245,9 +274,6 @@ function ConsultarPedidos() {
                   }}>
                     <strong>ID:</strong> {p.id_pedido} <br />
                     <strong>Cliente:</strong> {p.cliente} <br />
-                    <strong>Tienda:</strong> {p.nombre_tienda || '-'} <br />
-                    <strong>Fecha:</strong> {p.fecha ? new Date(p.fecha).toLocaleDateString() : '-'} <br />
-                    <strong>Días:</strong> {dias} <br />
 
                     <span style={styles.estado(p.estado)}>
                       {p.estado}
