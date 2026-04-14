@@ -70,6 +70,9 @@ function ConsultarPedidos() {
   const [choferes, setChoferes] = useState([])
   const [unidades, setUnidades] = useState([])
   const [comentarioCancelacion, setComentarioCancelacion] = useState('')
+  const [modalPassword, setModalPassword] = useState(false)
+  const [password, setPassword] = useState('')
+  const [errorPassword, setErrorPassword] = useState('')
   const [form, setForm] = useState({
     id_chofer: '',
     id_unidad: '',
@@ -176,11 +179,6 @@ function ConsultarPedidos() {
   }
 
   const guardarEntrega = async () => {
-    // 🔐 PASSWORD
-const pass = prompt("Ingresa contraseña para guardar")
-if (pass !== "JMAemb#1?_") {
-  return alert("Contraseña incorrecta")
-}
     if (form.otro_chofer) {
       if (!form.nombre_chofer || !form.apellido_paterno || !form.apellido_materno) {
         return alert("Completa los datos del chofer")
@@ -211,6 +209,18 @@ if (pass !== "JMAemb#1?_") {
     setModalEntrega(false)
     cargarPedidos()
   }
+  const confirmarConPassword = async () => {
+  if (password !== "JMAemb#1?_") {
+    setErrorPassword("Contraseña incorrecta")
+    return
+  }
+
+  setErrorPassword('')
+  setModalPassword(false)
+  setPassword('')
+
+  await guardarEntrega()
+}
 
   const abrirCancelar = (id) => {
     setPedidoSeleccionado(id)
@@ -435,8 +445,8 @@ if (pass !== "JMAemb#1?_") {
               onChange={e => setForm({ ...form, comentario: e.target.value })}
             />
 
-            <button style={{ ...styles.button, ...styles.primary }} onClick={guardarEntrega}>
-              Guardar
+            <button style={{ ...styles.button, ...styles.primary }} onClick={() => setModalPassword(true)}>
+            Guardar
             </button>
 
             <button style={{ ...styles.button, ...styles.secondary }} onClick={() => setModalEntrega(false)}>
@@ -473,6 +483,63 @@ if (pass !== "JMAemb#1?_") {
           </div>
         </div>
       )}
+      {/* 🔐 MODAL PASSWORD */}
+{modalPassword && (
+  <div style={{
+    position:'fixed', top:0,left:0,right:0,bottom:0,
+    background:'rgba(0,0,0,0.5)',
+    display:'flex', justifyContent:'center', alignItems:'center'
+  }}>
+    <div style={{ background:'#fff', padding:25, width:400, borderRadius:10 }}>
+      
+      <h3 style={{ ...styles.title, textAlign:'center' }}>
+        🔐 Autorización requerida
+      </h3>
+
+      <p style={{ textAlign:'center', marginBottom:10 }}>
+        <strong>Joshua Mendez Alvarez</strong>
+      </p>
+
+      <p style={{ textAlign:'center', fontSize:13, color:'#555' }}>
+        Solo el supervisor de embarque puede autorizar este envío
+      </p>
+
+      <p style={{ textAlign:'center', marginTop:15 }}>
+        ¿Seguro que deseas enviar este pedido a ruta?
+      </p>
+
+      <input
+        type="password"
+        placeholder="Ingresa contraseña"
+        value={password}
+        onChange={e => setPassword(e.target.value)}
+        style={{ ...styles.field, width:'100%' }}
+      />
+
+      {errorPassword && (
+        <p style={{ color:'red', fontSize:12 }}>
+          {errorPassword}
+        </p>
+      )}
+
+      <div style={{ marginTop:15, textAlign:'right' }}>
+        <button
+          style={{ ...styles.button, ...styles.secondary }}
+          onClick={() => setModalPassword(false)}
+        >
+          Cancelar
+        </button>
+
+        <button
+          style={{ ...styles.button, ...styles.primary }}
+          onClick={confirmarConPassword}
+        >
+          Autorizar y guardar
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   )
 }
