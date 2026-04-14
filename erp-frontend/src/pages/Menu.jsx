@@ -104,14 +104,14 @@ function Menu() {
             </button>
           </Link>
 
-          <Link to="/pedidos/consultar" style={styles.link}>
+          {/* 🔥 CAMBIO: ahora embarques pasa por login */}
+          <Link to="/login-embarques" style={styles.link}>
             <button style={styles.button}>
               <span style={styles.icon}>🔍</span>
               Embarques
             </button>
           </Link>
 
-          {/* 🔥 NUEVO MÓDULO */}
           <Link to="/control-envios" style={styles.link}>
             <button style={styles.button}>
               <span style={styles.icon}>🚚</span>
@@ -126,7 +126,7 @@ function Menu() {
             </button>
           </Link>
 
-         <Link to="/pagos-login" style={styles.link}>
+          <Link to="/pagos-login" style={styles.link}>
             <button style={styles.button}>
               <span style={styles.icon}>💵</span>
               Cuentas por cobrar 
