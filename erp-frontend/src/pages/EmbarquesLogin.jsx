@@ -63,7 +63,7 @@ function EmbarquesLogin() {
       usuario === 'Embarq#02' &&
       password === 'Emb#?_2018q'
     ) {
-      navigate('/embarques') // 👈 ruta de embarques
+      navigate('/pedidos/consultar') // 👈 ruta de embarques
     } else {
       setError('Usuario o contraseña incorrectos')
     }
