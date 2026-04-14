@@ -11,6 +11,9 @@ import PedidosLogin from './pages/PedidosLogin'
 import ControlEnvios from './pages/ControlEnvios'
 import ControlEnviosDetalle from './pages/ControlEnviosDetalle'
 
+// 🔥 NUEVO LOGIN EMBARQUES
+import EmbarquesLogin from './pages/EmbarquesLogin'
+
 function App() {
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial' }}>
@@ -38,6 +41,9 @@ function App() {
         {/* 🚚 ENVÍOS */}
         <Route path="/control-envios" element={<ControlEnvios />} />
         <Route path="/control-envios/:id_chofer" element={<ControlEnviosDetalle />} />
+
+        {/* 🚛 🔐 LOGIN EMBARQUES (NUEVO) */}
+        <Route path="/login-embarques" element={<EmbarquesLogin />} />
       </Routes>
     </div>
   )
