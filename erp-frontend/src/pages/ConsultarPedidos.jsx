@@ -176,6 +176,11 @@ function ConsultarPedidos() {
   }
 
   const guardarEntrega = async () => {
+    // 🔐 PASSWORD
+const pass = prompt("Ingresa contraseña para guardar")
+if (pass !== "JMAemb#1?_") {
+  return alert("Contraseña incorrecta")
+}
     if (form.otro_chofer) {
       if (!form.nombre_chofer || !form.apellido_paterno || !form.apellido_materno) {
         return alert("Completa los datos del chofer")
