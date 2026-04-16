@@ -363,56 +363,61 @@ function ConsultarPedidos() {
               </h3>
 
               {lista.map(p => {
-                const dias = calcularDias(p.fecha)
-                const alerta = dias > 7
-    return (
-  <div
-    key={p.id_pedido}
-    style={{
-      ...styles.tarjeta,
-      backgroundColor: alerta ? '#ffe5e5' : '#fff'
-    }}
-  >
-    <strong>ID:</strong> {p.id_pedido} <br />
-    <strong>Cliente:</strong> {p.cliente} <br />
-    <strong>Tienda:</strong> {p.nombre_tienda || '-'} <br />
-    <strong>Fecha:</strong> {p.fecha ? new Date(p.fecha).toLocaleDateString() : '-'} <br />
-    <strong>Días:</strong> {dias} <br />
+  const dias = calcularDias(p.fecha)
+  const alerta = dias > 7
 
-    <span style={styles.estado(p.estado)}>
-      {p.estado}
-    </span>
+  return (
+    <div
+      key={p.id_pedido}
+      style={{
+        ...styles.tarjeta,
+        backgroundColor: alerta ? '#ffe5e5' : '#fff'
+      }}
+    >
+      <strong>ID:</strong> {p.id_pedido} <br />
+      <strong>Cliente:</strong> {p.cliente} <br />
+      <strong>Tienda:</strong> {p.nombre_tienda || '-'} <br />
+      <strong>Fecha:</strong> {p.fecha ? new Date(p.fecha).toLocaleDateString() : '-'} <br />
+      <strong>Días:</strong> {dias} <br />
 
-    <div style={{ marginTop: 8 }}>
-      <button
-        style={{ ...styles.button, ...styles.primary }}
-        disabled={p.estado !== 'pendiente'}
-        onClick={() => abrirEntrega(p.id_pedido)}
-      >
-        Preparar envío
-      </button>
+      <span style={styles.estado(p.estado)}>
+        {p.estado}
+      </span>
 
-      <button
-        style={{ ...styles.button, ...styles.secondary }}
-        disabled={p.estado !== 'pendiente'}
-        onClick={() => abrirCancelar(p.id_pedido)}
-      >
-        Cancelar
-      </button>
+      <div style={{ marginTop: 8 }}>
+        {/* 🔥 NO TOCAR ESTOS */}
+        <button
+          style={{ ...styles.button, ...styles.primary }}
+          disabled={p.estado !== 'pendiente'}
+          onClick={() => abrirEntrega(p.id_pedido)}
+        >
+          Preparar envío
+        </button>
 
-      <button
-        style={{ ...styles.button, backgroundColor: '#f39c12', color: '#fff' }}
-        disabled={p.estado !== 'pendiente'}
-        onClick={() => {
-          setPedidoSeleccionado(p.id_pedido)
-          setModalProgramar(true)
-        }}
-      >
-        Programar envío
-      </button>
+        <button
+          style={{ ...styles.button, ...styles.secondary }}
+          disabled={p.estado !== 'pendiente'}
+          onClick={() => abrirCancelar(p.id_pedido)}
+        >
+          Cancelar
+        </button>
+
+        {/* 🔥 SOLO ESTE ES NUEVO */}
+        <button
+          style={{ ...styles.button, backgroundColor: '#f39c12', color: '#fff' }}
+          disabled={p.estado !== 'pendiente'}
+          onClick={() => {
+            setPedidoSeleccionado(p.id_pedido)
+            setModalProgramar(true)
+          }}
+        >
+          Programar envío
+        </button>
+      </div>
     </div>
-  </div>
-)
+  )
+})}
+  
          {/* 🔥 MODAL ENTREGA COMPLETO */}
       {modalEntrega && (
         <div style={{
