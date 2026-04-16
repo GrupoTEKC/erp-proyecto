@@ -73,6 +73,8 @@ function ConsultarPedidos() {
   const [modalPassword, setModalPassword] = useState(false)
   const [password, setPassword] = useState('')
   const [errorPassword, setErrorPassword] = useState('')
+  const [modalProgramar, setModalProgramar] = useState(false)
+  const [fechaProgramada, setFechaProgramada] = useState('')
   const [form, setForm] = useState({
     id_chofer: '',
     id_unidad: '',
@@ -249,6 +251,24 @@ function ConsultarPedidos() {
     setModalCancelar(false)
     cargarPedidos()
   }
+  const programarPedido = async () => {
+  if (!fechaProgramada) return alert("Selecciona una fecha")
+
+  const res = await fetch(`${urlLimpia}/pedidos/${pedidoSeleccionado}/programar`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fecha: fechaProgramada })
+  })
+
+  if (!res.ok) {
+    const err = await res.json()
+    return alert(err.error)
+  }
+
+  setModalProgramar(false)
+  setFechaProgramada('')
+  cargarPedidos()
+}
 
   return (
     <div style={styles.page}>
@@ -367,6 +387,17 @@ function ConsultarPedidos() {
                         Preparar envío
                       </button>
 
+                      <button
+                      style={{ ...styles.button, backgroundColor: '#f39c12', color: '#fff' }}
+                      disabled={p.estado !== 'pendiente'}
+                      onClick={() => {
+                      setPedidoSeleccionado(p.id_pedido)
+                      setModalProgramar(true)
+                      }}
+                      >
+                      Programar envío
+                      </button> 
+                      
                       <button
                         style={{ ...styles.button, ...styles.secondary }}
                         disabled={p.estado !== 'pendiente'}
@@ -540,6 +571,41 @@ function ConsultarPedidos() {
     </div>
   </div>
 )}
+   {/* 🔥 MODAL PROGRAMAR */}
+{modalProgramar && (
+  <div style={{
+    position:'fixed', top:0,left:0,right:0,bottom:0,
+    background:'rgba(0,0,0,0.5)',
+    display:'flex', justifyContent:'center', alignItems:'center'
+  }}>
+    <div style={{ background:'#fff', padding:20, width:400, borderRadius:10 }}>
+      <h3 style={styles.title}>Programar pedido</h3>
+
+      <input
+        type="date"
+        style={{ ...styles.field, width:'100%' }}
+        value={fechaProgramada}
+        onChange={e => setFechaProgramada(e.target.value)}
+      />
+
+      <div style={{ marginTop:15, textAlign:'right' }}>
+        <button
+          style={{ ...styles.button, ...styles.secondary }}
+          onClick={() => setModalProgramar(false)}
+        >
+          Cancelar
+        </button>
+
+        <button
+          style={{ ...styles.button, ...styles.primary }}
+          onClick={programarPedido}
+        >
+          Guardar fecha
+        </button>
+      </div>
+    </div>
+  </div>
+)}   
     </div>
   )
 }
