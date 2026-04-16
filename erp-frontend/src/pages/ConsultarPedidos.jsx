@@ -26,12 +26,38 @@ const styles = {
       estado === 'cancelado' ? '#7f8c8d' :
       '#34495e'
   }),
-  topBar: { display: 'flex', gap: '10px', alignItems: 'center' }
+  topBar: { display: 'flex', gap: '10px', alignItems: 'center' },
+  dropdown: { position: 'relative', width: '260px' },
+  dropdownButton: {
+    width: '100%',
+    padding: '8px 10px',
+    fontSize: '14px',
+    borderRadius: '6px',
+    border: '1px solid #8B1E1E',
+    background: '#fff',
+    cursor: 'pointer',
+    textAlign: 'left'
+  },
+  dropdownContent: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    width: '100%',
+    background: '#fff',
+    border: '1px solid #ddd',
+    borderRadius: '6px',
+    padding: '10px',
+    zIndex: 10,
+    maxHeight: '200px',
+    overflowY: 'auto'
+  }
 }
 
 function ConsultarPedidos() {
   const [pedidos, setPedidos] = useState([])
   const [rutas, setRutas] = useState([])
+  const [rutasSeleccionadas, setRutasSeleccionadas] = useState([])
+  const [mostrarDropdown, setMostrarDropdown] = useState(false)
   const [busqueda, setBusqueda] = useState('')
   const [estadoSeleccionado, setEstadoSeleccionado] = useState('')
 
@@ -43,6 +69,25 @@ function ConsultarPedidos() {
   const [fechaProgramada, setFechaProgramada] = useState('')
 
   const [pedidoSeleccionado, setPedidoSeleccionado] = useState(null)
+
+  const [detalle, setDetalle] = useState([])
+  const [choferes, setChoferes] = useState([])
+  const [unidades, setUnidades] = useState([])
+  const [comentarioCancelacion, setComentarioCancelacion] = useState('')
+  const [modalPassword, setModalPassword] = useState(false)
+  const [password, setPassword] = useState('')
+  const [errorPassword, setErrorPassword] = useState('')
+
+  const [form, setForm] = useState({
+    id_chofer: '',
+    id_unidad: '',
+    comentario: '',
+    otro_chofer: false,
+    nombre_chofer: '',
+    apellido_paterno: '',
+    apellido_materno: '',
+    productos: []
+  })
 
   const navigate = useNavigate()
   const urlLimpia = API?.endsWith('/') ? API.slice(0, -1) : API
@@ -71,7 +116,40 @@ function ConsultarPedidos() {
     return Math.floor((hoy - inicio) / (1000 * 60 * 60 * 24))
   }
 
-  // 🔥 FUNCIÓN NUEVA
+  const obtenerNombreRuta = (id) => {
+    const ruta = rutas.find(r => r.id_ruta === Number(id))
+    return ruta ? ruta.nombre : ''
+  }
+
+  const toggleRuta = (id) => {
+    if (rutasSeleccionadas.includes(id)) {
+      setRutasSeleccionadas(rutasSeleccionadas.filter(r => r !== id))
+    } else {
+      setRutasSeleccionadas([...rutasSeleccionadas, id])
+    }
+  }
+
+  const pedidosFiltrados = pedidos.filter(p =>
+    (
+      p.id_pedido.toString().includes(busqueda) ||
+      (p.cliente || '').toLowerCase().includes(busqueda.toLowerCase())
+    )
+    &&
+    (
+      estadoSeleccionado === '' ||
+      estadoSeleccionado === 'todos' ||
+      p.estado === estadoSeleccionado
+    )
+  )
+
+  const pedidosPorRuta = pedidosFiltrados.reduce((acc, pedido) => {
+    const ruta = pedido.id_ruta || 'SIN RUTA'
+    if (!acc[ruta]) acc[ruta] = []
+    acc[ruta].push(pedido)
+    return acc
+  }, {})
+
+  // 🔥 NUEVO
   const programarPedido = async () => {
     if (!fechaProgramada) return alert("Selecciona una fecha")
 
@@ -90,19 +168,6 @@ function ConsultarPedidos() {
     setFechaProgramada('')
     cargarPedidos()
   }
-
-  const pedidosFiltrados = pedidos.filter(p =>
-    (
-      p.id_pedido.toString().includes(busqueda) ||
-      (p.cliente || '').toLowerCase().includes(busqueda.toLowerCase())
-    )
-    &&
-    (
-      estadoSeleccionado === '' ||
-      estadoSeleccionado === 'todos' ||
-      p.estado === estadoSeleccionado
-    )
-  )
 
   return (
     <div style={styles.page}>
@@ -136,62 +201,100 @@ function ConsultarPedidos() {
           <option value="cancelado">Cancelado</option>
           <option value="pagado">Pagado</option>
         </select>
+
+        <div style={styles.dropdown}>
+          <div
+            style={styles.dropdownButton}
+            onClick={() => setMostrarDropdown(!mostrarDropdown)}
+          >
+            Seleccionar rutas ▼
+          </div>
+
+          {mostrarDropdown && (
+            <div style={styles.dropdownContent}>
+              {rutas.map(r => (
+                <label key={r.id_ruta} style={{ display: 'block' }}>
+                  <input
+                    type="checkbox"
+                    checked={rutasSeleccionadas.includes(r.id_ruta)}
+                    onChange={() => toggleRuta(r.id_ruta)}
+                  />
+                  {' '}Ruta {r.id_ruta} - {r.nombre.replace(/^Ruta\s*\d+\s*-\s*/i, '')}
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <div style={styles.columnas}>
-        {pedidosFiltrados.map(p => {
-          const dias = calcularDias(p.fecha)
-          const alerta = dias > 7
+        {Object.entries(pedidosPorRuta)
+          .map(([ruta, lista]) => (
+            <div key={ruta} style={styles.columna}>
+              <h3 style={{ textAlign: 'center' }}>
+                Ruta {ruta}
+                <br />
+                <span style={{ fontSize: '13px', color: '#555' }}>
+                  {obtenerNombreRuta(ruta)}
+                </span>
+              </h3>
 
-          return (
-            <div key={p.id_pedido} style={{
-              ...styles.tarjeta,
-              backgroundColor: alerta ? '#ffe5e5' : '#fff'
-            }}>
-              <strong>ID:</strong> {p.id_pedido} <br />
-              <strong>Cliente:</strong> {p.cliente} <br />
-              <strong>Fecha:</strong> {p.fecha ? new Date(p.fecha).toLocaleDateString() : '-'} <br />
-              <strong>Días:</strong> {dias} <br />
+              {lista.map(p => {
+                const dias = calcularDias(p.fecha)
+                const alerta = dias > 7
 
-              <span style={styles.estado(p.estado)}>
-                {p.estado}
-              </span>
+                return (
+                  <div key={p.id_pedido} style={{
+                    ...styles.tarjeta,
+                    backgroundColor: alerta ? '#ffe5e5' : '#fff'
+                  }}>
+                    <strong>ID:</strong> {p.id_pedido} <br />
+                    <strong>Cliente:</strong> {p.cliente} <br />
+                    <strong>Tienda:</strong> {p.nombre_tienda || '-'} <br />
+                    <strong>Fecha:</strong> {p.fecha ? new Date(p.fecha).toLocaleDateString() : '-'} <br />
+                    <strong>Días:</strong> {dias} <br />
 
-              <div style={{ marginTop: 8 }}>
-                <button
-                  style={{ ...styles.button, ...styles.primary }}
-                  disabled={p.estado !== 'pendiente'}
-                  onClick={() => setModalEntrega(true)}
-                >
-                  Preparar envío
-                </button>
+                    <span style={styles.estado(p.estado)}>
+                      {p.estado}
+                    </span>
 
-                <button
-                  style={{ ...styles.button, ...styles.secondary }}
-                  disabled={p.estado !== 'pendiente'}
-                  onClick={() => setModalCancelar(true)}
-                >
-                  Cancelar
-                </button>
+                    <div style={{ marginTop: 8 }}>
+                      <button
+                        style={{ ...styles.button, ...styles.primary }}
+                        disabled={p.estado !== 'pendiente'}
+                        onClick={() => abrirEntrega(p.id_pedido)}
+                      >
+                        Preparar envío
+                      </button>
 
-                {/* 🔥 BOTÓN NUEVO */}
-                <button
-                  style={{ ...styles.button, backgroundColor: '#f39c12', color: '#fff' }}
-                  disabled={p.estado !== 'pendiente'}
-                  onClick={() => {
-                    setPedidoSeleccionado(p.id_pedido)
-                    setModalProgramar(true)
-                  }}
-                >
-                  Programar envío
-                </button>
-              </div>
+                      {/* 🔥 NUEVO */}
+                      <button
+                        style={{ ...styles.button, backgroundColor: '#f39c12', color: '#fff' }}
+                        disabled={p.estado !== 'pendiente'}
+                        onClick={() => {
+                          setPedidoSeleccionado(p.id_pedido)
+                          setModalProgramar(true)
+                        }}
+                      >
+                        Programar envío
+                      </button>
+
+                      <button
+                        style={{ ...styles.button, ...styles.secondary }}
+                        disabled={p.estado !== 'pendiente'}
+                        onClick={() => abrirCancelar(p.id_pedido)}
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
-          )
-        })}
+          ))}
       </div>
 
-      {/* 🔥 MODAL PROGRAMAR */}
+      {/* 🔥 MODAL NUEVO */}
       {modalProgramar && (
         <div style={{
           position:'fixed', top:0,left:0,right:0,bottom:0,
