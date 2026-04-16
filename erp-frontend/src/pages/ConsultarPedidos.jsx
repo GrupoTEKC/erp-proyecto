@@ -62,7 +62,7 @@ function ConsultarPedidos() {
 
   // 🔥 NUEVO
   const [estadoSeleccionado, setEstadoSeleccionado] = useState('')
-
+  
   const [modalEntrega, setModalEntrega] = useState(false)
   const [modalCancelar, setModalCancelar] = useState(false)
   const [pedidoSeleccionado, setPedidoSeleccionado] = useState(null)
@@ -73,6 +73,8 @@ function ConsultarPedidos() {
   const [modalPassword, setModalPassword] = useState(false)
   const [password, setPassword] = useState('')
   const [errorPassword, setErrorPassword] = useState('')
+  const [modalProgramar, setModalProgramar] = useState(false)
+  const [fechaProgramada, setFechaProgramada] = useState('')
   const [form, setForm] = useState({
     id_chofer: '',
     id_unidad: '',
@@ -250,6 +252,27 @@ function ConsultarPedidos() {
     cargarPedidos()
   }
 
+  const programarPedido = async () => {
+  if (!fechaProgramada) {
+    return alert("Selecciona una fecha")
+  }
+
+  const res = await fetch(`${urlLimpia}/pedidos/${pedidoSeleccionado}/programar`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fecha: fechaProgramada })
+  })
+
+  if (!res.ok) {
+    const err = await res.json()
+    return alert(err.error)
+  }
+
+  setModalProgramar(false)
+  setFechaProgramada('')
+  cargarPedidos()
+}
+  
   return (
     <div style={styles.page}>
       <div style={styles.header}>
@@ -342,46 +365,54 @@ function ConsultarPedidos() {
               {lista.map(p => {
                 const dias = calcularDias(p.fecha)
                 const alerta = dias > 7
+    return (
+  <div
+    key={p.id_pedido}
+    style={{
+      ...styles.tarjeta,
+      backgroundColor: alerta ? '#ffe5e5' : '#fff'
+    }}
+  >
+    <strong>ID:</strong> {p.id_pedido} <br />
+    <strong>Cliente:</strong> {p.cliente} <br />
+    <strong>Tienda:</strong> {p.nombre_tienda || '-'} <br />
+    <strong>Fecha:</strong> {p.fecha ? new Date(p.fecha).toLocaleDateString() : '-'} <br />
+    <strong>Días:</strong> {dias} <br />
 
-                return (
-                  <div key={p.id_pedido} style={{
-                    ...styles.tarjeta,
-                    backgroundColor: alerta ? '#ffe5e5' : '#fff'
-                  }}>
-                    <strong>ID:</strong> {p.id_pedido} <br />
-                    <strong>Cliente:</strong> {p.cliente} <br />
-                    <strong>Tienda:</strong> {p.nombre_tienda || '-'} <br />
-                    <strong>Fecha:</strong> {p.fecha ? new Date(p.fecha).toLocaleDateString() : '-'} <br />
-                    <strong>Días:</strong> {dias} <br />
+    <span style={styles.estado(p.estado)}>
+      {p.estado}
+    </span>
 
-                    <span style={styles.estado(p.estado)}>
-                      {p.estado}
-                    </span>
+    <div style={{ marginTop: 8 }}>
+      <button
+        style={{ ...styles.button, ...styles.primary }}
+        disabled={p.estado !== 'pendiente'}
+        onClick={() => abrirEntrega(p.id_pedido)}
+      >
+        Preparar envío
+      </button>
 
-                    <div style={{ marginTop: 8 }}>
-                      <button
-                        style={{ ...styles.button, ...styles.primary }}
-                        disabled={p.estado !== 'pendiente'}
-                        onClick={() => abrirEntrega(p.id_pedido)}
-                      >
-                        Preparar envío
-                      </button>
+      <button
+        style={{ ...styles.button, ...styles.secondary }}
+        disabled={p.estado !== 'pendiente'}
+        onClick={() => abrirCancelar(p.id_pedido)}
+      >
+        Cancelar
+      </button>
 
-                      <button
-                        style={{ ...styles.button, ...styles.secondary }}
-                        disabled={p.estado !== 'pendiente'}
-                        onClick={() => abrirCancelar(p.id_pedido)}
-                      >
-                        Cancelar
-                      </button>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          ))}
-      </div>
-
+      <button
+        style={{ ...styles.button, backgroundColor: '#f39c12', color: '#fff' }}
+        disabled={p.estado !== 'pendiente'}
+        onClick={() => {
+          setPedidoSeleccionado(p.id_pedido)
+          setModalProgramar(true)
+        }}
+      >
+        Programar envío
+      </button>
+    </div>
+  </div>
+)
          {/* 🔥 MODAL ENTREGA COMPLETO */}
       {modalEntrega && (
         <div style={{
@@ -540,6 +571,44 @@ function ConsultarPedidos() {
     </div>
   </div>
 )}
+
+    {modalProgramar && (
+  <div style={{
+    position:'fixed', top:0,left:0,right:0,bottom:0,
+    background:'rgba(0,0,0,0.5)',
+    display:'flex', justifyContent:'center', alignItems:'center'
+  }}>
+    <div style={{ background:'#fff', padding:20, width:400, borderRadius:10 }}>
+      
+      <h3 style={styles.title}>Programar pedido</h3>
+
+      <input
+        type="date"
+        style={{ ...styles.field, width:'100%' }}
+        value={fechaProgramada}
+        onChange={e => setFechaProgramada(e.target.value)}
+      />
+
+      <div style={{ marginTop:15, textAlign:'right' }}>
+        <button
+          style={{ ...styles.button, ...styles.secondary }}
+          onClick={() => setModalProgramar(false)}
+        >
+          Cancelar
+        </button>
+
+        <button
+          style={{ ...styles.button, ...styles.primary }}
+          onClick={programarPedido}
+        >
+          Guardar fecha
+        </button>
+      </div>
+
+    </div>
+  </div>
+)}
+      
     </div>
   )
 }
