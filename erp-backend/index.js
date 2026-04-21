@@ -1388,6 +1388,62 @@ app.get('/pedidos-programados', async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
+
+app.post('/programaciones/:id/detalle', async (req, res) => {
+  const conn = await db.getConnection()
+  try {
+    const { id } = req.params // id_programacion
+    const { productos } = req.body
+
+    await conn.beginTransaction()
+
+    // 🔥 borrar anterior (reprogramación)
+    await conn.query(`
+      DELETE FROM programacion_detalle
+      WHERE id_programacion = ?
+    `, [id])
+
+    for (const p of productos) {
+      await conn.query(`
+        INSERT INTO programacion_detalle (
+          id_programacion,
+          id_producto,
+          cantidad_pedida,
+          cantidad_planeada
+        )
+        VALUES (?, ?, ?, ?)
+      `, [
+        id,
+        p.id_producto,
+        p.cantidad_pedida,
+        p.cantidad_planeada
+      ])
+    }
+
+    // 🔥 calcular estado automático
+    const parcial = productos.some(p => p.cantidad_planeada < p.cantidad_pedida)
+
+    await conn.query(`
+      UPDATE programaciones_pedido
+      SET estado = ?
+      WHERE id_programacion = ?
+    `, [
+      parcial ? 'parcial' : 'completado',
+      id
+    ])
+
+    await conn.commit()
+
+    res.json({ success: true })
+
+  } catch (err) {
+    await conn.rollback()
+    res.status(500).json({ error: err.message })
+  } finally {
+    conn.release()
+  }
+})
+
 // =============================
 // SERVER
 // =============================
