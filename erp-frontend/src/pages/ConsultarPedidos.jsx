@@ -251,13 +251,16 @@ function ConsultarPedidos() {
     setModalCancelar(false)
     cargarPedidos()
   }
+
   const programarPedido = async () => {
   if (!fechaProgramada) return alert("Selecciona una fecha")
 
   const res = await fetch(`${urlLimpia}/pedidos/${pedidoSeleccionado}/programar`, {
-    method: 'PUT',
+    method: 'POST', // 🔥 CAMBIO 1: era PUT
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ fecha: fechaProgramada })
+    body: JSON.stringify({ 
+      fecha_programada: fechaProgramada // 🔥 CAMBIO 2: nombre correcto
+    })
   })
 
   if (!res.ok) {
@@ -269,7 +272,7 @@ function ConsultarPedidos() {
   setFechaProgramada('')
   cargarPedidos()
 }
-
+  
   return (
     <div style={styles.page}>
       <div style={styles.header}>
@@ -372,6 +375,11 @@ function ConsultarPedidos() {
                     <strong>Cliente:</strong> {p.cliente} <br />
                     <strong>Tienda:</strong> {p.nombre_tienda || '-'} <br />
                     <strong>Fecha:</strong> {p.fecha ? new Date(p.fecha).toLocaleDateString() : '-'} <br />
+                    {p.fecha_programada && (
+                   <>
+                   <strong>Programado:</strong> {new Date(p.fecha_programada).toLocaleDateString()} <br />
+                   </>
+                    )}
                     <strong>Días:</strong> {dias} <br />
 
                     <span style={styles.estado(p.estado)}>
