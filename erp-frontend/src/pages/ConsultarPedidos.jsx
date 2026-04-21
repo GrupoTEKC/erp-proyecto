@@ -21,10 +21,13 @@ const styles = {
     borderRadius: '6px',
     fontSize: '12px',
     backgroundColor:
-      estado === 'pendiente' ? '#c0392b' :
-      estado === 'en_ruta' ? '#27ae60' :
-      estado === 'cancelado' ? '#7f8c8d' :
-      '#34495e'
+     estado === 'pendiente' ? '#c0392b' :
+     estado === 'programado' ? '#f39c12' : // 🔥 AÑADIR
+     estado === 'en_ruta' ? '#27ae60' :
+     estado === 'entregado' ? '#2c3e50' : // 🔥 AÑADIR
+     estado === 'pagado' ? '#8e44ad' : // 🔥 AÑADIR
+     estado === 'cancelado' ? '#7f8c8d' :
+     '#34495e'
   }),
   topBar: { display: 'flex', gap: '10px', alignItems: 'center' },
   dropdown: { position: 'relative', width: '260px' },
@@ -389,7 +392,7 @@ function ConsultarPedidos() {
                     <div style={{ marginTop: 8 }}>
                       <button
                         style={{ ...styles.button, ...styles.primary }}
-                        disabled={p.estado !== 'pendiente'}
+                        disabled={!['pendiente', 'programado'].includes(p.estado)}
                         onClick={() => abrirEntrega(p.id_pedido)}
                       >
                         Preparar envío
@@ -397,7 +400,7 @@ function ConsultarPedidos() {
 
                       <button
                       style={{ ...styles.button, backgroundColor: '#f39c12', color: '#fff' }}
-                      disabled={p.estado !== 'pendiente'}
+                      disabled={!['pendiente', 'programado'].includes(p.estado)}
                       onClick={() => {
                       setPedidoSeleccionado(p.id_pedido)
                       setModalProgramar(true)
@@ -408,7 +411,7 @@ function ConsultarPedidos() {
                       
                       <button
                         style={{ ...styles.button, ...styles.secondary }}
-                        disabled={p.estado !== 'pendiente'}
+                       disabled={!['pendiente', 'programado'].includes(p.estado)}
                         onClick={() => abrirCancelar(p.id_pedido)}
                       >
                         Cancelar
