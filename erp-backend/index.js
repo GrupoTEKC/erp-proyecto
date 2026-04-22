@@ -1264,51 +1264,87 @@ app.get('/pagos/:id_pedido', async (req, res) => {
 })
 
 // =============================
-// 📅 PROGRAMAR PEDIDO
+// 📅 PROGRAMAR PEDIDO (PRO)
 // =============================
 app.post('/pedidos/:id/programar', async (req, res) => {
-  const { id } = req.params
-  const { fecha_programada } = req.body
-
+  const conn = await db.getConnection()
   try {
+    const { id } = req.params
+    const { fecha_programada } = req.body
+
+    // 🔥 VALIDACIÓN 1: fecha requerida
     if (!fecha_programada) {
       return res.status(400).json({ error: 'Fecha requerida' })
     }
 
-    // 🔥 desactivar anteriores
-    await db.query(`
+    // 🔥 VALIDACIÓN 2: formato de fecha
+    if (isNaN(new Date(fecha_programada))) {
+      return res.status(400).json({ error: 'Fecha inválida' })
+    }
+
+    await conn.beginTransaction()
+
+    // 🔥 VALIDACIÓN 3: verificar pedido
+    const [pedido] = await conn.query(
+      `SELECT estado FROM pedidos WHERE id_pedido = ?`,
+      [id]
+    )
+
+    if (!pedido.length) {
+      throw new Error('Pedido no existe')
+    }
+
+    // 🔥 VALIDACIÓN 4: estados bloqueados
+    if (['cancelado', 'entregado', 'pagado'].includes(pedido[0].estado)) {
+      throw new Error('No se puede programar este pedido')
+    }
+
+    // 🔥 1. Desactivar anteriores
+    await conn.query(`
       UPDATE programaciones_pedido 
       SET activo = 0 
       WHERE id_pedido = ?
     `, [id])
 
-    // 🔥 insertar nueva
-    await db.query(`
-      INSERT INTO programaciones_pedido (id_pedido, fecha_programada)
-      VALUES (?, ?)
+    // 🔥 2. Insertar nueva
+    const [result] = await conn.query(`
+      INSERT INTO programaciones_pedido 
+      (id_pedido, fecha_programada, activo)
+      VALUES (?, ?, 1)
     `, [id, fecha_programada])
 
-    // 🔥 cambiar estado
-    await db.query(`
+    const id_programacion = result.insertId
+
+    // 🔥 3. Cambiar estado
+    await conn.query(`
       UPDATE pedidos 
       SET estado = 'programado'
       WHERE id_pedido = ?
     `, [id])
 
-    res.json({ success: true })
+    await conn.commit()
+
+    res.json({
+      success: true,
+      id_programacion,
+      fecha_programada
+    })
 
   } catch (err) {
+    await conn.rollback()
     res.status(500).json({ error: err.message })
+  } finally {
+    conn.release()
   }
 })
 
+
 // =============================
-// 📅 PEDIDOS CON FILTRO (NORMAL + PROGRAMADOS)
+// 📅 PEDIDOS FILTRADOS (PRO)
 // =============================
 app.get('/pedidos-filtrados', async (req, res) => {
   try {
     const { fecha, tipo } = req.query
-    // tipo puede ser: normal | programado | todos
 
     let query = `
       SELECT 
@@ -1330,7 +1366,12 @@ app.get('/pedidos-filtrados', async (req, res) => {
 
     const params = []
 
-    // 🔥 FILTRO POR TIPO
+    // 🔥 VALIDACIÓN tipo
+    if (tipo && !['normal', 'programado', 'todos'].includes(tipo)) {
+      return res.status(400).json({ error: 'Tipo inválido' })
+    }
+
+    // 🔥 FILTRO tipo
     if (tipo === 'programado') {
       query += ` AND p.estado = 'programado'`
     }
@@ -1339,8 +1380,12 @@ app.get('/pedidos-filtrados', async (req, res) => {
       query += ` AND (p.estado != 'programado' OR p.estado IS NULL)`
     }
 
-    // 🔥 FILTRO POR FECHA
+    // 🔥 VALIDACIÓN fecha
     if (fecha) {
+      if (isNaN(new Date(fecha))) {
+        return res.status(400).json({ error: 'Fecha inválida' })
+      }
+
       query += `
         AND (
           DATE(p.fecha) = ?
@@ -1355,13 +1400,15 @@ app.get('/pedidos-filtrados', async (req, res) => {
     const [rows] = await db.query(query, params)
 
     res.json(rows)
+
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
 })
 
+
 // =============================
-// 📅 SOLO PROGRAMADOS
+// 📅 SOLO PROGRAMADOS (PRO)
 // =============================
 app.get('/pedidos-programados', async (req, res) => {
   try {
@@ -1384,26 +1431,58 @@ app.get('/pedidos-programados', async (req, res) => {
     `)
 
     res.json(rows)
+
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
 })
 
+
+// =============================
+// 📦 DETALLE PROGRAMACIÓN (PRO)
+// =============================
 app.post('/programaciones/:id/detalle', async (req, res) => {
   const conn = await db.getConnection()
   try {
-    const { id } = req.params // id_programacion
+    const { id } = req.params
     const { productos } = req.body
+
+    // 🔥 VALIDACIÓN productos
+    if (!Array.isArray(productos) || productos.length === 0) {
+      return res.status(400).json({ error: 'Productos inválidos' })
+    }
 
     await conn.beginTransaction()
 
-    // 🔥 borrar anterior (reprogramación)
+    // 🔥 validar programación
+    const [prog] = await conn.query(`
+      SELECT id_programacion FROM programaciones_pedido WHERE id_programacion = ?
+    `, [id])
+
+    if (!prog.length) {
+      throw new Error('Programación no existe')
+    }
+
+    // 🔥 borrar anterior
     await conn.query(`
       DELETE FROM programacion_detalle
       WHERE id_programacion = ?
     `, [id])
 
     for (const p of productos) {
+
+      if (!p.id_producto) {
+        throw new Error('Producto inválido')
+      }
+
+      if (p.cantidad_pedida == null || p.cantidad_planeada == null) {
+        throw new Error('Cantidades requeridas')
+      }
+
+      if (p.cantidad_planeada < 0 || p.cantidad_pedida < 0) {
+        throw new Error('Cantidades inválidas')
+      }
+
       await conn.query(`
         INSERT INTO programacion_detalle (
           id_programacion,
@@ -1420,8 +1499,10 @@ app.post('/programaciones/:id/detalle', async (req, res) => {
       ])
     }
 
-    // 🔥 calcular estado automático
-    const parcial = productos.some(p => p.cantidad_planeada < p.cantidad_pedida)
+    // 🔥 estado automático
+    const parcial = productos.some(
+      p => p.cantidad_planeada < p.cantidad_pedida
+    )
 
     await conn.query(`
       UPDATE programaciones_pedido
@@ -1441,6 +1522,33 @@ app.post('/programaciones/:id/detalle', async (req, res) => {
     res.status(500).json({ error: err.message })
   } finally {
     conn.release()
+  }
+})
+
+
+// =============================
+// 📦 OBTENER DETALLE PROGRAMACIÓN
+// =============================
+app.get('/programaciones/:id/detalle', async (req, res) => {
+  try {
+    const { id } = req.params
+
+    const [rows] = await db.query(`
+      SELECT 
+        pd.id_producto,
+        pr.nombre,
+        pd.cantidad_pedida,
+        pd.cantidad_planeada
+      FROM programacion_detalle pd
+      LEFT JOIN productos pr 
+        ON pd.id_producto = pr.id_producto
+      WHERE pd.id_programacion = ?
+    `, [id])
+
+    res.json(rows)
+
+  } catch (err) {
+    res.status(500).json({ error: err.message })
   }
 })
 
