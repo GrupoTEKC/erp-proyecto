@@ -65,7 +65,7 @@ function ConsultarPedidos() {
 
   // 🔥 NUEVO
   const [estadoSeleccionado, setEstadoSeleccionado] = useState('')
-
+  const [productosProgramar, setProductosProgramar] = useState([])
   const [modalEntrega, setModalEntrega] = useState(false)
   const [modalCancelar, setModalCancelar] = useState(false)
   const [pedidoSeleccionado, setPedidoSeleccionado] = useState(null)
@@ -255,14 +255,33 @@ function ConsultarPedidos() {
     cargarPedidos()
   }
 
+  const abrirProgramar = async (id) => {
+  const res = await fetch(`${urlLimpia}/pedidos/${id}/detalle`)
+  const data = await res.json()
+
+  setPedidoSeleccionado(id)
+
+  setProductosProgramar(
+    data.map(p => ({
+      id_producto: p.id_producto,
+      nombre: p.nombre,
+      cantidad_pedida: Number(p.cantidad),
+      cantidad_planeada: Number(p.cantidad)
+    }))
+  )
+
+  setModalProgramar(true)
+}
+  
   const programarPedido = async () => {
   if (!fechaProgramada) return alert("Selecciona una fecha")
 
   const res = await fetch(`${urlLimpia}/pedidos/${pedidoSeleccionado}/programar`, {
-    method: 'POST', // 🔥 CAMBIO 1: era PUT
+    method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ 
-      fecha_programada: fechaProgramada // 🔥 CAMBIO 2: nombre correcto
+    body: JSON.stringify({
+      fecha_programada: fechaProgramada,
+      productos: productosProgramar
     })
   })
 
@@ -273,6 +292,7 @@ function ConsultarPedidos() {
 
   setModalProgramar(false)
   setFechaProgramada('')
+  setProductosProgramar([])
   cargarPedidos()
 }
   
@@ -401,13 +421,10 @@ function ConsultarPedidos() {
                       <button
                       style={{ ...styles.button, backgroundColor: '#f39c12', color: '#fff' }}
                       disabled={!['pendiente', 'programado'].includes(p.estado)}
-                      onClick={() => {
-                      setPedidoSeleccionado(p.id_pedido)
-                      setModalProgramar(true)
-                      }}
+                      onClick={() => abrirProgramar(p.id_pedido)}
                       >
                       Programar envío
-                      </button> 
+                      </button>
                       
                       <button
                         style={{ ...styles.button, ...styles.secondary }}
@@ -585,11 +602,22 @@ function ConsultarPedidos() {
    {/* 🔥 MODAL PROGRAMAR */}
 {modalProgramar && (
   <div style={{
-    position:'fixed', top:0,left:0,right:0,bottom:0,
+    position:'fixed',
+    top:0,left:0,right:0,bottom:0,
     background:'rgba(0,0,0,0.5)',
-    display:'flex', justifyContent:'center', alignItems:'center'
+    display:'flex',
+    justifyContent:'center',
+    alignItems:'center'
   }}>
-    <div style={{ background:'#fff', padding:20, width:400, borderRadius:10 }}>
+    <div style={{
+      background:'#fff',
+      padding:20,
+      width:500,
+      borderRadius:10,
+      maxHeight:'90vh',
+      overflowY:'auto'
+    }}>
+
       <h3 style={styles.title}>Programar pedido</h3>
 
       <input
@@ -599,7 +627,25 @@ function ConsultarPedidos() {
         onChange={e => setFechaProgramada(e.target.value)}
       />
 
-      <div style={{ marginTop:15, textAlign:'right' }}>
+      {productosProgramar.map((p, i) => (
+        <div key={i} style={{ marginBottom:15 }}>
+          <strong>{p.nombre}</strong><br />
+          Pedido: {p.cantidad_pedida}
+
+          <input
+            type="number"
+            style={{ ...styles.field, width:'100%' }}
+            value={p.cantidad_planeada}
+            onChange={e => {
+              const copia = [...productosProgramar]
+              copia[i].cantidad_planeada = Number(e.target.value)
+              setProductosProgramar(copia)
+            }}
+          />
+        </div>
+      ))}
+
+      <div style={{ textAlign:'right' }}>
         <button
           style={{ ...styles.button, ...styles.secondary }}
           onClick={() => setModalProgramar(false)}
@@ -611,12 +657,13 @@ function ConsultarPedidos() {
           style={{ ...styles.button, ...styles.primary }}
           onClick={programarPedido}
         >
-          Guardar fecha
+          Guardar
         </button>
       </div>
+
     </div>
   </div>
-)}   
+)}
     </div>
   )
 }
