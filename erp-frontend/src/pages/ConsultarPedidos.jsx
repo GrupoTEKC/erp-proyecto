@@ -78,6 +78,7 @@ function ConsultarPedidos() {
   const [errorPassword, setErrorPassword] = useState('')
   const [modalProgramar, setModalProgramar] = useState(false)
   const [fechaProgramada, setFechaProgramada] = useState('')
+  const [comentarioProgramacion, setComentarioProgramacion] = useState('')
   const [form, setForm] = useState({
     id_chofer: '',
     id_unidad: '',
@@ -255,7 +256,7 @@ function ConsultarPedidos() {
     cargarPedidos()
   }
 
-  const abrirProgramar = async (id) => {
+ const abrirProgramar = async (id) => {
   const res = await fetch(`${urlLimpia}/pedidos/${id}/detalle`)
   const data = await res.json()
 
@@ -265,22 +266,44 @@ function ConsultarPedidos() {
     data.map(p => ({
       id_producto: p.id_producto,
       nombre: p.nombre,
-      cantidad_pedida: Number(p.cantidad),
-      cantidad_planeada: Number(p.cantidad)
+      cantidad_pedida: Number(
+        p.cantidad_pedida ||
+        p.cantidad ||
+        p.cantidad_planeada ||
+        0
+      ),
+      cantidad_planeada: Number(
+        p.cantidad_pedida ||
+        p.cantidad ||
+        p.cantidad_planeada ||
+        0
+      )
     }))
   )
 
+  setComentarioProgramacion('')
   setModalProgramar(true)
 }
   
-  const programarPedido = async () => {
-  if (!fechaProgramada) return alert("Selecciona una fecha")
+const programarPedido = async () => {
+  if (!fechaProgramada) {
+    return alert("Selecciona una fecha")
+  }
+
+  const hayDiferencias = productosProgramar.some(
+    p => Number(p.cantidad_planeada) !== Number(p.cantidad_pedida)
+  )
+
+  if (hayDiferencias && !comentarioProgramacion.trim()) {
+    return alert("Debes indicar la razón del faltante")
+  }
 
   const res = await fetch(`${urlLimpia}/pedidos/${pedidoSeleccionado}/programar`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       fecha_programada: fechaProgramada,
+      comentario: comentarioProgramacion,
       productos: productosProgramar
     })
   })
@@ -292,9 +315,11 @@ function ConsultarPedidos() {
 
   setModalProgramar(false)
   setFechaProgramada('')
+  setComentarioProgramacion('')
   setProductosProgramar([])
   cargarPedidos()
 }
+
   
   return (
     <div style={styles.page}>
@@ -600,41 +625,63 @@ function ConsultarPedidos() {
   </div>
 )}
    {/* 🔥 MODAL PROGRAMAR */}
+{/* 🔥 MODAL PROGRAMAR */}
 {modalProgramar && (
-  <div style={{
-    position:'fixed',
-    top:0,left:0,right:0,bottom:0,
-    background:'rgba(0,0,0,0.5)',
-    display:'flex',
-    justifyContent:'center',
-    alignItems:'center'
-  }}>
-    <div style={{
-      background:'#fff',
-      padding:20,
-      width:500,
-      borderRadius:10,
-      maxHeight:'90vh',
-      overflowY:'auto'
-    }}>
-
+  <div
+    style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0,0,0,0.5)',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center'
+    }}
+  >
+    <div
+      style={{
+        background: '#fff',
+        padding: 20,
+        width: 500,
+        borderRadius: 10,
+        maxHeight: '90vh',
+        overflowY: 'auto'
+      }}
+    >
       <h3 style={styles.title}>Programar pedido</h3>
+
+      <div
+        style={{
+          background: '#fff3cd',
+          color: '#856404',
+          padding: '10px',
+          borderRadius: '8px',
+          marginBottom: '15px',
+          fontSize: '14px'
+        }}
+      >
+        Captura las cantidades para producción. Si no se cumple lo acordado,
+        indica la razón.
+      </div>
 
       <input
         type="date"
-        style={{ ...styles.field, width:'100%' }}
+        style={{ ...styles.field, width: '100%' }}
         value={fechaProgramada}
         onChange={e => setFechaProgramada(e.target.value)}
       />
 
       {productosProgramar.map((p, i) => (
-        <div key={i} style={{ marginBottom:15 }}>
-          <strong>{p.nombre}</strong><br />
+        <div key={i} style={{ marginBottom: 15 }}>
+          <strong>{p.nombre}</strong>
+          <br />
           Pedido: {p.cantidad_pedida}
 
           <input
             type="number"
-            style={{ ...styles.field, width:'100%' }}
+            style={{ ...styles.field, width: '100%' }}
             value={p.cantidad_planeada}
             onChange={e => {
               const copia = [...productosProgramar]
@@ -645,7 +692,18 @@ function ConsultarPedidos() {
         </div>
       ))}
 
-      <div style={{ textAlign:'right' }}>
+      {productosProgramar.some(
+        p => Number(p.cantidad_planeada) !== Number(p.cantidad_pedida)
+      ) && (
+        <textarea
+          style={{ ...styles.field, width: '100%', height: 90 }}
+          placeholder="Razón si no se cumple cantidad completa"
+          value={comentarioProgramacion}
+          onChange={e => setComentarioProgramacion(e.target.value)}
+        />
+      )}
+
+      <div style={{ textAlign: 'right', marginTop: 10 }}>
         <button
           style={{ ...styles.button, ...styles.secondary }}
           onClick={() => setModalProgramar(false)}
@@ -660,7 +718,6 @@ function ConsultarPedidos() {
           Guardar
         </button>
       </div>
-
     </div>
   </div>
 )}
