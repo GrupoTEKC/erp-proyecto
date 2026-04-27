@@ -92,11 +92,35 @@ function ConsultarPedidos() {
   const navigate = useNavigate()
   const urlLimpia = API?.endsWith('/') ? API.slice(0, -1) : API
 
-  const cargarPedidos = async () => {
-    const res = await fetch(`${urlLimpia}/pedidos`)
-    const data = await res.json()
-    setPedidos(data)
-  }
+ const cargarPedidos = async () => {
+  const res = await fetch(`${urlLimpia}/pedidos-filtrados?tipo=todos`)
+  const data = await res.json()
+
+  const agrupados = Object.values(
+    data.reduce((acc, row) => {
+
+      if (!acc[row.id_pedido]) {
+        acc[row.id_pedido] = {
+          ...row,
+          productos: []
+        }
+      }
+
+      if (row.id_producto) {
+        acc[row.id_pedido].productos.push({
+          id_producto: row.id_producto,
+          producto: row.producto,
+          cantidad_pedida: row.cantidad_pedida,
+          cantidad_planeada: row.cantidad_planeada
+        })
+      }
+
+      return acc
+    }, {})
+  )
+
+  setPedidos(agrupados)
+}
 
   const cargarRutas = async () => {
     try {
@@ -173,10 +197,10 @@ function ConsultarPedidos() {
       apellido_paterno: '',
       apellido_materno: '',
       productos: data.map(p => ({
-        id_producto: p.id_producto,
-        nombre: p.nombre,
-        cantidad_pedida: p.cantidad,
-        cantidad_entregada: p.cantidad
+      id_producto: p.id_producto,
+      nombre: p.nombre,
+      cantidad_pedida: Number(p.cantidad_planeada || 0),
+      cantidad_entregada: Number(p.cantidad_planeada || 0)
       }))
     })
     setPedidoSeleccionado(id)
