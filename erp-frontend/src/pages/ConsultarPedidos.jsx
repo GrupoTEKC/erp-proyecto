@@ -199,50 +199,86 @@ const abrirEntrega = async (id) => {
   setModalEntrega(true)
 }
 
+
   const guardarEntrega = async () => {
+  try {
+    // VALIDAR CHOFER NUEVO
     if (form.otro_chofer) {
-      if (!form.nombre_chofer || !form.apellido_paterno || !form.apellido_materno) {
+      if (
+        !form.nombre_chofer.trim() ||
+        !form.apellido_paterno.trim() ||
+        !form.apellido_materno.trim()
+      ) {
         return alert("Completa los datos del chofer")
       }
     }
-    if (!form.id_unidad) return alert("Selecciona unidad")
-    if (!form.id_chofer && !form.otro_chofer) return alert("Selecciona chofer")
 
+    // VALIDAR UNIDAD
+    if (!form.id_unidad) {
+      return alert("Selecciona unidad")
+    }
+
+    // VALIDAR CHOFER
+    if (!form.id_chofer && !form.otro_chofer) {
+      return alert("Selecciona chofer")
+    }
+
+    // VALIDAR DIFERENCIAS
     const hayDiferencias = form.productos.some(
-    p => Number(p.cantidad_entregada) !== Number(p.cantidad_planeada)
+      p => Number(p.cantidad_entregada) !== Number(p.cantidad_planeada)
     )
 
-    if (hayDiferencias && !form.comentario) {
+    if (hayDiferencias && !form.comentario.trim()) {
       return alert("Debes agregar comentario por diferencias")
     }
 
-    const res = await fetch(`${urlLimpia}/pedidos/${pedidoSeleccionado}/en-curso`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form)
-    })
+    // ENVIAR AL BACKEND
+    const res = await fetch(
+      `${urlLimpia}/pedidos/${pedidoSeleccionado}/en-curso`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(form)
+      }
+    )
+
+    const data = await res.json()
 
     if (!res.ok) {
-      const err = await res.json()
-      return alert(err.error)
+      return alert(data.error || "Error al guardar entrega")
     }
 
+    // CERRAR MODALES
     setModalEntrega(false)
+    setModalPassword(false)
+
+    // LIMPIAR PASSWORD
+    setPassword("")
+    setErrorPassword("")
+
+    // RECARGAR PEDIDOS
     cargarPedidos()
+
+  } catch (error) {
+    console.error(error)
+    alert("Error de conexión con servidor")
   }
-  const confirmarConPassword = async () => {
+}
+
+const confirmarConPassword = async () => {
   if (password !== "JMAemb#1?_") {
     setErrorPassword("Contraseña incorrecta")
     return
   }
 
-  setErrorPassword('')
-  setModalPassword(false)
-  setPassword('')
+  setErrorPassword("")
 
+  // PRIMERO GUARDA
   await guardarEntrega()
 }
-
+  
   const abrirCancelar = (id) => {
     setPedidoSeleccionado(id)
     setComentarioCancelacion('')
