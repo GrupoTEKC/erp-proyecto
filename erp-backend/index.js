@@ -567,7 +567,17 @@ app.post('/pedidos/:id/en-curso', async (req, res) => {
     } = req.body
 
     await conn.beginTransaction()
-
+    const [programacion] = await conn.query(`
+    SELECT 
+      id_programacion,
+      id_chofer,
+      id_unidad
+     FROM programaciones_pedido
+     WHERE id_pedido = ?
+     AND activo = 1
+  LIMIT 1 
+`, [id])
+    
     // 🔥 NUEVO: determinar chofer final
     let idChoferFinal = id_chofer
 
