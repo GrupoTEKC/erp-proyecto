@@ -1281,8 +1281,13 @@ app.post('/pedidos/:id/programar', async (req, res) => {
 
   try {
     const { id } = req.params
-    const { fecha_programada, comentario = '' } = req.body
-
+    const {
+    fecha_programada,
+    comentario = '',
+    id_chofer = null,
+    id_unidad = null
+    } = req.body
+    
     if (!fecha_programada) {
       return res.status(400).json({ error: 'Fecha requerida' })
     }
@@ -1369,18 +1374,25 @@ app.post('/pedidos/:id/programar', async (req, res) => {
       throw new Error('No hay productos para programar')
     }
 
-    // 4. Insertar nueva programación
-    const [insertProg] = await conn.query(`
-      INSERT INTO programaciones_pedido (
-        id_pedido,
-        fecha_programada,
-        activo,
-        estado,
-        comentario
-      )
-      VALUES (?, ?, 1, 'planeado', ?)
-    `, [id, fecha_programada, comentario])
-
+     const [insertProg] = await conn.query(`
+     INSERT INTO programaciones_pedido (
+     id_pedido,
+     fecha_programada,
+     activo,
+     estado,
+     comentario,
+     id_chofer,
+     id_unidad
+     )
+     VALUES (?, ?, 1, 'planeado', ?, ?, ?)
+     `, [
+     id,
+     fecha_programada,
+     comentario,
+     id_chofer,
+     id_unidad
+    ])
+    
     const id_programacion = insertProg.insertId
 
     // 5. Insertar detalle
