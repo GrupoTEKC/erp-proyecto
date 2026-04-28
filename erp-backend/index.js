@@ -708,11 +708,17 @@ app.get('/pedidos/:id/detalle', async (req, res) => {
         pd.id_producto,
         p.nombre,
         pd.cantidad AS cantidad_pedida,
-        COALESCE(prd.cantidad_planeada, pd.cantidad) AS cantidad_planeada
+        COALESCE(prd.cantidad_planeada, pd.cantidad) AS cantidad_planeada,
+
+        pp.id_chofer,
+        pp.id_unidad,
+
+        CONCAT(ch.nombre,' ',ch.apellido1,' ',ch.apellido2) AS chofer,
+        u.nombre AS unidad
 
       FROM pedido_detalle pd
 
-      LEFT JOIN productos p
+      INNER JOIN productos p
         ON p.id_producto = pd.id_producto
 
       LEFT JOIN programaciones_pedido pp
@@ -723,6 +729,12 @@ app.get('/pedidos/:id/detalle', async (req, res) => {
         ON prd.id_programacion = pp.id_programacion
         AND prd.id_producto = pd.id_producto
 
+      LEFT JOIN choferes ch
+        ON ch.id_chofer = pp.id_chofer
+
+      LEFT JOIN unidades u
+        ON u.id_unidad = pp.id_unidad
+
       WHERE pd.id_pedido = ?
     `, [id])
 
@@ -732,7 +744,6 @@ app.get('/pedidos/:id/detalle', async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
-
 // =============================
 // CANCELAR PEDIDO
 // =============================
