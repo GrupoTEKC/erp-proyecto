@@ -260,27 +260,38 @@ function ConsultarPedidos() {
   const res = await fetch(`${urlLimpia}/pedidos/${id}/detalle`)
   const data = await res.json()
 
+  const ch = await fetch(`${urlLimpia}/choferes`)
+  const chData = await ch.json()
+
+  const un = await fetch(`${urlLimpia}/unidades`)
+  const unData = await un.json()
+
+  setChoferes(chData)
+  setUnidades(unData)
+
   setPedidoSeleccionado(id)
 
   setProductosProgramar(
     data.map(p => ({
       id_producto: p.id_producto,
       nombre: p.nombre,
-      cantidad_pedida: Number(
-        p.cantidad_pedida ||
-        p.cantidad ||
-        p.cantidad_planeada ||
-        0
-      ),
-      cantidad_planeada: Number(
-        p.cantidad_pedida ||
-        p.cantidad ||
-        p.cantidad_planeada ||
-        0
-      )
+      cantidad_pedida: Number(p.cantidad_pedida || p.cantidad || 0),
+      cantidad_planeada: Number(p.cantidad_planeada || p.cantidad_pedida || p.cantidad || 0)
     }))
   )
 
+ setForm({
+  id_chofer: '',
+  id_unidad: '',
+  comentario: '',
+  otro_chofer: false,
+  nombre_chofer: '',
+  apellido_paterno: '',
+  apellido_materno: '',
+  productos: []
+})
+   
+  setFechaProgramada('')
   setComentarioProgramacion('')
   setModalProgramar(true)
 }
@@ -298,13 +309,25 @@ const programarPedido = async () => {
     return alert("Debes indicar la razón del faltante")
   }
 
+  if (!form.id_chofer) {
+  return alert("Selecciona chofer")
+  }
+
+  if (!form.id_unidad) {
+  return alert("Selecciona unidad")
+  }
+
+  
   const res = await fetch(`${urlLimpia}/pedidos/${pedidoSeleccionado}/programar`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      fecha_programada: fechaProgramada,
-      comentario: comentarioProgramacion,
-      productos: productosProgramar
+    fecha_programada: fechaProgramada,
+    comentario: comentarioProgramacion,
+    id_chofer: form.id_chofer,
+    id_unidad: form.id_unidad,
+    comentario_ruta: form.comentario,
+    productos: productosProgramar
     })
   })
 
@@ -673,6 +696,38 @@ const programarPedido = async () => {
         onChange={e => setFechaProgramada(e.target.value)}
       />
 
+      <select
+  style={{ ...styles.field, width:'100%' }}
+  value={form.id_chofer}
+  onChange={e => setForm({...form,id_chofer:e.target.value})}
+>
+  <option value="">Selecciona chofer</option>
+  {choferes.map(c => (
+    <option key={c.id_chofer} value={c.id_chofer}>
+      {c.nombre}
+    </option>
+  ))}
+</select>
+
+<select
+  style={{ ...styles.field, width:'100%' }}
+  value={form.id_unidad}
+  onChange={e => setForm({...form,id_unidad:e.target.value})}
+>
+  <option value="">Selecciona unidad</option>
+  {unidades.map(u => (
+    <option key={u.id_unidad} value={u.id_unidad}>
+      {u.nombre}
+    </option>
+  ))}
+</select>
+
+<textarea
+  style={{ ...styles.field, width:'100%', height:80 }}
+  placeholder="Comentario logística"
+  value={form.comentario}
+  onChange={e => setForm({...form,comentario:e.target.value})}
+/>
       {productosProgramar.map((p, i) => (
         <div key={i} style={{ marginBottom: 15 }}>
           <strong>{p.nombre}</strong>
@@ -681,13 +736,17 @@ const programarPedido = async () => {
 
           <input
             type="number"
+            min="0"
             style={{ ...styles.field, width: '100%' }}
             value={p.cantidad_planeada}
-            onChange={e => {
-              const copia = [...productosProgramar]
-              copia[i].cantidad_planeada = Number(e.target.value)
-              setProductosProgramar(copia)
-            }}
+            
+             onChange={e => {
+             let valor = Number(e.target.value)
+             if (valor < 0) valor = 0
+             const copia = [...productosProgramar]
+             copia[i].cantidad_planeada = valor
+             setProductosProgramar(copia)
+             }}
           />
         </div>
       ))}
