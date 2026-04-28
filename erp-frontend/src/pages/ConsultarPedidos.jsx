@@ -157,48 +157,47 @@ function ConsultarPedidos() {
     return acc
   }, {})
 
-  const abrirEntrega = async (id) => {
-    const res = await fetch(`${urlLimpia}/pedidos/${id}/detalle`)
-    const data = await res.json()
-    const ch = await fetch(`${urlLimpia}/choferes`)
-    const chData = await ch.json()
-    const un = await fetch(`${urlLimpia}/unidades`)
-    const unData = await un.json()
-    setDetalle(data)
-    setChoferes(chData)
-    setUnidades(unData)
-    setForm({
-      id_chofer: data[0]?.id_chofer || '',
-      id_unidad: data[0]?.id_unidad || '',
-      comentario: '',
-      otro_chofer: false,
-      nombre_chofer: '',
-      apellido_paterno: '',
-      apellido_materno: '',
-      productos: data.map(p => ({
+const abrirEntrega = async (id) => {
+  const res = await fetch(`${urlLimpia}/pedidos/${id}/detalle`)
+  const data = await res.json()
+
+  const ch = await fetch(`${urlLimpia}/choferes`)
+  const chData = await ch.json()
+
+  const un = await fetch(`${urlLimpia}/unidades`)
+  const unData = await un.json()
+
+  setChoferes(chData)
+  setUnidades(unData)
+
+  setForm({
+    id_chofer: data[0]?.id_chofer || '',
+    id_unidad: data[0]?.id_unidad || '',
+    comentario: '',
+    otro_chofer: false,
+    nombre_chofer: '',
+    apellido_paterno: '',
+    apellido_materno: '',
+
+    productos: data.map(p => ({
       id_producto: p.id_producto,
       nombre: p.nombre,
 
-  cantidad_planeada: Number(
-    p.cantidad_planeada ||
-    p.cantidad_programada ||
-    p.cantidad ||
-    0
-  ),
+      cantidad_planeada: Number(
+        p.cantidad_planeada ?? 0
+      ),
 
-  cantidad_entregada: Number(
-    p.cantidad_planeada ||
-    p.cantidad_programada ||
-    p.cantidad ||
-    0
-  )
-}))
-    })
-    setPedidoSeleccionado(id)
-    setEditarChofer(false)
-    setEditarUnidad(false)
-    setModalEntrega(true)
-  }
+      cantidad_entregada: Number(
+        p.cantidad_planeada ?? 0
+      )
+    }))
+  })
+
+  setPedidoSeleccionado(id)
+  setEditarChofer(false)
+  setEditarUnidad(false)
+  setModalEntrega(true)
+}
 
   const guardarEntrega = async () => {
     if (form.otro_chofer) {
