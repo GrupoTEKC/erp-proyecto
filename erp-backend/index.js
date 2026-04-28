@@ -578,9 +578,15 @@ app.post('/pedidos/:id/en-curso', async (req, res) => {
   LIMIT 1 
 `, [id])
     
-    // 🔥 NUEVO: determinar chofer final
-    let idChoferFinal = id_chofer
+      if (!programacion.length) {
+      throw new Error('Pedido no tiene programación activa')
+      }
+      let idChoferFinal =
+      id_chofer || programacion[0]?.id_chofer || null
 
+      let idUnidadFinal =
+      id_unidad || programacion[0]?.id_unidad || null
+    
     if (otro_chofer) {
       if (!nombre_chofer || !apellido_paterno || !apellido_materno) {
         throw new Error('Datos de chofer incompletos')
@@ -608,31 +614,36 @@ app.post('/pedidos/:id/en-curso', async (req, res) => {
         estado
       )
       VALUES (?, ?, ?, ?, 'en_ruta')
-    `, [id, idChoferFinal, id_unidad, comentario || null])
+      `, [id, idChoferFinal, idUnidadFinal, comentario || null])
 
-    const id_entrega = entregaResult.insertId
+        const id_entrega = entregaResult.insertId
 
-    for (const item of productos) {
+        for (const item of productos) {
 
-      // ❌ ELIMINADO: comentario obligatorio (ya no aplica)
+  if (
+    Number(item.cantidad_entregada) !== Number(item.cantidad_planeada) &&
+    !comentario
+  ) {
+    throw new Error('Comentario obligatorio por diferencia de cantidades')
+  }
 
-      await conn.query(`
-        INSERT INTO entrega_detalle (
-          id_entrega,
-          id_producto,
-          cantidad_pedida,
-          cantidad_entregada
-        )
-        VALUES (?, ?, ?, ?)
-      `, [
-        id_entrega,
-        item.id_producto,
-        item.cantidad_pedida,
-        item.cantidad_entregada
-      ])
+  await conn.query(`
+    INSERT INTO entrega_detalle (
+      id_entrega,
+      id_producto,
+      cantidad_pedida,
+      cantidad_entregada
+    )
+    VALUES (?, ?, ?, ?)
+  `, [
+    id_entrega,
+    item.id_producto,
+    item.cantidad_planeada,
+    item.cantidad_entregada
+  ])
+    
     }
-
-    await conn.query(`
+        await conn.query(`
       UPDATE pedidos
       SET 
         id_chofer = ?,
