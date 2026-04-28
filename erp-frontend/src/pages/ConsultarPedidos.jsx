@@ -78,6 +78,8 @@ function ConsultarPedidos() {
   const [errorPassword, setErrorPassword] = useState('')
   const [modalProgramar, setModalProgramar] = useState(false)
   const [fechaProgramada, setFechaProgramada] = useState('')
+  const [editarUnidad, setEditarUnidad] = useState(false)
+  const [editarChofer, setEditarChofer] = useState(false)
   const [comentarioProgramacion, setComentarioProgramacion] = useState('')
   const [form, setForm] = useState({
     id_chofer: '',
@@ -166,21 +168,35 @@ function ConsultarPedidos() {
     setChoferes(chData)
     setUnidades(unData)
     setForm({
-      id_chofer: '',
-      id_unidad: '',
+      id_chofer: data[0]?.id_chofer || '',
+      id_unidad: data[0]?.id_unidad || '',
       comentario: '',
       otro_chofer: false,
       nombre_chofer: '',
       apellido_paterno: '',
       apellido_materno: '',
       productos: data.map(p => ({
-        id_producto: p.id_producto,
-        nombre: p.nombre,
-        cantidad_pedida: p.cantidad,
-        cantidad_entregada: p.cantidad
-      }))
+      id_producto: p.id_producto,
+      nombre: p.nombre,
+
+  cantidad_planeada: Number(
+    p.cantidad_planeada ||
+    p.cantidad_programada ||
+    p.cantidad ||
+    0
+  ),
+
+  cantidad_entregada: Number(
+    p.cantidad_planeada ||
+    p.cantidad_programada ||
+    p.cantidad ||
+    0
+  )
+}))
     })
     setPedidoSeleccionado(id)
+    setEditarChofer(false)
+    setEditarUnidad(false)
     setModalEntrega(true)
   }
 
@@ -194,7 +210,7 @@ function ConsultarPedidos() {
     if (!form.id_chofer && !form.otro_chofer) return alert("Selecciona chofer")
 
     const hayDiferencias = form.productos.some(
-      p => p.cantidad_entregada !== p.cantidad_pedida
+    p => Number(p.cantidad_entregada) !== Number(p.cantidad_planeada)
     )
 
     if (hayDiferencias && !form.comentario) {
@@ -489,79 +505,193 @@ const programarPedido = async () => {
           ))}
       </div>
 
-         {/* 🔥 MODAL ENTREGA COMPLETO */}
       {modalEntrega && (
-        <div style={{
-          position:'fixed', top:0,left:0,right:0,bottom:0,
-          background:'rgba(0,0,0,0.5)',
-          display:'flex', justifyContent:'center', alignItems:'center'
-        }}>
-          <div style={{ background:'#fff', padding:20, width:600, borderRadius:10 }}>
-            <h3 style={styles.title}>Preparar entrega</h3>
+  <div
+    style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0,0,0,0.5)',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center'
+    }}
+  >
+    <div
+      style={{
+        background: '#fff',
+        padding: 20,
+        width: 600,
+        borderRadius: 10,
+        maxHeight: '90vh',
+        overflowY: 'auto'
+      }}
+    >
+      <h3 style={styles.title}>Preparar entrega</h3>
 
-            {form.productos.map((p, i) => (
-              <div key={i} style={{ marginBottom: 10 }}>
-                <strong>{p.nombre}</strong><br />
-                Pedido: {p.cantidad_pedida}
-                <input
-                  style={styles.field}
-                  type="number"
-                  value={p.cantidad_entregada}
-                  onChange={e => {
-                    const copia = [...form.productos]
-                    copia[i].cantidad_entregada = Number(e.target.value)
-                    setForm({ ...form, productos: copia })
-                  }}
-                />
-              </div>
-            ))}
+      {form.productos.map((p, i) => (
+        <div key={i} style={{ marginBottom: 15 }}>
+          <strong>{p.nombre}</strong>
+          <br />
+          Planeado: {p.cantidad_planeada}
 
-            <select style={styles.field} onChange={e => {
-              const value = e.target.value
-              if (value === 'otro') {
-                setForm({ ...form, id_chofer: '', otro_chofer: true })
-              } else {
-                setForm({ ...form, id_chofer: value, otro_chofer: false })
-              }
-            }}>
-              <option value="">Chofer</option>
-              {choferes.map(c => (
-                <option key={c.id_chofer} value={c.id_chofer}>{c.nombre}</option>
-              ))}
-              <option value="otro">Otro</option>
-            </select>
+          <input
+            type="number"
+            min="0"
+            style={styles.field}
+            value={p.cantidad_entregada}
+            onChange={e => {
+              let valor = Number(e.target.value)
+              if (valor < 0) valor = 0
 
-            {form.otro_chofer && (
-              <div>
-                <input style={styles.field} placeholder="Nombre" onChange={e => setForm({ ...form, nombre_chofer: e.target.value })} />
-                <input style={styles.field} placeholder="Apellido paterno" onChange={e => setForm({ ...form, apellido_paterno: e.target.value })} />
-                <input style={styles.field} placeholder="Apellido materno" onChange={e => setForm({ ...form, apellido_materno: e.target.value })} />
-              </div>
-            )}
+              const copia = [...form.productos]
+              copia[i].cantidad_entregada = valor
 
-            <select style={styles.field} onChange={e => setForm({ ...form, id_unidad: e.target.value })}>
-              <option value="">Unidad</option>
-              {unidades.map(u => (
-                <option key={u.id_unidad} value={u.id_unidad}>{u.nombre}</option>
-              ))}
-            </select>
+              setForm({ ...form, productos: copia })
+            }}
+          />
+        </div>
+      ))}
 
-            <textarea
-              style={{ ...styles.field, width:'100%', height:80 }}
-              placeholder="Comentario"
-              onChange={e => setForm({ ...form, comentario: e.target.value })}
-            />
+      {/* CHOFER */}
+      <div style={{ marginBottom: 10 }}>
+        <strong>Chofer</strong>{' '}
+        <button
+          type="button"
+          style={{ ...styles.button, ...styles.secondary }}
+          onClick={() => setEditarChofer(true)}
+        >
+          ✏️
+        </button>
+      </div>
 
-            <button style={{ ...styles.button, ...styles.primary }} onClick={() => setModalPassword(true)}>
-            Guardar
-            </button>
+      <select
+        style={{ ...styles.field, width: '100%' }}
+        disabled={!editarChofer}
+        value={form.id_chofer}
+        onChange={e => {
+          const value = e.target.value
 
-            <button style={{ ...styles.button, ...styles.secondary }} onClick={() => setModalEntrega(false)}>
-              Cerrar
-            </button>
-          </div>
+          if (!window.confirm('¿Cambiar chofer programado?')) return
+
+          if (value === 'otro') {
+            setForm({
+              ...form,
+              id_chofer: '',
+              otro_chofer: true
+            })
+          } else {
+            setForm({
+              ...form,
+              id_chofer: value,
+              otro_chofer: false
+            })
+          }
+        }}
+      >
+        <option value="">Selecciona chofer</option>
+
+        {choferes.map(c => (
+          <option key={c.id_chofer} value={c.id_chofer}>
+            {c.nombre}
+          </option>
+        ))}
+
+        <option value="otro">Otro</option>
+      </select>
+
+      {form.otro_chofer && (
+        <div>
+          <input
+            style={{ ...styles.field, width: '100%' }}
+            placeholder="Nombre"
+            onChange={e =>
+              setForm({ ...form, nombre_chofer: e.target.value })
+            }
+          />
+
+          <input
+            style={{ ...styles.field, width: '100%' }}
+            placeholder="Apellido paterno"
+            onChange={e =>
+              setForm({ ...form, apellido_paterno: e.target.value })
+            }
+          />
+
+          <input
+            style={{ ...styles.field, width: '100%' }}
+            placeholder="Apellido materno"
+            onChange={e =>
+              setForm({ ...form, apellido_materno: e.target.value })
+            }
+          />
         </div>
       )}
+
+      {/* UNIDAD */}
+      <div style={{ marginBottom: 10 }}>
+        <strong>Unidad</strong>{' '}
+        <button
+          type="button"
+          style={{ ...styles.button, ...styles.secondary }}
+          onClick={() => setEditarUnidad(true)}
+        >
+          ✏️
+        </button>
+      </div>
+
+      <select
+        style={{ ...styles.field, width: '100%' }}
+        disabled={!editarUnidad}
+        value={form.id_unidad}
+        onChange={e => {
+          if (!window.confirm('¿Cambiar unidad programada?')) return
+
+          setForm({
+            ...form,
+            id_unidad: e.target.value
+          })
+        }}
+      >
+        <option value="">Selecciona unidad</option>
+
+        {unidades.map(u => (
+          <option key={u.id_unidad} value={u.id_unidad}>
+            {u.nombre}
+          </option>
+        ))}
+      </select>
+
+      {/* COMENTARIO */}
+      <textarea
+        style={{ ...styles.field, width: '100%', height: 80 }}
+        placeholder="Comentario"
+        value={form.comentario}
+        onChange={e =>
+          setForm({ ...form, comentario: e.target.value })
+        }
+      />
+
+      <div style={{ textAlign: 'right', marginTop: 10 }}>
+        <button
+          style={{ ...styles.button, ...styles.secondary }}
+          onClick={() => setModalEntrega(false)}
+        >
+          Cerrar
+        </button>
+
+        <button
+          style={{ ...styles.button, ...styles.primary }}
+          onClick={() => setModalPassword(true)}
+        >
+          Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
       {/* 🔥 MODAL CANCELAR COMPLETO */}
       {modalCancelar && (
