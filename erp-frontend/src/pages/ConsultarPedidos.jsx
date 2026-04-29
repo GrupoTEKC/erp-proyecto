@@ -199,8 +199,7 @@ const abrirEntrega = async (id) => {
   setModalEntrega(true)
 }
 
-
-  const guardarEntrega = async () => {
+const guardarEntrega = async () => {
   try {
     // VALIDAR CHOFER NUEVO
     if (form.otro_chofer) {
