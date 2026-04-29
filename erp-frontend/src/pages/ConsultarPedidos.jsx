@@ -199,8 +199,7 @@ const abrirEntrega = async (id) => {
   setModalEntrega(true)
 }
 
-
-  const guardarEntrega = async () => {
+const guardarEntrega = async () => {
   try {
     // VALIDAR CHOFER NUEVO
     if (form.otro_chofer) {
@@ -267,6 +266,18 @@ const abrirEntrega = async (id) => {
   }
 }
 
+const confirmarConPassword = async () => {
+  if (password !== "JMAemb#1?_") {
+    setErrorPassword("Contraseña incorrecta")
+    return
+  }
+
+  setErrorPassword("")
+
+  // PRIMERO GUARDA
+  await guardarEntrega()
+}
+ 
 const confirmarConPassword = async () => {
   if (password !== "JMAemb#1?_") {
     setErrorPassword("Contraseña incorrecta")
