@@ -1314,11 +1314,12 @@ app.post('/pedidos/:id/programar', async (req, res) => {
   try {
     const { id } = req.params
     const {
-    fecha_programada,
-    comentario = '',
-    id_chofer = null,
-    id_unidad = null
-    } = req.body
+     fecha_programada,
+     comentario='',
+     id_chofer=null,
+     id_unidad=null,
+     productos=[]
+     } = req.body
     
     if (!fecha_programada) {
       return res.status(400).json({ error: 'Fecha requerida' })
@@ -1361,48 +1362,42 @@ app.post('/pedidos/:id/programar', async (req, res) => {
       LIMIT 1
     `, [id])
 
-    let productos = []
-
+     let productosFinal = []
     // 3. Si existe programación previa, copiar cantidades anteriores
-    if (progActiva.length) {
-      const idAnterior = progActiva[0].id_programacion
+   if (progActiva.length) {
+  const idAnterior = progActiva[0].id_programacion
 
-      const [detalleAnterior] = await conn.query(`
-        SELECT
-          id_producto,
-          cantidad_pedida,
-          cantidad_planeada
-        FROM programacion_detalle
-        WHERE id_programacion = ?
-      `, [idAnterior])
+  await conn.query(`
+    UPDATE programaciones_pedido
+    SET activo = 0
+    WHERE id_programacion = ?
+  `, [idAnterior])
+}
 
-      productos = detalleAnterior
+const [detallePedido] = await conn.query(`
+  SELECT
+    id_producto,
+    cantidad AS cantidad_pedida
+  FROM pedido_detalle
+  WHERE id_pedido = ?
+`, [id])
 
-      // desactivar anterior
-      await conn.query(`
-        UPDATE programaciones_pedido
-        SET activo = 0
-        WHERE id_programacion = ?
-      `, [idAnterior])
+productosFinal = detallePedido.map(p => {
 
-    } else {
-      // Primera programación: tomar pedido original
-      const [detallePedido] = await conn.query(`
-        SELECT
-          id_producto,
-          cantidad AS cantidad_pedida
-        FROM pedido_detalle
-        WHERE id_pedido = ?
-      `, [id])
+  const enviado = productos.find(
+    x => Number(x.id_producto) === Number(p.id_producto)
+  )
 
-      productos = detallePedido.map(p => ({
-        id_producto: p.id_producto,
-        cantidad_pedida: p.cantidad_pedida,
-        cantidad_planeada: p.cantidad_pedida
-      }))
-    }
+  return {
+    id_producto: p.id_producto,
+    cantidad_pedida: p.cantidad_pedida,
+    cantidad_planeada: enviado
+      ? Number(enviado.cantidad_planeada)
+      : Number(p.cantidad_pedida)
+  }
+})
 
-    if (!productos.length) {
+    if (!productosFinal.length) {
       throw new Error('No hay productos para programar')
     }
 
@@ -1428,7 +1423,7 @@ app.post('/pedidos/:id/programar', async (req, res) => {
     const id_programacion = insertProg.insertId
 
     // 5. Insertar detalle
-    for (const p of productos) {
+   for (const p of productosFinal){
       await conn.query(`
         INSERT INTO programacion_detalle (
           id_programacion,
