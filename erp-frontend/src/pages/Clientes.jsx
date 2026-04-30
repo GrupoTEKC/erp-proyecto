@@ -68,13 +68,15 @@ function Clientes() {
     <div style={container}>
     <div style={header}>
 
-   <img src={logo} alt="logo" style={logoStyle} />
+    {/* FILA 1 */}
+    <div style={rowTop}>
+    <h1 style={titulo}>GESTIÓN DE CLIENTES</h1>
+    <img src={logo} alt="logo" style={logoStyle} />
+    </div>
 
-   <h2 style={titulo}>Gestión de Clientes</h2>
-
-   {/* 🔥 BOTONES EN FILA */}
-   <div style={headerButtons}>
-   <button style={btnVino} onClick={() => navigate('/')}>
+    {/* FILA 2 */}
+    <div style={rowBottom}>
+    <button style={btnVino} onClick={() => navigate('/')}>
       ← Volver
     </button>
 
@@ -201,20 +203,26 @@ const container = {
   fontFamily: 'Arial'
 }
 
+// 🔥 CONTENEDOR GENERAL HEADER
 const header = {
   display: 'flex',
-  flexDirection: 'column',   // 🔥 logo + título en columna
-  alignItems: 'center',
-  gap: 10,
-  marginBottom: 20
+  flexDirection: 'column',
+  gap: 15,
+  marginBottom: 25
 }
 
-// 🔥 NUEVO: contenedor de botones en línea
-const headerButtons = {
+// 🔥 FILA 1 (TÍTULO + LOGO)
+const rowTop = {
   display: 'flex',
-  gap: 10,
-  justifyContent: 'center',
-  flexWrap: 'wrap' // por si se hace chico el ancho
+  justifyContent: 'space-between',
+  alignItems: 'center'
+}
+
+// 🔥 FILA 2 (BOTONES SEPARADOS)
+const rowBottom = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center'
 }
 
 const btnVino = {
@@ -273,15 +281,18 @@ const sinDatos = {
   textAlign: 'center'
 }
 
+// 🔥 LOGO DERECHA
 const logoStyle = {
-  width: '160px',
-  marginTop: 10
+  width: '140px'
 }
 
+// 🔥 TÍTULO GRANDE Y MAYÚSCULAS
 const titulo = {
   margin: 0,
-  color: '#071849'
+  color: '#071849',
+  fontSize: '28px',
+  fontWeight: 'bold',
+  textTransform: 'uppercase'
 }
-
 
 export default Clientes
