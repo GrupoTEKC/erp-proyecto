@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom'
+
 import Menu from './pages/Menu'
 import Pedidos from './pages/Pedidos'
 import Clientes from './pages/Clientes'
@@ -10,9 +11,10 @@ import PagosLogin from './pages/PagosLogin'
 import PedidosLogin from './pages/PedidosLogin'
 import ControlEnvios from './pages/ControlEnvios'
 import ControlEnviosDetalle from './pages/ControlEnviosDetalle'
-
-// 🔥 NUEVO LOGIN EMBARQUES
 import EmbarquesLogin from './pages/EmbarquesLogin'
+
+// 🔥 NUEVO COMPONENTE
+import ClientePrecios from './pages/ClientePrecios'
 
 function App() {
   return (
@@ -32,6 +34,12 @@ function App() {
         <Route path="/clientes/nuevo" element={<NuevoCliente />} />
         <Route path="/clientes/editar/:id_cliente" element={<EditarCliente />} />
 
+        {/* 🔥 NUEVA RUTA PRECIOS */}
+        <Route
+          path="/clientes/:id_cliente/precios"
+          element={<ClientePrecios />}
+        />
+
         {/* 🔐 LOGIN PAGOS */}
         <Route path="/pagos-login" element={<PagosLogin />} />
 
@@ -40,9 +48,12 @@ function App() {
 
         {/* 🚚 ENVÍOS */}
         <Route path="/control-envios" element={<ControlEnvios />} />
-        <Route path="/control-envios/:id_chofer" element={<ControlEnviosDetalle />} />
+        <Route
+          path="/control-envios/:id_chofer"
+          element={<ControlEnviosDetalle />}
+        />
 
-        {/* 🚛 🔐 LOGIN EMBARQUES (NUEVO) */}
+        {/* 🚛 🔐 LOGIN EMBARQUES */}
         <Route path="/login-embarques" element={<EmbarquesLogin />} />
       </Routes>
     </div>
