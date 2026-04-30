@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import logo from '../assets/TRANSPARENTE.png'
 
 const API = 'https://erp-proyecto-production.up.railway.app'
 
@@ -230,6 +231,7 @@ function ClientePrecios() {
 // =========================
 // ESTILOS (ALINEADOS A TU SISTEMA)
 // =========================
+const vino = '#8B1E1E'
 const styles = {
   page: {
     backgroundColor: '#ffffff',
@@ -316,5 +318,6 @@ const styles = {
     borderBottom: '1px solid #eee'
   }
 }
+
 
 export default ClientePrecios
