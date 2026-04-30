@@ -290,7 +290,7 @@ const logoStyle = {
 const titulo = {
   margin: 0,
   color: '#071849',
-  fontSize: '48px',
+  fontSize: '38px',
   fontWeight: 'bold',
   textTransform: 'uppercase'
 }
