@@ -248,12 +248,6 @@ const styles = {
     marginBottom: '20px'
   },
 
-  headerLeft: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '10px'
-  },
-
   logo: {
     width: '130px'
   },
