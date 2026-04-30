@@ -108,6 +108,13 @@ function ClientePrecios() {
         Cerrar
       </button>
 
+      {/* 🔥 MENSAJE SI NO HAY DATOS */}
+      {historial.length === 0 && (
+        <p style={{ marginTop: 15 }}>
+          No hay historial para este cliente
+        </p>
+      )}
+
       <div style={{ marginTop: 15, overflowX: 'auto' }}>
         <table style={styles.table}>
           <thead style={styles.thead}>
@@ -119,13 +126,11 @@ function ClientePrecios() {
               <th style={styles.th}>Fecha</th>
             </tr>
           </thead>
-
           <tbody>
             {historial.map((h, i) => (
               <tr key={h.id || i}>
                 <td style={styles.td}>{h.producto}</td>
 
-                {/* 🔥 FORMATO CON $ */}
                 <td style={styles.td}>
                   {h.precio_anterior ? `$${h.precio_anterior}` : '-'}
                 </td>
@@ -139,7 +144,9 @@ function ClientePrecios() {
                 </td>
 
                 <td style={styles.td}>
-                 {new Date(h.fecha_cambio).toLocaleString('es-MX')}
+                  {h.fecha_cambio
+                    ? new Date(h.fecha_cambio).toLocaleString('es-MX')
+                    : '-'}
                 </td>
               </tr>
             ))}
@@ -149,23 +156,36 @@ function ClientePrecios() {
     </div>
   )
 }
+  
   // =========================
   // CARGAR HISTORIAL
   // =========================
-  const cargarHistorial = async () => {
-    try {
-      const res = await fetch(
-        `${API}/clientes/${id_cliente}/precios/historial`
-      )
-      const data = await res.json()
-      setHistorial(data)
-      setVerHistorial(true)
-    } catch (err) {
-      console.error(err)
-      alert('Error cargando historial')
-    }
-  }
+const cargarHistorial = async () => {
+  console.log("CLICK HISTORIAL")
+  console.log("ID CLIENTE:", id_cliente)
 
+  try {
+    const res = await fetch(
+      `${API}/clientes/${id_cliente}/precios/historial`
+    )
+
+    console.log("STATUS:", res.status)
+
+    if (!res.ok) {
+      throw new Error('Error en servidor')
+    }
+
+    const data = await res.json()
+    console.log("DATA HISTORIAL:", data)
+
+    setHistorial(Array.isArray(data) ? data : [])
+    setVerHistorial(true)
+
+  } catch (err) {
+    console.error(err)
+    alert('Error cargando historial')
+  }
+}
   // =========================
   // LOADING
   // =========================
