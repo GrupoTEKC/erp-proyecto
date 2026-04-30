@@ -118,14 +118,23 @@ const renderHistorial = () => {
         overflow: 'auto',
         borderRadius: 10
       }}>
-        <h3 style={styles.title}>HISTORIAL DE CAMBIOS</h3>
+       <div style={{
+       display: 'flex',
+       justifyContent: 'space-between',
+       alignItems: 'center',
+       marginBottom: 15
+      }}>
+       <h3 style={{ ...styles.title, fontSize: 24 }}>
+        HISTORIAL DE CAMBIOS
+      </h3>
 
-        <button
-          style={styles.backButton}
-          onClick={() => setVerHistorial(false)}
-        >
-          Cerrar
-        </button>
+     <button
+     style={styles.backButton}
+     onClick={() => setVerHistorial(false)}
+     >
+      Cerrar
+      </button>
+      </div>
 
         {historial.length === 0 && (
           <p>No hay historial</p>
@@ -263,9 +272,7 @@ const cargarHistorial = async () => {
           </tbody>
         </table>
       </div>
-     <div style={{ border: '3px solid red', marginTop: 20 }}>
-  {renderHistorial()}
-</div> 
+     {renderHistorial()}
     </div>
   )
 }
