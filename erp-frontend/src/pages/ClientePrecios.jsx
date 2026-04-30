@@ -258,16 +258,23 @@ const styles = {
     width: '130px'
   },
 
-  backButton: {
-  display: 'inline-flex',
-  alignItems: 'center',
-  padding: '3px 5px',   // 🔥 más compacto
-  fontSize: '13px',     // opcional más chico
+backButton: {
+  display: 'inline-block',   // 🔥 clave
+  width: 'auto',             // 🔥 evita que se estire
+  padding: '6px 10px',       // ajusta ancho fino
+  fontSize: '13px',
   backgroundColor: '#fff',
   color: vino,
   border: `1px solid ${vino}`,
   borderRadius: '6px',
   cursor: 'pointer'
+},
+
+  headerLeft: {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '10px',
+  alignItems: 'flex-start' // 🔥 evita que se estire
 },
   // 🔥 TÍTULO GRANDE
   title: {
