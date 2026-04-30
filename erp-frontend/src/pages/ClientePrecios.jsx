@@ -94,28 +94,43 @@ function ClientePrecios() {
     }
   }
 
-  const renderHistorial = () => {
+const renderHistorial = () => {
   if (!verHistorial) return null
 
   return (
-    <div style={{ marginTop: 30 }}>
-      <h3 style={styles.title}>HISTORIAL DE CAMBIOS</h3>
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 999
+    }}>
+      <div style={{
+        background: '#fff',
+        padding: 20,
+        width: '90%',
+        maxHeight: '80%',
+        overflow: 'auto',
+        borderRadius: 10
+      }}>
+        <h3 style={styles.title}>HISTORIAL DE CAMBIOS</h3>
 
-      <button
-        style={styles.backButton}
-        onClick={() => setVerHistorial(false)}
-      >
-        Cerrar
-      </button>
+        <button
+          style={styles.backButton}
+          onClick={() => setVerHistorial(false)}
+        >
+          Cerrar
+        </button>
 
-      {/* 🔥 MENSAJE SI NO HAY DATOS */}
-      {historial.length === 0 && (
-        <p style={{ marginTop: 15 }}>
-          No hay historial para este cliente
-        </p>
-      )}
+        {historial.length === 0 && (
+          <p>No hay historial</p>
+        )}
 
-      <div style={{ marginTop: 15, overflowX: 'auto' }}>
         <table style={styles.table}>
           <thead style={styles.thead}>
             <tr>
@@ -127,22 +142,12 @@ function ClientePrecios() {
             </tr>
           </thead>
           <tbody>
-            {historial.map((h, i) => (
-              <tr key={h.id || i}>
+            {historial.map((h) => (
+              <tr key={h.id_historial}>
                 <td style={styles.td}>{h.producto}</td>
-
-                <td style={styles.td}>
-                  {h.precio_anterior ? `$${h.precio_anterior}` : '-'}
-                </td>
-
-                <td style={styles.td}>
-                  {h.precio_nuevo ? `$${h.precio_nuevo}` : '-'}
-                </td>
-
-                <td style={styles.td}>
-                  {h.motivo || 'Sin motivo'}
-                </td>
-
+                <td style={styles.td}>{h.precio_anterior ? `$${h.precio_anterior}` : '-'}</td>
+                <td style={styles.td}>{h.precio_nuevo ? `$${h.precio_nuevo}` : '-'}</td>
+                <td style={styles.td}>{h.motivo || 'Sin motivo'}</td>
                 <td style={styles.td}>
                   {h.fecha_cambio
                     ? new Date(h.fecha_cambio).toLocaleString('es-MX')
@@ -156,7 +161,6 @@ function ClientePrecios() {
     </div>
   )
 }
-  
   // =========================
   // CARGAR HISTORIAL
   // =========================
@@ -259,7 +263,9 @@ const cargarHistorial = async () => {
           </tbody>
         </table>
       </div>
-      {renderHistorial()}
+     <div style={{ border: '3px solid red', marginTop: 20 }}>
+  {renderHistorial()}
+</div> 
     </div>
   )
 }
