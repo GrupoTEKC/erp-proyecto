@@ -268,7 +268,7 @@ const styles = {
   border: `1px solid ${vino}`,
   borderRadius: '6px',
   cursor: 'pointer'
-}
+},
   // 🔥 TÍTULO GRANDE
   title: {
     margin: 0,
