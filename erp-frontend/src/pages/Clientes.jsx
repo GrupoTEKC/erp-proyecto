@@ -150,6 +150,7 @@ function Clientes() {
                     <td style={td}>{c.id_ruta || 'N/A'}</td>
                     <td style={td}>
                       <div style={{display: 'flex', gap: '5px'}}>
+                        
                         <button
                           style={btnEditar}
                           onClick={() => navigate(`/clientes/editar/${c.id_cliente}`)}
@@ -162,6 +163,13 @@ function Clientes() {
                         >
                           Eliminar
                         </button>
+                        <button
+                        style={{ ...btnEditar, borderColor: '#071849', color: '#071849' }}
+                        onClick={() => navigate(`/clientes/${c.id_cliente}/precios`)}
+                        >
+                          + Precios
+                        </button>
+                        
                       </div>
                     </td>
                   </tr>
