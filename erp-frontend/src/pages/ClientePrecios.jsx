@@ -35,15 +35,22 @@ function ClientePrecios() {
   // CAMBIO DE PRECIO
   // =========================
   const handleChange = (id_producto, value) => {
-    const precio = value.replace(/[^\d.]/g, '')
-    setProductos(prev =>
-      prev.map(p =>
-        p.id_producto === id_producto
-          ? { ...p, precio }
-          : p
-      )
-    )
-  }
+  const precio = value.replace(/[^\d.]/g, '')
+
+  const productoActual = productos.find(p => p.id_producto === id_producto)
+
+  setProductos(prev =>
+    prev.map(p => {
+      // 🔥 MISMA FAMILIA (ej: boquilla roja, azul, etc)
+      const mismaFamilia =
+        productoActual?.nombre?.split(' ')[0] === p.nombre?.split(' ')[0]
+
+      return mismaFamilia
+        ? { ...p, precio }
+        : p
+    })
+  )
+}
 
   // =========================
   // GUARDAR PRECIO
@@ -114,17 +121,23 @@ function ClientePrecios() {
   return (
     <div style={styles.page}>
       
-      <div style={styles.header}>
-        <button
-          style={styles.backButton}
-          onClick={() => navigate('/clientes')}
-        >
-          ← Volver
-        </button>
+    <div style={styles.header}>
+  
+  <div style={styles.headerLeft}>
+    <button
+      style={styles.backButton}
+      onClick={() => navigate('/clientes')}
+    >
+      ← Volver
+    </button>
 
-        <h2 style={styles.title}>PRECIOS POR CLIENTE</h2>
-      </div>
+    <h2 style={styles.title}>PRECIOS POR CLIENTE</h2>
+  </div>
 
+  <img src={logo} alt="logo" style={styles.logo} />
+
+</div>
+      
       <button style={styles.guardar} onClick={cargarHistorial}>
         📊 Ver historial
       </button>
@@ -146,13 +159,13 @@ function ClientePrecios() {
                 <td style={styles.td}>{p.nombre}</td>
 
                 <td style={styles.td}>
-                  <input
-                    value={p.precio}
-                    onChange={(e) =>
-                      handleChange(p.id_producto, e.target.value)
-                    }
-                    style={styles.field}
-                  />
+               <input
+               value={p.precio ? `$${p.precio}` : ''}
+               onChange={(e) =>
+               handleChange(p.id_producto, e.target.value.replace('$', ''))
+               }
+               style={styles.field}
+               />
                 </td>
 
                 <td style={styles.td}>
@@ -217,8 +230,6 @@ function ClientePrecios() {
 // =========================
 // ESTILOS (ALINEADOS A TU SISTEMA)
 // =========================
-const vino = '#8B1E1E'
-
 const styles = {
   page: {
     backgroundColor: '#ffffff',
@@ -227,8 +238,22 @@ const styles = {
     fontFamily: 'Arial, sans-serif'
   },
 
+  // 🔥 HEADER FLEX
   header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: '20px'
+  },
+
+  headerLeft: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px'
+  },
+
+  logo: {
+    width: '130px'
   },
 
   backButton: {
@@ -243,11 +268,13 @@ const styles = {
     cursor: 'pointer'
   },
 
+  // 🔥 TÍTULO GRANDE
   title: {
-    marginTop: '20px',
-    marginBottom: '15px',
+    margin: 0,
     color: '#071849',
-    fontWeight: 'bold'
+    fontWeight: 'bold',
+    fontSize: '38px',
+    textTransform: 'uppercase'
   },
 
   field: {
