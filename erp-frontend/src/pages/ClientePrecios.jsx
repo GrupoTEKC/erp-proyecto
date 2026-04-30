@@ -261,7 +261,7 @@ const styles = {
   backButton: {
   display: 'inline-flex',
   alignItems: 'center',
-  padding: '8px 8px',   // 🔥 más compacto
+  padding: '6px 6px',   // 🔥 más compacto
   fontSize: '13px',     // opcional más chico
   backgroundColor: '#fff',
   color: vino,
