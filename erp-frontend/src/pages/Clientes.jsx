@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
+import logo from '../assets/TRANSPARENTE.png'
 
 const API = 'https://erp-proyecto-production.up.railway.app'
 
@@ -65,21 +66,28 @@ function Clientes() {
 
   return (
     <div style={container}>
-      <div style={header}>
-        <button style={btnVino} onClick={() => navigate('/')}>
-          ← Volver
-        </button>
+    <div style={header}>
 
-        <h2 style={{ margin: 0 }}>Gestión de Clientes</h2>
+   <img src={logo} alt="logo" style={logoStyle} />
 
-        <button
-          style={btnVino}
-          onClick={() => navigate('/clientes/nuevo')}
-        >
-          + Nuevo Cliente
-        </button>
-      </div>
+   <h2 style={titulo}>Gestión de Clientes</h2>
 
+   {/* 🔥 BOTONES EN FILA */}
+   <div style={headerButtons}>
+   <button style={btnVino} onClick={() => navigate('/')}>
+      ← Volver
+    </button>
+
+    <button
+      style={btnVino}
+      onClick={() => navigate('/clientes/nuevo')}
+    >
+      + Nuevo Cliente
+    </button>
+  </div>
+
+</div>
+      
       <input
         type="text"
         placeholder="Buscar por nombre, tienda o apodo..."
@@ -185,16 +193,95 @@ function Clientes() {
 
 /* ================= ESTILOS ================= */
 const vino = '#8B1E1E'
-const container = { padding: 20, background: '#ffffff', minHeight: '100vh', fontFamily: 'Arial' }
-const header = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 10 }
-const btnVino = { background: '#fff', color: vino, border: `1px solid ${vino}`, padding: '10px 14px', borderRadius: 6, cursor: 'pointer' }
-const btnEditar = { ...btnVino, padding: '6px 10px', fontSize: 13 }
-const buscador = { width: '100%', padding: 10, borderRadius: 6, border: `1px solid ${vino}`, marginBottom: 20 }
-const tablaWrapper = { background: '#fff', borderRadius: 8, overflowX: 'auto', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }
-const tabla = { width: '100%', borderCollapse: 'collapse', minWidth: 1500 }
-const thead = { background: vino, color: '#fff' }
-const th = { padding: 12, textAlign: 'left' }
-const td = { padding: 12, borderBottom: '1px solid #eee' }
-const sinDatos = { padding: 15, textAlign: 'center' }
+
+const container = {
+  padding: 20,
+  background: '#ffffff',
+  minHeight: '100vh',
+  fontFamily: 'Arial'
+}
+
+const header = {
+  display: 'flex',
+  flexDirection: 'column',   // 🔥 logo + título en columna
+  alignItems: 'center',
+  gap: 10,
+  marginBottom: 20
+}
+
+// 🔥 NUEVO: contenedor de botones en línea
+const headerButtons = {
+  display: 'flex',
+  gap: 10,
+  justifyContent: 'center',
+  flexWrap: 'wrap' // por si se hace chico el ancho
+}
+
+const btnVino = {
+  background: '#fff',
+  color: vino,
+  border: `1px solid ${vino}`,
+  padding: '10px 14px',
+  borderRadius: 6,
+  cursor: 'pointer'
+}
+
+const btnEditar = {
+  ...btnVino,
+  padding: '6px 10px',
+  fontSize: 13
+}
+
+const buscador = {
+  width: '100%',
+  padding: 10,
+  borderRadius: 6,
+  border: `1px solid ${vino}`,
+  marginBottom: 20
+}
+
+const tablaWrapper = {
+  background: '#fff',
+  borderRadius: 8,
+  overflowX: 'auto',
+  boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
+}
+
+const tabla = {
+  width: '100%',
+  borderCollapse: 'collapse',
+  minWidth: 1500
+}
+
+const thead = {
+  background: vino,
+  color: '#fff'
+}
+
+const th = {
+  padding: 12,
+  textAlign: 'left'
+}
+
+const td = {
+  padding: 12,
+  borderBottom: '1px solid #eee'
+}
+
+const sinDatos = {
+  padding: 15,
+  textAlign: 'center'
+}
+
+const logoStyle = {
+  width: '160px',
+  marginTop: 10
+}
+
+const titulo = {
+  margin: 0,
+  color: '#071849'
+}
+
 
 export default Clientes
