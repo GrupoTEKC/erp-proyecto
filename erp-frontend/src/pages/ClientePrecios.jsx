@@ -28,7 +28,6 @@ function ClientePrecios() {
         setLoading(false)
       }
     }
-
     if (id_cliente) cargar()
   }, [id_cliente])
 
@@ -37,7 +36,6 @@ function ClientePrecios() {
   // =========================
   const handleChange = (id_producto, value) => {
     const precio = value.replace(/[^\d.]/g, '')
-
     setProductos(prev =>
       prev.map(p =>
         p.id_producto === id_producto
@@ -115,90 +113,101 @@ function ClientePrecios() {
   // =========================
   return (
     <div style={styles.page}>
-      <h2 style={styles.title}>PRECIOS POR CLIENTE</h2>
-
-      <div style={styles.top}>
-        <button onClick={() => navigate('/clientes')}>
+      
+      <div style={styles.header}>
+        <button
+          style={styles.backButton}
+          onClick={() => navigate('/clientes')}
+        >
           ← Volver
         </button>
 
-        <button onClick={cargarHistorial}>
-          📊 Ver historial
-        </button>
+        <h2 style={styles.title}>PRECIOS POR CLIENTE</h2>
       </div>
 
-      {/* =========================
-          TABLA PRECIOS
-      ========================= */}
-      <table style={styles.table}>
-        <thead>
-          <tr>
-            <th>Producto</th>
-            <th>Precio</th>
-            <th>Acción</th>
-          </tr>
-        </thead>
-        <tbody>
-          {productos.map(p => (
-            <tr key={p.id_producto}>
-              <td>{p.nombre}</td>
+      <button style={styles.guardar} onClick={cargarHistorial}>
+        📊 Ver historial
+      </button>
 
-              <td>
-                <input
-                  value={p.precio}
-                  onChange={(e) =>
-                    handleChange(p.id_producto, e.target.value)
-                  }
-                  style={styles.input}
-                />
-              </td>
-
-              <td>
-                <button
-                  style={styles.save}
-                  onClick={() => guardarPrecio(p)}
-                >
-                  Guardar
-                </button>
-              </td>
+      {/* TABLA */}
+      <div style={{ marginTop: 20, overflowX: 'auto' }}>
+        <table style={styles.table}>
+          <thead style={styles.thead}>
+            <tr>
+              <th style={styles.th}>Producto</th>
+              <th style={styles.th}>Precio</th>
+              <th style={styles.th}>Acción</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
 
-      {/* =========================
-          HISTORIAL
-      ========================= */}
+          <tbody>
+            {productos.map((p, i) => (
+              <tr key={p.id_producto} style={{ background: i % 2 === 0 ? '#f9f9f9' : 'white' }}>
+                <td style={styles.td}>{p.nombre}</td>
+
+                <td style={styles.td}>
+                  <input
+                    value={p.precio}
+                    onChange={(e) =>
+                      handleChange(p.id_producto, e.target.value)
+                    }
+                    style={styles.field}
+                  />
+                </td>
+
+                <td style={styles.td}>
+                  <button
+                    style={styles.guardar}
+                    onClick={() => guardarPrecio(p)}
+                  >
+                    Guardar
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* HISTORIAL */}
       {verHistorial && (
-        <div style={styles.historial}>
-          <h3>Historial de cambios</h3>
+        <div style={{ marginTop: 30 }}>
+          <h3 style={styles.title}>Historial de cambios</h3>
 
-          <button onClick={() => setVerHistorial(false)}>
+          <button
+            style={styles.backButton}
+            onClick={() => setVerHistorial(false)}
+          >
             Cerrar
           </button>
 
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th>Producto</th>
-                <th>Antes</th>
-                <th>Nuevo</th>
-                <th>Motivo</th>
-                <th>Fecha</th>
-              </tr>
-            </thead>
-            <tbody>
-              {historial.map((h, i) => (
-                <tr key={i}>
-                  <td>{h.producto}</td>
-                  <td>{h.precio_anterior}</td>
-                  <td>{h.precio_nuevo}</td>
-                  <td>{h.motivo || '-'}</td>
-                  <td>{new Date(h.fecha_cambio).toLocaleString()}</td>
+          <div style={{ marginTop: 10, overflowX: 'auto' }}>
+            <table style={styles.table}>
+              <thead style={styles.thead}>
+                <tr>
+                  <th style={styles.th}>Producto</th>
+                  <th style={styles.th}>Antes</th>
+                  <th style={styles.th}>Nuevo</th>
+                  <th style={styles.th}>Motivo</th>
+                  <th style={styles.th}>Fecha</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+
+              <tbody>
+                {historial.map((h, i) => (
+                  <tr key={i}>
+                    <td style={styles.td}>{h.producto}</td>
+                    <td style={styles.td}>{h.precio_anterior}</td>
+                    <td style={styles.td}>{h.precio_nuevo}</td>
+                    <td style={styles.td}>{h.motivo || '-'}</td>
+                    <td style={styles.td}>
+                      {new Date(h.fecha_cambio).toLocaleString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
@@ -206,40 +215,78 @@ function ClientePrecios() {
 }
 
 // =========================
-// ESTILOS
+// ESTILOS (ALINEADOS A TU SISTEMA)
 // =========================
+const vino = '#8B1E1E'
+
 const styles = {
   page: {
-    padding: 20,
-    maxWidth: 900,
-    margin: 'auto',
-    fontFamily: 'Arial'
+    backgroundColor: '#ffffff',
+    minHeight: '100vh',
+    padding: '20px',
+    fontFamily: 'Arial, sans-serif'
   },
+
+  header: {
+    marginBottom: '20px'
+  },
+
+  backButton: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '10px 14px',
+    fontSize: '14px',
+    backgroundColor: '#fff',
+    color: vino,
+    border: `1px solid ${vino}`,
+    borderRadius: '6px',
+    cursor: 'pointer'
+  },
+
   title: {
-    color: '#071849'
+    marginTop: '20px',
+    marginBottom: '15px',
+    color: '#071849',
+    fontWeight: 'bold'
   },
-  top: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    marginBottom: 10
+
+  field: {
+    width: '120px',
+    padding: '8px 10px',
+    fontSize: '14px',
+    borderRadius: '6px',
+    border: `1px solid ${vino}`
   },
+
+  guardar: {
+    marginTop: '10px',
+    padding: '8px 12px',
+    fontSize: '14px',
+    backgroundColor: vino,
+    color: '#fff',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer'
+  },
+
   table: {
     width: '100%',
     borderCollapse: 'collapse'
   },
-  input: {
-    width: 100,
-    padding: 5
+
+  thead: {
+    background: vino,
+    color: '#fff'
   },
-  save: {
-    background: '#8B1E1E',
-    color: '#fff',
-    border: 'none',
-    padding: '5px 10px',
-    cursor: 'pointer'
+
+  th: {
+    padding: 12,
+    textAlign: 'left'
   },
-  historial: {
-    marginTop: 30
+
+  td: {
+    padding: 12,
+    borderBottom: '1px solid #eee'
   }
 }
 
