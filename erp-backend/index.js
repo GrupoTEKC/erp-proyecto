@@ -366,6 +366,129 @@ app.post('/clientes', async (req, res) => {
   }
 })
 
+
+// =============================
+// 💰 PRECIOS POR CLIENTE
+// =============================
+app.post('/clientes/:id_cliente/precios', async (req, res) => {
+  const conn = await db.getConnection()
+  try {
+    const { id_cliente } = req.params
+    const { id_producto, precio, motivo } = req.body
+
+    if (!id_producto || !precio) {
+      return res.status(400).json({ error: 'Datos incompletos' })
+    }
+
+    await conn.beginTransaction()
+
+    // 🔎 Ver si ya existe precio
+    const [existe] = await conn.query(`
+      SELECT precio 
+      FROM precios_cliente_producto
+      WHERE id_cliente = ? AND id_producto = ? AND activo = 1
+    `, [id_cliente, id_producto])
+
+    if (existe.length > 0) {
+      const precioAnterior = existe[0].precio
+
+      // 🔥 Guardar historial SOLO si cambia
+      if (Number(precioAnterior) !== Number(precio)) {
+        await conn.query(`
+          INSERT INTO historial_precios_cliente (
+            id_cliente,
+            id_producto,
+            precio_anterior,
+            precio_nuevo,
+            motivo
+          )
+          VALUES (?, ?, ?, ?, ?)
+        `, [
+          id_cliente,
+          id_producto,
+          precioAnterior,
+          precio,
+          motivo || null
+        ])
+      }
+
+      // 🔄 Update precio
+      await conn.query(`
+        UPDATE precios_cliente_producto
+        SET precio = ?, fecha_actualizacion = NOW()
+        WHERE id_cliente = ? AND id_producto = ?
+      `, [precio, id_cliente, id_producto])
+
+    } else {
+      // 🆕 Insert nuevo
+      await conn.query(`
+        INSERT INTO precios_cliente_producto (
+          id_cliente,
+          id_producto,
+          precio
+        )
+        VALUES (?, ?, ?)
+      `, [id_cliente, id_producto, precio])
+    }
+
+    await conn.commit()
+    res.json({ success: true })
+
+  } catch (err) {
+    await conn.rollback()
+    res.status(500).json({ error: err.message })
+  } finally {
+    conn.release()
+  }
+})
+
+app.get('/clientes/:id_cliente/precios', async (req, res) => {
+  try {
+    const { id_cliente } = req.params
+
+    const [rows] = await db.query(`
+      SELECT 
+        p.id_producto,
+        p.nombre,
+        COALESCE(pc.precio, p.precio) AS precio
+      FROM productos p
+      LEFT JOIN precios_cliente_producto pc
+        ON pc.id_producto = p.id_producto
+        AND pc.id_cliente = ?
+        AND pc.activo = 1
+      WHERE p.activo = 1
+      ORDER BY p.nombre ASC
+    `, [id_cliente])
+
+    res.json(rows)
+
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+app.get('/clientes/:id_cliente/precios/historial', async (req, res) => {
+  try {
+    const { id_cliente } = req.params
+
+    const [rows] = await db.query(`
+      SELECT 
+        h.*,
+        p.nombre AS producto
+      FROM historial_precios_cliente h
+      INNER JOIN productos p 
+        ON p.id_producto = h.id_producto
+      WHERE h.id_cliente = ?
+      ORDER BY h.fecha_cambio DESC
+    `, [id_cliente])
+
+    res.json(rows)
+
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // =============================
 // RUTAS
 // =============================
