@@ -162,11 +162,13 @@ function ClientePrecios() {
   // =========================
 const cargarHistorial = async () => {
   console.log("CLICK HISTORIAL")
-  console.log("ID CLIENTE:", id_cliente)
 
   try {
-    const res = await fetch(
-      `${API}/clientes/${id_cliente}/precios/historial`
+    const res = await fetch(   // 👈 SOLO ESTA LÍNEA CAMBIA
+      `${API}/clientes/${id_cliente}/precios/historial`,
+      {
+        cache: 'no-store'
+      }
     )
 
     console.log("STATUS:", res.status)
