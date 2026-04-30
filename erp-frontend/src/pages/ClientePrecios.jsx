@@ -259,17 +259,16 @@ const styles = {
   },
 
   backButton: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    padding: '10px 14px',
-    fontSize: '14px',
-    backgroundColor: '#fff',
-    color: vino,
-    border: `1px solid ${vino}`,
-    borderRadius: '6px',
-    cursor: 'pointer'
-  },
-
+  display: 'inline-flex',
+  alignItems: 'center',
+  padding: '8px 8px',   // 🔥 más compacto
+  fontSize: '13px',     // opcional más chico
+  backgroundColor: '#fff',
+  color: vino,
+  border: `1px solid ${vino}`,
+  borderRadius: '6px',
+  cursor: 'pointer'
+}
   // 🔥 TÍTULO GRANDE
   title: {
     margin: 0,
