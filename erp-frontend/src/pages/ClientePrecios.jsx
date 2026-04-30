@@ -94,6 +94,61 @@ function ClientePrecios() {
     }
   }
 
+  const renderHistorial = () => {
+  if (!verHistorial) return null
+
+  return (
+    <div style={{ marginTop: 30 }}>
+      <h3 style={styles.title}>HISTORIAL DE CAMBIOS</h3>
+
+      <button
+        style={styles.backButton}
+        onClick={() => setVerHistorial(false)}
+      >
+        Cerrar
+      </button>
+
+      <div style={{ marginTop: 15, overflowX: 'auto' }}>
+        <table style={styles.table}>
+          <thead style={styles.thead}>
+            <tr>
+              <th style={styles.th}>Producto</th>
+              <th style={styles.th}>Antes</th>
+              <th style={styles.th}>Nuevo</th>
+              <th style={styles.th}>Motivo</th>
+              <th style={styles.th}>Fecha</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {historial.map((h, i) => (
+              <tr key={h.id || i}>
+                <td style={styles.td}>{h.producto}</td>
+
+                {/* 🔥 FORMATO CON $ */}
+                <td style={styles.td}>
+                  {h.precio_anterior ? `$${h.precio_anterior}` : '-'}
+                </td>
+
+                <td style={styles.td}>
+                  {h.precio_nuevo ? `$${h.precio_nuevo}` : '-'}
+                </td>
+
+                <td style={styles.td}>
+                  {h.motivo || 'Sin motivo'}
+                </td>
+
+                <td style={styles.td}>
+                 {new Date(h.fecha_cambio).toLocaleString('es-MX')}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
   // =========================
   // CARGAR HISTORIAL
   // =========================
@@ -182,48 +237,7 @@ function ClientePrecios() {
           </tbody>
         </table>
       </div>
-
-      {/* HISTORIAL */}
-      {verHistorial && (
-        <div style={{ marginTop: 30 }}>
-          <h3 style={styles.title}>Historial de cambios</h3>
-
-          <button
-            style={styles.backButton}
-            onClick={() => setVerHistorial(false)}
-          >
-            Cerrar
-          </button>
-
-          <div style={{ marginTop: 10, overflowX: 'auto' }}>
-            <table style={styles.table}>
-              <thead style={styles.thead}>
-                <tr>
-                  <th style={styles.th}>Producto</th>
-                  <th style={styles.th}>Antes</th>
-                  <th style={styles.th}>Nuevo</th>
-                  <th style={styles.th}>Motivo</th>
-                  <th style={styles.th}>Fecha</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {historial.map((h, i) => (
-                  <tr key={i}>
-                    <td style={styles.td}>{h.producto}</td>
-                    <td style={styles.td}>{h.precio_anterior}</td>
-                    <td style={styles.td}>{h.precio_nuevo}</td>
-                    <td style={styles.td}>{h.motivo || '-'}</td>
-                    <td style={styles.td}>
-                      {new Date(h.fecha_cambio).toLocaleString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+      {renderHistorial()}
     </div>
   )
 }
@@ -231,7 +245,7 @@ function ClientePrecios() {
 // =========================
 // ESTILOS (ALINEADOS A TU SISTEMA)
 // =========================
-const vino = '#8B1E1E'
+const vino = '#8B1E1E' 
 const styles = {
   page: {
     backgroundColor: '#ffffff',
