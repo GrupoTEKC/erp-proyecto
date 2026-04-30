@@ -35,16 +35,22 @@ function ClientePrecios() {
   // =========================
   // CAMBIO DE PRECIO
   // =========================
-  const handleChange = (id_producto, value) => {
+const handleChange = (id_producto, value) => {
   const precio = value.replace(/[^\d.]/g, '')
-
   const productoActual = productos.find(p => p.id_producto === id_producto)
+
+  const nombre = productoActual?.nombre?.toLowerCase() || ''
+
+  const esBoquilla = nombre.includes('boquilla')
+  const esJunta = nombre.includes('junta')
 
   setProductos(prev =>
     prev.map(p => {
-      // 🔥 MISMA FAMILIA (ej: boquilla roja, azul, etc)
+      const nombreP = p.nombre?.toLowerCase() || ''
+
       const mismaFamilia =
-        productoActual?.nombre?.split(' ')[0] === p.nombre?.split(' ')[0]
+        (esBoquilla && nombreP.includes('boquilla')) ||
+        (esJunta && nombreP.includes('junta'))
 
       return mismaFamilia
         ? { ...p, precio }
@@ -56,44 +62,50 @@ function ClientePrecios() {
   // =========================
   // GUARDAR PRECIO
   // =========================
-  const guardarPrecio = async (prod) => {
-    const nuevoPrecio = Number(prod.precio)
-
-    if (isNaN(nuevoPrecio) || nuevoPrecio <= 0) {
-      alert('Precio inválido')
-      return
-    }
-
-    const motivo = prompt('Motivo del cambio (opcional)') || ''
-
-    try {
-      const res = await fetch(
-        `${API}/clientes/${id_cliente}/precios`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            id_producto: prod.id_producto,
-            precio: nuevoPrecio,
-            motivo
-          })
-        }
-      )
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        alert(data.error || 'Error al guardar')
-        return
-      }
-
-      alert('✅ Precio actualizado')
-    } catch (err) {
-      console.error(err)
-      alert('Error al guardar')
-    }
+ const guardarPrecio = async (prod) => {
+  const nuevoPrecio = Number(prod.precio)
+  if (isNaN(nuevoPrecio) || nuevoPrecio <= 0) {
+    alert('Precio inválido')
+    return
   }
 
+  const motivo = prompt('Motivo del cambio (opcional)') || ''
+
+  const nombre = prod.nombre.toLowerCase()
+
+  const esBoquilla = nombre.includes('boquilla')
+  const esJunta = nombre.includes('junta')
+
+  // 🔥 productos a guardar
+  const productosAGuardar = productos.filter(p => {
+    const n = p.nombre.toLowerCase()
+    return (
+      (esBoquilla && n.includes('boquilla')) ||
+      (esJunta && n.includes('junta')) ||
+      (!esBoquilla && !esJunta && p.id_producto === prod.id_producto)
+    )
+  })
+
+  try {
+    for (const p of productosAGuardar) {
+      await fetch(`${API}/clientes/${id_cliente}/precios`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id_producto: p.id_producto,
+          precio: nuevoPrecio,
+          motivo
+        })
+      })
+    }
+
+    alert('✅ Precios actualizados')
+  } catch (err) {
+    console.error(err)
+    alert('Error al guardar')
+  }
+}
+  
 const renderHistorial = () => {
   if (!verHistorial) return null
 
