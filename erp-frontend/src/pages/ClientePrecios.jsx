@@ -11,6 +11,7 @@ function ClientePrecios() {
   const [productos, setProductos] = useState([])
   const [loading, setLoading] = useState(true)
   const [historial, setHistorial] = useState([])
+  const [busqueda, setBusqueda] = useState('')
   const [verHistorial, setVerHistorial] = useState(false)
 
   // =========================
@@ -58,11 +59,10 @@ const handleChange = (id_producto, value) => {
     })
   )
 }
-
   // =========================
   // GUARDAR PRECIO
   // =========================
- const guardarPrecio = async (prod) => {
+const guardarPrecio = async (prod) => {
   const nuevoPrecio = Number(prod.precio)
   if (isNaN(nuevoPrecio) || nuevoPrecio <= 0) {
     alert('Precio inválido')
@@ -108,7 +108,13 @@ const handleChange = (id_producto, value) => {
   
 const renderHistorial = () => {
   if (!verHistorial) return null
-
+  
+const historialFiltrado = historial.filter(h =>
+  `${h.producto} ${h.motivo || ''} ${h.fecha_cambio || ''}`
+    .toLowerCase()
+    .includes(busqueda.toLowerCase())
+)
+  
   return (
     <div style={{
       position: 'fixed',
@@ -148,36 +154,58 @@ const renderHistorial = () => {
       </button>
       </div>
 
-        {historial.length === 0 && (
-          <p>No hay historial</p>
-        )}
+    
+{historial.length === 0 && (
+  <p>No hay historial</p>
+)}
 
-        <table style={styles.table}>
-          <thead style={styles.thead}>
-            <tr>
-              <th style={styles.th}>Producto</th>
-              <th style={styles.th}>Antes</th>
-              <th style={styles.th}>Nuevo</th>
-              <th style={styles.th}>Motivo</th>
-              <th style={styles.th}>Fecha</th>
-            </tr>
-          </thead>
-          <tbody>
-            {historial.map((h) => (
-              <tr key={h.id_historial}>
-                <td style={styles.td}>{h.producto}</td>
-                <td style={styles.td}>{h.precio_anterior ? `$${h.precio_anterior}` : '-'}</td>
-                <td style={styles.td}>{h.precio_nuevo ? `$${h.precio_nuevo}` : '-'}</td>
-                <td style={styles.td}>{h.motivo || 'Sin motivo'}</td>
-                <td style={styles.td}>
-                  {h.fecha_cambio
-                    ? new Date(h.fecha_cambio).toLocaleString('es-MX')
-                    : '-'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+<input
+  placeholder="Buscar producto, motivo o fecha..."
+  value={busqueda}
+  onChange={(e) => setBusqueda(e.target.value)}
+  style={{
+    marginBottom: 10,
+    padding: 8,
+    width: '100%',
+    borderRadius: 6,
+    border: '1px solid #ccc'
+  }}
+/>
+
+<table style={styles.table}>
+  <thead style={styles.thead}>
+    <tr>
+      <th style={styles.th}>Producto</th>
+      <th style={styles.th}>Antes</th>
+      <th style={styles.th}>Nuevo</th>
+      <th style={styles.th}>Motivo</th>
+      <th style={styles.th}>Fecha</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    {historialFiltrado.map((h) => (
+      <tr key={h.id_historial}>
+        <td style={styles.td}>{h.producto}</td>
+        <td style={styles.td}>
+          {h.precio_anterior ? `$${h.precio_anterior}` : '-'}
+        </td>
+        <td style={styles.td}>
+          {h.precio_nuevo ? `$${h.precio_nuevo}` : '-'}
+        </td>
+        <td style={styles.td}>
+          {h.motivo || 'Sin motivo'}
+        </td>
+        <td style={styles.td}>
+          {h.fecha_cambio
+            ? new Date(h.fecha_cambio).toLocaleString('es-MX')
+            : '-'}
+        </td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
       </div>
     </div>
   )
@@ -206,6 +234,7 @@ const cargarHistorial = async () => {
     console.log("DATA HISTORIAL:", data)
 
     setHistorial(Array.isArray(data) ? data : [])
+    setBusqueda('')
     setVerHistorial(true)
 
   } catch (err) {
