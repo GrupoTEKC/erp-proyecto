@@ -1281,7 +1281,7 @@ app.post('/pagos', async (req, res) => {
     // 🔥 VALIDAR CUENTA
     // =============================
     if (metodo === 'transferencia') {
-      const cuentasValidas = ['fiscal', 'yair', 'rosario']
+      const cuentasValidas = ['fiscal', 'yair', 'rosario', 'giovanny', 'natanael']
 
       if (!cuenta_destino || !cuentasValidas.includes(cuenta_destino)) {
         return res.status(400).json({ error: 'Cuenta destino inválida' })
