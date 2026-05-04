@@ -118,12 +118,14 @@ for (const h of historial) {
   const nombre = (h.producto || '').toLowerCase()
 
   let producto = h.producto
-
   if (nombre.includes('boquilla')) producto = 'Boquillas'
   if (nombre.includes('junta')) producto = 'Juntas'
 
-  // clave para agrupar cambios iguales
-  const clave = `${producto}-${h.precio_nuevo}-${h.motivo}-${h.fecha_cambio}`
+  const fecha = h.fecha_cambio
+    ? new Date(h.fecha_cambio).toLocaleDateString('es-MX')
+    : ''
+
+  const clave = `${producto}-${h.precio_anterior}-${h.precio_nuevo}-${h.motivo}-${fecha}`
 
   if (!usados.has(clave)) {
     usados.add(clave)
@@ -133,7 +135,7 @@ for (const h of historial) {
     })
   }
 }
-
+  
 const historialFiltrado = historialAgrupado.filter(h =>
   `${h.producto} ${h.motivo || ''} ${h.fecha_cambio || ''}`
     .toLowerCase()
