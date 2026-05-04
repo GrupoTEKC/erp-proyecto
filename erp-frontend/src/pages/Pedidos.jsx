@@ -171,21 +171,10 @@ function Pedidos() {
           </div>
 
           {/* RUTA */}
-          <div style={styles.section}>
-            <label style={styles.label}>Ruta</label>
-            <select
-             style={styles.field}
-              value={idRuta}
-              disabled
-              >
-              <option value="">Seleccione ruta</option>
-              {rutas.map(r => (
-                <option key={r.id_ruta} value={r.id_ruta}>
-                  {r.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
+            <p style={styles.clienteTexto}>
+            <strong>Ruta:</strong>{' '}
+            {rutas.find(r => r.id_ruta === Number(idRuta))?.nombre || ''}
+            </p>
 
           {/* TIPO */}
           <div style={styles.section}>
