@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 
-const API_URL = 'https://erp-proyecto-production.up.railway.app'
-
-function ProductosPedido({ onTotalChange, onProductosChange }) {
+function ProductosPedido({
+  productosCatalogo,
+  onTotalChange,
+  onProductosChange
+}) {
   const [catalogo, setCatalogo] = useState([])
   const [productos, setProductos] = useState([])
   const [open, setOpen] = useState(false)
@@ -10,33 +12,23 @@ function ProductosPedido({ onTotalChange, onProductosChange }) {
   const [openBoquillas, setOpenBoquillas] = useState(false)
 
   // ================= CARGAR PRODUCTOS =================
-  useEffect(() => {
-    const cargarProductos = async () => {
-      try {
-        const res = await fetch(`${API_URL}/productos`)
-        if (!res.ok) throw new Error('Error cargando productos')
-        const data = await res.json()
+ useEffect(() => {
+  if (!Array.isArray(productosCatalogo)) {
+    setCatalogo([])
+    setProductos([])
+    return
+  }
 
-        if (Array.isArray(data)) {
-          setCatalogo(
-            data.map(p => ({
-              ...p,
-              precio: Number(p.precio) || 0,
-              nombre: p.nombre || 'SIN NOMBRE'
-            }))
-          )
-        } else {
-          console.error('Respuesta inválida:', data)
-          setCatalogo([])
-        }
-      } catch (err) {
-        console.error('ERROR PRODUCTOS:', err)
-        setCatalogo([])
-      }
-    }
-    cargarProductos()
-  }, [])
+  setCatalogo(
+    productosCatalogo.map(p => ({
+      ...p,
+      precio: Number(p.precio) || 0,
+      nombre: p.nombre || 'SIN NOMBRE'
+    }))
+  )
+}, [productosCatalogo])
 
+  
   // ================= RECALCULAR =================
   const recalcular = lista => {
     const total = lista.reduce(
