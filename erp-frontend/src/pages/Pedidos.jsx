@@ -26,6 +26,7 @@ function Pedidos() {
   const [diasCredito, setDiasCredito] = useState(0)
   const [total, setTotal] = useState(0)
   const [productos, setProductos] = useState([])
+  const [catalogoProductos, setCatalogoProductos] = useState([])
   const [rutas, setRutas] = useState([])
   const [idRuta, setIdRuta] = useState('')
   const [vendedores, setVendedores] = useState([])
@@ -33,27 +34,51 @@ function Pedidos() {
 
   // ================= CARGAR CATÁLOGOS =================
   useEffect(() => {
-    const cargarDatos = async () => {
-      try {
-        const [resRutas, resVendedores] = await Promise.all([
-          fetch(`${API}/rutas`),
-          fetch(`${API}/vendedores`)
-        ])
+  const cargarDatos = async () => {
+    try {
+      const [resRutas, resVendedores] = await Promise.all([
+        fetch(`${API}/rutas`),
+        fetch(`${API}/vendedores`)
+      ])
 
-        const rutasData = await resRutas.json()
-        const vendedoresData = await resVendedores.json()
+      const rutasData = await resRutas.json()
+      const vendedoresData = await resVendedores.json()
 
-        setRutas(rutasData)
-        setVendedores(vendedoresData)
+      setRutas(rutasData)
+      setVendedores(vendedoresData)
 
-      } catch (error) {
-        console.error(error)
-        alert('Error cargando datos')
-      }
+    } catch (error) {
+      console.error(error)
+      alert('Error cargando datos')
     }
+  }
 
-    cargarDatos()
-  }, [])
+  cargarDatos()
+}, [])
+
+  useEffect(() => {
+  const cargarProductosCliente = async () => {
+    if (!cliente) return
+
+    try {
+      const res = await fetch(
+        `${API}/clientes/${cliente.id_cliente}/precios`
+      )
+
+      const data = await res.json()
+
+      setCatalogoProductos(data)
+      setProductos([])
+      setTotal(0)
+
+    } catch (error) {
+      console.error(error)
+      alert('Error cargando productos del cliente')
+    }
+  }
+
+  cargarProductosCliente()
+}, [cliente])
 
   // ================= GUARDAR PEDIDO =================
   const guardarPedido = async () => {
@@ -116,7 +141,12 @@ function Pedidos() {
       <h2 style={styles.title}>NUEVO PEDIDO</h2>
 
       {!cliente ? (
-        <Buscador onSelectCliente={setCliente} />
+      <Buscador
+      onSelectCliente={(c) => {
+      setCliente(c)
+      setIdRuta(c.id_ruta || '')
+      }}
+      />
       ) : (
         <>
           <p style={styles.clienteTexto}>
@@ -144,10 +174,10 @@ function Pedidos() {
           <div style={styles.section}>
             <label style={styles.label}>Ruta</label>
             <select
-              style={styles.field}
+             style={styles.field}
               value={idRuta}
-              onChange={e => setIdRuta(e.target.value)}
-            >
+              disabled
+              >
               <option value="">Seleccione ruta</option>
               {rutas.map(r => (
                 <option key={r.id_ruta} value={r.id_ruta}>
@@ -185,10 +215,11 @@ function Pedidos() {
           )}
 
           {/* PRODUCTOS */}
-          <ProductosPedido
-            onTotalChange={setTotal}
-            onProductosChange={setProductos}
-          />
+        <ProductosPedido
+        productosCatalogo={catalogoProductos}
+         onTotalChange={setTotal}
+         onProductosChange={setProductos}
+         />
 
           <h3 style={styles.total}>Total: ${total}</h3>
 
