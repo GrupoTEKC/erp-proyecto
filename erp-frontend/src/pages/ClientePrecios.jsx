@@ -39,7 +39,6 @@ function ClientePrecios() {
 const handleChange = (id_producto, value) => {
   const precio = value.replace(/[^\d.]/g, '')
   const productoActual = productos.find(p => p.id_producto === id_producto)
-
   const nombre = productoActual?.nombre?.toLowerCase() || ''
 
   const esBoquilla = nombre.includes('boquilla')
@@ -53,12 +52,15 @@ const handleChange = (id_producto, value) => {
         (esBoquilla && nombreP.includes('boquilla')) ||
         (esJunta && nombreP.includes('junta'))
 
-      return mismaFamilia
-        ? { ...p, precio }
-        : p
+      if (mismaFamilia || p.id_producto === id_producto) {
+        return { ...p, precio }
+      }
+
+      return p
     })
   )
 }
+  
   // =========================
   // GUARDAR PRECIO
   // =========================
@@ -109,11 +111,35 @@ const guardarPrecio = async (prod) => {
 const renderHistorial = () => {
   if (!verHistorial) return null
   
-const historialFiltrado = historial.filter(h =>
+const historialAgrupado = []
+const usados = new Set()
+
+for (const h of historial) {
+  const nombre = (h.producto || '').toLowerCase()
+
+  let producto = h.producto
+
+  if (nombre.includes('boquilla')) producto = 'Boquillas'
+  if (nombre.includes('junta')) producto = 'Juntas'
+
+  // clave para agrupar cambios iguales
+  const clave = `${producto}-${h.precio_nuevo}-${h.motivo}-${h.fecha_cambio}`
+
+  if (!usados.has(clave)) {
+    usados.add(clave)
+    historialAgrupado.push({
+      ...h,
+      producto
+    })
+  }
+}
+
+const historialFiltrado = historialAgrupado.filter(h =>
   `${h.producto} ${h.motivo || ''} ${h.fecha_cambio || ''}`
     .toLowerCase()
     .includes(busqueda.toLowerCase())
 )
+  
   
   return (
     <div style={{
