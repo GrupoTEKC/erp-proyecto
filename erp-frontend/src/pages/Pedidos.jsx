@@ -149,9 +149,20 @@ function Pedidos() {
       />
       ) : (
         <>
-          <p style={styles.clienteTexto}>
-            <strong>Cliente:</strong> {cliente.nombre}
+         <div style={styles.clienteTexto}>
+         <p style={{ margin: 0 }}>
+         <strong>Cliente:</strong> {cliente.nombre}
+         </p>
+
+         <p style={{ margin: '4px 0 0 0' }}>
+         <strong>Tienda:</strong> {cliente.nombre_tienda || cliente.tienda || ''}
+         </p>
+
+          <p style={{ margin: '4px 0 0 0' }}>
+          <strong>Ruta:</strong>{' '}
+          {rutas.find(r => r.id_ruta === Number(idRuta))?.nombre || ''}
           </p>
+          </div>
 
           {/* VENDEDOR */}
           <div style={styles.section}>
@@ -169,12 +180,6 @@ function Pedidos() {
               ))}
             </select>
           </div>
-
-          {/* RUTA */}
-            <p style={styles.clienteTexto}>
-            <strong>Ruta:</strong>{' '}
-            {rutas.find(r => r.id_ruta === Number(idRuta))?.nombre || ''}
-            </p>
 
           {/* TIPO */}
           <div style={styles.section}>
