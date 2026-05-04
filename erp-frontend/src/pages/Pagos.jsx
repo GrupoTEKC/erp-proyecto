@@ -140,7 +140,7 @@ function Pagos() {
       body: JSON.stringify({
         id_pedido: pedido.id_pedido,
         monto: dataPago.monto,
-        metodo: dataPago.metodo,
+        metodo: dataPago.metodo || "efectivo",
         cuenta_destino: dataPago.metodo === "transferencia" ? dataPago.cuenta : null,
         id_usuario: 1,
         tipo_usuario: "vendedor",
@@ -299,10 +299,10 @@ function Pagos() {
                         style={styles.field}
                       >
                        <option value="fiscal">Fiscal</option>
-<option value="yair">Yair</option>
-<option value="natanael">Natanael</option>
-<option value="giovanny">Giovanny</option>
-<option value="rosario">Rosario</option>
+                       <option value="yair">Yair</option>
+                       <option value="natanael">Natanael</option>
+                       <option value="giovanny">Giovanny</option>
+                       <option value="rosario">Rosario</option>
                       </select>
                     )}
 
