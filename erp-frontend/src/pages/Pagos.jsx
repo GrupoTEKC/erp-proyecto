@@ -126,44 +126,47 @@ function Pagos() {
     }))
   }
 
-  const registrarPago = async (pedido) => {
-    const dataPago = pagosData[pedido.id_pedido] || {}
+const registrarPago = async (pedido) => {
+  const dataPago = pagosData[pedido.id_pedido] || {}
+  const metodoActual = dataPago.metodo || "efectivo"
 
-    if (dataPago.metodo === "efectivo" && !dataPago.nombreEntrega?.trim()) {
-      alert("Debes poner quién entrega el dinero")
-      return
-    }
-
-    const res = await fetch(`${API}/pagos`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id_pedido: pedido.id_pedido,
-        monto: dataPago.monto,
-        metodo: dataPago.metodo || "efectivo",
-        cuenta_destino: dataPago.metodo === "transferencia" ? dataPago.cuenta : null,
-        id_usuario: 1,
-        tipo_usuario: "vendedor",
-        nombre_usuario: dataPago.metodo === "efectivo" ? dataPago.nombreEntrega : null
-      })
-    })
-
-    const data = await res.json()
-
-    if (!res.ok) {
-      alert(data.error)
-      return
-    }
-
-    alert("Abono registrado ✅")
-    cargarPedidos(clienteSeleccionado)
-    setMostrarPago(null)
-
-    setPagosData(prev => ({
-      ...prev,
-      [pedido.id_pedido]: {}
-    }))
+  if (metodoActual === "efectivo" && !dataPago.nombreEntrega?.trim()) {
+    alert("Debes poner quién entrega el dinero")
+    return
   }
+
+  const res = await fetch(`${API}/pagos`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      id_pedido: pedido.id_pedido,
+      monto: dataPago.monto,
+      metodo: metodoActual,
+      cuenta_destino:
+        metodoActual === "transferencia" ? dataPago.cuenta : null,
+      id_usuario: 1,
+      tipo_usuario: "vendedor",
+      nombre_usuario:
+        metodoActual === "efectivo" ? dataPago.nombreEntrega : null
+    })
+  })
+
+  const data = await res.json()
+
+  if (!res.ok) {
+    alert(data.error)
+    return
+  }
+
+  alert("Abono registrado ✅")
+  cargarPedidos(clienteSeleccionado)
+  setMostrarPago(null)
+
+  setPagosData(prev => ({
+    ...prev,
+    [pedido.id_pedido]: {}
+  }))
+}
 
   const pedidosFiltrados = pedidos
     .filter(p =>
@@ -292,7 +295,7 @@ function Pagos() {
                       <option value="transferencia">Transferencia</option>
                     </select>
 
-                    {dataPago.metodo === "transferencia" && (
+                   {(dataPago.metodo || "efectivo") === "transferencia" && (
                       <select
                         value={dataPago.cuenta || ""}
                         onChange={e => setPagoField(p.id_pedido, "cuenta", e.target.value)}
@@ -306,7 +309,7 @@ function Pagos() {
                       </select>
                     )}
 
-                    {dataPago.metodo === "efectivo" && (
+                    {(dataPago.metodo || "efectivo") === "efectivo" && (
                       <input
                         placeholder="Quién entrega"
                         value={dataPago.nombreEntrega || ""}
