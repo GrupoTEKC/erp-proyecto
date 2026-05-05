@@ -827,16 +827,16 @@ app.get('/pedidos/:id/detalle', async (req, res) => {
     const { id } = req.params
 
     const [rows] = await db.query(`
-      SELECT
-        pd.id_producto,
-        p.nombre,
-        pd.precio_unitario AS precio,
-        pd.cantidad AS cantidad_pedida,
-        COALESCE(prd.cantidad_planeada, pd.cantidad) AS cantidad_planeada,
-        pp.id_chofer,
-        pp.id_unidad,
-        CONCAT(ch.nombre,' ',ch.apellido1,' ',ch.apellido2) AS chofer,
-        u.nombre AS unidad
+     SELECT
+  pd.id_producto,
+  p.nombre,
+  pd.precio_unitario AS precio,
+  pd.cantidad AS cantidad_pedida,
+  COALESCE(prd.cantidad_planeada, pd.cantidad) AS cantidad_planeada,
+  pp.id_chofer,
+  pp.id_unidad,
+  CONCAT(ch.nombre,' ',ch.apellido1,' ',ch.apellido2) AS chofer,
+  u.nombre AS unidad
       FROM pedido_detalle pd
       INNER JOIN productos p
         ON p.id_producto = pd.id_producto
