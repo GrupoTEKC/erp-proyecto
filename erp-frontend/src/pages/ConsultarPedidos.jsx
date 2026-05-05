@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import logo from '../assets/TRANSPARENTE.png'
+import logo2 from '../assets/firmetec-logo.png'
+import logo3 from '../assets/pegatek-logo.png'
 
 const API = 'https://erp-proyecto-production.up.railway.app'
 
@@ -199,7 +202,7 @@ const abrirEntrega = async (id) => {
   setModalEntrega(true)
 }
 
-  const imprimirPedido = async (pedido) => {
+const imprimirPedido = async (pedido) => {
   try {
     const res = await fetch(`${urlLimpia}/pedidos/${pedido.id_pedido}/detalle`)
     const detalle = await res.json()
@@ -207,6 +210,79 @@ const abrirEntrega = async (id) => {
     const pedidoActual = pedidos.find(
       p => p.id_pedido === pedido.id_pedido
     )
+
+    const choferEncontrado = choferes.find(
+      c => c.id_chofer === detalle[0]?.id_chofer
+    )
+
+    const choferNombre =
+      detalle[0]?.nombre_chofer ||
+      (choferEncontrado
+        ? `${choferEncontrado.nombre} ${choferEncontrado.apellido_paterno || ''} ${choferEncontrado.apellido_materno || ''}`.trim()
+        : '')
+
+    const fechaActual = new Date().toLocaleDateString()
+    const horaActual = new Date().toLocaleTimeString()
+
+    const contenido = `
+      <div class="copia">
+        <div class="header">
+          <div class="logos">
+            <img src="${logo}" />
+            <img src="${logo2}" />
+            <img src="${logo3}" />
+          </div>
+
+          <div class="empresa">
+            <div class="titulo">GRUPO TEKC</div>
+            <div>Carretera federal Perote – Teziutlán</div>
+            <div>Calle Piñón No. 2, Loc. Magueyitos</div>
+            <div>Tel. +52 282-596-67-39</div>
+          </div>
+
+          <div class="folio">
+            <div><strong>Pedido #${pedido.id_pedido}</strong></div>
+            <div>${fechaActual}</div>
+            <div>${horaActual}</div>
+          </div>
+        </div>
+
+        <div class="datos">
+          <div><strong>Cliente:</strong> ${pedidoActual?.cliente || ''}</div>
+          <div><strong>Tienda:</strong> ${pedidoActual?.nombre_tienda || ''}</div>
+          <div><strong>Ruta:</strong> ${obtenerNombreRuta(pedidoActual?.id_ruta)}</div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width:70px;">Cant.</th>
+              <th>Descripción</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${detalle.map(p => `
+              <tr>
+                <td>${p.cantidad_entregada ?? p.cantidad_planeada ?? 0}</td>
+                <td>${p.nombre}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <div class="firmas">
+          <div class="firma">
+            <div class="linea">Chofer</div>
+            <div class="nombre-firma">${choferNombre}</div>
+          </div>
+
+          <div class="firma">
+            <div class="linea">Supervisor</div>
+            <div class="nombre-firma">JOSHUA MENDEZ ALVAREZ</div>
+          </div>
+        </div>
+      </div>
+    `
 
     const win = window.open('', '_blank', 'width=900,height=700')
 
@@ -217,111 +293,119 @@ const abrirEntrega = async (id) => {
           <style>
             body {
               font-family: Arial, sans-serif;
-              padding: 30px;
+              margin: 0;
+              padding: 0;
               color: #000;
-              font-size: 13px;
+            }
+
+            .copia {
+              height: 49vh;
+              padding: 14px 22px;
+              box-sizing: border-box;
+              border-bottom: 1px dashed #888;
+              overflow: hidden;
             }
 
             .header {
               display: flex;
+              align-items: center;
               justify-content: space-between;
-              border-bottom: 2px solid #0a9b47;
-              padding-bottom: 10px;
-              margin-bottom: 20px;
+              margin-bottom: 8px;
+            }
+
+            .logos {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              width: 180px;
+            }
+
+            .logos img:nth-child(1) {
+              height: 48px;
+            }
+
+            .logos img:nth-child(2),
+            .logos img:nth-child(3) {
+              height: 32px;
+            }
+
+            .empresa {
+              flex: 1;
+              text-align: center;
+              font-size: 10px;
+              line-height: 1.25;
             }
 
             .titulo {
-              font-size: 22px;
-              color: #0a9b47;
+              font-size: 15px;
               font-weight: bold;
+              margin-bottom: 3px;
+            }
+
+            .folio {
+              width: 130px;
+              text-align: right;
+              font-size: 10px;
+              line-height: 1.4;
+            }
+
+            .datos {
+              margin-top: 6px;
+              margin-bottom: 8px;
+              font-size: 10px;
+              line-height: 1.5;
             }
 
             table {
               width: 100%;
               border-collapse: collapse;
-              margin-top: 20px;
+              font-size: 10px;
+            }
+
+            th, td {
+              border: 1px solid #888;
+              padding: 4px 6px;
             }
 
             th {
-              background: #0a9b47;
-              color: white;
-              padding: 8px;
-              border: 1px solid #ccc;
-            }
-
-            td {
-              border: 1px solid #ccc;
-              padding: 7px;
+              background: #f3f3f3;
+              text-align: left;
             }
 
             .firmas {
-              margin-top: 70px;
+              margin-top: 24px;
               display: flex;
               justify-content: space-between;
             }
 
             .firma {
-              width: 40%;
+              width: 42%;
               text-align: center;
+              font-size: 10px;
             }
 
             .linea {
               border-top: 1px solid #000;
-              margin-top: 35px;
-              padding-top: 5px;
+              padding-top: 4px;
+              font-weight: bold;
+            }
+
+            .nombre-firma {
+              margin-top: 4px;
+              min-height: 14px;
             }
 
             @media print {
               body {
                 margin: 0;
+                padding: 0;
               }
             }
           </style>
         </head>
-
         <body>
-          <div class="header">
-            <div>
-              <strong>PEGATEK</strong><br/>
-              Nota de remisión
-            </div>
-
-            <div class="titulo">
-              Pedido #${pedido.id_pedido}
-            </div>
-          </div>
-
-          <p><strong>Cliente:</strong> ${pedidoActual?.cliente || ''}</p>
-          <p><strong>Tienda:</strong> ${pedidoActual?.nombre_tienda || ''}</p>
-          <p><strong>Ruta:</strong> ${obtenerNombreRuta(pedidoActual?.id_ruta)}</p>
-
-          <table>
-            <thead>
-              <tr>
-                <th>Cant.</th>
-                <th>Descripción</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              ${detalle.map(p => `
-                <tr>
-                  <td>${p.cantidad_entregada ?? p.cantidad_planeada ?? 0}</td>
-                  <td>${p.nombre}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-
-          <div class="firmas">
-            <div class="firma">
-              <div class="linea">Entregó</div>
-            </div>
-
-            <div class="firma">
-              <div class="linea">Recibió</div>
-            </div>
-          </div>
+          ${contenido}
+          ${contenido}
         </body>
       </html>
     `)
