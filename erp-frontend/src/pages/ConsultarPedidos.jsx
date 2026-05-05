@@ -254,20 +254,33 @@ const imprimirPedido = async (pedido) => {
         </div>
 
         <table>
-          <thead>
-            <tr>
-              <th style="width:70px;">Cant.</th>
-              <th>Descripción</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${detalle.map(p => `
-              <tr>
-                <td>${p.cantidad_entregada ?? p.cantidad_planeada ?? 0}</td>
-                <td>${p.nombre}</td>
-              </tr>
-            `).join('')}
-          </tbody>
+        <thead>
+        <tr>
+        <th style="width:70px;">Cant.</th>
+        <th>Descripción</th>
+        </tr>
+        </thead>
+       <tbody>
+  ${detalle.map(p => {
+    const cantidad = Number(p.cantidad_entregada ?? p.cantidad_planeada ?? 0)
+    const precio = Number(p.precio_unitario ?? p.precio ?? 0)
+    const subtotal = cantidad * precio
+
+    return `
+      <tr>
+        <td>${cantidad}</td>
+        <td>${p.nombre}</td>
+        <td>$${subtotal.toFixed(2)}</td>
+      </tr>
+    `
+  }).join('')}
+
+  <tr>
+    <td colspan="2" style="text-align:right;"><strong>Total pedido</strong></td>
+    <td><strong>$${Number(pedidoActual?.total || 0).toFixed(2)}</strong></td>
+  </tr>
+</tbody>
+
         </table>
 
         <div class="firmas">
@@ -313,21 +326,21 @@ const imprimirPedido = async (pedido) => {
               margin-bottom: 8px;
             }
 
-            .logos {
-              display: flex;
-              align-items: center;
-              gap: 8px;
-              width: 180px;
-            }
+         .logos {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 210px;
+}
 
-            .logos img:nth-child(1) {
-              height: 48px;
-            }
+.logos img:nth-child(1) {
+  height: 42px;
+}
 
-            .logos img:nth-child(2),
-            .logos img:nth-child(3) {
-              height: 32px;
-            }
+.logos img:nth-child(2),
+.logos img:nth-child(3) {
+  height: 26px;
+}
 
             .empresa {
               flex: 1;
@@ -372,12 +385,11 @@ const imprimirPedido = async (pedido) => {
               text-align: left;
             }
 
-            .firmas {
-              margin-top: 24px;
-              display: flex;
-              justify-content: space-between;
-            }
-
+           .firmas {
+  margin-top: 42px;
+  display: flex;
+  justify-content: space-between;
+}
             .firma {
               width: 42%;
               text-align: center;
