@@ -224,14 +224,17 @@ const imprimirPedido = async (pedido) => {
     const fechaActual = new Date().toLocaleDateString()
     const horaActual = new Date().toLocaleTimeString()
 
+    const logoSrc = logo
+    const logo2Src = logo2
+    const logo3Src = logo3
+
     const contenido = `
       <div class="copia">
         <div class="header">
-
           <div class="logos">
-            <img src="${logo}" alt="logo principal" />
-            <img src="${logo2}" alt="logo 2" />
-            <img src="${logo3}" alt="logo 3" />
+            <img src="${logoSrc}" alt="logo principal" />
+            <img src="${logo2Src}" alt="logo 2" />
+            <img src="${logo3Src}" alt="logo 3" />
           </div>
 
           <div class="empresa">
@@ -270,6 +273,7 @@ const imprimirPedido = async (pedido) => {
                 p.cantidad_entregada ??
                 p.cantidad_planeada ??
                 p.cantidad ??
+                p.cantidad_pedida ??
                 0
               )
 
@@ -277,6 +281,9 @@ const imprimirPedido = async (pedido) => {
                 p.precio_unitario ??
                 p.precio_venta ??
                 p.precio ??
+                p.precio_lista ??
+                p.precio_final ??
+                p.precio_cliente ??
                 0
               )
 
@@ -325,6 +332,11 @@ const imprimirPedido = async (pedido) => {
           <title>Remisión ${pedido.id_pedido}</title>
 
           <style>
+            * {
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+
             body {
               font-family: Arial, sans-serif;
               margin: 0;
@@ -344,13 +356,13 @@ const imprimirPedido = async (pedido) => {
               display: flex;
               align-items: center;
               justify-content: space-between;
-              margin-bottom: 8px;
+              margin-bottom: 10px;
             }
 
             .logos {
               display: flex;
               align-items: center;
-              gap: 10px;
+              gap: 12px;
               width: 240px;
             }
 
@@ -390,10 +402,10 @@ const imprimirPedido = async (pedido) => {
             }
 
             .datos {
-              margin-top: 6px;
-              margin-bottom: 8px;
+              margin-top: 8px;
+              margin-bottom: 12px;
               font-size: 10px;
-              line-height: 1.5;
+              line-height: 1.6;
             }
 
             table {
@@ -402,9 +414,10 @@ const imprimirPedido = async (pedido) => {
               font-size: 10px;
             }
 
-            th, td {
+            th,
+            td {
               border: 1px solid #888;
-              padding: 4px 6px;
+              padding: 5px 6px;
             }
 
             th {
@@ -418,7 +431,7 @@ const imprimirPedido = async (pedido) => {
             }
 
             .firmas {
-              margin-top: 80px;
+              margin-top: 130px;
               display: flex;
               justify-content: space-between;
             }
@@ -462,7 +475,7 @@ const imprimirPedido = async (pedido) => {
       win.focus()
       win.print()
       win.close()
-    }, 700)
+    }, 900)
 
   } catch (error) {
     console.error(error)
