@@ -199,6 +199,147 @@ const abrirEntrega = async (id) => {
   setModalEntrega(true)
 }
 
+  const imprimirPedido = async (pedido) => {
+  try {
+    const res = await fetch(`${urlLimpia}/pedidos/${pedido.id_pedido}/detalle`)
+    const detalle = await res.json()
+
+    const pedidoActual = pedidos.find(
+      p => p.id_pedido === pedido.id_pedido
+    )
+
+    const win = window.open('', '_blank', 'width=900,height=700')
+
+    win.document.write(`
+      <html>
+        <head>
+          <title>Remisión ${pedido.id_pedido}</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              padding: 30px;
+              color: #000;
+              font-size: 13px;
+            }
+
+            .header {
+              display: flex;
+              justify-content: space-between;
+              border-bottom: 2px solid #0a9b47;
+              padding-bottom: 10px;
+              margin-bottom: 20px;
+            }
+
+            .titulo {
+              font-size: 22px;
+              color: #0a9b47;
+              font-weight: bold;
+            }
+
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 20px;
+            }
+
+            th {
+              background: #0a9b47;
+              color: white;
+              padding: 8px;
+              border: 1px solid #ccc;
+            }
+
+            td {
+              border: 1px solid #ccc;
+              padding: 7px;
+            }
+
+            .firmas {
+              margin-top: 70px;
+              display: flex;
+              justify-content: space-between;
+            }
+
+            .firma {
+              width: 40%;
+              text-align: center;
+            }
+
+            .linea {
+              border-top: 1px solid #000;
+              margin-top: 35px;
+              padding-top: 5px;
+            }
+
+            @media print {
+              body {
+                margin: 0;
+              }
+            }
+          </style>
+        </head>
+
+        <body>
+          <div class="header">
+            <div>
+              <strong>PEGATEK</strong><br/>
+              Nota de remisión
+            </div>
+
+            <div class="titulo">
+              Pedido #${pedido.id_pedido}
+            </div>
+          </div>
+
+          <p><strong>Cliente:</strong> ${pedidoActual?.cliente || ''}</p>
+          <p><strong>Tienda:</strong> ${pedidoActual?.nombre_tienda || ''}</p>
+          <p><strong>Ruta:</strong> ${obtenerNombreRuta(pedidoActual?.id_ruta)}</p>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Cant.</th>
+                <th>Descripción</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              ${detalle.map(p => `
+                <tr>
+                  <td>${p.cantidad_entregada ?? p.cantidad_planeada ?? 0}</td>
+                  <td>${p.nombre}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <div class="firmas">
+            <div class="firma">
+              <div class="linea">Entregó</div>
+            </div>
+
+            <div class="firma">
+              <div class="linea">Recibió</div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `)
+
+    win.document.close()
+
+    setTimeout(() => {
+      win.focus()
+      win.print()
+      win.close()
+    }, 500)
+
+  } catch (error) {
+    console.error(error)
+    alert('No se pudo imprimir')
+  }
+}
+  
 const guardarEntrega = async () => {
   try {
     // VALIDAR CHOFER NUEVO
@@ -258,7 +399,13 @@ const guardarEntrega = async () => {
     setErrorPassword("")
 
     // RECARGAR PEDIDOS
-    cargarPedidos()
+   cargarPedidos()
+
+    setTimeout(() => {
+    imprimirPedido({
+    id_pedido: pedidoSeleccionado
+    })
+    }, 300)
 
   } catch (error) {
     console.error(error)
