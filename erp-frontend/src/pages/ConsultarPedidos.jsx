@@ -228,24 +228,35 @@ const imprimirPedido = async (pedido) => {
     const logo2Src = logo2
     const logo3Src = logo3
 
+    const total = detalle.reduce((acc, p) => {
+  const cantidad = Number(
+    p.cantidad_entregada ??
+    p.cantidad_planeada ??
+    0
+  )
+  const precio = Number(
+    p.precio_unitario ??
+    p.precio ??
+    0
+  )
+  return acc + (cantidad * precio)
+}, 0)
     const contenido = `
       <div class="copia">
         <div class="header">
           <div class="logos">
             <img src="${logoSrc}" alt="logo principal" />
-            <img src="${logo2Src}" alt="logo 2" />
-            <img src="${logo3Src}" alt="logo 3" />
           </div>
 
           <div class="empresa">
             <div class="titulo">GRUPO TEKC</div>
             <div>Carretera federal Perote – Teziutlán</div>
             <div>Calle Piñón No. 2, Loc. Magueyitos</div>
-            <div>Tel. +52 282-596-67-39</div>
+            <div>Tel. 282-596-67-39</div>
           </div>
 
           <div class="folio">
-            <div><strong>Pedido #${pedido.id_pedido}</strong></div>
+            <div><strong>REMISIÓN #${pedido.id_pedido}</strong></div>
             <div>${fechaActual}</div>
             <div>${horaActual}</div>
           </div>
@@ -267,62 +278,64 @@ const imprimirPedido = async (pedido) => {
             </tr>
           </thead>
 
-          <tbody>
-            ${detalle.map(p => {
-              const cantidad = Number(
-                p.cantidad_entregada ??
-                p.cantidad_planeada ??
-                p.cantidad ??
-                p.cantidad_pedida ??
-                0
-              )
+      <tbody>
+  ${detalle.map(p => {
+    const cantidad = Number(
+      p.cantidad_entregada ??
+      p.cantidad_planeada ??
+      p.cantidad ??
+      p.cantidad_pedida ??
+      0
+    )
 
-              const precio = Number(
-                p.precio_unitario ??
-                p.precio_venta ??
-                p.precio ??
-                p.precio_lista ??
-                p.precio_final ??
-                p.precio_cliente ??
-                0
-              )
+    const precio = Number(
+      p.precio_unitario ??
+      p.precio_venta ??
+      p.precio ??
+      p.precio_lista ??
+      p.precio_final ??
+      p.precio_cliente ??
+      0
+    )
 
-              const subtotal = cantidad * precio
+    const subtotal = cantidad * precio
 
-              return `
-                <tr>
-                  <td>${cantidad}</td>
-                  <td>${p.nombre || ''}</td>
-                  <td>$${precio.toFixed(2)}</td>
-                  <td>$${subtotal.toFixed(2)}</td>
-                </tr>
-              `
-            }).join('')}
-
-            <tr>
-              <td colspan="3" style="text-align:right;">
-                <strong>Total pedido</strong>
-              </td>
-              <td>
-                <strong>$${Number(pedidoActual?.total || 0).toFixed(2)}</strong>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-
-        <div class="firmas">
-          <div class="firma">
-            <div class="linea">Chofer</div>
-            <div class="nombre-firma">${choferNombre}</div>
-          </div>
-
-          <div class="firma">
-            <div class="linea">Supervisor</div>
-            <div class="nombre-firma">JOSHUA MENDEZ ALVAREZ</div>
-          </div>
-        </div>
-      </div>
+    return `
+      <tr>
+        <td>${cantidad}</td>
+        <td>${p.nombre || ''}</td>
+        <td>$${precio.toFixed(2)}</td>
+        <td>$${subtotal.toFixed(2)}</td>
+      </tr>
     `
+  }).join('')}
+
+  <tr>
+    <td colspan="3" style="text-align:right;">
+      <strong>Total pedido</strong>
+    </td>
+    <td>$${total.toFixed(2)}</td>
+  </tr>
+</tbody>
+</table>
+</div>
+
+<div class="firmas">
+  <div class="firma">
+    <div class="linea">Chofer</div>
+    <div class="nombre-firma">${choferNombre}</div>
+  </div>
+  <div class="firma">
+    <div class="linea">Supervisor</div>
+    <div class="nombre-firma">JOSHUA MENDEZ ALVAREZ</div>
+  </div>
+</div>
+
+<div class="footer-logos">
+  <img src="${logo2Src}" />
+  <img src="${logo3Src}" />
+</div>
+`
 
     const win = window.open('', '_blank', 'width=900,height=700')
 
@@ -363,15 +376,18 @@ const imprimirPedido = async (pedido) => {
               display: flex;
               align-items: center;
               gap: 12px;
-              width: 240px;
+              width: auto;
             }
-
+            .copia {
+            position: relative;
+            }
+            
             .logos img {
               display: block;
             }
 
             .logos img:nth-child(1) {
-              height: 62px;
+              height: 90px;
               width: auto;
             }
 
@@ -431,7 +447,7 @@ const imprimirPedido = async (pedido) => {
             }
 
             .firmas {
-              margin-top: 130px;
+              margin-top: 60px;
               display: flex;
               justify-content: space-between;
             }
@@ -448,6 +464,17 @@ const imprimirPedido = async (pedido) => {
               font-weight: bold;
             }
 
+           .footer-logos {
+           position: absolute;
+           bottom: 10px;
+           right: 20px;
+           display: flex;
+           gap: 10px;
+           }
+
+           .footer-logos img {
+           height: 30px;
+           }
             .nombre-firma {
               margin-top: 4px;
               min-height: 14px;
@@ -463,7 +490,6 @@ const imprimirPedido = async (pedido) => {
         </head>
 
         <body>
-          ${contenido}
           ${contenido}
         </body>
       </html>
