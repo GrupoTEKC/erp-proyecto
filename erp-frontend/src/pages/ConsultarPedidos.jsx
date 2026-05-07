@@ -357,14 +357,13 @@ const imprimirPedido = async (pedido) => {
               padding: 0;
               color: #000;
             }
-
-            .copia {
-              height: 49vh;
-              padding: 14px 22px;
-              box-sizing: border-box;
-              border-bottom: 1px dashed #888;
-              overflow: hidden;
-            }
+.copia {
+  height: 50vh; /* exacto mitad */
+  padding: 14px 22px;
+  box-sizing: border-box;
+  border-bottom: 1px dashed #888;
+  overflow: hidden;
+}
 
             .header {
               display: flex;
@@ -447,15 +446,16 @@ const imprimirPedido = async (pedido) => {
               background: #fafafa;
             }
 
-           .firmas {
-  margin-top: 15px; /* 🔽 antes 30 */
+          .firmas {
+  margin-top: 15px;
   display: flex;
   justify-content: space-between;
   width: 100%;
+  max-width: 100%;
 }
 
 .firma {
-  width: 48%; /* 🔼 para evitar que se rompa */
+  width: 48%;
   text-align: center;
   font-size: 10px;
 }
@@ -465,13 +465,12 @@ const imprimirPedido = async (pedido) => {
               font-weight: bold;
             }
 
-     .footer-logos {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 5px;
-  width: 48%;
-  margin-left: auto;
+     .footer-logos img:nth-child(1) {
+  height: 36px;
+}
+
+.footer-logos img:nth-child(2) {
+  height: 26px;
 }
 
 .footer-logos img {
@@ -492,6 +491,7 @@ const imprimirPedido = async (pedido) => {
         </head>
 
         <body>
+          ${contenido} 
           ${contenido}
         </body>
       </html>
