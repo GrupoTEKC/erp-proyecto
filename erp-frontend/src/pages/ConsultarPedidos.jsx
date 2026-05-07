@@ -353,10 +353,18 @@ const imprimirPedido = async (pedido) => {
               color: #000;
             }
 .copia {
+  height: 50vh; /* 👈 mitad exacta */
   padding: 14px 22px;
   box-sizing: border-box;
+  position: relative;
+}
+.copia:first-child::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
   border-bottom: 1px dashed #888;
-  page-break-inside: avoid;
 }
             .header {
               display: flex;
