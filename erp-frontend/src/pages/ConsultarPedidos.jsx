@@ -353,14 +353,11 @@ const imprimirPedido = async (pedido) => {
               color: #000;
             }
 .copia {
-  min-height: 50vh;
   padding: 14px 22px;
   box-sizing: border-box;
   border-bottom: 1px dashed #888;
-  overflow: hidden;
-  position: relative;
+  page-break-inside: avoid;
 }
-
             .header {
               display: flex;
               align-items: center;
@@ -417,13 +414,12 @@ const imprimirPedido = async (pedido) => {
               line-height: 1.6;
             }
 
-          table {
+     table {
   width: 100%;
   margin-bottom: 0;
   border-collapse: collapse;
   font-size: 10px;
 }
-
             th,
             td {
               border: 1px solid #888;
@@ -440,17 +436,22 @@ const imprimirPedido = async (pedido) => {
               background: #fafafa;
             }
 
-      .firmas {
-  margin-top: 4px;
+    .firmas {
+  margin-top: 0px; /* 👈 más pegado imposible */
   display: flex;
   justify-content: space-between;
 }
 
 .firma {
-  width: 46%;
+  width: 48%;
   text-align: center;
   font-size: 10px;
 }
+
+.datos {
+  margin-bottom: 6px;
+}
+
             .linea {
               border-top: 1px solid #000;
               padding-top: 4px;
