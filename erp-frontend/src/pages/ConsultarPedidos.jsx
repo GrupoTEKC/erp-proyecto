@@ -358,7 +358,7 @@ const imprimirPedido = async (pedido) => {
               color: #000;
             }
 .copia {
-  height: 50vh;
+  min-height: 50vh;
   padding: 14px 22px;
   box-sizing: border-box;
   border-bottom: 1px dashed #888;
@@ -446,7 +446,7 @@ const imprimirPedido = async (pedido) => {
             }
 
       .firmas {
-  margin-top: 6px;
+  margin-top: 4px;
   display: flex;
   justify-content: space-between;
 }
@@ -462,18 +462,20 @@ const imprimirPedido = async (pedido) => {
               font-weight: bold;
             }
 
-.footer-logos img {
-  width: auto;
+.footer-logos {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
 }
 
-.footer-logos img:nth-child(1) {
-  height: 30px;
+.footer-logos img:first-child {
+  margin-right: auto; /* se va completamente a la izquierda */
 }
 
-.footer-logos img:nth-child(2) {
-  height: 26px;
+.footer-logos img:last-child {
+  margin-left: auto; /* se va completamente a la derecha */
 }
-
               .nombre-firma {
               margin-top: 4px;
               min-height: 14px;
