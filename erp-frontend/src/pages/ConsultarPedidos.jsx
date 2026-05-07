@@ -331,11 +331,6 @@ const imprimirPedido = async (pedido) => {
     <div class="nombre-firma">JOSHUA ALVAREZ MENDEZ </div>
   </div>
 </div>
-
-<div class="footer-logos">
-  <img src="${logo2Src}" />
-  <img src="${logo3Src}" />
-</div>
 `
 
     const win = window.open('', '_blank', 'width=900,height=700')
@@ -462,20 +457,6 @@ const imprimirPedido = async (pedido) => {
               font-weight: bold;
             }
 
-.footer-logos {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-}
-
-.footer-logos img:first-child {
-  margin-right: auto; /* se va completamente a la izquierda */
-}
-
-.footer-logos img:last-child {
-  margin-left: auto; /* se va completamente a la derecha */
-}
               .nombre-firma {
               margin-top: 4px;
               min-height: 14px;
