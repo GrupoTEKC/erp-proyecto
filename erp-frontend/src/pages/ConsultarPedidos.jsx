@@ -247,11 +247,10 @@ const imprimirPedido = async (pedido) => {
           <div class="logos">
             <img src="${logoSrc}" alt="logo principal" />
           </div>
-
+            
           <div class="empresa">
             <div class="titulo">GRUPO TEKC</div>
-            <div>Carretera federal Perote – Teziutlán</div>
-            <div>Calle Piñón No. 2, Loc. Magueyitos</div>
+            <div>Carretera federal Perote – Teziutlán, Calle Piñón No. 2, Loc. Magueyitos</div>
             <div>Tel. 282-596-67-39</div>
           </div>
 
@@ -322,12 +321,14 @@ const imprimirPedido = async (pedido) => {
 
 <div class="firmas">
   <div class="firma">
-    <div class="linea">Chofer</div>
+    <div class="linea">RECIBE BULTOS</div>
+    <div class="nombre-firma">CHOFER</div>
     <div class="nombre-firma">${choferNombre}</div>
   </div>
   <div class="firma">
-    <div class="linea">Supervisor</div>
-    <div class="nombre-firma">JOSHUA MENDEZ ALVAREZ</div>
+    <div class="linea">AUTORIZO</div>
+    <div class="nombre-firma">SUPERVISOR</div>
+    <div class="nombre-firma">JOSHUA ALVAREZ MENDEZ </div>
   </div>
 </div>
 
@@ -405,7 +406,7 @@ const imprimirPedido = async (pedido) => {
             }
 
             .titulo {
-              font-size: 15px;
+              font-size: 20px;
               font-weight: bold;
               margin-bottom: 3px;
             }
@@ -446,35 +447,36 @@ const imprimirPedido = async (pedido) => {
               background: #fafafa;
             }
 
-            .firmas {
-              margin-top: 60px;
-              display: flex;
-              justify-content: space-between;
-            }
+           .firmas {
+  margin-top: 15px; /* 🔽 antes 30 */
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
 
-            .firma {
-              width: 42%;
-              text-align: center;
-              font-size: 10px;
-            }
-
+.firma {
+  width: 48%; /* 🔼 para evitar que se rompa */
+  text-align: center;
+  font-size: 10px;
+}
             .linea {
               border-top: 1px solid #000;
               padding-top: 4px;
               font-weight: bold;
             }
 
-           .footer-logos {
-           position: absolute;
-           bottom: 10px;
-           right: 20px;
-           display: flex;
-           gap: 10px;
-           }
+     .footer-logos {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 5px;
+  width: 48%;
+  margin-left: auto;
+}
 
-           .footer-logos img {
-           height: 30px;
-           }
+.footer-logos img {
+  height: 28px;
+}
             .nombre-firma {
               margin-top: 4px;
               min-height: 14px;
