@@ -422,12 +422,12 @@ const imprimirPedido = async (pedido) => {
               line-height: 1.6;
             }
 
-            table {
-              width: 100%;
-              margin-bottom: 5px; 
-              border-collapse: collapse;
-              font-size: 10px;
-            }
+          table {
+  width: 100%;
+  margin-bottom: 0;
+  border-collapse: collapse;
+  font-size: 10px;
+}
 
             th,
             td {
@@ -445,16 +445,14 @@ const imprimirPedido = async (pedido) => {
               background: #fafafa;
             }
 
-          .firmas {
-  margin-top: 7px;
+      .firmas {
+  margin-top: 6px;
   display: flex;
   justify-content: space-between;
-  width: 100%;
-  max-width: 100%;
 }
 
 .firma {
-  width: 48%;
+  width: 46%;
   text-align: center;
   font-size: 10px;
 }
@@ -469,7 +467,7 @@ const imprimirPedido = async (pedido) => {
 }
 
 .footer-logos img:nth-child(1) {
-  height: 36px;
+  height: 30px;
 }
 
 .footer-logos img:nth-child(2) {
