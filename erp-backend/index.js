@@ -701,17 +701,14 @@ app.post('/pedidos/:id/en-curso', async (req, res) => {
   LIMIT 1 
 `, [id])
     
-    let idChoferFinal = id_chofer || null
-let idUnidadFinal = id_unidad || null
+      if (!programacion.length) {
+      throw new Error('Pedido no tiene programación activa')
+      }
+      let idChoferFinal =
+      id_chofer || programacion[0]?.id_chofer || null
 
-if (programacion.length) {
-  idChoferFinal = id_chofer || programacion[0].id_chofer || null
-  idUnidadFinal = id_unidad || programacion[0].id_unidad || null
-}
-
-if (!idChoferFinal || !idUnidadFinal) {
-  throw new Error('Debe seleccionar chofer y unidad')
-}
+      let idUnidadFinal =
+      id_unidad || programacion[0]?.id_unidad || null
     
     if (otro_chofer) {
       if (!nombre_chofer || !apellido_paterno || !apellido_materno) {
@@ -836,43 +833,24 @@ app.get('/pedidos/:id/detalle', async (req, res) => {
   pd.precio_unitario AS precio,
   pd.cantidad AS cantidad_pedida,
   COALESCE(prd.cantidad_planeada, pd.cantidad) AS cantidad_planeada,
-
-  -- 🔥 AQUÍ EL FIX
-  COALESCE(e.id_chofer, pp.id_chofer, pe.id_chofer) AS id_chofer,
-  COALESCE(e.id_unidad, pp.id_unidad, pe.id_unidad) AS id_unidad,
-
+  pp.id_chofer,
+  pp.id_unidad,
   CONCAT(ch.nombre,' ',ch.apellido1,' ',ch.apellido2) AS chofer,
   u.nombre AS unidad
-
-FROM pedido_detalle pd
-
-INNER JOIN productos p
-  ON p.id_producto = pd.id_producto
-
--- 🔥 NUEVO JOIN
-LEFT JOIN pedidos pe
-  ON pe.id_pedido = pd.id_pedido
-
-LEFT JOIN programaciones_pedido pp
-  ON pp.id_pedido = pd.id_pedido
-  AND pp.activo = 1
-
-LEFT JOIN entregas e 
-  ON e.id_pedido = pd.id_pedido 
-  AND e.estado IN ('en_ruta','entregado')
-
-LEFT JOIN programacion_detalle prd
-  ON prd.id_programacion = pp.id_programacion
-  AND prd.id_producto = pd.id_producto
-
--- 🔥 FIX AQUÍ TAMBIÉN
-LEFT JOIN choferes ch
-  ON ch.id_chofer = COALESCE(e.id_chofer, pp.id_chofer, pe.id_chofer)
-
-LEFT JOIN unidades u
-  ON u.id_unidad = COALESCE(e.id_unidad, pp.id_unidad, pe.id_unidad)
-
-WHERE pd.id_pedido = ?
+      FROM pedido_detalle pd
+      INNER JOIN productos p
+        ON p.id_producto = pd.id_producto
+      LEFT JOIN programaciones_pedido pp
+        ON pp.id_pedido = pd.id_pedido
+        AND pp.activo = 1
+      LEFT JOIN programacion_detalle prd
+        ON prd.id_programacion = pp.id_programacion
+        AND prd.id_producto = pd.id_producto
+      LEFT JOIN choferes ch
+        ON ch.id_chofer = pp.id_chofer
+      LEFT JOIN unidades u
+        ON u.id_unidad = pp.id_unidad
+      WHERE pd.id_pedido = ?
     `, [id])
 
     res.json(rows)
