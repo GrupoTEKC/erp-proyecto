@@ -308,15 +308,14 @@ const imprimirPedido = async (pedido) => {
           </tbody>
         </table>
 
-        <div class="firmas">
-          <div class="firma">
-            <div class="linea">Chofer</div>
-            <div class="nombre-firma">${choferNombre}</div>
-          </div>
+      <div class="firma">
+  <div class="linea">RECIBIO BULTOS</div>
+  <div class="nombre-firma">CHOFER: ${choferNombre}</div>
+</div>
 
           <div class="firma">
-            <div class="linea">Supervisor</div>
-            <div class="nombre-firma">JOSHUA MENDEZ ALVAREZ</div>
+            <div class="linea">AUTORIZO</div>
+            <div class="nombre-firma">SUPERVISOR: JOSHUA MENDEZ ALVAREZ</div>
           </div>
         </div>
       </div>
@@ -351,12 +350,12 @@ const imprimirPedido = async (pedido) => {
               overflow: hidden;
             }
 
-            .header {
-              display: flex;
-              align-items: center;
-              justify-content: space-between;
-              margin-bottom: 10px;
-            }
+       .header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* 🔥 déjalo así */
+  margin-bottom: 10px;
+}
 
             .logos {
               display: flex;
@@ -380,19 +379,17 @@ const imprimirPedido = async (pedido) => {
               width: auto;
             }
 
-           .empresa {
+          .empresa {
   flex: 1;
   text-align: center;
   font-size: 11px;
   line-height: 1.4;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  margin: 0 auto; /* 🔥 esto lo centra REAL */
 }
-     .titulo {
-  font-size: 17px;
+   .titulo {
+  font-size: 19px;
   font-weight: bold;
+  letter-spacing: 0.5px; /* 🔥 se ve más “empresa” */
   margin-bottom: 4px;
 }
 
