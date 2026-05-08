@@ -339,145 +339,124 @@ const imprimirPedido = async (pedido) => {
       <html>
         <head>
           <title>Remisión ${pedido.id_pedido}</title>
+<style>
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
 
-          <style>
-            * {
-              -webkit-print-color-adjust: exact !important;
-              print-color-adjust: exact !important;
-            }
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    color: #000;
+  }
 
-            body {
-              font-family: Arial, sans-serif;
-              margin: 0;
-              padding: 0;
-              color: #000;
-            }
-.copia {
-  height: 50vh; /* 👈 mitad exacta */
-  padding: 14px 22px;
-  box-sizing: border-box;
-  position: relative;
-}
-.copia:first-child::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  border-bottom: 1px dashed #888;
-}
-            .header {
-              display: flex;
-              align-items: center;
-              justify-content: space-between;
-              margin-bottom: 10px;
-            }
+  /* 🔥 CONTENEDOR DE CADA COPIA */
+  .copia {
+    height: 49vh; /* 👈 margen seguro (NO 50) */
+    padding: 14px 22px;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden; /* 👈 CLAVE para que no se pase */
+    border-bottom: 1px dashed #888;
+  }
 
-            .logos {
-              display: flex;
-              align-items: center;
-              gap: 12px;
-              width: auto;
-            }
-            
-            .logos img {
-              display: block;
-            }
+  /* 🔥 HEADER */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
 
-            .logos img:nth-child(1) {
-              height: 90px;
-              width: auto;
-            }
+  .logos img {
+    height: 70px;
+    width: auto;
+  }
 
-            .logos img:nth-child(2),
-            .logos img:nth-child(3) {
-              height: 36px;
-              width: auto;
-            }
+  .empresa {
+    flex: 1;
+    text-align: center;
+    font-size: 10px;
+    line-height: 1.2;
+  }
 
-            .empresa {
-              flex: 1;
-              text-align: center;
-              font-size: 10px;
-              line-height: 1.25;
-            }
+  .titulo {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 2px;
+  }
 
-            .titulo {
-              font-size: 20px;
-              font-weight: bold;
-              margin-bottom: 3px;
-            }
+  .folio {
+    width: 130px;
+    text-align: right;
+    font-size: 10px;
+  }
 
-            .folio {
-              width: 130px;
-              text-align: right;
-              font-size: 10px;
-              line-height: 1.4;
-            }
+  /* 🔥 DATOS */
+  .datos {
+    margin-top: 6px;
+    margin-bottom: 6px;
+    font-size: 10px;
+    line-height: 1.4;
+  }
 
-            .datos {
-              margin-top: 8px;
-              margin-bottom: 12px;
-              font-size: 10px;
-              line-height: 1.6;
-            }
+  /* 🔥 TABLA */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10px;
+    margin-bottom: 2px;
+  }
 
-     table {
-  width: 100%;
-  margin-bottom: 0;
-  border-collapse: collapse;
-  font-size: 10px;
-}
-            th,
-            td {
-              border: 1px solid #888;
-              padding: 5px 6px;
-            }
+  th,
+  td {
+    border: 1px solid #888;
+    padding: 4px 5px; /* 👈 más compacto */
+  }
 
-            th {
-              background: #f2dede;
-              color: #7a1c1c;
-              text-align: left;
-            }
+  th {
+    background: #f2dede;
+    color: #7a1c1c;
+    text-align: left;
+  }
 
-            tbody tr:nth-child(even) {
-              background: #fafafa;
-            }
+  tbody tr:nth-child(even) {
+    background: #fafafa;
+  }
 
-    .firmas {
-  margin-top: 0px; /* 👈 más pegado imposible */
-  display: flex;
-  justify-content: space-between;
-}
+  /* 🔥 FIRMAS (CONTROLADAS) */
+  .firmas {
+    margin-top: 90px; /* 👈 AJUSTE FINO (antes 130, ahora optimizado) */
+    display: flex;
+    justify-content: space-between;
+  }
 
-.firma {
-  width: 48%;
-  text-align: center;
-  font-size: 10px;
-}
+  .firma {
+    width: 46%;
+    text-align: center;
+    font-size: 10px;
+  }
 
-.datos {
-  margin-bottom: 6px;
-}
+  .linea {
+    border-top: 1px solid #000;
+    padding-top: 4px;
+    font-weight: bold;
+  }
 
-            .linea {
-              border-top: 1px solid #000;
-              padding-top: 4px;
-              font-weight: bold;
-            }
+  .nombre-firma {
+    margin-top: 4px;
+    min-height: 14px;
+  }
 
-              .nombre-firma {
-              margin-top: 4px;
-              min-height: 14px;
-            }
-
-            @media print {
-              body {
-                margin: 0;
-                padding: 0;
-              }
-            }
-          </style>
+  @media print {
+    body {
+      margin: 0;
+      padding: 0;
+    }
+  }
+</style>
         </head>
 
         <body>
