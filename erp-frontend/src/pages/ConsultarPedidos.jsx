@@ -307,14 +307,16 @@ const imprimirPedido = async (pedido) => {
           </tbody>
         </table>
 
-      <div class="firma">
-  <div class="linea">RECIBIO BULTOS</div>
-  <div class="nombre-firma">CHOFER: ${choferNombre}</div>
-</div>
+     <div class="firmas">
+          <div class="firma">
+            <div class="linea">CHOFER</div>
+            <div class="nombre-firma">${choferNombre}</div>
+          </div>
+
 
           <div class="firma">
             <div class="linea">AUTORIZO</div>
-            <div class="nombre-firma">SUPERVISOR: JOSHUA MENDEZ ALVAREZ</div>
+            <div class="nombre-firma">SUPERVISOR: JOSHUA ALVAREZ MENDEZ </div>
           </div>
         </div>
       </div>
