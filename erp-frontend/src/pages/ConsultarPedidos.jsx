@@ -233,8 +233,6 @@ const imprimirPedido = async (pedido) => {
         <div class="header">
           <div class="logos">
             <img src="${logoSrc}" alt="logo principal" />
-            <img src="${logo2Src}" alt="logo 2" />
-            <img src="${logo3Src}" alt="logo 3" />
           </div>
 
           <div class="empresa">
@@ -321,6 +319,10 @@ const imprimirPedido = async (pedido) => {
             <div class="nombre-firma">JOSHUA MENDEZ ALVAREZ</div>
           </div>
         </div>
+        <div class="logos-final">
+        <img src="${logo2Src}" />
+        <img src="${logo3Src}" />
+        </div>
       </div>
     `
 
@@ -345,6 +347,7 @@ const imprimirPedido = async (pedido) => {
             }
 
             .copia {
+              position: relative;
               height: 49vh;
               padding: 14px 22px;
               box-sizing: border-box;
@@ -371,7 +374,7 @@ const imprimirPedido = async (pedido) => {
             }
 
             .logos img:nth-child(1) {
-              height: 62px;
+              height: 72px;
               width: auto;
             }
 
@@ -381,6 +384,18 @@ const imprimirPedido = async (pedido) => {
               width: auto;
             }
 
+            .logos-final {
+            position: absolute;
+            bottom: 10px;
+            right: 14px;
+            display: flex;
+            gap: 8px;
+            }
+
+            .logos-final img {
+            height: 34px;
+            width: auto;
+            }
             .empresa {
               flex: 1;
               text-align: center;
