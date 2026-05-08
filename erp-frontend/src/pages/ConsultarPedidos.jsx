@@ -352,15 +352,15 @@ const imprimirPedido = async (pedido) => {
     color: #000;
   }
 
-  /* 🔥 CONTENEDOR DE CADA COPIA */
-  .copia {
-    height: 49vh; /* 👈 margen seguro (NO 50) */
-    padding: 14px 22px;
-    box-sizing: border-box;
-    position: relative;
-    overflow: hidden; /* 👈 CLAVE para que no se pase */
-    border-bottom: 1px dashed #888;
-  }
+.copia {
+  height: 49vh;
+  padding: 10px 18px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* 🔥 CLAVE */
+  border-bottom: 1px dashed #888;
+}
 
   /* 🔥 HEADER */
   .header {
@@ -396,25 +396,23 @@ const imprimirPedido = async (pedido) => {
 
   /* 🔥 DATOS */
   .datos {
-    margin-top: 6px;
-    margin-bottom: 6px;
+    margin-top: 4px;
+    margin-bottom: 4px;
     font-size: 10px;
     line-height: 1.4;
   }
 
-  /* 🔥 TABLA */
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 10px;
-    margin-bottom: 2px;
-  }
+ table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+}
 
-  th,
-  td {
-    border: 1px solid #888;
-    padding: 4px 5px; /* 👈 más compacto */
-  }
+th, td {
+  border: 1px solid #888;
+  padding: 4px 5px;
+}
+
 
   th {
     background: #f2dede;
@@ -426,18 +424,21 @@ const imprimirPedido = async (pedido) => {
     background: #fafafa;
   }
 
-  /* 🔥 FIRMAS (CONTROLADAS) */
-  .firmas {
-    margin-top: 90px; /* 👈 AJUSTE FINO (antes 130, ahora optimizado) */
-    display: flex;
-    justify-content: space-between;
-  }
+.firmas {
+  margin-top: 4px; /* 🔥 casi nada */
+  display: flex;
+  justify-content: space-between;
+}
 
-  .firma {
-    width: 46%;
-    text-align: center;
-    font-size: 10px;
-  }
+.firma {
+  width: 46%;
+  text-align: center;
+  font-size: 10px;
+}
+
+.contenido {
+  flex-grow: 1;
+}
 
   .linea {
     border-top: 1px solid #000;
