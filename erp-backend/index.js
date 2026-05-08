@@ -843,16 +843,19 @@ app.get('/pedidos/:id/detalle', async (req, res) => {
       FROM pedido_detalle pd
       INNER JOIN productos p
         ON p.id_producto = pd.id_producto
-      LEFT JOIN programaciones_pedido pp
-        ON pp.id_pedido = pd.id_pedido
-        AND pp.activo = 1
+    LEFT JOIN programaciones_pedido pp
+  ON pp.id_pedido = pd.id_pedido
+  AND pp.activo = 1
+ LEFT JOIN entregas e 
+  ON e.id_pedido = pd.id_pedido 
+  AND e.estado IN ('en_ruta','entregado')
       LEFT JOIN programacion_detalle prd
         ON prd.id_programacion = pp.id_programacion
         AND prd.id_producto = pd.id_producto
-      LEFT JOIN choferes ch
-        ON ch.id_chofer = pp.id_chofer
-      LEFT JOIN unidades u
-        ON u.id_unidad = pp.id_unidad
+LEFT JOIN choferes ch
+  ON ch.id_chofer = COALESCE(e.id_chofer, pp.id_chofer)
+    LEFT JOIN unidades u
+  ON u.id_unidad = COALESCE(e.id_unidad, pp.id_unidad)
       WHERE pd.id_pedido = ?
     `, [id])
 
