@@ -676,7 +676,6 @@ app.post('/pedidos/:id/en-curso', async (req, res) => {
   const conn = await db.getConnection()
   try {
     const { id } = req.params
-
     // 🔥 NUEVO: recibimos campos extra
     const { 
       id_chofer, 
@@ -688,7 +687,6 @@ app.post('/pedidos/:id/en-curso', async (req, res) => {
       apellido_paterno,
       apellido_materno
     } = req.body
-
     await conn.beginTransaction()
     const [programacion] = await conn.query(`
     SELECT 
@@ -701,20 +699,20 @@ app.post('/pedidos/:id/en-curso', async (req, res) => {
   LIMIT 1 
 `, [id])
     
-      if (!programacion.length) {
-      throw new Error('Pedido no tiene programación activa')
-      }
-      let idChoferFinal =
-      id_chofer || programacion[0]?.id_chofer || null
-
-      let idUnidadFinal =
-      id_unidad || programacion[0]?.id_unidad || null
+    let idChoferFinal = id_chofer || null
+let idUnidadFinal = id_unidad || null
+if (programacion.length) {
+  idChoferFinal = id_chofer || programacion[0].id_chofer || null
+  idUnidadFinal = id_unidad || programacion[0].id_unidad || null
+}
+if (!idChoferFinal || !idUnidadFinal) {
+  throw new Error('Debe seleccionar chofer y unidad')
+}
     
     if (otro_chofer) {
       if (!nombre_chofer || !apellido_paterno || !apellido_materno) {
         throw new Error('Datos de chofer incompletos')
       }
-
       const [nuevoChofer] = await conn.query(`
         INSERT INTO choferes (nombre, apellido1, apellido2, activo)
         VALUES (?, ?, ?, 1)
@@ -723,10 +721,8 @@ app.post('/pedidos/:id/en-curso', async (req, res) => {
         apellido_paterno,
         apellido_materno
       ])
-
       idChoferFinal = nuevoChofer.insertId
     }
-
     // 🔥 SOLO cambiamos id_chofer por idChoferFinal
     const [entregaResult] = await conn.query(`
       INSERT INTO entregas (
@@ -738,18 +734,14 @@ app.post('/pedidos/:id/en-curso', async (req, res) => {
       )
       VALUES (?, ?, ?, ?, 'en_ruta')
       `, [id, idChoferFinal, idUnidadFinal, comentario || null])
-
         const id_entrega = entregaResult.insertId
-
         for (const item of productos) {
-
   if (
     Number(item.cantidad_entregada) !== Number(item.cantidad_planeada) &&
     !comentario
   ) {
     throw new Error('Comentario obligatorio por diferencia de cantidades')
   }
-
   await conn.query(`
     INSERT INTO entrega_detalle (
       id_entrega,
@@ -773,14 +765,11 @@ app.post('/pedidos/:id/en-curso', async (req, res) => {
         estado = 'en_ruta'
       WHERE id_pedido = ?
     `, [idChoferFinal, id]) // 🔥 aquí también
-
     await conn.commit()
-
     res.json({
       success: true,
       id_entrega
     })
-
   } catch (err) {
     await conn.rollback()
     res.status(500).json({ error: err.message })
