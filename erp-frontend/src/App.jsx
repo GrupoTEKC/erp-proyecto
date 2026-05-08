@@ -12,6 +12,8 @@ import PedidosLogin from './pages/PedidosLogin'
 import ControlEnvios from './pages/ControlEnvios'
 import ControlEnviosDetalle from './pages/ControlEnviosDetalle'
 import EmbarquesLogin from './pages/EmbarquesLogin'
+import Produccion from './pages/produccion'
+import ProduccionLogin from './pages/produccionLogin'
 
 // 🔥 NUEVO COMPONENTE
 import ClientePrecios from './pages/ClientePrecios'
@@ -55,6 +57,9 @@ function App() {
 
         {/* 🚛 🔐 LOGIN EMBARQUES */}
         <Route path="/login-embarques" element={<EmbarquesLogin />} />
+        {/* 🏭 🔐 LOGIN PRODUCCIÓN */}
+        <Route path="/produccion-login" element={<ProduccionLogin />} />
+        <Route path="/produccion" element={<Produccion />} />
       </Routes>
     </div>
   )
