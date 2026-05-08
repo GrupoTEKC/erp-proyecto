@@ -211,15 +211,23 @@ const imprimirPedido = async (pedido) => {
       p => p.id_pedido === pedido.id_pedido
     )
 
+    // 🔥 SACAR ID DE CHOFER (de donde venga)
+    const idChofer =
+      detalle[0]?.id_chofer ||
+      pedidoActual?.id_chofer ||
+      null
+
+    // 🔥 BUSCAR EN LISTA LOCAL (por si existe)
     const choferEncontrado = choferes.find(
-      c => c.id_chofer === detalle[0]?.id_chofer
+      c => c.id_chofer === idChofer
     )
 
+    // 🔥 ARMAR NOMBRE CORRECTAMENTE
     const choferNombre =
-      detalle[0]?.nombre_chofer ||
+      detalle[0]?.nombre_chofer || // 👈 si backend ya lo manda
       (choferEncontrado
         ? `${choferEncontrado.nombre} ${choferEncontrado.apellido_paterno || ''} ${choferEncontrado.apellido_materno || ''}`.trim()
-        : '')
+        : 'SIN CHOFER')
 
     const fechaActual = new Date().toLocaleDateString()
     const horaActual = new Date().toLocaleTimeString()
