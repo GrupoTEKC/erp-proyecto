@@ -133,6 +133,12 @@ function Menu() {
             </button>
           </Link>
 
+           <Link to="/produccion-login" style={styles.link}>
+           <button style={styles.button}>
+           <span style={styles.icon}>🏭</span>
+           Producción
+           </button>
+         </Link>
         </nav>
       </aside>
 
