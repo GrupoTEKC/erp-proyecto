@@ -701,14 +701,17 @@ app.post('/pedidos/:id/en-curso', async (req, res) => {
   LIMIT 1 
 `, [id])
     
-      if (!programacion.length) {
-      throw new Error('Pedido no tiene programación activa')
-      }
-      let idChoferFinal =
-      id_chofer || programacion[0]?.id_chofer || null
+    let idChoferFinal = id_chofer || null
+let idUnidadFinal = id_unidad || null
 
-      let idUnidadFinal =
-      id_unidad || programacion[0]?.id_unidad || null
+if (programacion.length) {
+  idChoferFinal = id_chofer || programacion[0].id_chofer || null
+  idUnidadFinal = id_unidad || programacion[0].id_unidad || null
+}
+
+if (!idChoferFinal || !idUnidadFinal) {
+  throw new Error('Debe seleccionar chofer y unidad')
+}
     
     if (otro_chofer) {
       if (!nombre_chofer || !apellido_paterno || !apellido_materno) {
