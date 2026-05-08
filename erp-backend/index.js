@@ -836,27 +836,43 @@ app.get('/pedidos/:id/detalle', async (req, res) => {
   pd.precio_unitario AS precio,
   pd.cantidad AS cantidad_pedida,
   COALESCE(prd.cantidad_planeada, pd.cantidad) AS cantidad_planeada,
-  pp.id_chofer,
-  pp.id_unidad,
+
+  -- 🔥 AQUÍ EL FIX
+  COALESCE(e.id_chofer, pp.id_chofer, pe.id_chofer) AS id_chofer,
+  COALESCE(e.id_unidad, pp.id_unidad, pe.id_unidad) AS id_unidad,
+
   CONCAT(ch.nombre,' ',ch.apellido1,' ',ch.apellido2) AS chofer,
   u.nombre AS unidad
-      FROM pedido_detalle pd
-      INNER JOIN productos p
-        ON p.id_producto = pd.id_producto
-    LEFT JOIN programaciones_pedido pp
+
+FROM pedido_detalle pd
+
+INNER JOIN productos p
+  ON p.id_producto = pd.id_producto
+
+-- 🔥 NUEVO JOIN
+LEFT JOIN pedidos pe
+  ON pe.id_pedido = pd.id_pedido
+
+LEFT JOIN programaciones_pedido pp
   ON pp.id_pedido = pd.id_pedido
   AND pp.activo = 1
- LEFT JOIN entregas e 
+
+LEFT JOIN entregas e 
   ON e.id_pedido = pd.id_pedido 
   AND e.estado IN ('en_ruta','entregado')
-      LEFT JOIN programacion_detalle prd
-        ON prd.id_programacion = pp.id_programacion
-        AND prd.id_producto = pd.id_producto
+
+LEFT JOIN programacion_detalle prd
+  ON prd.id_programacion = pp.id_programacion
+  AND prd.id_producto = pd.id_producto
+
+-- 🔥 FIX AQUÍ TAMBIÉN
 LEFT JOIN choferes ch
-  ON ch.id_chofer = COALESCE(e.id_chofer, pp.id_chofer)
-    LEFT JOIN unidades u
-  ON u.id_unidad = COALESCE(e.id_unidad, pp.id_unidad)
-      WHERE pd.id_pedido = ?
+  ON ch.id_chofer = COALESCE(e.id_chofer, pp.id_chofer, pe.id_chofer)
+
+LEFT JOIN unidades u
+  ON u.id_unidad = COALESCE(e.id_unidad, pp.id_unidad, pe.id_unidad)
+
+WHERE pd.id_pedido = ?
     `, [id])
 
     res.json(rows)
