@@ -237,9 +237,8 @@ const imprimirPedido = async (pedido) => {
 
           <div class="empresa">
             <div class="titulo">GRUPO TEKC</div>
-            <div>Carretera federal Perote – Teziutlán</div>
-            <div>Calle Piñón No. 2, Loc. Magueyitos</div>
-            <div>Tel. +52 282-596-67-39</div>
+            <div>Carretera federal Perote – Teziutlán, Calle Piñón No. 2, Loc. Magueyitos</div>
+            <div>Tel. 282-596-67-39</div>
           </div>
 
           <div class="folio">
