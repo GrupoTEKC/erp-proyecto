@@ -374,7 +374,7 @@ const imprimirPedido = async (pedido) => {
             }
 
             .logos img:nth-child(1) {
-              height: 72px;
+              height: 82px;
               width: auto;
             }
 
@@ -384,18 +384,19 @@ const imprimirPedido = async (pedido) => {
               width: auto;
             }
 
-            .logos-final {
-            position: absolute;
-            bottom: 10px;
-            right: 14px;
-            display: flex;
-            gap: 8px;
-            }
+       .logos-final {
+  position: absolute;
+  bottom: 45px; /* 🔥 subidos para que no se escondan */
+  right: 14px;
+  display: flex;
+  gap: 8px;
+}
 
-            .logos-final img {
-            height: 34px;
-            width: auto;
-            }
+.logos-final img {
+  height: 34px;
+  width: auto;
+}
+
             .empresa {
               flex: 1;
               text-align: center;
