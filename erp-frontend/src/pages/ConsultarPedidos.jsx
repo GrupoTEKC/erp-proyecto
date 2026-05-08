@@ -228,34 +228,24 @@ const imprimirPedido = async (pedido) => {
     const logo2Src = logo2
     const logo3Src = logo3
 
-    const total = detalle.reduce((acc, p) => {
-  const cantidad = Number(
-    p.cantidad_entregada ??
-    p.cantidad_planeada ??
-    0
-  )
-  const precio = Number(
-    p.precio_unitario ??
-    p.precio ??
-    0
-  )
-  return acc + (cantidad * precio)
-}, 0)
     const contenido = `
       <div class="copia">
         <div class="header">
           <div class="logos">
             <img src="${logoSrc}" alt="logo principal" />
+            <img src="${logo2Src}" alt="logo 2" />
+            <img src="${logo3Src}" alt="logo 3" />
           </div>
-            
+
           <div class="empresa">
             <div class="titulo">GRUPO TEKC</div>
-            <div>Carretera federal Perote – Teziutlán, Calle Piñón No. 2, Loc. Magueyitos</div>
-            <div>Tel. 282-596-67-39</div>
+            <div>Carretera federal Perote – Teziutlán</div>
+            <div>Calle Piñón No. 2, Loc. Magueyitos</div>
+            <div>Tel. +52 282-596-67-39</div>
           </div>
 
           <div class="folio">
-            <div><strong>REMISIÓN #${pedido.id_pedido}</strong></div>
+            <div><strong>Pedido #${pedido.id_pedido}</strong></div>
             <div>${fechaActual}</div>
             <div>${horaActual}</div>
           </div>
@@ -277,61 +267,62 @@ const imprimirPedido = async (pedido) => {
             </tr>
           </thead>
 
-      <tbody>
-  ${detalle.map(p => {
-    const cantidad = Number(
-      p.cantidad_entregada ??
-      p.cantidad_planeada ??
-      p.cantidad ??
-      p.cantidad_pedida ??
-      0
-    )
+          <tbody>
+            ${detalle.map(p => {
+              const cantidad = Number(
+                p.cantidad_entregada ??
+                p.cantidad_planeada ??
+                p.cantidad ??
+                p.cantidad_pedida ??
+                0
+              )
 
-    const precio = Number(
-      p.precio_unitario ??
-      p.precio_venta ??
-      p.precio ??
-      p.precio_lista ??
-      p.precio_final ??
-      p.precio_cliente ??
-      0
-    )
+              const precio = Number(
+                p.precio_unitario ??
+                p.precio_venta ??
+                p.precio ??
+                p.precio_lista ??
+                p.precio_final ??
+                p.precio_cliente ??
+                0
+              )
 
-    const subtotal = cantidad * precio
+              const subtotal = cantidad * precio
 
-    return `
-      <tr>
-        <td>${cantidad}</td>
-        <td>${p.nombre || ''}</td>
-        <td>$${precio.toFixed(2)}</td>
-        <td>$${subtotal.toFixed(2)}</td>
-      </tr>
+              return `
+                <tr>
+                  <td>${cantidad}</td>
+                  <td>${p.nombre || ''}</td>
+                  <td>$${precio.toFixed(2)}</td>
+                  <td>$${subtotal.toFixed(2)}</td>
+                </tr>
+              `
+            }).join('')}
+
+            <tr>
+              <td colspan="3" style="text-align:right;">
+                <strong>Total pedido</strong>
+              </td>
+              <td>
+                <strong>$${Number(pedidoActual?.total || 0).toFixed(2)}</strong>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="firmas">
+          <div class="firma">
+            <div class="linea">Chofer</div>
+            <div class="nombre-firma">${choferNombre}</div>
+          </div>
+
+          <div class="firma">
+            <div class="linea">Supervisor</div>
+            <div class="nombre-firma">JOSHUA MENDEZ ALVAREZ</div>
+          </div>
+        </div>
+      </div>
     `
-  }).join('')}
-
-  <tr>
-    <td colspan="3" style="text-align:right;">
-      <strong>Total pedido</strong>
-    </td>
-    <td>$${total.toFixed(2)}</td>
-  </tr>
-</tbody>
-</table>
-</div>
-
-<div class="firmas">
-  <div class="firma">
-    <div class="linea">RECIBE BULTOS</div>
-    <div class="nombre-firma">CHOFER</div>
-    <div class="nombre-firma">${choferNombre}</div>
-  </div>
-  <div class="firma">
-    <div class="linea">AUTORIZO</div>
-    <div class="nombre-firma">SUPERVISOR</div>
-    <div class="nombre-firma">JOSHUA ALVAREZ MENDEZ </div>
-  </div>
-</div>
-`
 
     const win = window.open('', '_blank', 'width=900,height=700')
 
@@ -339,129 +330,140 @@ const imprimirPedido = async (pedido) => {
       <html>
         <head>
           <title>Remisión ${pedido.id_pedido}</title>
-<style>
-  * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
 
-  body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    color: #000;
-  }
+          <style>
+            * {
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
 
-.copia {
-  height: 49vh;
-  padding: 10px 18px;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between; /* 🔥 CLAVE */
-  border-bottom: 1px dashed #888;
-}
+            body {
+              font-family: Arial, sans-serif;
+              margin: 0;
+              padding: 0;
+              color: #000;
+            }
 
-  /* 🔥 HEADER */
-  .header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 8px;
-  }
+            .copia {
+              height: 49vh;
+              padding: 14px 22px;
+              box-sizing: border-box;
+              border-bottom: 1px dashed #888;
+              overflow: hidden;
+            }
 
-  .logos img {
-    height: 70px;
-    width: auto;
-  }
+            .header {
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              margin-bottom: 10px;
+            }
 
-  .empresa {
-    flex: 1;
-    text-align: center;
-    font-size: 10px;
-    line-height: 1.2;
-  }
+            .logos {
+              display: flex;
+              align-items: center;
+              gap: 12px;
+              width: 240px;
+            }
 
-  .titulo {
-    font-size: 16px;
-    font-weight: bold;
-    margin-bottom: 2px;
-  }
+            .logos img {
+              display: block;
+            }
 
-  .folio {
-    width: 130px;
-    text-align: right;
-    font-size: 10px;
-  }
+            .logos img:nth-child(1) {
+              height: 62px;
+              width: auto;
+            }
 
-  /* 🔥 DATOS */
-  .datos {
-    margin-top: 4px;
-    margin-bottom: 4px;
-    font-size: 10px;
-    line-height: 1.4;
-  }
+            .logos img:nth-child(2),
+            .logos img:nth-child(3) {
+              height: 36px;
+              width: auto;
+            }
 
- table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 10px;
-}
+            .empresa {
+              flex: 1;
+              text-align: center;
+              font-size: 10px;
+              line-height: 1.25;
+            }
 
-th, td {
-  border: 1px solid #888;
-  padding: 4px 5px;
-}
+            .titulo {
+              font-size: 15px;
+              font-weight: bold;
+              margin-bottom: 3px;
+            }
 
+            .folio {
+              width: 130px;
+              text-align: right;
+              font-size: 10px;
+              line-height: 1.4;
+            }
 
-  th {
-    background: #f2dede;
-    color: #7a1c1c;
-    text-align: left;
-  }
+            .datos {
+              margin-top: 8px;
+              margin-bottom: 12px;
+              font-size: 10px;
+              line-height: 1.6;
+            }
 
-  tbody tr:nth-child(even) {
-    background: #fafafa;
-  }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              font-size: 10px;
+            }
 
-.firmas {
-  margin-top: 4px; /* 🔥 casi nada */
-  display: flex;
-  justify-content: space-between;
-}
+            th,
+            td {
+              border: 1px solid #888;
+              padding: 5px 6px;
+            }
 
-.firma {
-  width: 46%;
-  text-align: center;
-  font-size: 10px;
-}
+            th {
+              background: #f2dede;
+              color: #7a1c1c;
+              text-align: left;
+            }
 
-.contenido {
-  flex-grow: 1;
-}
+            tbody tr:nth-child(even) {
+              background: #fafafa;
+            }
 
-  .linea {
-    border-top: 1px solid #000;
-    padding-top: 4px;
-    font-weight: bold;
-  }
+            .firmas {
+              margin-top: 130px;
+              display: flex;
+              justify-content: space-between;
+            }
 
-  .nombre-firma {
-    margin-top: 4px;
-    min-height: 14px;
-  }
+            .firma {
+              width: 42%;
+              text-align: center;
+              font-size: 10px;
+            }
 
-  @media print {
-    body {
-      margin: 0;
-      padding: 0;
-    }
-  }
-</style>
+            .linea {
+              border-top: 1px solid #000;
+              padding-top: 4px;
+              font-weight: bold;
+            }
+
+            .nombre-firma {
+              margin-top: 4px;
+              min-height: 14px;
+            }
+
+            @media print {
+              body {
+                margin: 0;
+                padding: 0;
+              }
+            }
+          </style>
         </head>
 
         <body>
-          ${contenido} 
+          ${contenido}
           ${contenido}
         </body>
       </html>
