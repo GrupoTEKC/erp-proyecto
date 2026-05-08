@@ -319,10 +319,6 @@ const imprimirPedido = async (pedido) => {
             <div class="nombre-firma">JOSHUA MENDEZ ALVAREZ</div>
           </div>
         </div>
-        <div class="logos-final">
-        <img src="${logo2Src}" />
-        <img src="${logo3Src}" />
-        </div>
       </div>
     `
 
@@ -384,31 +380,21 @@ const imprimirPedido = async (pedido) => {
               width: auto;
             }
 
-       .logos-final {
-  position: absolute;
-  bottom: 45px; /* 🔥 subidos para que no se escondan */
-  right: 14px;
+           .empresa {
+  flex: 1;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.4;
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
-
-.logos-final img {
-  height: 34px;
-  width: auto;
+     .titulo {
+  font-size: 17px;
+  font-weight: bold;
+  margin-bottom: 4px;
 }
-
-            .empresa {
-              flex: 1;
-              text-align: center;
-              font-size: 10px;
-              line-height: 1.25;
-            }
-
-            .titulo {
-              font-size: 15px;
-              font-weight: bold;
-              margin-bottom: 3px;
-            }
 
             .folio {
               width: 130px;
