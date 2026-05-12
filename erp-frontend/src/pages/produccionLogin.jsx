@@ -54,20 +54,42 @@ const styles = {
 
 function ProduccionLogin() {
   const navigate = useNavigate()
+
   const [usuario, setUsuario] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
 
   const handleLogin = () => {
+    // 🔥 SUPERVISOR
     if (
       usuario === 'SupervisorJAM' &&
-      password === 'Inv0011#_em'
+      password === 'nv0011I#_ja'
     ) {
-      localStorage.setItem('produccion_auth', 'true') // 🔐 clave
+      localStorage.setItem('produccion_auth', 'true')
+      localStorage.setItem('produccion_rol', 'supervisor')
+
+      alert('✅ Bienvenido Supervisor')
+
       navigate('/produccion')
-    } else {
-      setError('Usuario o contraseña incorrectos')
+      return
     }
+
+    // 🔥 ADMIN
+    if (
+      usuario === 'AdminEMT' &&
+      password === 'nv0011I#_em'
+    ) {
+      localStorage.setItem('produccion_auth', 'true')
+      localStorage.setItem('produccion_rol', 'admin')
+
+      alert('👑 Bienvenido Administrador')
+
+      navigate('/produccion')
+      return
+    }
+
+    // ❌ ERROR
+    setError('Usuario o contraseña incorrectos')
   }
 
   return (
