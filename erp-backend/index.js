@@ -2122,15 +2122,29 @@ app.post('/programaciones/:id/enviar', async (req, res) => {
   }
 })
 
-//GUARDAR PRODUCCION 
 app.post('/produccion', async (req, res) => {
   try {
     const { datos, rol, fecha } = req.body
 
+    if (!Array.isArray(datos)) {
+      return res.status(400).json({ error: 'datos inválidos' })
+    }
+
     const fechaFinal = fecha || new Date().toISOString().slice(0, 10)
 
+    // VALIDAR PRIMERO
     for (const item of datos) {
-      await db.query(`
+      if (!item.id_producto) {
+        return res.status(400).json({ error: 'id_producto faltante' })
+      }
+      if (item.cantidad == null || isNaN(item.cantidad)) {
+        return res.status(400).json({ error: 'cantidad inválida' })
+      }
+    }
+
+    // INSERT MASIVO
+    await Promise.all(datos.map(item => {
+      return db.query(`
         INSERT INTO produccion_diaria 
         (id_producto, fecha, cantidad, capturado_por)
         VALUES (?, ?, ?, ?)
@@ -2143,9 +2157,10 @@ app.post('/produccion', async (req, res) => {
         item.cantidad,
         rol || 'supervisor'
       ])
-    }
+    }))
 
     res.json({ ok: true })
+
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -2174,32 +2189,6 @@ app.get('/produccion/:fecha', async (req, res) => {
   }
 })
 
-app.get('/produccion/productos', async (req, res) => {
-  try {
-    const [rows] = await db.query(`
-      SELECT id_producto, nombre 
-      FROM productos 
-      WHERE activo = 1
-      ORDER BY nombre
-    `)
-    res.json(rows)
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
-
-app.get('/produccion/hoy', async (req, res) => {
-  try {
-    const [rows] = await db.query(`
-      SELECT * 
-      FROM produccion_diaria 
-      WHERE fecha = CURDATE()
-    `)
-    res.json(rows)
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
 
 app.get('/produccion/validar', async (req, res) => {
   try {
@@ -2216,6 +2205,7 @@ app.get('/produccion/validar', async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
+
 // =============================
 // SERVER
 // =============================
