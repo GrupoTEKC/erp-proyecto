@@ -5,6 +5,7 @@ const API = 'https://erp-proyecto-production.up.railway.app'
 
 function Produccion() {
   const navigate = useNavigate()
+  const usuario = JSON.parse(localStorage.getItem('usuario'))
   const hoy = new Date().toISOString().slice(0, 10)
 
   const [productos, setProductos] = useState([])
@@ -78,36 +79,44 @@ function Produccion() {
   }
 
   // 💾 GUARDAR
-  const guardar = async () => {
-    try {
-      const datos = seleccionados.map(p => ({
-        id_producto: p.id_producto,
-        cantidad: Number(p.producido) || 0
-      }))
+ const guardar = async () => {
+  try {
 
-      const res = await fetch(`${API}/produccion`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          datos: datos,
-          rol: 'supervisor'
-        })
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        alert(data.error || 'Error al guardar')
-        return
-      }
-
-      alert('✅ Producción guardada')
-      setSeleccionados([])
-      cargarDatos()
-    } catch {
-      alert('❌ Error al guardar')
+    if (!usuario) {
+      alert('Sesión expirada')
+      navigate('/login')
+      return
     }
+
+    const datos = seleccionados.map(p => ({
+      id_producto: p.id_producto,
+      cantidad: Number(p.producido) || 0
+    }))
+
+    const res = await fetch(`${API}/produccion`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        datos: datos,
+        id_usuario: usuario.id_usuario
+      })
+    })
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      alert(data.error || 'Error al guardar')
+      return
+    }
+
+    alert('✅ Producción guardada')
+    setSeleccionados([])
+    cargarDatos()
+
+  } catch {
+    alert('❌ Error al guardar')
   }
+}
 
   // ⚠️ CONFIRMAR
   const confirmarGuardar = () => {
