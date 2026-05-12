@@ -39,16 +39,31 @@ function Produccion() {
     }
   }
 
-  const cargarDatos = async (fechaActual) => {
-    try {
-      const res = await fetch(`${API}/produccion/${fechaActual}`)
-      const data = await res.json()
-      setProductos(Array.isArray(data) ? data : [])
-    } catch {
-      alert('Error al cargar producción')
-    }
-  }
+ const cargarDatos = async () => {
+  try {
+    const res = await fetch(`${API}/produccion/${fecha}`)
+    const data = await res.json()
 
+    if (!res.ok) {
+      console.error(data.error)
+      setProductos([])
+      return
+    }
+
+    if (!Array.isArray(data)) {
+      console.error('Respuesta inválida:', data)
+      setProductos([])
+      return
+    }
+
+    setProductos(data)
+
+  } catch (err) {
+    console.error(err)
+    alert('Error al cargar producción')
+    setProductos([])
+  }
+}
   const handleChange = (index, value) => {
     const nuevos = [...productos]
     nuevos[index].producido = value
