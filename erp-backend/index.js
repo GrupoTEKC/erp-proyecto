@@ -2124,7 +2124,7 @@ app.post('/programaciones/:id/enviar', async (req, res) => {
 
 app.post('/produccion', async (req, res) => {
   try {
-    const { datos, rol, fecha } = req.body
+    const { datos, fecha, id_usuario } = req.body
 
     if (!Array.isArray(datos)) {
       return res.status(400).json({ error: 'datos inválidos' })
@@ -2132,7 +2132,18 @@ app.post('/produccion', async (req, res) => {
 
     const fechaFinal = fecha || new Date().toISOString().slice(0, 10)
 
-    // VALIDAR PRIMERO
+    // 🔥 obtener rol real
+    const [userRows] = await db.query(`
+      SELECT rol FROM usuarios WHERE id_usuario = ?
+    `, [id_usuario])
+
+    if (!userRows.length) {
+      return res.status(401).json({ error: 'Usuario inválido' })
+    }
+
+    const rolReal = userRows[0].rol
+
+    // VALIDAR
     for (const item of datos) {
       if (!item.id_producto) {
         return res.status(400).json({ error: 'id_producto faltante' })
@@ -2142,7 +2153,7 @@ app.post('/produccion', async (req, res) => {
       }
     }
 
-    // INSERT MASIVO
+    // INSERT
     await Promise.all(datos.map(item => {
       return db.query(`
         INSERT INTO produccion_diaria 
@@ -2155,7 +2166,7 @@ app.post('/produccion', async (req, res) => {
         item.id_producto,
         fechaFinal,
         item.cantidad,
-        rol || 'supervisor'
+        rolReal
       ])
     }))
 
@@ -2165,7 +2176,6 @@ app.post('/produccion', async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
-
 //OBTENER PRODUCCION DEL DIA 
 app.get('/produccion/:fecha', async (req, res) => {
   try {
@@ -2206,6 +2216,31 @@ app.get('/produccion/validar', async (req, res) => {
   }
 })
 
+app.post('/login', async (req, res) => {
+  try {
+    const { usuario, password } = req.body
+
+    const [rows] = await db.query(`
+      SELECT id_usuario, usuario, rol
+      FROM usuarios
+      WHERE usuario = ? AND password = ?
+      LIMIT 1
+    `, [usuario, password])
+
+    if (!rows.length) {
+      return res.status(401).json({ error: 'Credenciales inválidas' })
+    }
+
+    res.json({
+      id_usuario: rows[0].id_usuario,
+      usuario: rows[0].usuario,
+      rol: rows[0].rol
+    })
+
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
 // =============================
 // SERVER
 // =============================
