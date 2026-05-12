@@ -6,18 +6,42 @@ const API = 'https://erp-proyecto-production.up.railway.app'
 function Produccion() {
   const navigate = useNavigate()
 
+  const hoy = new Date().toISOString().slice(0, 10)
+
   const [productos, setProductos] = useState([])
-  const [fecha, setFecha] = useState(
-    new Date().toISOString().slice(0, 10)
-  )
+  const [fecha, setFecha] = useState(hoy)
+  const [bloqueado, setBloqueado] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    cargarDatos()
-  }, [fecha])
+    init()
+  }, [])
 
-  const cargarDatos = async () => {
+  const init = async () => {
     try {
-      const res = await fetch(`${API}/produccion/${fecha}`)
+      // 🔥 VALIDAR AYER
+      const resVal = await fetch(`${API}/produccion/validar`)
+      const val = await resVal.json()
+
+      if (val.faltaAyer) {
+        setBloqueado(true)
+        setLoading(false)
+        return
+      }
+
+      // 🔥 CARGAR SOLO HOY
+      cargarDatos(hoy)
+
+    } catch {
+      alert('Error inicial')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const cargarDatos = async (fechaActual) => {
+    try {
+      const res = await fetch(`${API}/produccion/${fechaActual}`)
       const data = await res.json()
       setProductos(Array.isArray(data) ? data : [])
     } catch {
@@ -41,7 +65,10 @@ function Produccion() {
       const res = await fetch(`${API}/produccion`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fecha, datos })
+        body: JSON.stringify({
+          data: datos,
+          rol: 'supervisor' // 🔥 CAMBIA A 'admin' SI ERES TÚ
+        })
       })
 
       const data = await res.json()
@@ -52,10 +79,29 @@ function Produccion() {
       }
 
       alert('✅ Producción guardada')
-      cargarDatos()
+      cargarDatos(hoy)
+
     } catch {
       alert('❌ Error al guardar')
     }
+  }
+
+  // ⏳ LOADING
+  if (loading) {
+    return <div style={styles.page}>Cargando...</div>
+  }
+
+  // 🚨 BLOQUEO TOTAL
+  if (bloqueado) {
+    return (
+      <div style={styles.page}>
+        <h2 style={styles.title}>⚠️</h2>
+        <p style={{ textAlign: 'center' }}>
+          No se capturó la producción de ayer <br />
+          Acudir directamente con el programador del sistema
+        </p>
+      </div>
+    )
   }
 
   return (
@@ -68,7 +114,7 @@ function Produccion() {
         <input
           type="date"
           value={fecha}
-          onChange={(e) => setFecha(e.target.value)}
+          disabled // 🔥 BLOQUEADO
         />
       </div>
 
@@ -115,10 +161,9 @@ function Produccion() {
 }
 
 // =========================
-// 🎨 ESTILOS (igual línea que tu sistema)
+// 🎨 ESTILOS (NO TOCADOS)
 // =========================
 const vino = '#8B1E1E'
-
 const styles = {
   page: {
     padding: 20,
