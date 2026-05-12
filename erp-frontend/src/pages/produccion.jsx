@@ -5,10 +5,11 @@ const API = 'https://erp-proyecto-production.up.railway.app'
 
 function Produccion() {
   const navigate = useNavigate()
-
   const hoy = new Date().toISOString().slice(0, 10)
 
   const [productos, setProductos] = useState([])
+  const [seleccionados, setSeleccionados] = useState([])
+  const [busqueda, setBusqueda] = useState('')
   const [fecha, setFecha] = useState(hoy)
   const [bloqueado, setBloqueado] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -19,7 +20,6 @@ function Produccion() {
 
   const init = async () => {
     try {
-      // 🔥 VALIDAR AYER
       const resVal = await fetch(`${API}/produccion/validar`)
       const val = await resVal.json()
 
@@ -29,9 +29,7 @@ function Produccion() {
         return
       }
 
-      // 🔥 CARGAR SOLO HOY
-      cargarDatos(hoy)
-
+      cargarDatos()
     } catch {
       alert('Error inicial')
     } finally {
@@ -39,40 +37,50 @@ function Produccion() {
     }
   }
 
- const cargarDatos = async () => {
-  try {
-    const res = await fetch(`${API}/produccion/${fecha}`)
-    const data = await res.json()
+  const cargarDatos = async () => {
+    try {
+      const res = await fetch(`${API}/produccion/${fecha}`)
+      const data = await res.json()
 
-    if (!res.ok) {
-      console.error(data.error)
+      if (!res.ok || !Array.isArray(data)) {
+        setProductos([])
+        return
+      }
+
+      setProductos(data)
+    } catch {
+      alert('Error al cargar producción')
       setProductos([])
-      return
     }
-
-    if (!Array.isArray(data)) {
-      console.error('Respuesta inválida:', data)
-      setProductos([])
-      return
-    }
-
-    setProductos(data)
-
-  } catch (err) {
-    console.error(err)
-    alert('Error al cargar producción')
-    setProductos([])
   }
-}
-  const handleChange = (index, value) => {
-    const nuevos = [...productos]
+
+  // 🔍 FILTRO
+  const filtrados = productos.filter(p =>
+    p.nombre.toLowerCase().includes(busqueda.toLowerCase())
+  )
+
+  // ➕ AGREGAR PRODUCTO
+  const agregarProducto = (producto) => {
+    const existe = seleccionados.find(p => p.id_producto === producto.id_producto)
+    if (existe) return
+
+    setSeleccionados([
+      ...seleccionados,
+      { ...producto, producido: '' }
+    ])
+  }
+
+  // ✏️ CAMBIAR CANTIDAD
+  const handleCantidad = (index, value) => {
+    const nuevos = [...seleccionados]
     nuevos[index].producido = value
-    setProductos(nuevos)
+    setSeleccionados(nuevos)
   }
 
+  // 💾 GUARDAR
   const guardar = async () => {
     try {
-      const datos = productos.map(p => ({
+      const datos = seleccionados.map(p => ({
         id_producto: p.id_producto,
         cantidad: Number(p.producido) || 0
       }))
@@ -81,8 +89,8 @@ function Produccion() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          data: datos,
-          rol: 'supervisor' // 🔥 CAMBIA A 'admin' SI ERES TÚ
+          datos: datos,
+          rol: 'supervisor'
         })
       })
 
@@ -94,11 +102,22 @@ function Produccion() {
       }
 
       alert('✅ Producción guardada')
-      cargarDatos(hoy)
-
+      setSeleccionados([])
+      cargarDatos()
     } catch {
       alert('❌ Error al guardar')
     }
+  }
+
+  // ⚠️ CONFIRMAR
+  const confirmarGuardar = () => {
+    if (seleccionados.length === 0) {
+      alert('No hay productos')
+      return
+    }
+
+    const ok = window.confirm('¿Seguro que deseas guardar la producción?')
+    if (ok) guardar()
   }
 
   // ⏳ LOADING
@@ -106,14 +125,14 @@ function Produccion() {
     return <div style={styles.page}>Cargando...</div>
   }
 
-  // 🚨 BLOQUEO TOTAL
+  // 🚨 BLOQUEO
   if (bloqueado) {
     return (
       <div style={styles.page}>
         <h2 style={styles.title}>⚠️</h2>
         <p style={{ textAlign: 'center' }}>
           No se capturó la producción de ayer <br />
-          Acudir directamente con el programador del sistema
+          Acudir con el programador
         </p>
       </div>
     )
@@ -121,36 +140,55 @@ function Produccion() {
 
   return (
     <div style={styles.page}>
-      
+
       <h2 style={styles.title}>PRODUCCIÓN DIARIA</h2>
 
       <div style={styles.top}>
         <label>Fecha:</label>
-        <input
-          type="date"
-          value={fecha}
-          disabled // 🔥 BLOQUEADO
-        />
+        <input type="date" value={fecha} disabled />
       </div>
 
+      {/* 🔍 BUSCADOR */}
+      <input
+        placeholder="Buscar producto..."
+        value={busqueda}
+        onChange={(e) => setBusqueda(e.target.value)}
+        style={{ ...styles.input, marginBottom: 10 }}
+      />
+
+      <div style={{ maxHeight: 150, overflow: 'auto', marginBottom: 20 }}>
+        {filtrados.map(p => (
+          <div
+            key={p.id_producto}
+            onClick={() => agregarProducto(p)}
+            style={{
+              padding: 8,
+              borderBottom: '1px solid #ddd',
+              cursor: 'pointer'
+            }}
+          >
+            {p.nombre}
+          </div>
+        ))}
+      </div>
+
+      {/* 📦 TABLA SELECCIONADOS */}
       <table style={styles.table}>
         <thead>
           <tr>
             <th>Producto</th>
-            <th>Producción del día</th>
+            <th>Cantidad</th>
           </tr>
         </thead>
         <tbody>
-          {productos.map((p, i) => (
+          {seleccionados.map((p, i) => (
             <tr key={p.id_producto}>
               <td>{p.nombre}</td>
               <td>
                 <input
                   type="number"
-                  value={p.producido || ''}
-                  onChange={(e) =>
-                    handleChange(i, e.target.value)
-                  }
+                  value={p.producido}
+                  onChange={(e) => handleCantidad(i, e.target.value)}
                   style={styles.input}
                 />
               </td>
@@ -159,26 +197,26 @@ function Produccion() {
         </tbody>
       </table>
 
-      <div style={styles.buttons}>
-        <button style={styles.save} onClick={guardar}>
-          Guardar Producción
-        </button>
-
+      {/* 🔘 BOTONES */}
+      <div style={{ ...styles.buttons, justifyContent: 'space-between' }}>
         <button
           style={styles.cancel}
           onClick={() => navigate('/')}
         >
           Volver
         </button>
+
+        <button style={styles.save} onClick={confirmarGuardar}>
+          Guardar Producción
+        </button>
       </div>
     </div>
   )
 }
 
-// =========================
-// 🎨 ESTILOS (NO TOCADOS)
-// =========================
+// 🎨 ESTILOS
 const vino = '#8B1E1E'
+
 const styles = {
   page: {
     padding: 20,
