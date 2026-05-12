@@ -5,16 +5,6 @@ const API = 'https://erp-proyecto-production.up.railway.app'
 
 function Produccion() {
   const navigate = useNavigate()
-  const usuario = JSON.parse(localStorage.getItem('usuario'))
-
-useEffect(() => {
-  if (!usuario || !usuario.id_usuario) {
-    alert('Sesión expirada')
-    navigate('/login')
-    return
-  }
-  init()
-}, [])
   
   const hoy = new Date().toISOString().slice(0, 10)
 
