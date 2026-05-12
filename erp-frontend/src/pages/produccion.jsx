@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react'
-import axios from 'axios'
+import { useNavigate } from 'react-router-dom'
+
+const API = 'https://erp-proyecto-production.up.railway.app'
 
 function Produccion() {
+  const navigate = useNavigate()
+
   const [productos, setProductos] = useState([])
   const [fecha, setFecha] = useState(
     new Date().toISOString().slice(0, 10)
@@ -12,8 +16,13 @@ function Produccion() {
   }, [fecha])
 
   const cargarDatos = async () => {
-    const res = await axios.get(`http://localhost:3001/produccion/${fecha}`)
-    setProductos(res.data)
+    try {
+      const res = await fetch(`${API}/produccion/${fecha}`)
+      const data = await res.json()
+      setProductos(Array.isArray(data) ? data : [])
+    } catch {
+      alert('Error al cargar producción')
+    }
   }
 
   const handleChange = (index, value) => {
@@ -23,34 +32,51 @@ function Produccion() {
   }
 
   const guardar = async () => {
-    const datos = productos.map(p => ({
-      id_producto: p.id_producto,
-      cantidad: Number(p.producido) || 0
-    }))
+    try {
+      const datos = productos.map(p => ({
+        id_producto: p.id_producto,
+        cantidad: Number(p.producido) || 0
+      }))
 
-    await axios.post('http://localhost:3001/produccion', {
-      fecha,
-      datos
-    })
+      const res = await fetch(`${API}/produccion`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fecha, datos })
+      })
 
-    alert('Producción guardada 🔥')
+      const data = await res.json()
+
+      if (!res.ok) {
+        alert(data.error || 'Error al guardar')
+        return
+      }
+
+      alert('✅ Producción guardada')
+      cargarDatos()
+    } catch {
+      alert('❌ Error al guardar')
+    }
   }
 
   return (
-    <div>
-      <h2>Producción diaria</h2>
+    <div style={styles.page}>
+      
+      <h2 style={styles.title}>PRODUCCIÓN DIARIA</h2>
 
-      <input
-        type="date"
-        value={fecha}
-        onChange={(e) => setFecha(e.target.value)}
-      />
+      <div style={styles.top}>
+        <label>Fecha:</label>
+        <input
+          type="date"
+          value={fecha}
+          onChange={(e) => setFecha(e.target.value)}
+        />
+      </div>
 
-      <table border="1" cellPadding="10">
+      <table style={styles.table}>
         <thead>
           <tr>
             <th>Producto</th>
-            <th>Producción</th>
+            <th>Producción del día</th>
           </tr>
         </thead>
         <tbody>
@@ -60,10 +86,11 @@ function Produccion() {
               <td>
                 <input
                   type="number"
-                  value={p.producido}
+                  value={p.producido || ''}
                   onChange={(e) =>
                     handleChange(i, e.target.value)
                   }
+                  style={styles.input}
                 />
               </td>
             </tr>
@@ -71,11 +98,72 @@ function Produccion() {
         </tbody>
       </table>
 
-      <button onClick={guardar}>
-        Guardar producción
-      </button>
+      <div style={styles.buttons}>
+        <button style={styles.save} onClick={guardar}>
+          Guardar Producción
+        </button>
+
+        <button
+          style={styles.cancel}
+          onClick={() => navigate('/')}
+        >
+          Volver
+        </button>
+      </div>
     </div>
   )
+}
+
+// =========================
+// 🎨 ESTILOS (igual línea que tu sistema)
+// =========================
+const vino = '#8B1E1E'
+
+const styles = {
+  page: {
+    padding: 20,
+    maxWidth: 900,
+    margin: 'auto',
+    fontFamily: 'Arial'
+  },
+  title: {
+    color: '#071849'
+  },
+  top: {
+    marginBottom: 20,
+    display: 'flex',
+    gap: 10,
+    alignItems: 'center'
+  },
+  table: {
+    width: '100%',
+    borderCollapse: 'collapse'
+  },
+  input: {
+    width: '100%',
+    padding: 6
+  },
+  buttons: {
+    marginTop: 20,
+    display: 'flex',
+    gap: 10
+  },
+  save: {
+    background: vino,
+    color: '#fff',
+    border: 'none',
+    padding: 10,
+    borderRadius: 6,
+    cursor: 'pointer'
+  },
+  cancel: {
+    background: '#fff',
+    color: vino,
+    border: `1px solid ${vino}`,
+    padding: 10,
+    borderRadius: 6,
+    cursor: 'pointer'
+  }
 }
 
 export default Produccion
