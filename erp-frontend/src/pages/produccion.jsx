@@ -7,7 +7,11 @@ function Produccion() {
   const navigate = useNavigate()
   
   const hoy = new Date().toISOString().slice(0, 10)
-
+const usuario = JSON.parse(localStorage.getItem('usuario'))
+  if (!usuario) {
+  alert('No hay usuario')
+  return
+}
   const [productos, setProductos] = useState([])
   const [seleccionados, setSeleccionados] = useState([])
   const [busqueda, setBusqueda] = useState('')
