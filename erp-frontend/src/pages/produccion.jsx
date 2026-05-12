@@ -5,19 +5,18 @@ const API = 'https://erp-proyecto-production.up.railway.app'
 
 function Produccion() {
   const navigate = useNavigate()
-  
   const hoy = new Date().toISOString().slice(0, 10)
-const usuario = JSON.parse(localStorage.getItem('usuario'))
-  if (!usuario) {
-  alert('No hay usuario')
-  return
-}
+
   const [productos, setProductos] = useState([])
   const [seleccionados, setSeleccionados] = useState([])
   const [busqueda, setBusqueda] = useState('')
   const [fecha, setFecha] = useState(hoy)
   const [bloqueado, setBloqueado] = useState(false)
   const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    init()
+  }, [])
 
   const init = async () => {
     try {
@@ -79,37 +78,36 @@ const usuario = JSON.parse(localStorage.getItem('usuario'))
   }
 
   // 💾 GUARDAR
-const guardar = async () => {
-  try {
-    const datos = seleccionados.map(p => ({
-      id_producto: p.id_producto,
-      cantidad: Number(p.producido) || 0
-    }))
+  const guardar = async () => {
+    try {
+      const datos = seleccionados.map(p => ({
+        id_producto: p.id_producto,
+        cantidad: Number(p.producido) || 0
+      }))
 
-    const res = await fetch(`${API}/produccion`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        datos: datos,
-        id_usuario: usuario.id_usuario
+      const res = await fetch(`${API}/produccion`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          datos: datos,
+          rol: 'supervisor'
+        })
       })
-    })
 
-    const data = await res.json()
+      const data = await res.json()
 
-    if (!res.ok) {
-      alert(data.error || 'Error al guardar')
-      return
+      if (!res.ok) {
+        alert(data.error || 'Error al guardar')
+        return
+      }
+
+      alert('✅ Producción guardada')
+      setSeleccionados([])
+      cargarDatos()
+    } catch {
+      alert('❌ Error al guardar')
     }
-
-    alert('✅ Producción guardada')
-    setSeleccionados([])
-    cargarDatos()
-
-  } catch {
-    alert('❌ Error al guardar')
   }
-}
 
   // ⚠️ CONFIRMAR
   const confirmarGuardar = () => {
