@@ -1,57 +1,79 @@
-import { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import axios from 'axios'
 
 function Produccion() {
-  const navigate = useNavigate()
+  const [productos, setProductos] = useState([])
+  const [fecha, setFecha] = useState(
+    new Date().toISOString().slice(0, 10)
+  )
 
   useEffect(() => {
-    const auth = localStorage.getItem('produccion_auth')
-    if (!auth) {
-      navigate('/produccion-login')
-    }
-  }, [navigate])
+    cargarDatos()
+  }, [fecha])
 
-  const handleLogout = () => {
-    localStorage.removeItem('produccion_auth')
-    navigate('/produccion-login')
+  const cargarDatos = async () => {
+    const res = await axios.get(`http://localhost:3001/produccion/${fecha}`)
+    setProductos(res.data)
+  }
+
+  const handleChange = (index, value) => {
+    const nuevos = [...productos]
+    nuevos[index].producido = value
+    setProductos(nuevos)
+  }
+
+  const guardar = async () => {
+    const datos = productos.map(p => ({
+      id_producto: p.id_producto,
+      cantidad: Number(p.producido) || 0
+    }))
+
+    await axios.post('http://localhost:3001/produccion', {
+      fecha,
+      datos
+    })
+
+    alert('Producción guardada 🔥')
   }
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'Arial' }}>
-      
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-        <h2>Módulo de Producción</h2>
-        <button 
-          onClick={handleLogout}
-          style={{
-            backgroundColor: '#8B1E1E',
-            color: '#fff',
-            border: 'none',
-            padding: '8px 12px',
-            borderRadius: '6px',
-            cursor: 'pointer'
-          }}
-        >
-          Cerrar sesión
-        </button>
-      </div>
+    <div>
+      <h2>Producción diaria</h2>
 
-      <p style={{ color: '#555' }}>
-        Aquí podrás capturar la producción diaria, salidas, entradas y controlar el stock.
-      </p>
+      <input
+        type="date"
+        value={fecha}
+        onChange={(e) => setFecha(e.target.value)}
+      />
 
-      {/* 🔥 Aquí después vamos a meter la tabla tipo Excel */}
-      
-      <div style={{
-        marginTop: '20px',
-        padding: '20px',
-        backgroundColor: '#fff',
-        borderRadius: '10px',
-        boxShadow: '0 4px 10px rgba(0,0,0,0.1)'
-      }}>
-        <p>📊 Próximamente: Tabla de producción</p>
-      </div>
+      <table border="1" cellPadding="10">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Producción</th>
+          </tr>
+        </thead>
+        <tbody>
+          {productos.map((p, i) => (
+            <tr key={p.id_producto}>
+              <td>{p.nombre}</td>
+              <td>
+                <input
+                  type="number"
+                  value={p.producido}
+                  onChange={(e) =>
+                    handleChange(i, e.target.value)
+                  }
+                />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
+      <button onClick={guardar}>
+        Guardar producción
+      </button>
     </div>
   )
 }
