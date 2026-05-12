@@ -2122,6 +2122,48 @@ app.post('/programaciones/:id/enviar', async (req, res) => {
   }
 })
 
+//GUARDAR PRODUCCION 
+app.post('/produccion', async (req, res) => {
+  try {
+    const { datos, fecha } = req.body
+    // datos = [{ id_producto, cantidad }]
+
+    for (const item of datos) {
+      await db.query(`
+  INSERT INTO produccion_diaria (id_producto, fecha, cantidad)
+  VALUES (?, ?, ?)
+  ON DUPLICATE KEY UPDATE cantidad = VALUES(cantidad)
+`, [item.id_producto, fecha, item.cantidad])
+    }
+
+    res.json({ message: 'Producción guardada correctamente' })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+//OBTENER PRODUCCION DEL DIA 
+app.get('/produccion/:fecha', async (req, res) => {
+  try {
+    const { fecha } = req.params
+
+    const [rows] = await db.query(`
+      SELECT 
+        p.id_producto,
+        p.nombre,
+        COALESCE(pd.cantidad, 0) AS producido
+      FROM productos p
+      LEFT JOIN produccion_diaria pd
+        ON pd.id_producto = p.id_producto
+        AND pd.fecha = ?
+      WHERE p.activo = 1
+    `, [fecha])
+
+    res.json(rows)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
 // =============================
 // SERVER
 // =============================
