@@ -2216,31 +2216,7 @@ app.get('/produccion/validar', async (req, res) => {
   }
 })
 
-app.post('/login', async (req, res) => {
-  try {
-    const { usuario, password } = req.body
 
-    const [rows] = await db.query(`
-      SELECT id_usuario, usuario, rol
-      FROM usuarios
-      WHERE usuario = ? AND password = ?
-      LIMIT 1
-    `, [usuario, password])
-
-    if (!rows.length) {
-      return res.status(401).json({ error: 'Credenciales inválidas' })
-    }
-
-    res.json({
-      id_usuario: rows[0].id_usuario,
-      usuario: rows[0].usuario,
-      rol: rows[0].rol
-    })
-
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
 // =============================
 // SERVER
 // =============================
