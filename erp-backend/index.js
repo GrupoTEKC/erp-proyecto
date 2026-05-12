@@ -2125,18 +2125,27 @@ app.post('/programaciones/:id/enviar', async (req, res) => {
 //GUARDAR PRODUCCION 
 app.post('/produccion', async (req, res) => {
   try {
-    const { datos, fecha } = req.body
-    // datos = [{ id_producto, cantidad }]
+    const { datos, rol, fecha } = req.body
+
+    const fechaFinal = fecha || new Date().toISOString().slice(0, 10)
 
     for (const item of datos) {
       await db.query(`
-  INSERT INTO produccion_diaria (id_producto, fecha, cantidad)
-  VALUES (?, ?, ?)
-  ON DUPLICATE KEY UPDATE cantidad = VALUES(cantidad)
-`, [item.id_producto, fecha, item.cantidad])
+        INSERT INTO produccion_diaria 
+        (id_producto, fecha, cantidad, capturado_por)
+        VALUES (?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE 
+          cantidad = VALUES(cantidad),
+          capturado_por = VALUES(capturado_por)
+      `, [
+        item.id_producto,
+        fechaFinal,
+        item.cantidad,
+        rol || 'supervisor'
+      ])
     }
 
-    res.json({ message: 'Producción guardada correctamente' })
+    res.json({ ok: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -2187,35 +2196,6 @@ app.get('/produccion/hoy', async (req, res) => {
       WHERE fecha = CURDATE()
     `)
     res.json(rows)
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
-
-app.post('/produccion', async (req, res) => {
-  try {
-    const { data, rol } = req.body
-    // data = [{ id_producto, cantidad }]
-
-    const fecha = new Date().toISOString().slice(0, 10)
-
-    for (const item of data) {
-      await db.query(`
-        INSERT INTO produccion_diaria 
-        (id_producto, fecha, cantidad, capturado_por)
-        VALUES (?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE 
-          cantidad = VALUES(cantidad),
-          capturado_por = VALUES(capturado_por)
-      `, [
-        item.id_producto,
-        fecha,
-        item.cantidad,
-        rol || 'supervisor'
-      ])
-    }
-
-    res.json({ ok: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
