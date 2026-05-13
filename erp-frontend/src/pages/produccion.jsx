@@ -289,7 +289,8 @@ const vino = '#8B1E1E'
 const styles = {
 page: {
   padding: 20,
-  width: '100%',
+  width: '85%',
+  margin: '0 auto',
   textAlign: 'left'
 },
   
@@ -349,7 +350,7 @@ td: {
   border: '1px solid #ccc'
 },
   logo: {
-  height: 140
+  height: 170
 },
   mainTitle: {
   color: vino,
@@ -361,8 +362,7 @@ header: {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
-  marginBottom: 20,
-  width: '100%'
+  marginBottom: 30
 },
 }
 
