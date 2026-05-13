@@ -13,30 +13,32 @@ function Produccion() {
   const [fecha, setFecha] = useState(hoy)
   const [bloqueado, setBloqueado] = useState(false)
   const [loading, setLoading] = useState(true)
-
+  const [stock, setStock] = useState([])
+  
   useEffect(() => {
     init()
   }, [])
 
-  const init = async () => {
-    try {
-      const resVal = await fetch(`${API}/produccion/validar`)
-      const val = await resVal.json()
+ const init = async () => {
+  try {
+    const resVal = await fetch(`${API}/produccion/validar`)
+    const val = await resVal.json()
 
-      if (val.faltaAyer) {
-        setBloqueado(true)
-        setLoading(false)
-        return
-      }
-
-      cargarDatos()
-    } catch {
-      alert('Error inicial')
-    } finally {
+    if (val.faltaAyer) {
+      setBloqueado(true)
       setLoading(false)
+      return
     }
-  }
 
+    await cargarDatos()
+    await cargarStock()
+
+  } catch {
+    alert('Error inicial')
+  } finally {
+    setLoading(false)
+  }
+}
   const cargarDatos = async () => {
     try {
       const res = await fetch(`${API}/produccion/${fecha}`)
@@ -54,6 +56,15 @@ function Produccion() {
     }
   }
 
+  const cargarStock = async () => {
+  try {
+    const res = await fetch(`${API}/stock`)
+    const data = await res.json()
+    setStock(data)
+  } catch {
+    console.error('Error stock')
+  }
+}
   // 🔍 FILTRO
   const filtrados = productos.filter(p =>
     p.nombre.toLowerCase().includes(busqueda.toLowerCase())
@@ -170,7 +181,7 @@ function Produccion() {
             {p.nombre}
           </div>
         ))}
-      </div>
+              </div>
 
       {/* 📦 TABLA SELECCIONADOS */}
       <table style={styles.table}>
@@ -197,6 +208,37 @@ function Produccion() {
         </tbody>
       </table>
 
+{/* 🔥 INVENTARIO */}
+<h3 style={{ marginTop: 40 }}>INVENTARIO</h3>
+
+<table style={styles.table}>
+  <thead>
+    <tr>
+      <th>Producto</th>
+      <th>Entradas</th>
+      <th>Salidas</th>
+      <th>Stock</th>
+    </tr>
+  </thead>
+  <tbody>
+    {stock.map(p => (
+      <tr key={p.id_producto}>
+        <td>{p.nombre}</td>
+        <td>{p.producido}</td>
+        <td>{p.salidas}</td>
+        <td style={{
+          color:
+            p.stock < 0 ? 'red' :
+            p.stock < 10 ? 'orange' :
+            'green',
+          fontWeight: 'bold'
+        }}>
+          {p.stock}
+        </td>
+      </tr>
+    ))}
+  </tbody>
+</table>
       {/* 🔘 BOTONES */}
       <div style={{ ...styles.buttons, justifyContent: 'space-between' }}>
         <button
@@ -213,6 +255,8 @@ function Produccion() {
     </div>
   )
 }
+
+ 
 
 // 🎨 ESTILOS
 const vino = '#8B1E1E'
@@ -254,6 +298,7 @@ const styles = {
     borderRadius: 6,
     cursor: 'pointer'
   },
+  
   cancel: {
     background: '#fff',
     color: vino,
