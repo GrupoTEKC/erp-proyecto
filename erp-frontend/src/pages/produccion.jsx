@@ -221,13 +221,16 @@ function Produccion() {
           ))}
         </tbody>
       </table>
+      
  <div style={{ marginTop: 20, textAlign: 'right' }}>
   <button style={styles.save} onClick={confirmarGuardar}>
     Guardar Producción
   </button>
 </div>
       
-<h3 style={{ marginTop: 40, textAlign: 'center' }}>INVENTARIO</h3>
+<h2 style={{ ...styles.title, marginTop: 40 }}>
+  INVENTARIO
+</h2>
 
 <table style={styles.table}>
   <thead>
@@ -269,7 +272,8 @@ const vino = '#8B1E1E'
 const styles = {
   page: {
     padding: 20,
-    maxWidth: 900,
+    maxWidth: 1200,
+    width: '95%',
     margin: 'auto',
     fontFamily: 'Arial'
   },
@@ -283,9 +287,10 @@ const styles = {
     alignItems: 'center'
   },
   table: {
-    width: '100%',
-    borderCollapse: 'collapse'
-  },
+  width: '100%',
+  borderCollapse: 'collapse',
+  border: '1px solid #ccc'
+},
   input: {
     width: '100%',
     padding: 6
@@ -313,16 +318,17 @@ const styles = {
     cursor: 'pointer'
   }, 
   
-  th: {
+th: {
   textAlign: 'center',
-  padding: 8,
-  borderBottom: '2px solid #ccc'
+  padding: 10,
+  border: '1px solid #ccc',
+  background: '#f5f5f5'
 },
   
 td: {
   textAlign: 'center',
-  padding: 8,
-  borderBottom: '1px solid #eee'
+  padding: 10,
+  border: '1px solid #ccc'
 },
 }
 
