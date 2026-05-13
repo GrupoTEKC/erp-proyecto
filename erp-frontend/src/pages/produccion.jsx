@@ -172,7 +172,16 @@ function Produccion() {
 
       <div style={styles.top}>
         <label>Fecha:</label>
-        <input type="date" value={fecha} disabled />
+       <input
+  type="date"
+  value={fecha}
+  disabled
+  style={{
+    fontWeight: 'bold',
+    fontSize: 16,
+    padding: 6
+  }}
+/>
       </div>
 
       {/* 🔍 BUSCADOR */}
@@ -249,7 +258,13 @@ function Produccion() {
 
       return (
         <tr key={p.id_producto}>
-          <td style={styles.td}>{p.nombre}</td>
+       <td style={{
+  ...styles.td,
+  textAlign: 'left',
+  fontWeight: 'bold'
+}}>
+  {p.nombre}
+</td>
          <td style={styles.td}>{p.producido || 0}</td>
          <td style={styles.td}>{p.salidas || 0}</td>
           <td style={{
@@ -272,12 +287,12 @@ function Produccion() {
 const vino = '#8B1E1E'
 
 const styles = {
- page: {
+page: {
   padding: 20,
-  maxWidth: 1100,
-  margin: '0 auto',
+  width: '100%',
   textAlign: 'left'
 },
+  
   title: {
     color: '#071849'
   },
@@ -287,11 +302,13 @@ const styles = {
     gap: 10,
     alignItems: 'center'
   },
-  table: {
+ table: {
   width: '100%',
   borderCollapse: 'collapse',
-  border: '1px solid #ccc'
+  border: '1px solid #ccc',
+  marginTop: 10
 },
+  
   input: {
     width: '100%',
     padding: 6
@@ -332,19 +349,20 @@ td: {
   border: '1px solid #ccc'
 },
   logo: {
-  height: 90
+  height: 140
 },
   mainTitle: {
   color: vino,
-  fontSize: 26,
-  fontWeight: 'bold',
-  letterSpacing: 1
+  fontSize: 48,
+  fontWeight: '900',
+  letterSpacing: 2
 },
-  header: {
+header: {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
-  marginBottom: 20
+  marginBottom: 20,
+  width: '100%'
 },
 }
 
