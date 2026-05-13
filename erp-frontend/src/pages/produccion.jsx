@@ -153,8 +153,7 @@ function Produccion() {
   
   return (
     <div style={styles.page}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-  
+       <div style={styles.header}>
   <button
     style={styles.cancel}
     onClick={() => navigate('/')}
@@ -162,10 +161,13 @@ function Produccion() {
     Volver
   </button>
 
-  <img src={logo} alt="logo" style={{ height: 50 }} />
+  <h1 style={styles.mainTitle}>
+    MODULO DE PRODUCCION
+  </h1>
 
+  <img src={logo} alt="logo" style={styles.logo} />
 </div>
-
+      
       <h2 style={styles.title}>PRODUCCIÓN DIARIA</h2>
 
       <div style={styles.top}>
@@ -270,13 +272,12 @@ function Produccion() {
 const vino = '#8B1E1E'
 
 const styles = {
-  page: {
-    padding: 20,
-    maxWidth: 1200,
-    width: '95%',
-    margin: 'auto',
-    fontFamily: 'Arial'
-  },
+ page: {
+  padding: 20,
+  maxWidth: 1100,
+  margin: '0 auto',
+  textAlign: 'left'
+},
   title: {
     color: '#071849'
   },
@@ -329,6 +330,21 @@ td: {
   textAlign: 'center',
   padding: 10,
   border: '1px solid #ccc'
+},
+  logo: {
+  height: 70
+},
+  mainTitle: {
+  color: vino,
+  fontSize: 26,
+  fontWeight: 'bold',
+  letterSpacing: 1
+},
+  header: {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  marginBottom: 20
 },
 }
 
