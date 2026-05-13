@@ -162,7 +162,7 @@ function Produccion() {
   </button>
 
   <h1 style={styles.mainTitle}>
-    MODULO DE PRODUCCION
+    MÓDULO DE PRODUCCIÓN
   </h1>
 
   <img src={logo} alt="logo" style={styles.logo} />
