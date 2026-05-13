@@ -2206,7 +2206,42 @@ app.get('/produccion/validar', async (req, res) => {
   }
 })
 
+app.post('/inventario-inicial', async (req, res) => {
+  try {
+    const { datos, semana } = req.body
 
+    for (const item of datos) {
+      await db.query(`
+        INSERT INTO inventario_inicial (id_producto, semana, cantidad)
+        VALUES (?, ?, ?)
+        ON DUPLICATE KEY UPDATE cantidad = VALUES(cantidad)
+      `, [item.id_producto, semana, item.cantidad])
+    }
+
+    res.json({ ok: true })
+  } catch (error) {
+    res.status(500).json({ error: 'Error al guardar inventario' })
+  }
+})
+
+app.get('/inventario-inicial/:semana', async (req, res) => {
+  try {
+    const { semana } = req.params
+
+    const [rows] = await db.query(`
+      SELECT p.id_producto, p.nombre, 
+             IFNULL(i.cantidad, 0) as cantidad
+      FROM productos p
+      LEFT JOIN inventario_inicial i 
+        ON p.id_producto = i.id_producto 
+        AND i.semana = ?
+    `, [semana])
+
+    res.json(rows)
+  } catch {
+    res.status(500).json({ error: 'Error al obtener inventario' })
+  }
+})
 // =============================
 // SERVER
 // =============================
