@@ -332,7 +332,7 @@ td: {
   border: '1px solid #ccc'
 },
   logo: {
-  height: 70
+  height: 90
 },
   mainTitle: {
   color: vino,
