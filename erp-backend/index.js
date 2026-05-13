@@ -2242,6 +2242,40 @@ app.get('/inventario-inicial/:semana', async (req, res) => {
     res.status(500).json({ error: 'Error al obtener inventario' })
   }
 })
+
+app.get('/stock', async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT 
+        p.id_producto,
+        p.nombre,
+
+        COALESCE(SUM(pd.cantidad), 0) AS producido,
+
+        COALESCE(SUM(ed.cantidad_entregada), 0) AS salidas,
+
+        COALESCE(SUM(pd.cantidad), 0) - 
+        COALESCE(SUM(ed.cantidad_entregada), 0) AS stock
+
+      FROM productos p
+
+      LEFT JOIN produccion_diaria pd
+        ON pd.id_producto = p.id_producto
+
+      LEFT JOIN entrega_detalle ed
+        ON ed.id_producto = p.id_producto
+
+      WHERE p.activo = 1
+
+      GROUP BY p.id_producto
+      ORDER BY p.nombre
+    `)
+
+    res.json(rows)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
 // =============================
 // SERVER
 // =============================
