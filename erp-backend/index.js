@@ -2245,46 +2245,76 @@ app.get('/inventario-inicial/:semana', async (req, res) => {
 
 app.get('/stock', async (req, res) => {
   try {
+
     const [rows] = await db.query(`
       SELECT 
         p.id_producto,
         p.nombre,
 
-        -- 🔥 ENTRADAS (PRODUCCIÓN)
-        COALESCE((
-          SELECT SUM(cantidad)
-          FROM produccion_diaria pd
-          WHERE pd.id_producto = p.id_producto
-        ), 0) AS producido,
+        COALESCE(ii.cantidad, 0) AS inventario_inicial,
 
-        -- 🔥 SALIDAS (SE QUEDAN IGUAL)
-        COALESCE((
-          SELECT SUM(cantidad_entregada)
-          FROM entrega_detalle ed
-          WHERE ed.id_producto = p.id_producto
-        ), 0) AS salidas,
+        COALESCE(SUM(pd.cantidad), 0) AS producido,
 
-        -- 🔥 STOCK FINAL
-        COALESCE((
-          SELECT SUM(cantidad)
-          FROM produccion_diaria pd
-          WHERE pd.id_producto = p.id_producto
-        ), 0)
-        -
-        COALESCE((
-          SELECT SUM(cantidad_entregada)
-          FROM entrega_detalle ed
-          WHERE ed.id_producto = p.id_producto
-        ), 0) AS stock
+        COALESCE(SUM(ed.cantidad_entregada), 0) AS salidas,
+
+        COALESCE(ii.cantidad, 0) +
+        COALESCE(SUM(pd.cantidad), 0) -
+        COALESCE(SUM(ed.cantidad_entregada), 0) AS stock
 
       FROM productos p
+
+      LEFT JOIN inventario_inicial ii
+        ON ii.id_producto = p.id_producto
+        AND ii.periodo = DATE_FORMAT(CURDATE(), '%Y-%m')
+
+      LEFT JOIN produccion_diaria pd
+        ON pd.id_producto = p.id_producto
+
+      LEFT JOIN entrega_detalle ed
+        ON ed.id_producto = p.id_producto
+
       WHERE p.activo = 1
+
+      GROUP BY p.id_producto
       ORDER BY p.nombre
     `)
 
     res.json(rows)
+
   } catch (err) {
     res.status(500).json({ error: err.message })
+  }
+})
+
+app.post('/inventario-inicial', async (req, res) => {
+  try {
+    const { datos, periodo } = req.body
+
+    // 🔥 validar si ya existe ese periodo
+    const [existe] = await db.query(`
+      SELECT COUNT(*) as total
+      FROM inventario_inicial
+      WHERE periodo = ?
+    `, [periodo])
+
+    if (existe[0].total > 0) {
+      return res.status(400).json({
+        error: 'Este mes ya tiene inventario inicial'
+      })
+    }
+
+    for (const item of datos) {
+      await db.query(`
+        INSERT INTO inventario_inicial 
+        (id_producto, periodo, cantidad)
+        VALUES (?, ?, ?)
+      `, [item.id_producto, periodo, item.cantidad])
+    }
+
+    res.json({ ok: true })
+
+  } catch (error) {
+    res.status(500).json({ error: 'Error al guardar inventario' })
   }
 })
 // =============================
