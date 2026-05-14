@@ -154,15 +154,32 @@ const handleInvCantidad = (index, value) => {
     const ok = window.confirm('¿Seguro que deseas guardar la producción?')
     if (ok) guardar()
   }
-  
-if (invSeleccionados.length === 0) {
-  alert('No hay productos en inventario')
-  return
-}
 
-const ok = window.confirm('¿Deseas guardar el inventario inicial?')
-if (!ok) return
-  
+  // ⏳ LOADING
+  if (loading) {
+    return <div style={styles.page}>Cargando...</div>
+  }
+
+  // 🚨 BLOQUEO
+  if (bloqueado) {
+    return (
+      <div style={styles.page}>
+        <h2 style={styles.title}>⚠️</h2>
+        <p style={{ textAlign: 'center' }}>
+          No se capturó la producción de ayer <br />
+          Acudir con el programador
+        </p>
+      </div>
+    )
+  }
+  const guardarInventario = async () => {
+  if (invSeleccionados.length === 0) {
+    alert('No hay productos en inventario')
+    return
+  }
+
+  const ok = window.confirm('¿Deseas guardar el inventario inicial?')
+  if (!ok) return
 
   try {
     const datos = invSeleccionados.map(p => ({
@@ -194,24 +211,6 @@ if (!ok) return
     alert('Error al guardar inventario')
   }
 }
-
-  // ⏳ LOADING
-  if (loading) {
-    return <div style={styles.page}>Cargando...</div>
-  }
-
-  // 🚨 BLOQUEO
-  if (bloqueado) {
-    return (
-      <div style={styles.page}>
-        <h2 style={styles.title}>⚠️</h2>
-        <p style={{ textAlign: 'center' }}>
-          No se capturó la producción de ayer <br />
-          Acudir con el programador
-        </p>
-      </div>
-    )
-  }
   
   return (
     <div style={styles.page}>
