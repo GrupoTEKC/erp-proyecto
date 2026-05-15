@@ -2195,13 +2195,17 @@ app.get('/produccion/validar', async (req, res) => {
     const [rows] = await db.query(`
       SELECT COUNT(*) as total
       FROM produccion_diaria
-      WHERE fecha = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+      WHERE DATE(fecha) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
     `)
+
+    console.log("RESULTADO:", rows)
 
     res.json({
       faltaAyer: rows[0].total === 0
     })
+
   } catch (err) {
+    console.error("ERROR VALIDAR:", err) // 👈 CLAVE
     res.status(500).json({ error: err.message })
   }
 })
@@ -2229,36 +2233,40 @@ app.get('/stock', async (req, res) => {
   try {
 
     const [rows] = await db.query(`
-      SELECT 
-        p.id_producto,
-        p.nombre,
+    SELECT 
+  p.id_producto,
+  p.nombre,
 
-        COALESCE(ii.cantidad, 0) AS inventario_inicial,
+  COALESCE(ii.cantidad, 0) AS inventario_inicial,
 
-        COALESCE(SUM(pd.cantidad), 0) AS producido,
+  COALESCE(prod.total_producido, 0) AS producido,
 
-        COALESCE(SUM(ed.cantidad_entregada), 0) AS salidas,
+  COALESCE(sal.total_salidas, 0) AS salidas,
 
-        COALESCE(ii.cantidad, 0) +
-        COALESCE(SUM(pd.cantidad), 0) -
-        COALESCE(SUM(ed.cantidad_entregada), 0) AS stock
+  COALESCE(ii.cantidad, 0)
+  + COALESCE(prod.total_producido, 0)
+  - COALESCE(sal.total_salidas, 0) AS stock
 
-      FROM productos p
+FROM productos p
 
-      LEFT JOIN inventario_inicial ii
-        ON ii.id_producto = p.id_producto
-        AND ii.periodo = DATE_FORMAT(CURDATE(), '%Y-%m')
+LEFT JOIN inventario_inicial ii
+  ON ii.id_producto = p.id_producto
+  AND ii.periodo = DATE_FORMAT(CURDATE(), '%Y-%m')
 
-      LEFT JOIN produccion_diaria pd
-        ON pd.id_producto = p.id_producto
+LEFT JOIN (
+  SELECT id_producto, SUM(cantidad) AS total_producido
+  FROM produccion_diaria
+  GROUP BY id_producto
+) prod ON prod.id_producto = p.id_producto
 
-      LEFT JOIN entrega_detalle ed
-        ON ed.id_producto = p.id_producto
+LEFT JOIN (
+  SELECT id_producto, SUM(cantidad_entregada) AS total_salidas
+  FROM entrega_detalle
+  GROUP BY id_producto
+) sal ON sal.id_producto = p.id_producto
 
-      WHERE p.activo = 1
-
-      GROUP BY p.id_producto
-      ORDER BY p.nombre
+WHERE p.activo = 1
+ORDER BY p.nombre
     `)
 
     res.json(rows)
