@@ -2201,13 +2201,12 @@ app.get('/produccion/validar', async (req, res) => {
     const total = rows?.[0]?.total || 0;
 
     res.json({
-      hayProduccion: total > 0,
-      total
+      faltaAyer: total === 0
     });
 
-  } catch (error) {
-    console.error("ERROR VALIDAR:", error);
-    res.status(500).json({ error: error.message });
+  } catch (err) {
+    console.error("💥 ERROR validar:", err);
+    res.status(500).json({ error: err.message });
   }
 });
 
