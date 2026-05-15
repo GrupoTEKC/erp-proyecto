@@ -2192,17 +2192,25 @@ app.get('/produccion/:fecha', async (req, res) => {
 
 app.get('/produccion/validar', async (req, res) => {
   try {
+    // 📅 obtener ayer
+    const ayer = new Date()
+    ayer.setDate(ayer.getDate() - 1)
+    const fechaAyer = ayer.toISOString().slice(0, 10)
+
     const [rows] = await db.query(`
       SELECT COUNT(*) as total
-      FROM produccion_diaria
-      WHERE fecha = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
-    `)
+      FROM produccion
+      WHERE DATE(fecha) = ?
+    `, [fechaAyer])
 
-    res.json({
-      faltaAyer: rows[0].total === 0
+    const faltaAyer = rows[0].total === 0
+
+    res.json({ faltaAyer })
+  } catch (error) {
+    console.error('Error validar producción:', error)
+    res.status(500).json({
+      error: 'Error en validación'
     })
-  } catch (err) {
-    res.status(500).json({ error: err.message })
   }
 })
 
