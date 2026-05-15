@@ -15,6 +15,8 @@ function Produccion() {
   const [bloqueado, setBloqueado] = useState(false)
   const [loading, setLoading] = useState(true)
   const [stock, setStock] = useState([])
+  const [invSeleccionados, setInvSeleccionados] = useState([])
+  const [busquedaInv, setBusquedaInv] = useState('')
   
   useEffect(() => {
     init()
@@ -70,7 +72,9 @@ const init = async () => {
   const filtrados = productos.filter(p =>
     p.nombre.toLowerCase().includes(busqueda.toLowerCase())
   )
-
+const filtradosInv = stock.filter(p =>
+  p.nombre.toLowerCase().includes(busquedaInv.toLowerCase())
+)
   // ➕ AGREGAR PRODUCTO
   const agregarProducto = (producto) => {
     const existe = seleccionados.find(p => p.id_producto === producto.id_producto)
@@ -82,6 +86,16 @@ const init = async () => {
     ])
   }
 
+  const agregarProductoInv = (producto) => {
+  const existe = invSeleccionados.find(p => p.id_producto === producto.id_producto)
+  if (existe) return
+
+  setInvSeleccionados([
+    ...invSeleccionados,
+    { ...producto, cantidad: '' }
+  ])
+}
+  
   // ✏️ CAMBIAR CANTIDAD
   const handleCantidad = (index, value) => {
     const nuevos = [...seleccionados]
@@ -89,67 +103,107 @@ const init = async () => {
     setSeleccionados(nuevos)
   }
 
-  // 💾 GUARDAR
-  const guardar = async () => {
-    try {
-      const datos = seleccionados.map(p => ({
-        id_producto: p.id_producto,
-        cantidad: Number(p.producido) || 0
-      }))
-
-      const res = await fetch(`${API}/produccion`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          datos: datos,
-          rol: 'supervisor'
-        })
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        alert(data.error || 'Error al guardar')
-        return
-      }
-
-      alert('✅ Producción guardada')
-
-setSeleccionados([])
-
-// 🔁 PRIMERO recarga datos
-await cargarDatos()
-await cargarStock()
-
-// 🔁 DESPUÉS valida
-const resVal = await fetch(`${API}/produccion/validar`)
-const val = await resVal.json()
-
-if (!val.faltaAyer) {
-  setBloqueado(false)
+  // 👇 AQUÍ VA TU NUEVA FUNCIÓN
+const handleCantidadInv = (index, value) => {
+  const nuevos = [...invSeleccionados]
+  nuevos[index].cantidad = value
+  setInvSeleccionados(nuevos)
 }
-    } catch {
-      alert('❌ Error al guardar')
-    }
-  }
 
-  // ⚠️ CONFIRMAR
-  const confirmarGuardar = () => {
-    if (seleccionados.length === 0) {
-      alert('No hay productos')
+// 💾 GUARDAR PRODUCCIÓN
+const guardar = async () => {
+  try {
+    const datos = seleccionados.map(p => ({
+      id_producto: p.id_producto,
+      cantidad: Number(p.producido) || 0
+    }))
+
+    const res = await fetch(`${API}/produccion`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        datos: datos,
+        rol: 'supervisor'
+      })
+    })
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      alert(data.error || 'Error al guardar')
       return
     }
 
-    const ok = window.confirm('¿Seguro que deseas guardar la producción?')
-    if (ok) guardar()
+    alert('✅ Producción guardada')
+    setSeleccionados([])
+
+    await cargarDatos()
+    await cargarStock()
+
+  } catch {
+    alert('❌ Error al guardar')
+  }
+}
+
+// 💾 GUARDAR INVENTARIO (SEPARADO Y CORRECTO)
+const guardarInventario = async () => {
+  try {
+    const datos = invSeleccionados.map(p => ({
+      id_producto: p.id_producto,
+      cantidad: Number(p.cantidad) || 0
+    }))
+
+    const res = await fetch(`${API}/inventario-inicial`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ datos })
+    })
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      alert(data.error || 'Error al guardar inventario')
+      return
+    }
+
+    alert('✅ Inventario inicial guardado')
+   setInvSeleccionados([])
+   setBusquedaInv('')
+   await cargarStock()
+    
+  } catch {
+    alert('❌ Error al guardar inventario')
+  }
+}
+
+// ⚠️ CONFIRMAR PRODUCCIÓN
+const confirmarGuardar = () => {
+  if (seleccionados.length === 0) {
+    alert('No hay productos')
+    return
   }
 
-  // ⏳ LOADING
-  if (loading) {
-    return <div style={styles.page}>Cargando...</div>
+  const ok = window.confirm('¿Seguro que deseas guardar la producción?')
+  if (ok) guardar()
+}
+
+// ⚠️ CONFIRMAR INVENTARIO
+const confirmarGuardarInv = () => {
+  if (invSeleccionados.length === 0) {
+    alert('No hay productos')
+    return
   }
 
- if (bloqueado) {
+  const ok = window.confirm('¿Deseas guardar el inventario inicial?')
+  if (ok) guardarInventario()
+}
+
+// ⏳ LOADING
+if (loading) {
+  return <div style={styles.page}>Cargando...</div>
+}
+
+if (bloqueado) {
   return (
     <div style={styles.overlay}>
       <div style={styles.modal}>
@@ -265,7 +319,66 @@ if (!val.faltaAyer) {
 </div>
       
 <h2 style={{ ...styles.title, marginTop: 40 }}>
-  INVENTARIO
+  INVENTARIO INICIAL
+</h2>
+
+      {/* 🔍 BUSCADOR */}
+<input
+  placeholder="Buscar producto..."
+  value={busquedaInv}
+  onChange={(e) => setBusquedaInv(e.target.value)}
+  style={{ ...styles.input, marginBottom: 10 }}
+/>
+
+<div style={{ maxHeight: 150, overflow: 'auto', marginBottom: 20 }}>
+  {filtradosInv.map(p => (
+    <div
+      key={p.id_producto}
+      onClick={() => agregarProductoInv(p)}
+      style={{
+        padding: 8,
+        borderBottom: '1px solid #ddd',
+        cursor: 'pointer'
+      }}
+    >
+      {p.nombre}
+    </div>
+  ))}
+</div>
+
+{/* 📦 TABLA */}
+<table style={styles.table}>
+  <thead>
+    <tr>
+      <th>Producto</th>
+      <th>Cantidad</th>
+    </tr>
+  </thead>
+  <tbody>
+    {invSeleccionados.map((p, i) => (
+      <tr key={p.id_producto}>
+        <td>{p.nombre}</td>
+        <td>
+          <input
+            type="number"
+            value={p.cantidad}
+            onChange={(e) => handleCantidadInv(i, e.target.value)}
+            style={styles.input}
+          />
+        </td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+<div style={{ marginTop: 20, textAlign: 'right' }}>
+  <button style={styles.save} onClick={confirmarGuardarInv}>
+    Guardar Inventario Inicial
+  </button>
+</div>
+
+      <h2 style={{ ...styles.title, marginTop: 40 }}>
+  INVENTARIO ACTUAL
 </h2>
 
 <table style={styles.table}>
