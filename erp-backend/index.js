@@ -2149,7 +2149,7 @@ app.post('/produccion', async (req, res) => {
         (id_producto, fecha, cantidad, capturado_por)
         VALUES (?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE 
-         cantidad = cantidad + VALUES(cantidad),
+          cantidad = VALUES(cantidad),
           capturado_por = VALUES(capturado_por)
       `, [
         item.id_producto,
@@ -2195,20 +2195,16 @@ app.get('/produccion/validar', async (req, res) => {
     const [rows] = await db.query(`
       SELECT COUNT(*) as total
       FROM produccion_diaria
-      WHERE DATE(fecha) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
-    `);
-
-    const total = rows?.[0]?.total || 0;
+      WHERE fecha = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+    `)
 
     res.json({
-      faltaAyer: total === 0
-    });
-
+      faltaAyer: rows[0].total === 0
+    })
   } catch (err) {
-    console.error("💥 ERROR validar:", err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message })
   }
-});
+})
 
 app.post('/inventario-inicial', async (req, res) => {
   try {
@@ -2228,83 +2224,56 @@ app.post('/inventario-inicial', async (req, res) => {
   }
 })
 
-
-app.get('/stock', async (req, res) => {
+app.get('/inventario-inicial/:semana', async (req, res) => {
   try {
+    const { semana } = req.params
 
     const [rows] = await db.query(`
-    SELECT 
-  p.id_producto,
-  p.nombre,
-
-  COALESCE(ii.cantidad, 0) AS inventario_inicial,
-
-  COALESCE(prod.total_producido, 0) AS producido,
-
-  COALESCE(sal.total_salidas, 0) AS salidas,
-
-  COALESCE(ii.cantidad, 0)
-  + COALESCE(prod.total_producido, 0)
-  - COALESCE(sal.total_salidas, 0) AS stock
-
-FROM productos p
-
-LEFT JOIN inventario_inicial ii
-  ON ii.id_producto = p.id_producto
-  AND ii.periodo = DATE_FORMAT(CURDATE(), '%Y-%m')
-
-LEFT JOIN (
-  SELECT id_producto, SUM(cantidad) AS total_producido
-  FROM produccion_diaria
-  GROUP BY id_producto
-) prod ON prod.id_producto = p.id_producto
-
-LEFT JOIN (
-  SELECT id_producto, SUM(cantidad_entregada) AS total_salidas
-  FROM entrega_detalle
-  GROUP BY id_producto
-) sal ON sal.id_producto = p.id_producto
-
-WHERE p.activo = 1
-ORDER BY p.nombre
-    `)
+      SELECT p.id_producto, p.nombre, 
+             IFNULL(i.cantidad, 0) as cantidad
+      FROM productos p
+      LEFT JOIN inventario_inicial i 
+        ON p.id_producto = i.id_producto 
+        AND i.semana = ?
+    `, [semana])
 
     res.json(rows)
-
-  } catch (err) {
-    res.status(500).json({ error: err.message })
+  } catch {
+    res.status(500).json({ error: 'Error al obtener inventario' })
   }
 })
 
-app.post('/inventario-inicial', async (req, res) => {
+app.get('/stock', async (req, res) => {
   try {
-    const { datos, periodo } = req.body
+    const [rows] = await db.query(`
+      SELECT 
+        p.id_producto,
+        p.nombre,
 
-    // 🔥 validar si ya existe ese periodo
-    const [existe] = await db.query(`
-      SELECT COUNT(*) as total
-      FROM inventario_inicial
-      WHERE periodo = ?
-    `, [periodo])
+        COALESCE(SUM(pd.cantidad), 0) AS producido,
 
-    if (existe[0].total > 0) {
-      return res.status(400).json({
-        error: 'Este mes ya tiene inventario inicial'
-      })
-    }
+        COALESCE(SUM(ed.cantidad_entregada), 0) AS salidas,
 
-    for (const item of datos) {
-      await db.query(`
-        INSERT INTO inventario_inicial 
-        (id_producto, periodo, cantidad)
-        VALUES (?, ?, ?)
-      `, [item.id_producto, periodo, item.cantidad])
-    }
+        COALESCE(SUM(pd.cantidad), 0) - 
+        COALESCE(SUM(ed.cantidad_entregada), 0) AS stock
 
-    res.json({ ok: true })
+      FROM productos p
 
-  } catch (error) {
-    res.status(500).json({ error: 'Error al guardar inventario' })
+      LEFT JOIN produccion_diaria pd
+        ON pd.id_producto = p.id_producto
+
+      LEFT JOIN entrega_detalle ed
+        ON ed.id_producto = p.id_producto
+
+      WHERE p.activo = 1
+
+      GROUP BY p.id_producto
+      ORDER BY p.nombre
+    `)
+
+    res.json(rows)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
   }
 })
 // =============================
