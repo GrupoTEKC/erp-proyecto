@@ -114,9 +114,20 @@ function Produccion() {
       }
 
       alert('✅ Producción guardada')
-      setSeleccionados([])
-      await cargarDatos()
-      await cargarStock()
+
+setSeleccionados([])
+
+// 🔁 PRIMERO recarga datos
+await cargarDatos()
+await cargarStock()
+
+// 🔁 DESPUÉS valida
+const resVal = await fetch(`${API}/produccion/validar`)
+const val = await resVal.json()
+
+if (!val.faltaAyer) {
+  setBloqueado(false)
+}
     } catch {
       alert('❌ Error al guardar')
     }
@@ -138,18 +149,32 @@ function Produccion() {
     return <div style={styles.page}>Cargando...</div>
   }
 
-  // 🚨 BLOQUEO
-  if (bloqueado) {
-    return (
-      <div style={styles.page}>
-        <h2 style={styles.title}>⚠️</h2>
-        <p style={{ textAlign: 'center' }}>
-          No se capturó la producción de ayer <br />
-          Acudir con el programador
+ if (bloqueado) {
+  return (
+    <div style={styles.overlay}>
+      <div style={styles.modal}>
+        <h2 style={{ color: 'red', marginBottom: 10 }}>
+          ⚠️ ATENCIÓN
+        </h2>
+
+        <p style={{ textAlign: 'center', fontWeight: 'bold' }}>
+          LA PRODUCCIÓN DEL DÍA DE AYER NO FUE CAPTURADA
         </p>
+
+        <p style={{ textAlign: 'center' }}>
+          ACUDIR CON EL ADMINISTRADOR PARA QUE INGRESE LA PRODUCCIÓN DEL DÍA
+        </p>
+
+        <button
+          style={styles.modalBtn}
+         onClick={init}
+        >
+          Ir a capturar producción
+        </button>
       </div>
-    )
-  }
+    </div>
+  )
+}
   
   return (
     <div style={styles.page}>
@@ -363,6 +388,37 @@ header: {
   alignItems: 'center',
   justifyContent: 'space-between',
   marginBottom: 30
+},
+  overlay: {
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  width: '100%',
+  height: '100%',
+  backgroundColor: 'rgba(0,0,0,0.7)',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 9999
+},
+
+modal: {
+  background: '#fff',
+  padding: 30,
+  borderRadius: 10,
+  width: 400,
+  textAlign: 'center',
+  boxShadow: '0 0 20px rgba(0,0,0,0.3)'
+},
+
+modalBtn: {
+  marginTop: 20,
+  padding: 10,
+  background: '#8B1E1E',
+  color: '#fff',
+  border: 'none',
+  borderRadius: 6,
+  cursor: 'pointer'
 },
 }
 
