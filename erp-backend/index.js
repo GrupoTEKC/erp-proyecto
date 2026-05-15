@@ -2224,24 +2224,6 @@ app.post('/inventario-inicial', async (req, res) => {
   }
 })
 
-app.get('/inventario-inicial/:semana', async (req, res) => {
-  try {
-    const { semana } = req.params
-
-    const [rows] = await db.query(`
-      SELECT p.id_producto, p.nombre, 
-             IFNULL(i.cantidad, 0) as cantidad
-      FROM productos p
-      LEFT JOIN inventario_inicial i 
-        ON p.id_producto = i.id_producto 
-        AND i.semana = ?
-    `, [semana])
-
-    res.json(rows)
-  } catch {
-    res.status(500).json({ error: 'Error al obtener inventario' })
-  }
-})
 
 app.get('/stock', async (req, res) => {
   try {
