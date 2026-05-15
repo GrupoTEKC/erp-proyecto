@@ -154,10 +154,10 @@ const guardarInventario = async () => {
     const res = await fetch(`${API}/inventario-inicial`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        datos,
-        fecha // 🔥 ESTA ES LA CLAVE
-      })
+    body: JSON.stringify({
+  datos,
+  periodo: fecha // 🔥 CAMBIO AQUÍ
+})
     })
 
     const data = await res.json()
