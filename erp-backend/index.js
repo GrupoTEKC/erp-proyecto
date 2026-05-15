@@ -2195,17 +2195,18 @@ app.get('/produccion/validar', async (req, res) => {
     const [rows] = await db.query(`
       SELECT COUNT(*) as total
       FROM produccion_diaria
-      WHERE DATE(fecha) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+      WHERE fecha >= DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+      AND fecha < CURDATE()
     `)
 
-    console.log("RESULTADO:", rows)
+    console.log("✅ VALIDAR RESULT:", rows)
 
     res.json({
       faltaAyer: rows[0].total === 0
     })
 
   } catch (err) {
-    console.error("ERROR VALIDAR:", err) // 👈 CLAVE
+    console.error("❌ ERROR VALIDAR:", err) // 🔥 CLAVE
     res.status(500).json({ error: err.message })
   }
 })
