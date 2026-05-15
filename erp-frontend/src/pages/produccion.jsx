@@ -234,7 +234,7 @@ const handleInvCantidad = (index, value) => {
       <div style={styles.top}>
         <label>Fecha:</label>
        <input
-  type="date"
+       type="date"
   value={fecha}
   disabled
   style={{
@@ -376,15 +376,15 @@ const handleInvCantidad = (index, value) => {
   <thead>
     <tr>
       <th style={styles.th}>Producto</th>
-      <th style={styles.th}>Entradas</th>
-      <th style={styles.th}>Salidas</th>
-      <th style={styles.th}>Stock</th>
+     <th style={styles.th}>Inicial</th>
+     <th style={styles.th}>Entradas</th>
+     <th style={styles.th}>Salidas</th>
+     <th style={styles.th}>Stock</th>
     </tr>
   </thead>
   <tbody>
     {stock.map(p => {
-    const stockFinal =
-  (p.inicial || 0) + (p.producido || 0) - (p.salidas || 0)
+ const stockFinal = (p.inicial || 0) + (p.producido || 0) - (p.salidas || 0)
 
       return (
         <tr key={p.id_producto}>
@@ -395,8 +395,9 @@ const handleInvCantidad = (index, value) => {
 }}>
   {p.nombre}
 </td>
-         <td style={styles.td}>{p.producido || 0}</td>
-         <td style={styles.td}>{p.salidas || 0}</td>
+       <td style={styles.td}>{p.inicial || 0}</td>
+       <td style={styles.td}>{p.producido || 0}</td>
+       <td style={styles.td}>{p.salidas || 0}</td>
           <td style={{
             ...styles.td,
             color: stockFinal < 0 ? 'red' : 'black',
