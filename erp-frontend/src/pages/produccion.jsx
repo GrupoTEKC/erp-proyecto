@@ -156,7 +156,7 @@ const guardarInventario = async () => {
       headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
   datos,
-  periodo: fecha // 🔥 CAMBIO AQUÍ
+  periodo: fecha.slice(0, 7)
 })
     })
 
