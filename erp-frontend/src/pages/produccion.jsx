@@ -145,7 +145,6 @@ const guardar = async () => {
   }
 }
 
-// 💾 GUARDAR INVENTARIO (SEPARADO Y CORRECTO)
 const guardarInventario = async () => {
   try {
     const datos = invSeleccionados.map(p => ({
@@ -156,7 +155,10 @@ const guardarInventario = async () => {
     const res = await fetch(`${API}/inventario-inicial`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ datos })
+      body: JSON.stringify({
+        datos,
+        periodo: fecha   // 👈 🔥 ESTA LÍNEA FALTABA
+      })
     })
 
     const data = await res.json()
@@ -167,15 +169,15 @@ const guardarInventario = async () => {
     }
 
     alert('✅ Inventario inicial guardado')
-   setInvSeleccionados([])
-   setBusquedaInv('')
-   await cargarStock()
-    
+    setInvSeleccionados([])
+    setBusquedaInv('')
+    await cargarStock()
+
   } catch {
     alert('❌ Error al guardar inventario')
   }
 }
-
+  
 // ⚠️ CONFIRMAR PRODUCCIÓN
 const confirmarGuardar = () => {
   if (seleccionados.length === 0) {
