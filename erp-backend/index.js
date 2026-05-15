@@ -2192,12 +2192,16 @@ app.get('/produccion/:fecha', async (req, res) => {
 
 app.get('/produccion/validar', async (req, res) => {
   try {
-    const ayer = new Date()
-    ayer.setHours(0,0,0,0)
-    ayer.setDate(ayer.getDate() - 1)
+    const hoy = new Date()
 
-    const fechaAyer = ayer.toISOString().split('T')[0]
+const ayer = new Date(
+  hoy.getFullYear(),
+  hoy.getMonth(),
+  hoy.getDate() - 1
+)
 
+    const fechaAyer = ayer.toLocaleDateString('sv-SE')
+    
     const [rows] = await db.query(`
       SELECT COUNT(*) as total
       FROM produccion_diaria
