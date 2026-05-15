@@ -73,21 +73,6 @@ function ProduccionLogin() {
       navigate('/produccion')
       return
     }
-
-    // 🔥 ADMIN
-    if (
-      usuario === 'AdminEMT' &&
-      password === 'nv0011I#_em'
-    ) {
-      localStorage.setItem('produccion_auth', 'true')
-      localStorage.setItem('produccion_rol', 'admin')
-
-      alert('👑 Bienvenido Administrador')
-
-      navigate('/produccion')
-      return
-    }
-
     // ❌ ERROR
     setError('Usuario o contraseña incorrectos')
   }
