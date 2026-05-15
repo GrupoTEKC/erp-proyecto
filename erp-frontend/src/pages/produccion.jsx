@@ -15,9 +15,7 @@ function Produccion() {
   const [bloqueado, setBloqueado] = useState(false)
   const [loading, setLoading] = useState(true)
   const [stock, setStock] = useState([])
-  const [modoInventario, setModoInventario] = useState(false)
-  const [invSeleccionados, setInvSeleccionados] = useState([])
-  const [invBusqueda, setInvBusqueda] = useState('')
+  
   useEffect(() => {
     init()
   }, [])
@@ -72,9 +70,7 @@ function Produccion() {
   const filtrados = productos.filter(p =>
     p.nombre.toLowerCase().includes(busqueda.toLowerCase())
   )
-const filtradosInv = stock.filter(p =>
-  p.nombre.toLowerCase().includes(invBusqueda.toLowerCase())
-)
+
   // ➕ AGREGAR PRODUCTO
   const agregarProducto = (producto) => {
     const existe = seleccionados.find(p => p.id_producto === producto.id_producto)
@@ -93,24 +89,6 @@ const filtradosInv = stock.filter(p =>
     setSeleccionados(nuevos)
   }
 
-  // 🆕 AGREGAR PRODUCTO INVENTARIO
-const agregarInv = (producto) => {
-  const existe = invSeleccionados.find(p => p.id_producto === producto.id_producto)
-  if (existe) return
-
-  setInvSeleccionados([
-    ...invSeleccionados,
-    { ...producto, cantidad: '' }
-  ])
-}
-
-// ✏️ INPUT INVENTARIO
-const handleInvCantidad = (index, value) => {
-  const nuevos = [...invSeleccionados]
-  nuevos[index].cantidad = value
-  setInvSeleccionados(nuevos)
-}
-  
   // 💾 GUARDAR
   const guardar = async () => {
     try {
@@ -150,7 +128,7 @@ const handleInvCantidad = (index, value) => {
       alert('No hay productos')
       return
     }
-    
+
     const ok = window.confirm('¿Seguro que deseas guardar la producción?')
     if (ok) guardar()
   }
@@ -172,45 +150,6 @@ const handleInvCantidad = (index, value) => {
       </div>
     )
   }
-  const guardarInventario = async () => {
-  if (invSeleccionados.length === 0) {
-    alert('No hay productos en inventario')
-    return
-  }
-
-  const ok = window.confirm('¿Deseas guardar el inventario inicial?')
-  if (!ok) return
-
-  try {
-    const datos = invSeleccionados.map(p => ({
-      id_producto: p.id_producto,
-      cantidad: Number(p.cantidad) || 0
-    }))
-
-    const periodo = new Date().toISOString().slice(0, 7)
-
-    const res = await fetch(`${API}/inventario-inicial`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ datos, periodo })
-    })
-
-    const data = await res.json()
-
-    if (!res.ok) {
-      alert(data.error || 'Error')
-      return
-    }
-
-    alert('✅ Inventario guardado')
-    setInvSeleccionados([])
-    setModoInventario(false)
-    await cargarStock()
-
-  } catch {
-    alert('Error al guardar inventario')
-  }
-}
   
   return (
     <div style={styles.page}>
@@ -234,7 +173,7 @@ const handleInvCantidad = (index, value) => {
       <div style={styles.top}>
         <label>Fecha:</label>
        <input
-       type="date"
+  type="date"
   value={fecha}
   disabled
   style={{
@@ -299,75 +238,7 @@ const handleInvCantidad = (index, value) => {
     Guardar Producción
   </button>
 </div>
-
-      <div style={{ marginBottom: 10 }}>
-  <button
-    style={styles.save}
-    onClick={() => setModoInventario(!modoInventario)}
-  >
-    {modoInventario ? 'Cancelar' : 'Inventario Inicial'}
-  </button>
-</div>
-
-{modoInventario && (
-  <>
-    <h3>Inventario Inicial</h3>
-
-    <input
-      placeholder="Buscar producto..."
-      value={invBusqueda}
-      onChange={(e) => setInvBusqueda(e.target.value)}
-      style={{ ...styles.input, marginBottom: 10 }}
-    />
-
-    <div style={{ maxHeight: 150, overflow: 'auto', marginBottom: 20 }}>
-      {filtradosInv.map(p => (
-        <div
-          key={p.id_producto}
-          onClick={() => agregarInv(p)}
-          style={{
-            padding: 8,
-            borderBottom: '1px solid #ddd',
-            cursor: 'pointer'
-          }}
-        >
-          {p.nombre}
-        </div>
-      ))}
-    </div>
-
-    <table style={styles.table}>
-      <thead>
-        <tr>
-          <th>Producto</th>
-          <th>Cantidad</th>
-        </tr>
-      </thead>
-      <tbody>
-        {invSeleccionados.map((p, i) => (
-          <tr key={p.id_producto}>
-            <td>{p.nombre}</td>
-            <td style={{ textAlign: 'center' }}>
-              <input
-                type="number"
-                value={p.cantidad}
-                onChange={(e) => handleInvCantidad(i, e.target.value)}
-                style={{ ...styles.input, textAlign: 'center' }}
-              />
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-
-    <div style={{ marginTop: 20, textAlign: 'right' }}>
-      <button style={styles.save} onClick={guardarInventario}>
-        Guardar Inventario
-      </button>
-    </div>
-  </>
-)}
-
+      
 <h2 style={{ ...styles.title, marginTop: 40 }}>
   INVENTARIO
 </h2>
@@ -376,15 +247,14 @@ const handleInvCantidad = (index, value) => {
   <thead>
     <tr>
       <th style={styles.th}>Producto</th>
-     <th style={styles.th}>Inicial</th>
-     <th style={styles.th}>Entradas</th>
-     <th style={styles.th}>Salidas</th>
-     <th style={styles.th}>Stock</th>
+      <th style={styles.th}>Entradas</th>
+      <th style={styles.th}>Salidas</th>
+      <th style={styles.th}>Stock</th>
     </tr>
   </thead>
   <tbody>
     {stock.map(p => {
- const stockFinal = (p.inicial || 0) + (p.producido || 0) - (p.salidas || 0)
+      const stockFinal = (p.producido || 0) - (p.salidas || 0)
 
       return (
         <tr key={p.id_producto}>
@@ -395,9 +265,8 @@ const handleInvCantidad = (index, value) => {
 }}>
   {p.nombre}
 </td>
-       <td style={styles.td}>{p.inicial || 0}</td>
-       <td style={styles.td}>{p.producido || 0}</td>
-       <td style={styles.td}>{p.salidas || 0}</td>
+         <td style={styles.td}>{p.producido || 0}</td>
+         <td style={styles.td}>{p.salidas || 0}</td>
           <td style={{
             ...styles.td,
             color: stockFinal < 0 ? 'red' : 'black',
