@@ -144,7 +144,6 @@ const guardar = async () => {
     alert('❌ Error al guardar')
   }
 }
-
 const guardarInventario = async () => {
   try {
     const datos = invSeleccionados.map(p => ({
@@ -157,7 +156,7 @@ const guardarInventario = async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         datos,
-        periodo: fecha   // 👈 🔥 ESTA LÍNEA FALTABA
+        fecha // 🔥 ESTA ES LA CLAVE
       })
     })
 
@@ -173,7 +172,8 @@ const guardarInventario = async () => {
     setBusquedaInv('')
     await cargarStock()
 
-  } catch {
+  } catch (error) {
+    console.error(error)
     alert('❌ Error al guardar inventario')
   }
 }
