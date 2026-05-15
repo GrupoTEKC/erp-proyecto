@@ -2192,21 +2192,16 @@ app.get('/produccion/:fecha', async (req, res) => {
 
 app.get('/produccion/validar', async (req, res) => {
   try {
-    const [rows] = await db.query(`
-      SELECT COUNT(*) as total
-      FROM produccion_diaria
-      WHERE fecha >= DATE_SUB(CURDATE(), INTERVAL 1 DAY)
-      AND fecha < CURDATE()
-    `)
+    console.log("🔥 ENTRANDO A VALIDAR")
 
-    console.log("✅ VALIDAR RESULT:", rows)
+    const [rows] = await db.query("SELECT 1 as test")
 
-    res.json({
-      faltaAyer: rows[0].total === 0
-    })
+    console.log("✅ QUERY TEST:", rows)
+
+    res.json({ ok: true })
 
   } catch (err) {
-    console.error("❌ ERROR VALIDAR:", err) // 🔥 CLAVE
+    console.error("❌ ERROR REAL:", err)
     res.status(500).json({ error: err.message })
   }
 })
