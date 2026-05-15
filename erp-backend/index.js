@@ -2192,19 +2192,19 @@ app.get('/produccion/:fecha', async (req, res) => {
 
 app.get('/produccion/validar', async (req, res) => {
   try {
-    console.log("🔥 ENTRANDO A VALIDAR")
+    const result = await db.query(`
+      SELECT COUNT(*) as total
+      FROM produccion_diaria
+      WHERE DATE(fecha) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+    `);
 
-    const [rows] = await db.query("SELECT 1 as test")
+    res.json(result);
 
-    console.log("✅ QUERY TEST:", rows)
-
-    res.json({ ok: true })
-
-  } catch (err) {
-    console.error("❌ ERROR REAL:", err)
-    res.status(500).json({ error: err.message })
+  } catch (error) {
+    console.error("🔥 ERROR EN VALIDAR:", error);
+    res.status(500).json({ error: error.message });
   }
-})
+});
 
 app.post('/inventario-inicial', async (req, res) => {
   try {
