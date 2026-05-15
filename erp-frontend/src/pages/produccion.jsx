@@ -20,19 +20,19 @@ function Produccion() {
     init()
   }, [])
 
- const init = async () => {
+const init = async () => {
   try {
     const resVal = await fetch(`${API}/produccion/validar`)
     const val = await resVal.json()
 
-    if (val.faltaAyer) {
-      setBloqueado(true)
-      setLoading(false)
-      return
-    }
+    // 🔥 PRIMERO define bloqueo
+    setBloqueado(val.faltaAyer)
 
-    await cargarDatos()
-    await cargarStock()
+    // 🔥 SOLO si NO está bloqueado carga datos
+    if (!val.faltaAyer) {
+      await cargarDatos()
+      await cargarStock()
+    }
 
   } catch {
     alert('Error inicial')
