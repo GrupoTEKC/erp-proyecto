@@ -2268,14 +2268,19 @@ app.get('/stock', async (req, res) => {
         p.id_producto,
         p.nombre,
 
-        COALESCE(SUM(pd.cantidad), 0) AS producido,
+        COALESCE(SUM(ii.cantidad), 0) AS inicial,   -- 👈 AQUI
 
+        COALESCE(SUM(pd.cantidad), 0) AS producido,
         COALESCE(SUM(ed.cantidad_entregada), 0) AS salidas,
 
+        COALESCE(SUM(ii.cantidad), 0) +
         COALESCE(SUM(pd.cantidad), 0) - 
         COALESCE(SUM(ed.cantidad_entregada), 0) AS stock
 
       FROM productos p
+
+      LEFT JOIN inventario_inicial ii   -- 👈 JOIN NUEVO
+        ON ii.id_producto = p.id_producto
 
       LEFT JOIN produccion_diaria pd
         ON pd.id_producto = p.id_producto
@@ -2284,7 +2289,6 @@ app.get('/stock', async (req, res) => {
         ON ed.id_producto = p.id_producto
 
       WHERE p.activo = 1
-
       GROUP BY p.id_producto
       ORDER BY p.nombre
     `)
@@ -2294,6 +2298,7 @@ app.get('/stock', async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
+
 // =============================
 // SERVER
 // =============================
