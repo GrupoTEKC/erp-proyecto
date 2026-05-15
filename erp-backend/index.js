@@ -2192,25 +2192,12 @@ app.get('/produccion/:fecha', async (req, res) => {
 
 app.get('/produccion/validar', async (req, res) => {
   try {
-    const hoy = new Date()
+    // 🔓 YA NO VALIDAMOS NADA
+    // Siempre dejamos trabajar libremente
 
-const ayer = new Date(
-  hoy.getFullYear(),
-  hoy.getMonth(),
-  hoy.getDate() - 1
-)
-
-    const fechaAyer = ayer.toLocaleDateString('sv-SE')
-    
-    const [rows] = await db.query(`
-      SELECT COUNT(*) as total
-      FROM produccion_diaria
-      WHERE fecha = ?
-    `, [fechaAyer])
-
-    const faltaAyer = rows[0].total === 0
-
-    res.json({ faltaAyer })
+    return res.json({
+      faltaAyer: false
+    })
 
   } catch (error) {
     console.error('Error validar producción:', error)
@@ -2220,37 +2207,56 @@ const ayer = new Date(
 
 app.post('/inventario-inicial', async (req, res) => {
   try {
-    const { datos, semana } = req.body
+    const { datos, periodo } = req.body
+
+    if (!periodo) {
+      return res.status(400).json({ error: 'Periodo requerido' })
+    }
+
+    if (!Array.isArray(datos)) {
+      return res.status(400).json({ error: 'Datos inválidos' })
+    }
 
     for (const item of datos) {
+      if (!item.id_producto) continue
+
       await db.query(`
-        INSERT INTO inventario_inicial (id_producto, semana, cantidad)
+        INSERT INTO inventario_inicial (id_producto, periodo, cantidad)
         VALUES (?, ?, ?)
         ON DUPLICATE KEY UPDATE cantidad = VALUES(cantidad)
-      `, [item.id_producto, semana, item.cantidad])
+      `, [
+        item.id_producto,
+        periodo,
+        item.cantidad || 0
+      ])
     }
 
     res.json({ ok: true })
   } catch (error) {
+    console.error(error)
     res.status(500).json({ error: 'Error al guardar inventario' })
   }
 })
-
-app.get('/inventario-inicial/:semana', async (req, res) => {
+app.get('/inventario-inicial/:periodo', async (req, res) => {
   try {
-    const { semana } = req.params
+    const { periodo } = req.params
 
     const [rows] = await db.query(`
-      SELECT p.id_producto, p.nombre, 
-             IFNULL(i.cantidad, 0) as cantidad
+      SELECT 
+        p.id_producto, 
+        p.nombre, 
+        IFNULL(i.cantidad, 0) as cantidad
       FROM productos p
       LEFT JOIN inventario_inicial i 
         ON p.id_producto = i.id_producto 
-        AND i.semana = ?
-    `, [semana])
+        AND i.periodo = ?
+      WHERE p.activo = 1
+      ORDER BY p.nombre
+    `, [periodo])
 
     res.json(rows)
-  } catch {
+  } catch (error) {
+    console.error(error)
     res.status(500).json({ error: 'Error al obtener inventario' })
   }
 })
