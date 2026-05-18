@@ -2272,9 +2272,9 @@ app.get('/stock', async (req, res) => {
         COALESCE(pd.producido, 0) AS producido,
         COALESCE(ed.salidas, 0) AS salidas,
 
-        -- 🔥 SOLO prueba (fase 1)
-        COALESCE(ii.inicial, 0) + 
-        COALESCE(pd.producido, 0) AS stock
+      COALESCE(ii.inicial, 0) + 
+      COALESCE(pd.producido, 0) - 
+      COALESCE(ed.salidas, 0) AS stock
 
       FROM productos p
 
