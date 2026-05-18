@@ -2268,33 +2268,44 @@ app.get('/stock', async (req, res) => {
         p.id_producto,
         p.nombre,
 
-        COALESCE(ii.inicial, 0) AS inicial,  -- 👈 FIX
+        -- ✅ INVENTARIO INICIAL
+        COALESCE(ii.inicial, 0) AS inicial,
 
-        COALESCE(SUM(pd.cantidad), 0) AS producido,
-        COALESCE(SUM(ed.cantidad_entregada), 0) AS salidas,
+        -- ✅ PRODUCCIÓN
+        COALESCE(pd.producido, 0) AS producido,
 
-     COALESCE(ii.inicial, 0) AS inicial,
-     COALESCE(SUM(pd.cantidad), 0) AS producido,
-     COALESCE(SUM(ed.cantidad_entregada), 0) AS salidas
+        -- ✅ SALIDAS
+        COALESCE(ed.salidas, 0) AS salidas,
+
+        -- ✅ STOCK (MISMA FORMULA FRONTEND)
+        COALESCE(ii.inicial, 0) +
+        COALESCE(pd.producido, 0) -
+        COALESCE(ed.salidas, 0) AS stock
 
       FROM productos p
 
-      -- 👇 SOLO inventario inicial en subquery
+      -- 🔹 INVENTARIO INICIAL AISLADO
       LEFT JOIN (
         SELECT id_producto, SUM(cantidad) AS inicial
         FROM inventario_inicial
         GROUP BY id_producto
       ) ii ON ii.id_producto = p.id_producto
 
-      -- 👇 ESTO LO DEJAMOS COMO lo tenías
-      LEFT JOIN produccion_diaria pd
-        ON pd.id_producto = p.id_producto
+      -- 🔹 PRODUCCIÓN AISLADA
+      LEFT JOIN (
+        SELECT id_producto, SUM(cantidad) AS producido
+        FROM produccion_diaria
+        GROUP BY id_producto
+      ) pd ON pd.id_producto = p.id_producto
 
-      LEFT JOIN entrega_detalle ed
-        ON ed.id_producto = p.id_producto
+      -- 🔹 SALIDAS AISLADAS
+      LEFT JOIN (
+        SELECT id_producto, SUM(cantidad_entregada) AS salidas
+        FROM entrega_detalle
+        GROUP BY id_producto
+      ) ed ON ed.id_producto = p.id_producto
 
       WHERE p.activo = 1
-      GROUP BY p.id_producto
       ORDER BY p.nombre
     `)
 
