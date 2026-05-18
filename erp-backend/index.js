@@ -2265,36 +2265,34 @@ app.get('/stock', async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT 
-        p.id_producto,
-        p.nombre,
+        t.*,
+        (t.inicial + t.producido - t.salidas) AS stock
+      FROM (
+        SELECT 
+          p.id_producto,
+          p.nombre,
+          COALESCE(ii.inicial, 0) AS inicial,
+          COALESCE(SUM(pd.cantidad), 0) AS producido,
+          COALESCE(SUM(ed.cantidad_entregada), 0) AS salidas
+        FROM productos p
 
-        COALESCE(ii.inicial, 0) AS inicial,
-        COALESCE(SUM(pd.cantidad), 0) AS producido,
-        COALESCE(SUM(ed.cantidad_entregada), 0) AS salidas,
+        LEFT JOIN (
+          SELECT id_producto, SUM(cantidad) AS inicial
+          FROM inventario_inicial
+          GROUP BY id_producto
+        ) ii ON ii.id_producto = p.id_producto
 
-        -- 🔥 SOLO ESTO AGREGAMOS
-        COALESCE(ii.inicial, 0) +
-        COALESCE(SUM(pd.cantidad), 0) -
-        COALESCE(SUM(ed.cantidad_entregada), 0) AS stock
+        LEFT JOIN produccion_diaria pd
+          ON pd.id_producto = p.id_producto
 
-      FROM productos p
+        LEFT JOIN entrega_detalle ed
+          ON ed.id_producto = p.id_producto
 
-      LEFT JOIN (
-        SELECT id_producto, SUM(cantidad) AS inicial
-        FROM inventario_inicial
-        GROUP BY id_producto
-      ) ii ON ii.id_producto = p.id_producto
+        WHERE p.activo = 1
+        GROUP BY p.id_producto
+      ) t
 
-      LEFT JOIN produccion_diaria pd
-        ON pd.id_producto = p.id_producto
-
-      LEFT JOIN entrega_detalle ed
-        ON ed.id_producto = p.id_producto
-
-      WHERE p.activo = 1
-      GROUP BY p.id_producto
-
-      ORDER BY p.nombre
+      ORDER BY t.nombre
     `)
 
     res.json(rows)
@@ -2302,7 +2300,6 @@ app.get('/stock', async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
-
 
 // =============================
 // SERVER
