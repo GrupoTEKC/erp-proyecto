@@ -2279,18 +2279,22 @@ app.get('/stock', async (req, res) => {
 
       FROM productos p
 
+      -- INVENTARIO INICIAL (ACUMULADO NORMAL)
       LEFT JOIN (
         SELECT id_producto, SUM(cantidad) AS inicial
         FROM inventario_inicial
         GROUP BY id_producto
       ) ii ON ii.id_producto = p.id_producto
 
+      -- 🔥 ENTRADAS SOLO DEL PERIODO (MES ACTUAL)
       LEFT JOIN (
         SELECT id_producto, SUM(cantidad) AS producido
         FROM produccion_diaria
+        WHERE DATE_FORMAT(fecha, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')
         GROUP BY id_producto
       ) pd ON pd.id_producto = p.id_producto
 
+      -- SALIDAS (puedes dejarlo igual o también filtrar por periodo si quieres consistencia)
       LEFT JOIN (
         SELECT id_producto, SUM(cantidad_entregada) AS salidas
         FROM entrega_detalle
@@ -2306,7 +2310,6 @@ app.get('/stock', async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
-
 // =============================
 // SERVER
 // =============================
