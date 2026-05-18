@@ -2260,7 +2260,6 @@ app.get('/inventario-inicial/:periodo', async (req, res) => {
     res.status(500).json({ error: 'Error al obtener inventario' })
   }
 })
-
 app.get('/stock', async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -2268,25 +2267,28 @@ app.get('/stock', async (req, res) => {
         p.id_producto,
         p.nombre,
 
+        -- INVENTARIO INICIAL
         COALESCE(ii.inicial, 0) AS inicial,
+
+        -- ENTRADAS (SOLO MES ACTUAL)
         COALESCE(pd.producido, 0) AS producido,
+
+        -- SALIDAS
         COALESCE(ed.salidas, 0) AS salidas,
 
-        -- ✅ STOCK (NO SE TOCA)
+        -- STOCK (NO SE TOCA)
         COALESCE(ii.inicial, 0) + 
         COALESCE(pd.producido, 0) - 
         COALESCE(ed.salidas, 0) AS stock
 
       FROM productos p
 
-      -- INVENTARIO INICIAL (ACUMULADO NORMAL)
       LEFT JOIN (
         SELECT id_producto, SUM(cantidad) AS inicial
         FROM inventario_inicial
         GROUP BY id_producto
       ) ii ON ii.id_producto = p.id_producto
 
-      -- 🔥 ENTRADAS SOLO DEL PERIODO (MES ACTUAL)
       LEFT JOIN (
         SELECT id_producto, SUM(cantidad) AS producido
         FROM produccion_diaria
@@ -2294,7 +2296,6 @@ app.get('/stock', async (req, res) => {
         GROUP BY id_producto
       ) pd ON pd.id_producto = p.id_producto
 
-      -- SALIDAS (puedes dejarlo igual o también filtrar por periodo si quieres consistencia)
       LEFT JOIN (
         SELECT id_producto, SUM(cantidad_entregada) AS salidas
         FROM entrega_detalle
