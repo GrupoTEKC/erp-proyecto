@@ -2268,28 +2268,37 @@ app.get('/stock', async (req, res) => {
         p.id_producto,
         p.nombre,
 
+        -- ✅ INVENTARIO INICIAL
         COALESCE(ii.inicial, 0) AS inicial,
+
+        -- ✅ ENTRADAS (PRODUCCIÓN)
         COALESCE(pd.producido, 0) AS producido,
+
+        -- ✅ SALIDAS
         COALESCE(ed.salidas, 0) AS salidas,
 
-      COALESCE(ii.inicial, 0) + 
-      COALESCE(pd.producido, 0) - 
-      COALESCE(ed.salidas, 0) AS stock
+        -- ✅ STOCK (TU FÓRMULA, NO SE TOCA)
+        COALESCE(ii.inicial, 0) + 
+        COALESCE(pd.producido, 0) - 
+        COALESCE(ed.salidas, 0) AS stock
 
       FROM productos p
 
+      -- 🔹 INVENTARIO INICIAL (ACUMULADO)
       LEFT JOIN (
         SELECT id_producto, SUM(cantidad) AS inicial
         FROM inventario_inicial
         GROUP BY id_producto
       ) ii ON ii.id_producto = p.id_producto
 
+      -- 🔹 PRODUCCIÓN (ACUMULADO)
       LEFT JOIN (
         SELECT id_producto, SUM(cantidad) AS producido
         FROM produccion_diaria
         GROUP BY id_producto
       ) pd ON pd.id_producto = p.id_producto
 
+      -- 🔹 SALIDAS (ACUMULADO)
       LEFT JOIN (
         SELECT id_producto, SUM(cantidad_entregada) AS salidas
         FROM entrega_detalle
