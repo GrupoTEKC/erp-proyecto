@@ -2148,9 +2148,9 @@ app.post('/produccion', async (req, res) => {
         INSERT INTO produccion_diaria 
         (id_producto, fecha, cantidad, capturado_por)
         VALUES (?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE 
-          cantidad = VALUES(cantidad),
-          capturado_por = VALUES(capturado_por)
+       ON DUPLICATE KEY UPDATE 
+        cantidad = cantidad + VALUES(cantidad),
+        capturado_por = VALUES(capturado_por)
       `, [
         item.id_producto,
         fechaFinal,
