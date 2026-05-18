@@ -2273,9 +2273,9 @@ app.get('/stock', async (req, res) => {
         COALESCE(SUM(pd.cantidad), 0) AS producido,
         COALESCE(SUM(ed.cantidad_entregada), 0) AS salidas,
 
-        COALESCE(ii.inicial, 0) +
-        COALESCE(SUM(pd.cantidad), 0) - 
-        COALESCE(SUM(ed.cantidad_entregada), 0) AS stock
+     COALESCE(ii.inicial, 0) AS inicial,
+     COALESCE(SUM(pd.cantidad), 0) AS producido,
+     COALESCE(SUM(ed.cantidad_entregada), 0) AS salidas
 
       FROM productos p
 
