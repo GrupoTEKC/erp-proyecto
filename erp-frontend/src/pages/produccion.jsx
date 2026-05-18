@@ -395,7 +395,8 @@ if (bloqueado) {
 </thead>
   <tbody>
     {stock.map(p => {
-    const stockFinal = (p.inicial || 0) + (p.producido || 0)
+    const stockFinal =
+  Number(p.inicial) + Number(p.producido)
       return (
         <tr key={p.id_producto}>
        <td style={{
