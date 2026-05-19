@@ -294,6 +294,7 @@ const imprimirPedido = async (pedido) => {
 
               const subtotal = cantidad * precio
 
+              
               return `
                 <tr>
                   <td>${cantidad}</td>
@@ -551,12 +552,6 @@ const guardarEntrega = async () => {
 
     // RECARGAR PEDIDOS
    cargarPedidos()
-
-    setTimeout(() => {
-    imprimirPedido({
-    id_pedido: pedidoSeleccionado
-    })
-    }, 300)
 
   } catch (error) {
     console.error(error)
@@ -828,6 +823,14 @@ const programarPedido = async () => {
                         onClick={() => abrirCancelar(p.id_pedido)}
                       >
                         Cancelar
+                      </button>
+
+                      <button
+                      style={{ ...styles.button, backgroundColor: '#2c3e50', color: '#fff' }}
+                      disabled={p.estado !== 'en_ruta'}
+                      onClick={() => imprimirPedido(p)}
+                      >
+                      Imprimir
                       </button>
                     </div>
                   </div>
