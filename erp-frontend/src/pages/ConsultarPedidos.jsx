@@ -84,6 +84,7 @@ function ConsultarPedidos() {
   const [editarUnidad, setEditarUnidad] = useState(false)
   const [editarChofer, setEditarChofer] = useState(false)
   const [comentarioProgramacion, setComentarioProgramacion] = useState('')
+  const [pedidosSeleccionados, setPedidosSeleccionados] = useState([])
   const [form, setForm] = useState({
     id_chofer: '',
     id_unidad: '',
@@ -139,6 +140,14 @@ function ConsultarPedidos() {
     }
   }
 
+  const togglePedido = (id) => {
+  if (pedidosSeleccionados.includes(id)) {
+    setPedidosSeleccionados(pedidosSeleccionados.filter(p => p !== id))
+  } else {
+    setPedidosSeleccionados([...pedidosSeleccionados, id])
+  }
+}
+  
   // 🔥 FILTRO COMPLETO
   const pedidosFiltrados = pedidos.filter(p =>
     (
@@ -201,7 +210,80 @@ const abrirEntrega = async (id) => {
   setEditarUnidad(false)
   setModalEntrega(true)
 }
+const imprimirMultiples = async () => {
+  try {
+    let contenidoTotal = ''
 
+    for (const id of pedidosSeleccionados) {
+      const res = await fetch(`${urlLimpia}/pedidos/${id}/detalle`)
+      const detalle = await res.json()
+      const pedidoActual = pedidos.find(p => p.id_pedido === id)
+
+      const contenido = `
+        <div class="copia">
+          <h3>Pedido #${id}</h3>
+          <div><strong>Cliente:</strong> ${pedidoActual?.cliente || ''}</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Cant.</th>
+                <th>Producto</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${detalle.map(p => `
+                <tr>
+                  <td>${p.cantidad}</td>
+                  <td>${p.nombre}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `
+
+      contenidoTotal += contenido
+    }
+
+    const win = window.open('', '_blank')
+
+    win.document.write(`
+      <html>
+        <head>
+          <style>
+            body { font-family: Arial; }
+            .copia {
+              page-break-after: always;
+              margin-bottom: 20px;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+            }
+            td, th {
+              border: 1px solid #000;
+              padding: 4px;
+            }
+          </style>
+        </head>
+        <body>
+          ${contenidoTotal}
+        </body>
+      </html>
+    `)
+
+    win.document.close()
+
+    setTimeout(() => {
+      win.print()
+      win.close()
+    }, 800)
+
+  } catch (err) {
+    console.error(err)
+    alert('Error al imprimir múltiples')
+  }
+}
 const imprimirPedido = async (pedido) => {
   try {
     const res = await fetch(`${urlLimpia}/pedidos/${pedido.id_pedido}/detalle`)
@@ -295,6 +377,7 @@ const imprimirPedido = async (pedido) => {
               const subtotal = cantidad * precio
 
               
+              
               return `
                 <tr>
                   <td>${cantidad}</td>
@@ -360,12 +443,12 @@ const imprimirPedido = async (pedido) => {
               overflow: hidden;
             }
 
-       .header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between; /* 🔥 déjalo así */
-  margin-bottom: 10px;
-}
+             .header {
+              display: flex;
+              align-items: center;
+              justify-content: space-between; /* 🔥 déjalo así */
+              margin-bottom: 10px;
+              }
 
             .logos {
               display: flex;
@@ -390,18 +473,18 @@ const imprimirPedido = async (pedido) => {
             }
 
           .empresa {
-  flex: 1;
-  text-align: center;
-  font-size: 11px;
-  line-height: 1.4;
-  margin: 0 auto; /* 🔥 esto lo centra REAL */
-}
-   .titulo {
-  font-size: 19px;
-  font-weight: bold;
-  letter-spacing: 0.5px; /* 🔥 se ve más “empresa” */
-  margin-bottom: 4px;
-}
+          flex: 1;
+          text-align: center;
+          font-size: 11px;
+          line-height: 1.4;
+          margin: 0 auto; /* 🔥 esto lo centra REAL */
+          }
+         .titulo {
+          font-size: 19px;
+          font-weight: bold;
+          letter-spacing: 0.5px; /* 🔥 se ve más “empresa” */
+          margin-bottom: 4px;
+          }
 
             .folio {
               width: 130px;
@@ -697,6 +780,14 @@ const programarPedido = async () => {
 
       <h2 style={styles.title}>Consultar pedidos</h2>
 
+      <button
+      style={{ ...styles.button, ...styles.primary, marginBottom: 10 }}
+      disabled={pedidosSeleccionados.length === 0}
+      onClick={imprimirMultiples}
+      >
+     🖨 Imprimir seleccionados ({pedidosSeleccionados.length})
+       </button>
+       
       <div style={styles.topBar}>
         <input
           style={{ ...styles.field, marginBottom: 0 }}
@@ -785,6 +876,12 @@ const programarPedido = async () => {
                     ...styles.tarjeta,
                     backgroundColor: alerta ? '#ffe5e5' : '#fff'
                   }}>
+                    <input
+                   type="checkbox"
+                   checked={pedidosSeleccionados.includes(p.id_pedido)}
+                   onChange={() => togglePedido(p.id_pedido)}
+                   />
+                    
                     <strong>ID:</strong> {p.id_pedido} <br />
                     <strong>Cliente:</strong> {p.cliente} <br />
                     <strong>Tienda:</strong> {p.nombre_tienda || '-'} <br />
