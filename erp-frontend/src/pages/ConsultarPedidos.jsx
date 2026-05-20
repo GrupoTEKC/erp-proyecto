@@ -214,6 +214,7 @@ const abrirEntrega = async (id) => {
 const imprimirMultiples = async () => {
   try {
 
+      const logoSrc = logo
     // 🔥 FILTRAR SOLO LOS QUE APLICAN
     const pedidosValidos = pedidos
       .filter(p => pedidosSeleccionados.includes(p.id_pedido))
@@ -226,7 +227,7 @@ const imprimirMultiples = async () => {
       if (!grupos[key]) grupos[key] = []
       grupos[key].push(p)
     })
-
+  
     let contenidoTotal = ''
 
     // 🔥 RECORRER GRUPOS
@@ -234,11 +235,16 @@ const imprimirMultiples = async () => {
       const pedidosGrupo = grupos[grupoKey]
       const primerPedido = pedidosGrupo[0]
 
+       const detalles = await Promise.all(
+    pedidosGrupo.map(p =>
+      fetch(`${urlLimpia}/pedidos/${p.id_pedido}/detalle`)
+        .then(r => r.json())
+    )
+  )
       let bloquePedidos = ''
-
-      for (const pedido of pedidosGrupo) {
-        const res = await fetch(`${urlLimpia}/pedidos/${pedido.id_pedido}/detalle`)
-        const detalle = await res.json()
+      for (let i = 0; i < pedidosGrupo.length; i++) {
+       const pedido = pedidosGrupo[i]
+      const detalle = detalles[i]
 
         bloquePedidos += `
           <div class="pedido">
@@ -274,8 +280,6 @@ const imprimirMultiples = async () => {
         <div class="hoja">
           
           <div class="header">
-            <img src="${logo}" class="logo"/>
-            
             <div class="info">
               <div>Carretera federal Perote – Teziutlán</div>
               <div>Calle Piñón No. 2, Loc. Magueyitos</div>
@@ -969,10 +973,11 @@ const programarPedido = async () => {
                     backgroundColor: alerta ? '#ffe5e5' : '#fff'
                   }}>
                     <input
-                   type="checkbox"
-                   checked={pedidosSeleccionados.includes(p.id_pedido)}
-                   onChange={() => togglePedido(p.id_pedido)}
-                   />
+                    type="checkbox"
+                    checked={pedidosSeleccionados.includes(p.id_pedido)}
+                    onChange={() => togglePedido(p.id_pedido)}
+                    disabled={p.estado !== 'en_ruta'} // 🔥 aquí va
+                    />
                     
                     <strong>ID:</strong> {p.id_pedido} <br />
                     <strong>Cliente:</strong> {p.cliente} <br />
