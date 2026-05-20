@@ -228,8 +228,12 @@ const imprimirMultiples = async () => {
       grupos[key].push(p)
     })
   
-    let contenidoTotal = ''
-
+   let contenidoTotal = `
+  <div style="text-align:center; font-size:11px; margin-bottom:10px;">
+    Carretera federal Perote – Teziutlán<br/>
+    Calle Piñón No. 2, Loc. Magueyitos
+  </div>
+`
     // 🔥 RECORRER GRUPOS
     for (const grupoKey in grupos) {
       const pedidosGrupo = grupos[grupoKey]
@@ -249,23 +253,39 @@ const imprimirMultiples = async () => {
         bloquePedidos += `
           <div class="pedido">
             <div class="titulo-pedido">
-              Pedido ${pedido.id_pedido} | ${pedido.cliente}
+           Pedido ${pedido.id_pedido} | ${pedido.cliente}${pedido.nombre_tienda ? ' - ' + pedido.nombre_tienda : ''}
             </div>
 
             <table>
               ${detalle.map(p => {
-                const cantidad = Number(p.cantidad || 0)
-                const precio = Number(p.precio || 0)
+               const cantidad = Number(
+  p.cantidad_entregada ??
+  p.cantidad_planeada ??
+  p.cantidad ??
+  p.cantidad_pedida ??
+  0
+)
+
+const precio = Number(
+  p.precio_unitario ??
+  p.precio_venta ??
+  p.precio ??
+  p.precio_lista ??
+  p.precio_final ??
+  p.precio_cliente ??
+  0
+)
                 const subtotal = cantidad * precio
 
-                return `
-                  <tr>
-                    <td>${cantidad}</td>
-                    <td>${p.nombre}</td>
-                    <td>$${precio.toFixed(2)}</td>
-                    <td>$${subtotal.toFixed(2)}</td>
-                  </tr>
-                `
+               return `
+               <tr>
+                   <td style="width:60px; text-align:center;">${cantidad}</td>
+                   <td>${p.nombre}</td>
+                   <td style="width:90px; text-align:right;">$${precio.toFixed(2)}</td>
+                   <td style="width:110px; text-align:right;">$${subtotal.toFixed(2)}</td>
+               </tr>
+                     `
+                
               }).join('')}
             </table>
 
@@ -279,17 +299,10 @@ const imprimirMultiples = async () => {
       contenidoTotal += `
         <div class="hoja">
           
-          <div class="header">
-            <div class="info">
-              <div>Carretera federal Perote – Teziutlán</div>
-              <div>Calle Piñón No. 2, Loc. Magueyitos</div>
-            </div>
-
             <div class="fecha">
               <div>${new Date().toLocaleDateString()}</div>
               <div>Ruta ${primerPedido.id_ruta}</div>
             </div>
-          </div>
 
           ${bloquePedidos}
 
@@ -374,7 +387,8 @@ const imprimirMultiples = async () => {
     win.document.close()
     win.focus()
     win.print()
-
+    setPedidosSeleccionados([])
+    
   } catch (error) {
     console.error(error)
   }
