@@ -213,33 +213,87 @@ const abrirEntrega = async (id) => {
   
 const imprimirMultiples = async () => {
   try {
+
+    // 🔥 FILTRAR SOLO LOS QUE APLICAN
+    const pedidosValidos = pedidos
+      .filter(p => pedidosSeleccionados.includes(p.id_pedido))
+      .filter(p => p.estado === 'en_ruta')
+
+    // 🔥 AGRUPAR
+    const grupos = {}
+    pedidosValidos.forEach(p => {
+      const key = `${p.id_ruta}-${p.id_chofer}-${p.id_unidad}-${p.fecha_programada?.slice(0,10)}`
+      if (!grupos[key]) grupos[key] = []
+      grupos[key].push(p)
+    })
+
     let contenidoTotal = ''
 
-    for (const id of pedidosSeleccionados) {
-      const res = await fetch(`${urlLimpia}/pedidos/${id}/detalle`)
-      const detalle = await res.json()
-      const pedidoActual = pedidos.find(p => p.id_pedido === id)
+    // 🔥 RECORRER GRUPOS
+    for (const grupoKey in grupos) {
+      const pedidosGrupo = grupos[grupoKey]
+      const primerPedido = pedidosGrupo[0]
 
-      const contenido = `
-        <div class="pedido">
-          <h3>Pedido #${id}</h3>
-          <div>${pedidoActual?.cliente || ''}</div>
-          <table>
-            ${detalle.map(p => `
-              <tr>
-                <td>${p.nombre}</td>
-                <td>${p.cantidad}</td>
-              </tr>
-            `).join('')}
-          </table>
+      let bloquePedidos = ''
+
+      for (const pedido of pedidosGrupo) {
+        const res = await fetch(`${urlLimpia}/pedidos/${pedido.id_pedido}/detalle`)
+        const detalle = await res.json()
+
+        bloquePedidos += `
+          <div class="pedido">
+            <div class="titulo-pedido">
+              Pedido ${pedido.id_pedido} | ${pedido.cliente}
+            </div>
+
+            <table>
+              ${detalle.map(p => {
+                const cantidad = Number(p.cantidad || 0)
+                const precio = Number(p.precio || 0)
+                const subtotal = cantidad * precio
+
+                return `
+                  <tr>
+                    <td>${cantidad}</td>
+                    <td>${p.nombre}</td>
+                    <td>$${precio.toFixed(2)}</td>
+                    <td>$${subtotal.toFixed(2)}</td>
+                  </tr>
+                `
+              }).join('')}
+            </table>
+
+            <div class="total">
+              TOTAL: $${Number(pedido.total || 0).toFixed(2)}
+            </div>
+          </div>
+        `
+      }
+
+      contenidoTotal += `
+        <div class="hoja">
+          
+          <div class="header">
+            <img src="${logo}" class="logo"/>
+            
+            <div class="info">
+              <div>Carretera federal Perote – Teziutlán</div>
+              <div>Calle Piñón No. 2, Loc. Magueyitos</div>
+            </div>
+
+            <div class="fecha">
+              <div>${new Date().toLocaleDateString()}</div>
+              <div>Ruta ${primerPedido.id_ruta}</div>
+            </div>
+          </div>
+
+          ${bloquePedidos}
+
         </div>
       `
-
-      // 🔥 AQUI ESTÁ LA CLAVE
-      contenidoTotal += contenido
     }
 
-    // 🔥 SOLO UNA VEZ
+    // 🔥 IMPRIMIR
     const win = window.open('', '_blank')
 
     win.document.write(`
@@ -247,8 +301,64 @@ const imprimirMultiples = async () => {
         <head>
           <title>Pedidos</title>
           <style>
-            body { font-family: Arial; }
-            .pedido { page-break-after: always; padding: 20px; }
+            body {
+              font-family: Arial;
+              font-size: 12px;
+              padding: 10px;
+            }
+
+            .header {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 10px;
+            }
+
+            .logo {
+              height: 50px;
+            }
+
+            .info {
+              text-align: center;
+              font-size: 11px;
+            }
+
+            .fecha {
+              text-align: right;
+              font-size: 11px;
+            }
+
+            .pedido {
+              border-top: 1px solid #000;
+              margin-top: 10px;
+              padding-top: 5px;
+            }
+
+            .titulo-pedido {
+              font-weight: bold;
+              margin-bottom: 5px;
+            }
+
+            table {
+              width: 100%;
+              border-collapse: collapse;
+            }
+
+            td {
+              padding: 3px;
+            }
+
+            .total {
+              text-align: right;
+              font-weight: bold;
+              margin-top: 5px;
+            }
+
+            @media print {
+              .hoja {
+                page-break-inside: avoid;
+              }
+            }
           </style>
         </head>
         <body>
