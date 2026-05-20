@@ -210,6 +210,7 @@ const abrirEntrega = async (id) => {
   setEditarUnidad(false)
   setModalEntrega(true)
 }
+  
 const imprimirMultiples = async () => {
   try {
     let contenidoTotal = ''
@@ -220,50 +221,34 @@ const imprimirMultiples = async () => {
       const pedidoActual = pedidos.find(p => p.id_pedido === id)
 
       const contenido = `
-        <div class="copia">
+        <div class="pedido">
           <h3>Pedido #${id}</h3>
-          <div><strong>Cliente:</strong> ${pedidoActual?.cliente || ''}</div>
+          <div>${pedidoActual?.cliente || ''}</div>
           <table>
-            <thead>
+            ${detalle.map(p => `
               <tr>
-                <th>Cant.</th>
-                <th>Producto</th>
+                <td>${p.nombre}</td>
+                <td>${p.cantidad}</td>
               </tr>
-            </thead>
-            <tbody>
-              ${detalle.map(p => `
-                <tr>
-                  <td>${p.cantidad}</td>
-                  <td>${p.nombre}</td>
-                </tr>
-              `).join('')}
-            </tbody>
+            `).join('')}
           </table>
         </div>
       `
 
+      // 🔥 AQUI ESTÁ LA CLAVE
       contenidoTotal += contenido
     }
 
+    // 🔥 SOLO UNA VEZ
     const win = window.open('', '_blank')
 
     win.document.write(`
       <html>
         <head>
+          <title>Pedidos</title>
           <style>
             body { font-family: Arial; }
-            .copia {
-              page-break-after: always;
-              margin-bottom: 20px;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-            }
-            td, th {
-              border: 1px solid #000;
-              padding: 4px;
-            }
+            .pedido { page-break-after: always; padding: 20px; }
           </style>
         </head>
         <body>
@@ -273,17 +258,14 @@ const imprimirMultiples = async () => {
     `)
 
     win.document.close()
+    win.focus()
+    win.print()
 
-    setTimeout(() => {
-      win.print()
-      win.close()
-    }, 800)
-
-  } catch (err) {
-    console.error(err)
-    alert('Error al imprimir múltiples')
+  } catch (error) {
+    console.error(error)
   }
 }
+  
 const imprimirPedido = async (pedido) => {
   try {
     const res = await fetch(`${urlLimpia}/pedidos/${pedido.id_pedido}/detalle`)
