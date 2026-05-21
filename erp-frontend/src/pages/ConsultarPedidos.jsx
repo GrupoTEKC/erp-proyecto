@@ -225,7 +225,6 @@ if (listaChoferes.length === 0) {
   listaChoferes = chData // 🔥 importante
 }
 
-      const logoSrc = logo
     // 🔥 FILTRAR SOLO LOS QUE APLICAN
     const pedidosValidos = pedidos
       .filter(p => pedidosSeleccionados.includes(p.id_pedido))
@@ -322,7 +321,6 @@ const precio = Number(
   <div class="hoja">
   
       <div class="header">
-      <img src="${logoSrc}" class="logo-izq" />
       
     <div class="fecha">
       <div>${new Date().toLocaleDateString()}</div>
@@ -443,16 +441,10 @@ const precio = Number(
   align-items: center;
 }
 
-.logo-izq {
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 50px;
-}
-
-            .header {
-  position: relative;
-  padding-left: 60px;
+          .header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
 }
             .nombre-firma {
             margin-top: 4px;
