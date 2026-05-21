@@ -237,16 +237,24 @@ if (listaChoferes.length === 0) {
       if (!grupos[key]) grupos[key] = []
       grupos[key].push(p)
     })
-  
+    
    let contenidoTotal = `
   <div style="text-align:center; font-size:11px; margin-bottom:10px;">
     Carretera federal Perote – Teziutlán<br/>
     Calle Piñón No. 2, Loc. Magueyitos
   </div>
 `
+    
     // 🔥 RECORRER GRUPOS
     for (const grupoKey in grupos) {
       const pedidosGrupo = grupos[grupoKey]
+
+      const choferesUnicos = new Set(
+  pedidosGrupo.map(p => p.id_chofer)
+)
+
+      const variosChoferes = choferesUnicos.size > 1
+      
       const primerPedido = pedidosGrupo[0]
 
       // 🔥 OBTENER CHOFER IGUAL QUE EN INDIVIDUAL
@@ -318,31 +326,31 @@ const precio = Number(
       }
 
      contenidoTotal += `
-  <div class="hoja">
-  
-      <div class="header">
-      
-    <div class="fecha">
-      <div>${new Date().toLocaleDateString()}</div>
-      <div>Ruta ${primerPedido.id_ruta}</div>
+<div class="hoja">
+
+  <div class="contenido">
+    <div class="header">
+      <div class="fecha">
+        <div>${new Date().toLocaleDateString()}</div>
+        <div>Ruta ${primerPedido.id_ruta}</div>
+      </div>
     </div>
 
     ${bloquePedidos}
-
-    <!-- 🔥 FIRMAS -->
-    <div class="firmas">
-      <div class="firma">
-        <div class="linea">CHOFER</div>
-        <div class="nombre-firma">${choferNombre}</div>
-      </div>
-
-      <div class="firma">
-        <div class="linea">AUTORIZO</div>
-        <div class="nombre-firma">SUPERVISOR: JOSHUA ALVAREZ MENDEZ</div>
-      </div>
-    </div>
-
   </div>
+
+ <div class="firmas ${variosChoferes ? 'horizontal' : 'vertical'}">
+    <div class="firma">
+      <div class="linea">CHOFER</div>
+      <div class="nombre-firma">${choferNombre}</div>
+    </div>
+    <div class="firma">
+      <div class="linea">AUTORIZO</div>
+      <div class="nombre-firma">SUPERVISOR: JOSHUA ALVAREZ MENDEZ</div>
+    </div>
+  </div>
+
+</div>
 `
     }
 
@@ -416,11 +424,22 @@ const precio = Number(
              page-break-after: always;
              }
 
-           .firmas {
-             margin-top: 40px;
-             display: flex;
-             justify-content: space-between;
-            }
+          .firmas {
+  margin-top: 20px;
+}
+
+.firmas.horizontal {
+  display: flex;
+  justify-content: space-between;
+}
+
+.firmas.vertical {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 25px;
+  margin-top: 60px;
+}
 
             .firma {
              width: 42%;
@@ -439,6 +458,22 @@ const precio = Number(
   display: flex;
   justify-content: flex-end; /* todo a la derecha */
   align-items: center;
+}
+
+.hoja {
+  display: flex;
+  flex-direction: column;
+  min-height: 95vh;
+}
+
+.contenido {
+  flex: 1;
+}
+
+.firmas {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
 }
 
           .header {
