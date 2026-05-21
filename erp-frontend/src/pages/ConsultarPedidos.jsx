@@ -214,6 +214,17 @@ const abrirEntrega = async (id) => {
 const imprimirMultiples = async () => {
   try {
 
+    
+    // 🔥 AGREGA ESTO AQUÍ
+  let listaChoferes = choferes
+
+if (listaChoferes.length === 0) {
+  const ch = await fetch(`${urlLimpia}/choferes`)
+  const chData = await ch.json()
+  setChoferes(chData)
+  listaChoferes = chData // 🔥 importante
+}
+
       const logoSrc = logo
     // 🔥 FILTRAR SOLO LOS QUE APLICAN
     const pedidosValidos = pedidos
@@ -239,6 +250,17 @@ const imprimirMultiples = async () => {
       const pedidosGrupo = grupos[grupoKey]
       const primerPedido = pedidosGrupo[0]
 
+      // 🔥 OBTENER CHOFER IGUAL QUE EN INDIVIDUAL
+      const idChofer = primerPedido.id_chofer
+
+     const choferEncontrado = listaChoferes.find(
+  c => c.id_chofer === idChofer
+)
+
+     const choferNombre = choferEncontrado
+     ? `${choferEncontrado.nombre} ${choferEncontrado.apellido_paterno || ''} ${choferEncontrado.apellido_materno || ''}`.trim()
+     : 'SIN CHOFER'
+      
        const detalles = await Promise.all(
     pedidosGrupo.map(p =>
       fetch(`${urlLimpia}/pedidos/${p.id_pedido}/detalle`)
@@ -296,18 +318,34 @@ const precio = Number(
         `
       }
 
-      contenidoTotal += `
-        <div class="hoja">
-          
-            <div class="fecha">
-              <div>${new Date().toLocaleDateString()}</div>
-              <div>Ruta ${primerPedido.id_ruta}</div>
-            </div>
+     contenidoTotal += `
+  <div class="hoja">
+  
+      <div class="header">
+      <img src="${logoSrc}" class="logo-izq" />
+      
+    <div class="fecha">
+      <div>${new Date().toLocaleDateString()}</div>
+      <div>Ruta ${primerPedido.id_ruta}</div>
+    </div>
 
-          ${bloquePedidos}
+    ${bloquePedidos}
 
-        </div>
-      `
+    <!-- 🔥 FIRMAS -->
+    <div class="firmas">
+      <div class="firma">
+        <div class="linea">CHOFER</div>
+        <div class="nombre-firma">${choferNombre}</div>
+      </div>
+
+      <div class="firma">
+        <div class="linea">AUTORIZO</div>
+        <div class="nombre-firma">SUPERVISOR: JOSHUA ALVAREZ MENDEZ</div>
+      </div>
+    </div>
+
+  </div>
+`
     }
 
     // 🔥 IMPRIMIR
@@ -372,10 +410,55 @@ const precio = Number(
             }
 
             @media print {
-              .hoja {
-                page-break-inside: avoid;
-              }
+             .hoja {
+             display: flex;
+             flex-direction: column;
+             min-height: 95vh;
+             justify-content: space-between;
+             page-break-after: always;
+             }
+
+           .firmas {
+             margin-top: 40px;
+             display: flex;
+             justify-content: space-between;
             }
+
+            .firma {
+             width: 42%;
+             text-align: center;
+             font-size: 10px;
+            }
+
+            .linea {
+            border-top: 1px solid #000;
+            padding-top: 4px;
+            font-weight: bold;
+            }
+            
+           .header {
+  position: relative;
+  display: flex;
+  justify-content: flex-end; /* todo a la derecha */
+  align-items: center;
+}
+
+.logo-izq {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 50px;
+}
+
+            .header {
+  position: relative;
+  padding-left: 60px;
+}
+            .nombre-firma {
+            margin-top: 4px;
+            min-height: 14px;
+            }
+          }
           </style>
         </head>
         <body>
@@ -386,7 +469,10 @@ const precio = Number(
 
     win.document.close()
     win.focus()
+    win.onload = () => {
     win.print()
+    win.close()
+}
     setPedidosSeleccionados([])
     
   } catch (error) {
