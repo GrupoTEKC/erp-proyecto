@@ -490,11 +490,12 @@ const precio = Number(
       </html>
     `)
 
+win.document.write(`...`)
 win.document.close()
 
 win.onload = () => {
   win.focus()
-  // ❌ NO imprimir automático
+  win.print()
 }
     
     
