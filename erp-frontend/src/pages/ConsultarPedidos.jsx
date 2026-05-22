@@ -465,8 +465,12 @@ const precio = Number(
 }
 
 .firmas {
-  margin-top: 20px;
+  margin-top: 60px; /* 🔥 más aire */
+  margin-bottom: 40px; /* 🔥 lo sube visualmente del fondo */
+  display: flex;
+  justify-content: space-between;
 }
+
           .header {
   display: flex;
   justify-content: flex-end;
