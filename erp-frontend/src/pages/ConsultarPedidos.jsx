@@ -490,13 +490,28 @@ const precio = Number(
       </html>
     `)
 
-    win.document.close()
-    win.focus()
-    setTimeout(() => {
-  win.focus()
-  win.print()
-  win.close()
-}, 800)
+win.document.close()
+
+const esperarRender = () => {
+  try {
+    if (win.document.readyState === 'complete') {
+      win.focus()
+      win.print()
+
+      // 👇 en móvil NO cierres inmediato
+      setTimeout(() => {
+        win.close()
+      }, 1500)
+    } else {
+      setTimeout(esperarRender, 200)
+    }
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+esperarRender()
+    
     
     setPedidosSeleccionados([])
     
