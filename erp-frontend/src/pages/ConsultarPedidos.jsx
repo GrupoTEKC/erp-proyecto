@@ -424,10 +424,6 @@ const precio = Number(
              page-break-after: always;
              }
 
-      .firmas {
-  margin-top: -10px; /* 🔥 súbelo poquito */
-}
-
 .firmas.horizontal {
   display: flex;
   justify-content: space-between;
@@ -461,28 +457,22 @@ const precio = Number(
 .hoja {
   display: flex;
   flex-direction: column;
-  min-height: 95vh;
+  min-height: auto; /* 🔥 clave */
 }
 
 .contenido {
-  flex: unset; /* 🔥 quita el empuje */
+  flex-grow: 0;
 }
 
 .firmas {
   margin-top: 20px;
-  display: flex;
-  justify-content: space-between;
 }
-
           .header {
   display: flex;
   justify-content: flex-end;
   align-items: center;
 }
 
-.firmas {
-  margin-top: 10px; /* 🔥 antes 20px, bájalo */
-}
             .nombre-firma {
             margin-top: 4px;
             min-height: 14px;
