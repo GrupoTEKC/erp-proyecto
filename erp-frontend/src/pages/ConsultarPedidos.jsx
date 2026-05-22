@@ -492,25 +492,10 @@ const precio = Number(
 
 win.document.close()
 
-const esperarRender = () => {
-  try {
-    if (win.document.readyState === 'complete') {
-      win.focus()
-      win.print()
-
-      // 👇 en móvil NO cierres inmediato
-      setTimeout(() => {
-        win.close()
-      }, 1500)
-    } else {
-      setTimeout(esperarRender, 200)
-    }
-  } catch (e) {
-    console.error(e)
-  }
+win.onload = () => {
+  win.focus()
+  // ❌ NO imprimir automático
 }
-
-esperarRender()
     
     
     setPedidosSeleccionados([])
