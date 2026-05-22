@@ -213,8 +213,6 @@ const abrirEntrega = async (id) => {
   
 const imprimirMultiples = async () => {
   try {
-
-    
     // 🔥 AGREGA ESTO AQUÍ
   let listaChoferes = choferes
 
@@ -336,20 +334,24 @@ const precio = Number(
       </div>
     </div>
 
+   <div class="fila-pedido">
+  <div class="lado-izq">
     ${bloquePedidos}
   </div>
 
- <div class="firmas ${variosChoferes ? 'horizontal' : 'vertical'}">
+  <div class="lado-der">
     <div class="firma">
       <div class="linea">CHOFER</div>
       <div class="nombre-firma">${choferNombre}</div>
     </div>
+
     <div class="firma">
       <div class="linea">AUTORIZO</div>
       <div class="nombre-firma">SUPERVISOR: JOSHUA ALVAREZ MENDEZ</div>
     </div>
   </div>
-
+</div>
+  </div>
 </div>
 `
     }
@@ -368,13 +370,6 @@ const precio = Number(
               padding: 10px;
             }
 
-            .header {
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              margin-bottom: 10px;
-            }
-
             .logo {
               height: 50px;
             }
@@ -389,11 +384,11 @@ const precio = Number(
               font-size: 11px;
             }
 
-            .pedido {
-              border-top: 1px solid #000;
-              margin-top: 10px;
-              padding-top: 5px;
-            }
+         .pedido {
+  border-top: 1px solid #999;
+  margin-top: 6px;
+  padding-top: 3px;
+}
 
             .titulo-pedido {
               font-weight: bold;
@@ -424,23 +419,6 @@ const precio = Number(
              page-break-after: always;
              }
 
-          .firmas {
-  margin-top: 20px;
-}
-
-.firmas.horizontal {
-  display: flex;
-  justify-content: space-between;
-}
-
-.firmas.vertical {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 25px;
-  margin-top: 60px;
-}
-
             .firma {
              width: 42%;
              text-align: center;
@@ -452,13 +430,6 @@ const precio = Number(
             padding-top: 4px;
             font-weight: bold;
             }
-            
-           .header {
-  position: relative;
-  display: flex;
-  justify-content: flex-end; /* todo a la derecha */
-  align-items: center;
-}
 
 .hoja {
   display: flex;
@@ -476,6 +447,27 @@ const precio = Number(
   justify-content: space-between;
 }
 
+.fila-pedido {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.lado-izq {
+  width: 70%;
+}
+
+.lado-der {
+  width: 28%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 30px;
+}
+
+.lado-der .firma {
+  width: 100%;
+}
           .header {
   display: flex;
   justify-content: flex-end;
