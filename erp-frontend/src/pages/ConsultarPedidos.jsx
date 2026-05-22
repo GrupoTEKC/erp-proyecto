@@ -323,9 +323,8 @@ const precio = Number(
         `
       }
 
-     contenidoTotal += `
+   contenidoTotal += `
 <div class="hoja">
-
   <div class="contenido">
     <div class="header">
       <div class="fecha">
@@ -334,28 +333,41 @@ const precio = Number(
       </div>
     </div>
 
-   <div class="fila-pedido">
-  <div class="lado-izq">
-    ${bloquePedidos}
-  </div>
-
-  <div class="lado-der">
-    <div class="firma">
-      <div class="linea">CHOFER</div>
-      <div class="nombre-firma">${choferNombre}</div>
-    </div>
-
-    <div class="firma">
-      <div class="linea">AUTORIZO</div>
-      <div class="nombre-firma">SUPERVISOR: JOSHUA ALVAREZ MENDEZ</div>
-    </div>
-  </div>
-</div>
+    ${variosChoferes ? `
+      <div class="fila-pedido">
+        <div class="lado-izq">
+          ${bloquePedidos}
+        </div>
+        <div class="lado-der">
+          <div class="firma">
+            <div class="linea">CHOFER</div>
+            <div class="nombre-firma">${choferNombre}</div>
+          </div>
+          <div class="firma">
+            <div class="linea">AUTORIZO</div>
+            <div class="nombre-firma">SUPERVISOR: JOSHUA ALVAREZ MENDEZ</div>
+          </div>
+        </div>
+      </div>
+    ` : `
+      <div>
+        ${bloquePedidos}
+      </div>
+      <div class="firmas-abajo">
+        <div class="firma">
+          <div class="linea">CHOFER</div>
+          <div class="nombre-firma">${choferNombre}</div>
+        </div>
+        <div class="firma">
+          <div class="linea">AUTORIZO</div>
+          <div class="nombre-firma">SUPERVISOR: JOSHUA ALVAREZ MENDEZ</div>
+        </div>
+      </div>
+    `}
+    
   </div>
 </div>
 `
-    }
-
     // 🔥 IMPRIMIR
     const win = window.open('', '_blank')
 
@@ -432,9 +444,8 @@ const precio = Number(
             }
 
 .hoja {
-  display: flex;
-  flex-direction: column;
-  min-height: 95vh;
+  display: block;
+  margin-bottom: 20px;
 }
 
 .contenido {
@@ -468,6 +479,17 @@ const precio = Number(
 .lado-der .firma {
   width: 100%;
 }
+            .firmas-abajo {
+  margin-top: 40px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.firmas-abajo .firma {
+  width: 45%;
+  text-align: center;
+}
+            
           .header {
   display: flex;
   justify-content: flex-end;
