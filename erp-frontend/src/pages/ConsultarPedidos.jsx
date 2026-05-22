@@ -424,8 +424,8 @@ const precio = Number(
              page-break-after: always;
              }
 
-          .firmas {
-  margin-top: 20px;
+      .firmas {
+  margin-top: -10px; /* 🔥 súbelo poquito */
 }
 
 .firmas.horizontal {
