@@ -435,10 +435,8 @@ const precio = Number(
 
 .firmas.vertical {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 25px;
-  margin-top: 60px;
+  justify-content: flex-end; /* 👉 todo a la derecha */
+  gap: 40px; /* 👉 separación entre firmas */
 }
 
             .firma {
