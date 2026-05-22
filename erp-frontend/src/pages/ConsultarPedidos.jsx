@@ -492,10 +492,12 @@ const precio = Number(
 
     win.document.close()
     win.focus()
-    win.onload = () => {
-    win.print()
-    win.close()
-}
+    setTimeout(() => {
+  win.focus()
+  win.print()
+  win.close()
+}, 800)
+    
     setPedidosSeleccionados([])
     
   } catch (error) {
