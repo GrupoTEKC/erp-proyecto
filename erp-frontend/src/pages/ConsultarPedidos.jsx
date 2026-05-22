@@ -465,7 +465,7 @@ const precio = Number(
 }
 
 .contenido {
-  flex: 1;
+  flex: unset; /* 🔥 quita el empuje */
 }
 
 .firmas {
@@ -478,6 +478,10 @@ const precio = Number(
   display: flex;
   justify-content: flex-end;
   align-items: center;
+}
+
+.firmas {
+  margin-top: 10px; /* 🔥 antes 20px, bájalo */
 }
             .nombre-firma {
             margin-top: 4px;
