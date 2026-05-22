@@ -213,6 +213,8 @@ const abrirEntrega = async (id) => {
   
 const imprimirMultiples = async () => {
   try {
+
+    
     // 🔥 AGREGA ESTO AQUÍ
   let listaChoferes = choferes
 
@@ -323,8 +325,9 @@ const precio = Number(
         `
       }
 
-   contenidoTotal += `
+     contenidoTotal += `
 <div class="hoja">
+
   <div class="contenido">
     <div class="header">
       <div class="fecha">
@@ -333,41 +336,24 @@ const precio = Number(
       </div>
     </div>
 
-    ${variosChoferes ? `
-      <div class="fila-pedido">
-        <div class="lado-izq">
-          ${bloquePedidos}
-        </div>
-        <div class="lado-der">
-          <div class="firma">
-            <div class="linea">CHOFER</div>
-            <div class="nombre-firma">${choferNombre}</div>
-          </div>
-          <div class="firma">
-            <div class="linea">AUTORIZO</div>
-            <div class="nombre-firma">SUPERVISOR: JOSHUA ALVAREZ MENDEZ</div>
-          </div>
-        </div>
-      </div>
-    ` : `
-      <div>
-        ${bloquePedidos}
-      </div>
-      <div class="firmas-abajo">
-        <div class="firma">
-          <div class="linea">CHOFER</div>
-          <div class="nombre-firma">${choferNombre}</div>
-        </div>
-        <div class="firma">
-          <div class="linea">AUTORIZO</div>
-          <div class="nombre-firma">SUPERVISOR: JOSHUA ALVAREZ MENDEZ</div>
-        </div>
-      </div>
-    `}
-    
+    ${bloquePedidos}
   </div>
+
+ <div class="firmas ${variosChoferes ? 'horizontal' : 'vertical'}">
+    <div class="firma">
+      <div class="linea">CHOFER</div>
+      <div class="nombre-firma">${choferNombre}</div>
+    </div>
+    <div class="firma">
+      <div class="linea">AUTORIZO</div>
+      <div class="nombre-firma">SUPERVISOR: JOSHUA ALVAREZ MENDEZ</div>
+    </div>
+  </div>
+
 </div>
 `
+    }
+
     // 🔥 IMPRIMIR
     const win = window.open('', '_blank')
 
@@ -380,6 +366,13 @@ const precio = Number(
               font-family: Arial;
               font-size: 12px;
               padding: 10px;
+            }
+
+            .header {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 10px;
             }
 
             .logo {
@@ -396,11 +389,11 @@ const precio = Number(
               font-size: 11px;
             }
 
-         .pedido {
-  border-top: 1px solid #999;
-  margin-top: 6px;
-  padding-top: 3px;
-}
+            .pedido {
+              border-top: 1px solid #000;
+              margin-top: 10px;
+              padding-top: 5px;
+            }
 
             .titulo-pedido {
               font-weight: bold;
@@ -431,6 +424,23 @@ const precio = Number(
              page-break-after: always;
              }
 
+          .firmas {
+  margin-top: 20px;
+}
+
+.firmas.horizontal {
+  display: flex;
+  justify-content: space-between;
+}
+
+.firmas.vertical {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 25px;
+  margin-top: 60px;
+}
+
             .firma {
              width: 42%;
              text-align: center;
@@ -442,10 +452,18 @@ const precio = Number(
             padding-top: 4px;
             font-weight: bold;
             }
+            
+           .header {
+  position: relative;
+  display: flex;
+  justify-content: flex-end; /* todo a la derecha */
+  align-items: center;
+}
 
 .hoja {
-  display: block;
-  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  min-height: 95vh;
 }
 
 .contenido {
@@ -458,38 +476,6 @@ const precio = Number(
   justify-content: space-between;
 }
 
-.fila-pedido {
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-}
-
-.lado-izq {
-  width: 70%;
-}
-
-.lado-der {
-  width: 28%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 30px;
-}
-
-.lado-der .firma {
-  width: 100%;
-}
-            .firmas-abajo {
-  margin-top: 40px;
-  display: flex;
-  justify-content: space-between;
-}
-
-.firmas-abajo .firma {
-  width: 45%;
-  text-align: center;
-}
-            
           .header {
   display: flex;
   justify-content: flex-end;
