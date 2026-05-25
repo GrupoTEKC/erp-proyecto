@@ -17,6 +17,8 @@ function Produccion() {
   const [stock, setStock] = useState([])
   const [invSeleccionados, setInvSeleccionados] = useState([])
   const [busquedaInv, setBusquedaInv] = useState('')
+  const [calendario, setCalendario] = useState({})
+  const anioActual = new Date().getFullYear()
   
   useEffect(() => {
     init()
@@ -30,6 +32,7 @@ const init = async () => {
     // 🔥 PRIMERO define bloqueo
     setBloqueado(val.faltaAyer)
 
+    await cargarCalendario()
     // 🔥 SOLO si NO está bloqueado carga datos
     if (!val.faltaAyer) {
       await cargarDatos()
@@ -68,6 +71,16 @@ const init = async () => {
     console.error('Error stock')
   }
 }
+
+ const cargarCalendario = async () => {
+  try {
+    const res = await fetch(`${API}/produccion/calendario-anual?anio=${anioActual}`)
+    const data = await res.json()
+    setCalendario(data)
+  } catch {
+    console.error('Error calendario')
+  }
+} 
   // 🔍 FILTRO
   const filtrados = productos.filter(p =>
     p.nombre.toLowerCase().includes(busqueda.toLowerCase())
@@ -247,6 +260,36 @@ if (bloqueado) {
   </h1>
 
   <img src={logo} alt="logo" style={styles.logo} />
+</div>
+      <div style={{ marginBottom: 30 }}>
+ {calendario && Object.keys(calendario).map((mes) => (
+    <div key={mes} style={{ marginBottom: 10 }}>
+      
+      <h4 style={{ margin: '5px 0' }}>
+        Mes {mes}
+      </h4>
+
+      <div style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: 5
+      }}>
+      {calendario[mes]?.map((diaObj) => (
+          <div
+            key={diaObj.fecha}
+            style={{
+              width: 25,
+              height: 25,
+              backgroundColor: diaObj.capturado ? 'green' : 'red',
+              borderRadius: 4
+            }}
+            title={diaObj.fecha}
+          />
+        ))}
+      </div>
+
+    </div>
+  ))}
 </div>
       
       <h2 style={styles.title}>PRODUCCIÓN DIARIA</h2>
