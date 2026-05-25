@@ -1,4 +1,4 @@
-console.log("🔥 VERSION:", "18 MARZO");
+console.log("🔥 VERSION:", "25 MAYO");
 console.log("🌐 DB:", process.env.DB_NAME);
 
 require('dotenv').config()
@@ -1235,7 +1235,8 @@ app.post('/pagos', async (req, res) => {
       cuenta_destino,
       id_usuario,
       tipo_usuario,
-      nombre_usuario
+      nombre_usuario,
+      fecha_pago
     } = req.body
 
     // =============================
@@ -1265,6 +1266,9 @@ app.post('/pagos', async (req, res) => {
       return res.status(400).json({ error: 'Tipo usuario inválido' })
     }
 
+    if (!fecha_pago) {
+    return res.status(400).json({ error: 'Fecha de abono requerida' })
+    }
     // =============================
     // 🔥 VALIDAR CUENTA
     // =============================
@@ -1274,7 +1278,7 @@ app.post('/pagos', async (req, res) => {
       if (!cuenta_destino || !cuentasValidas.includes(cuenta_destino)) {
         return res.status(400).json({ error: 'Cuenta destino inválida' })
       }
-    }
+  }
 
     // =============================
     // 🔥 EFECTIVO: OBLIGAR NOMBRE
@@ -1344,9 +1348,10 @@ app.post('/pagos', async (req, res) => {
         tipo_usuario,
         nombre_usuario
       )
-      VALUES (?, CURRENT_DATE(), ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       id_pedido,
+      fecha_pago, 
       montoNum,
       metodo,
       cuentaFinal,
