@@ -2312,6 +2312,59 @@ app.get('/stock', async (req, res) => {
   }
 })
 
+
+app.get('/produccion/calendario-anual', async (req, res) => {
+  try {
+    const { anio } = req.query
+
+    if (!anio) {
+      return res.status(400).json({ error: 'Año requerido' })
+    }
+
+    const inicio = `${anio}-01-01`
+    const fin = `${anio}-12-31`
+
+    const [rows] = await db.query(`
+      SELECT DISTINCT fecha
+      FROM produccion_diaria
+      WHERE fecha BETWEEN ? AND ?
+    `, [inicio, fin])
+
+    // ✅ CORREGIDO AQUÍ
+    const diasCapturados = new Set(
+      rows.map(r => {
+        const f = new Date(r.fecha)
+        return f.toISOString().split('T')[0]
+      })
+    )
+
+    const resultado = {}
+
+    for (let mes = 1; mes <= 12; mes++) {
+      const mesStr = String(mes).padStart(2, '0')
+      const totalDias = new Date(anio, mes, 0).getDate()
+
+      resultado[mesStr] = []
+
+      for (let d = 1; d <= totalDias; d++) {
+        const dia = String(d).padStart(2, '0')
+        const fecha = `${anio}-${mesStr}-${dia}`
+
+        resultado[mesStr].push({
+          dia: d,
+          fecha,
+          capturado: diasCapturados.has(fecha)
+        })
+      }
+    }
+
+    res.json(resultado)
+
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // =============================
 // SERVER
 // =============================
