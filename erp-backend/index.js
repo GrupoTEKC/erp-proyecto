@@ -1407,6 +1407,7 @@ app.get('/pagos/:id_pedido', async (req, res) => {
       SELECT 
         id_pago,
         fecha_pago,
+        fecha_registro,
         monto,
         metodo,
         cuenta_destino,
@@ -1414,7 +1415,7 @@ app.get('/pagos/:id_pedido', async (req, res) => {
         nombre_usuario
       FROM pagos
       WHERE id_pedido = ?
-      ORDER BY fecha_pago DESC
+      ORDER BY fecha_pago DESC, fecha_registro DESC
     `, [id_pedido])
 
     res.json(rows)
