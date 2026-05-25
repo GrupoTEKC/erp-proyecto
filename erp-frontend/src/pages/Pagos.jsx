@@ -355,10 +355,10 @@ const registrarPago = async (pedido) => {
     <br />
 
     📅 Fecha de pago: {
-      d.fecha_pago
-        ? new Date(d.fecha_pago).toLocaleDateString()
-        : '—'
-    }
+  d.fecha_pago
+    ? new Date(d.fecha_pago + "T00:00:00").toLocaleDateString()
+    : '—'
+}
 
     <br />
 
