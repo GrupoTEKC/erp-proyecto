@@ -128,6 +128,11 @@ function Pagos() {
 
 const registrarPago = async (pedido) => {
   const dataPago = pagosData[pedido.id_pedido] || {}
+
+  if (!dataPago.fecha_pago) {
+  alert("Debes seleccionar fecha de pago")
+  return
+}
   const metodoActual = dataPago.metodo || "efectivo"
 
   if (metodoActual === "efectivo" && !dataPago.nombreEntrega?.trim()) {
@@ -138,17 +143,18 @@ const registrarPago = async (pedido) => {
   const res = await fetch(`${API}/pagos`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      id_pedido: pedido.id_pedido,
-      monto: dataPago.monto,
-      metodo: metodoActual,
-      cuenta_destino:
-        metodoActual === "transferencia" ? dataPago.cuenta : null,
-      id_usuario: 1,
-      tipo_usuario: "vendedor",
-      nombre_usuario:
-        metodoActual === "efectivo" ? dataPago.nombreEntrega : null
-    })
+  body: JSON.stringify({
+  id_pedido: pedido.id_pedido,
+  monto: dataPago.monto,
+  metodo: metodoActual,
+  fecha_pago: dataPago.fecha_pago, // 👈 REGRESA ESTO
+  cuenta_destino:
+    metodoActual === "transferencia" ? dataPago.cuenta : null,
+  id_usuario: 1,
+  tipo_usuario: "vendedor",
+  nombre_usuario:
+    metodoActual === "efectivo" ? dataPago.nombreEntrega : null
+})
   })
 
   const data = await res.json()
@@ -280,6 +286,14 @@ const registrarPago = async (pedido) => {
                 {mostrarPago === p.id_pedido && (
                   <div>
                     <input
+                type="date"
+                value={dataPago.fecha_pago || ""}
+                onChange={e =>
+                setPagoField(p.id_pedido, "fecha_pago", e.target.value)
+               }
+                style={styles.field}
+              />
+                    <input
                       placeholder="Monto"
                       value={dataPago.monto || ""}
                       onChange={e => setPagoField(p.id_pedido, "monto", e.target.value)}
@@ -328,15 +342,33 @@ const registrarPago = async (pedido) => {
                   <div style={{ marginTop: 10 }}>
                     <b>Historial:</b>
                     {detalles.map(d => (
-                      <div key={d.id_pago}>
-                        ${d.monto} - {d.metodo}
-                        {d.metodo === 'transferencia' && d.cuenta_destino && (
-                          <> ({d.cuenta_destino})</>
-                        )}
-                        {" - "}
-                        {d.nombre_usuario || '-'}
-                      </div>
-                    ))}
+  <div key={d.id_pago} style={{ marginBottom: 8 }}>
+    💰 ${d.monto} - {d.metodo}
+
+    {d.metodo === 'transferencia' && d.cuenta_destino && (
+      <> ({d.cuenta_destino})</>
+    )}
+
+    {" - "}
+    👤 {d.nombre_usuario || '-'}
+
+    <br />
+
+    📅 Fecha de pago: {
+      d.fecha_pago
+        ? new Date(d.fecha_pago).toLocaleDateString()
+        : '—'
+    }
+
+    <br />
+
+    🕒 Fecha de registro: {
+      d.fecha_registro
+        ? new Date(d.fecha_registro).toLocaleString()
+        : '—'
+    }
+  </div>
+))}
                   </div>
                 )}
               </div>
