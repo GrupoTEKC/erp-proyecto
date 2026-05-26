@@ -75,8 +75,17 @@ const init = async () => {
  const cargarCalendario = async () => {
   try {
     const res = await fetch(`${API}/produccion/calendario-anual?anio=${anioActual}`)
-    const data = await res.json()
-    setCalendario(data)
+ const data = await res.json()
+
+// 🔥 VALIDACIÓN CRÍTICA
+if (!res.ok || typeof data !== 'object' || Array.isArray(data)) {
+  console.error('Calendario inválido:', data)
+  setCalendario({})
+  return
+}
+
+setCalendario(data)
+    
   } catch {
     console.error('Error calendario')
   }
@@ -262,7 +271,7 @@ if (bloqueado) {
   <img src={logo} alt="logo" style={styles.logo} />
 </div>
       <div style={{ marginBottom: 30 }}>
- {calendario && Object.keys(calendario).map((mes) => (
+{Object.keys(calendario || {}).map((mes) => (
     <div key={mes} style={{ marginBottom: 10 }}>
       
       <h4 style={{ margin: '5px 0' }}>
@@ -274,7 +283,9 @@ if (bloqueado) {
         flexWrap: 'wrap',
         gap: 5
       }}>
-      {calendario[mes]?.map((diaObj) => (
+     
+        {Array.isArray(calendario[mes]) && calendario[mes].map((diaObj) => (
+      
           <div
             key={diaObj.fecha}
             style={{
