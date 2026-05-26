@@ -18,7 +18,19 @@ function Produccion() {
   const [invSeleccionados, setInvSeleccionados] = useState([])
   const [busquedaInv, setBusquedaInv] = useState('')
   const [calendario, setCalendario] = useState({})
+  const [mesSeleccionado, setMesSeleccionado] = useState(
+  String(new Date().getMonth() + 1).padStart(2, '0')
+)
   const anioActual = new Date().getFullYear()
+  const diasMes = (calendario[mesSeleccionado] || [])
+  .slice()
+  .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
+
+const primerDiaSemana = diasMes.length
+  ? new Date(diasMes[0].fecha).getDay()
+  : 0
+
+const offset = primerDiaSemana === 0 ? 6 : primerDiaSemana - 1
   
   useEffect(() => {
     init()
@@ -271,36 +283,73 @@ if (bloqueado) {
   <img src={logo} alt="logo" style={styles.logo} />
 </div>
       <div style={{ marginBottom: 30 }}>
-{Object.keys(calendario || {}).map((mes) => (
-    <div key={mes} style={{ marginBottom: 10 }}>
-      
-      <h4 style={{ margin: '5px 0' }}>
-        Mes {mes}
-      </h4>
 
-      <div style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: 5
-      }}>
-     
-        {Array.isArray(calendario[mes]) && calendario[mes].map((diaObj) => (
-      
-          <div
-            key={diaObj.fecha}
-            style={{
-              width: 25,
-              height: 25,
-              backgroundColor: diaObj.capturado ? 'green' : 'red',
-              borderRadius: 4
-            }}
-            title={diaObj.fecha}
-          />
-        ))}
+        <div style={{ marginBottom: 30 }}>
+
+  {/* 🔽 SELECTOR DE MES */}
+  <select
+    value={mesSeleccionado}
+    onChange={(e) => setMesSeleccionado(e.target.value)}
+    style={{ padding: 8, marginBottom: 10 }}
+  >
+    {Object.keys(calendario).map(m => (
+      <option key={m} value={m}>
+        {new Date(anioActual, m - 1).toLocaleString('es-MX', { month: 'long' })} {anioActual}
+      </option>
+    ))}
+  </select>
+
+  {/* 📅 TITULO */}
+  <h3 style={{ textTransform: 'capitalize' }}>
+    {new Date(anioActual, mesSeleccionado - 1).toLocaleString('es-MX', { month: 'long' })} {anioActual}
+  </h3>
+
+  {/* 📅 CALENDARIO */}
+  <div style={{
+    display: 'grid',
+    gridTemplateColumns: 'repeat(7, 40px)',
+    gap: 5,
+    marginTop: 10
+  }}>
+
+    {/* DÍAS */}
+ {['L','M','M','J','V','S','D'].map(d => (
+      <div key={d} style={{ fontWeight: 'bold', textAlign: 'center' }}>
+        {d}
       </div>
+    ))}
 
-    </div>
-  ))}
+    {/* ESPACIOS VACÍOS */}
+{Array.from({ length: offset }).map((_, i) => (
+  <div key={'vacio-' + i}></div>
+))}
+    {/* DÍAS DEL MES */}
+    {(calendario[mesSeleccionado] || []).map(d => (
+    <div
+  key={d.fecha}
+  title={d.fecha}
+  onClick={() => setFecha(d.fecha)}
+  style={{
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: d.capturado ? '#16a34a' : '#dc2626',
+    color: '#fff',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    fontWeight: 'bold',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+    border: fecha === d.fecha ? '3px solid #000' : 'none'
+  }}
+>
+        {d.dia}
+      </div>
+    ))}
+
+  </div>
+</div>
 </div>
       
       <h2 style={styles.title}>PRODUCCIÓN DIARIA</h2>
