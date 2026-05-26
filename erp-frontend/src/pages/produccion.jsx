@@ -324,8 +324,9 @@ if (bloqueado) {
 {Array.from({ length: offset }).map((_, i) => (
   <div key={'vacio-' + i}></div>
 ))}
-    {/* DÍAS DEL MES */}
-    {(calendario[mesSeleccionado] || []).map(d => (
+  
+  {/* DÍAS DEL MES */}
+{diasMes.map(d => (
     <div
   key={d.fecha}
   title={d.fecha}
