@@ -26,12 +26,9 @@ function Produccion() {
   .slice()
   .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
 
-const primerDiaSemana = diasMes.length
-  ? new Date(diasMes[0].fecha).getDay()
-  : 0
+const primerDiaReal = new Date(anioActual, mesSeleccionado - 1, 1).getDay()
 
-// 🔥 Ajuste correcto Lunes = 0
-const offset = (primerDiaSemana + 6) % 7
+const offset = (primerDiaReal + 6) % 7
   
   useEffect(() => {
     init()
