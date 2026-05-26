@@ -2315,29 +2315,42 @@ app.get('/stock', async (req, res) => {
 
 app.get('/produccion/calendario-anual', async (req, res) => {
   try {
-    const { anio } = req.query
+    // 🔥 1. Convertir y validar año
+    const anio = Number(req.query.anio)
 
-    if (!anio) {
-      return res.status(400).json({ error: 'Año requerido' })
+    if (!anio || isNaN(anio)) {
+      return res.status(400).json({ error: 'Año inválido' })
     }
 
+    // 🔥 2. Rango de fechas
     const inicio = `${anio}-01-01`
     const fin = `${anio}-12-31`
 
+    // 🔥 3. Query segura (evita problemas de hora)
     const [rows] = await db.query(`
-      SELECT DISTINCT fecha
+      SELECT DISTINCT DATE(fecha) as fecha
       FROM produccion_diaria
       WHERE fecha BETWEEN ? AND ?
     `, [inicio, fin])
 
-    // ✅ CORREGIDO AQUÍ
+    // 🔥 4. Set de días capturados (SIN timezone bug)
     const diasCapturados = new Set(
-      rows.map(r => {
-        const f = new Date(r.fecha)
-        return f.toISOString().split('T')[0]
-      })
+      rows
+        .filter(r => r.fecha)
+        .map(r => {
+          const f = new Date(r.fecha)
+          if (isNaN(f)) return null
+
+          const year = f.getFullYear()
+          const month = String(f.getMonth() + 1).padStart(2, '0')
+          const day = String(f.getDate()).padStart(2, '0')
+
+          return `${year}-${month}-${day}`
+        })
+        .filter(Boolean)
     )
 
+    // 🔥 5. Construir calendario completo
     const resultado = {}
 
     for (let mes = 1; mes <= 12; mes++) {
@@ -2358,9 +2371,11 @@ app.get('/produccion/calendario-anual', async (req, res) => {
       }
     }
 
+    // ✅ 6. Respuesta limpia
     res.json(resultado)
 
   } catch (err) {
+    console.error('❌ ERROR CALENDARIO:', err)
     res.status(500).json({ error: err.message })
   }
 })
