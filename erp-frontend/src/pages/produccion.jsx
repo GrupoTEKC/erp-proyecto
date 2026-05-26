@@ -30,7 +30,8 @@ const primerDiaSemana = diasMes.length
   ? new Date(diasMes[0].fecha).getDay()
   : 0
 
-const offset = primerDiaSemana === 0 ? 6 : primerDiaSemana - 1
+// 🔥 Ajuste correcto Lunes = 0
+const offset = (primerDiaSemana + 6) % 7
   
   useEffect(() => {
     init()
