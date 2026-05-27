@@ -89,6 +89,13 @@ function Pagos() {
 
   const [detalles, setDetalles] = useState([])
   const [verDetalles, setVerDetalles] = useState(null)
+  const [mostrarCrear, setMostrarCrear] = useState(false)
+  const [nuevoPedido, setNuevoPedido] = useState({
+  folio: "",
+  fecha_entrega: "",
+  productos: []
+})
+
 
   useEffect(() => {
     fetch(`${API}/clientes`)
@@ -174,6 +181,43 @@ const registrarPago = async (pedido) => {
   }))
 }
 
+  const cambiarCantidad = (index, cantidad) => {
+  const nuevos = [...nuevoPedido.productos]
+  nuevos[index].cantidad = cantidad
+  setNuevoPedido(prev => ({ ...prev, productos: nuevos }))
+}
+  
+  const totalPedido = nuevoPedido.productos.reduce(
+  (acc, p) => acc + (p.precio * p.cantidad),
+  0
+)
+
+const guardarPedido = async () => {
+  const res = await fetch(`${API}/pedidos/manual`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(nuevoPedido)
+  })
+
+  const data = await res.json()
+
+  if (!res.ok) {
+    alert(data.error)
+    return
+  }
+
+  alert("Pedido creado ✅")
+
+  setMostrarCrear(false)
+
+  setNuevoPedido({
+    folio: "",
+    fecha_entrega: "",
+    productos: []
+  })
+
+  cargarPedidos(clienteSeleccionado)
+}
   const pedidosFiltrados = pedidos
     .filter(p =>
       `${p.folio || p.id_pedido}`.toString().includes(busquedaFolio)
@@ -186,9 +230,27 @@ const registrarPago = async (pedido) => {
 
   return (
     <div style={styles.page}>
-      <button style={styles.backTop} onClick={() => navigate("/")}>
-        ⬅ Volver
-      </button>
+    <div style={{ display: "flex", justifyContent: "space-between" }}>
+  
+  <button style={styles.backTop} onClick={() => navigate("/")}>
+    ⬅ Volver
+  </button>
+
+  <button
+    style={styles.botonAccion}
+    onClick={() => {
+      if (!clienteSeleccionado) {
+        alert("Selecciona un cliente primero")
+        
+        return
+      }
+      setMostrarCrear(true)
+    }}
+  >
+    ➕ Agregar pedido
+  </button>
+
+</div>
 
       <h2 style={styles.titleCenter}>CUENTAS POR COBRAR</h2>
 
@@ -378,6 +440,69 @@ const registrarPago = async (pedido) => {
           })}
         </>
       )}
+      {mostrarCrear && (
+  <div style={{
+    position: "fixed",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    backgroundColor: "rgba(0,0,0,0.5)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center"
+  }}>
+    <div style={{
+      background: "#fff",
+      padding: 20,
+      borderRadius: 8,
+      width: "400px"
+    }}>
+      <h3>Nuevo pedido</h3>
+
+      <input
+        placeholder="Folio"
+        value={nuevoPedido.folio}
+        onChange={e =>
+          setNuevoPedido({ ...nuevoPedido, folio: e.target.value })
+        }
+        style={styles.field}
+      />
+
+      <input
+        type="date"
+        value={nuevoPedido.fecha_entrega}
+        onChange={e =>
+          setNuevoPedido({ ...nuevoPedido, fecha_entrega: e.target.value })
+        }
+        style={styles.field}
+      />
+
+      {/* PRODUCTOS (aunque esté vacío por ahora) */}
+      {nuevoPedido.productos.map((p, i) => (
+        <div key={i}>
+          {p.nombre} - ${p.precio}
+          <input
+            type="number"
+            value={p.cantidad}
+            onChange={e => cambiarCantidad(i, Number(e.target.value))}
+            style={{ width: 60 }}
+          />
+        </div>
+      ))}
+
+      <h4>TOTAL: ${totalPedido}</h4>
+
+      <button onClick={() => setMostrarCrear(false)}>
+        Cancelar
+      </button>
+
+      <button onClick={guardarPedido}>
+        Guardar
+      </button>
+    </div>
+  </div>
+)}
     </div>
   )
 }
