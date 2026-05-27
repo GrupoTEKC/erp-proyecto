@@ -1425,6 +1425,77 @@ app.get('/pagos/:id_pedido', async (req, res) => {
   }
 })
 
+// =============================
+// 📊 ESTADO DE CUENTA PEDIDO
+// =============================
+app.get('/pedidos/:id/estado-cuenta', async (req, res) => {
+  try {
+    const { id } = req.params
+
+    // 🔹 1. Pedido
+    const [pedidoRows] = await db.query(`
+      SELECT 
+        p.id_pedido,
+        p.total,
+        p.total_pagado,
+        p.estado,
+        p.fecha,
+        p.fecha_vencimiento,
+        c.nombre_tienda,
+        CONCAT(c.nombre,' ',c.apellido1) AS cliente
+      FROM pedidos p
+      LEFT JOIN clientes c ON c.id_cliente = p.id_cliente
+      WHERE p.id_pedido = ?
+    `, [id])
+
+    if (!pedidoRows.length) {
+      return res.status(404).json({ error: 'Pedido no existe' })
+    }
+
+    const pedido = pedidoRows[0]
+
+    // 🔹 2. Pagos
+    const [pagos] = await db.query(`
+      SELECT 
+        id_pago,
+        fecha_pago,
+        monto,
+        metodo,
+        cuenta_destino,
+        nombre_usuario
+      FROM pagos
+      WHERE id_pedido = ?
+      ORDER BY fecha_pago ASC
+    `, [id])
+
+    // 🔹 3. Cálculo
+    let totalPagado = 0
+
+    const pagosConSaldo = pagos.map(p => {
+      totalPagado += Number(p.monto)
+
+      return {
+        ...p,
+        acumulado: totalPagado,
+        saldo_restante: Number(pedido.total) - totalPagado
+      }
+    })
+
+    res.json({
+      pedido,
+      pagos: pagosConSaldo,
+      resumen: {
+        total: Number(pedido.total),
+        total_pagado: totalPagado,
+        saldo: Number(pedido.total) - totalPagado
+      }
+    })
+
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 app.post('/pedidos/:id/programar', async (req, res) => {
   const conn = await db.getConnection()
 
