@@ -232,41 +232,45 @@ const guardarPedido = async () => {
       return pagadoA === pagadoB ? 0 : pagadoA ? 1 : -1
     })
 
-  const buscarProducto = (texto) => {
+const buscarProducto = (texto) => {
+  if (!texto) {
+    setResultadosBusqueda([])
+    return
+  }
+
   const filtrados = productosCatalogo.filter(p =>
     p.nombre.toLowerCase().includes(texto.toLowerCase())
-   )
-   setResultadosBusqueda(filtrados)
- }
+  )
+
+  setResultadosBusqueda(filtrados)
+}
   
-  return (
-    <div style={styles.page}>
-  <button style={styles.backTop} onClick={() => navigate("/")}>
-    ⬅ Volver
-  </button>
+return (
+  <div style={styles.page}>
 
- <button
-  style={{
-    ...styles.botonAccion,
-    position: "absolute",
-    top: 20,
-    right: 20
-  }}
-    onClick={() => {
-      if (!clienteSeleccionado) {
-        alert("Selecciona un cliente primero")
-        
-        return
-      }
-      setMostrarCrear(true)
-    }}
-  >
-    ➕ Agregar folio
-  </button>
+    <button style={styles.backTop} onClick={() => navigate("/")}>
+      ⬅ Volver
+    </button>
 
-</div>
+    <button
+      style={{
+        ...styles.botonAccion,
+        position: "absolute",
+        top: 20,
+        right: 20
+      }}
+      onClick={() => {
+        if (!clienteSeleccionado) {
+          alert("Selecciona un cliente primero")
+          return
+        }
+        setMostrarCrear(true)
+      }}
+    >
+      ➕ Agregar folio
+    </button>
 
-      <h2 style={styles.titleCenter}>CUENTAS POR COBRAR</h2>
+    <h2 style={styles.titleCenter}>CUENTAS POR COBRAR</h2>
 
       {!clienteSeleccionado && (
         <>
@@ -552,12 +556,16 @@ const guardarPedido = async () => {
   Guardar
 </button>
 
-      {resultadosBusqueda.map((prod, i) => (
+    {resultadosBusqueda.map((prod, i) => (
   <div key={i}>
     {prod.nombre}
-
     <button
-      onClick={() =>
+      onClick={() => {
+        const yaExiste = nuevoPedido.productos.find(
+          p => p.id_producto === prod.id_producto
+        )
+        if (yaExiste) return
+
         setNuevoPedido(prev => ({
           ...prev,
           productos: [
@@ -570,7 +578,7 @@ const guardarPedido = async () => {
             }
           ]
         }))
-      }
+      }}
     >
       Agregar
     </button>
