@@ -10,25 +10,24 @@ const styles = {
     padding: '20px',
     fontFamily: 'Arial, sans-serif'
   },
-  backTop: {
-    position: 'absolute',
-    top: 20,
-    left: 20,
-    padding: '8px 12px',
-    fontSize: '13px',
-    backgroundColor: '#fff',
-    color: '#8B1E1E',
-    border: '1px solid #8B1E1E',
-    borderRadius: '6px',
-    cursor: 'pointer'
-  },
-  titleCenter: {
-    textAlign: 'center',
-    fontSize: '22px',
-    fontWeight: 'bold',
-    color: '#071849',
-    marginBottom: '20px'
-  },
+backTop: {
+  padding: '8px 12px',
+  fontSize: '13px',
+  backgroundColor: '#fff',
+  color: '#8B1E1E',
+  border: '1px solid #8B1E1E',
+  borderRadius: '6px',
+  cursor: 'pointer'
+},
+
+titleCenter: {
+  textAlign: 'center',
+  fontSize: '22px',
+  fontWeight: 'bold',
+  color: '#071849',
+  marginBottom: '20px'
+},
+  
   field: {
     width: '100%',
     maxWidth: '400px',
@@ -77,7 +76,8 @@ const getColorStyle = (dias, pagado) => {
 
 function Pagos() {
   const navigate = useNavigate()
-
+  const [productosCatalogo, setProductosCatalogo] = useState([])
+  const [resultadosBusqueda, setResultadosBusqueda] = useState([])
   const [clientes, setClientes] = useState([])
   const [busqueda, setBusqueda] = useState("")
   const [clienteSeleccionado, setClienteSeleccionado] = useState(null)
@@ -101,6 +101,10 @@ function Pagos() {
     fetch(`${API}/clientes`)
       .then(res => res.json())
       .then(setClientes)
+    
+     fetch(`${API}/productos`)
+      .then(res => res.json())
+      .then(setProductosCatalogo)
   }, [])
 
   const clientesFiltrados = clientes.filter(c =>
@@ -228,16 +232,26 @@ const guardarPedido = async () => {
       return pagadoA === pagadoB ? 0 : pagadoA ? 1 : -1
     })
 
+  const buscarProducto = (texto) => {
+  const filtrados = productosCatalogo.filter(p =>
+    p.nombre.toLowerCase().includes(texto.toLowerCase())
+   )
+   setResultadosBusqueda(filtrados)
+ }
+  
   return (
     <div style={styles.page}>
-    <div style={{ display: "flex", justifyContent: "space-between" }}>
-  
   <button style={styles.backTop} onClick={() => navigate("/")}>
     ⬅ Volver
   </button>
 
-  <button
-    style={styles.botonAccion}
+ <button
+  style={{
+    ...styles.botonAccion,
+    position: "absolute",
+    top: 20,
+    right: 20
+  }}
     onClick={() => {
       if (!clienteSeleccionado) {
         alert("Selecciona un cliente primero")
@@ -247,7 +261,7 @@ const guardarPedido = async () => {
       setMostrarCrear(true)
     }}
   >
-    ➕ Agregar pedido
+    ➕ Agregar folio
   </button>
 
 </div>
@@ -469,6 +483,10 @@ const guardarPedido = async () => {
         style={styles.field}
       />
 
+      <small style={{ color: "#555" }}>
+      Ingresa el folio correspondiente a este pedido
+      </small>
+      
       <input
         type="date"
         value={nuevoPedido.fecha_entrega}
@@ -478,28 +496,86 @@ const guardarPedido = async () => {
         style={styles.field}
       />
 
+      <small style={{ color: "#555" }}>
+      Selecciona la fecha en que el chofer entregó físicamente el pedido
+      </small>
+
+      <input
+      placeholder="Buscar producto..."
+      onChange={e => buscarProducto(e.target.value)}
+      style={styles.field}
+      />
       {/* PRODUCTOS (aunque esté vacío por ahora) */}
       {nuevoPedido.productos.map((p, i) => (
-        <div key={i}>
-          {p.nombre} - ${p.precio}
-          <input
-            type="number"
-            value={p.cantidad}
-            onChange={e => cambiarCantidad(i, Number(e.target.value))}
-            style={{ width: 60 }}
-          />
-        </div>
+       <div key={i}>
+  {p.nombre}
+
+  <input
+    type="number"
+    value={p.cantidad}
+    onChange={e => cambiarCantidad(i, Number(e.target.value))}
+    style={{ width: 60 }}
+  />
+
+  <input
+    type="number"
+    value={p.precio}
+    onChange={e => {
+      const nuevos = [...nuevoPedido.productos]
+      nuevos[i].precio = Number(e.target.value)
+      setNuevoPedido(prev => ({ ...prev, productos: nuevos }))
+    }}
+    style={{ width: 80 }}
+  />
+</div>
       ))}
 
       <h4>TOTAL: ${totalPedido}</h4>
 
-      <button onClick={() => setMostrarCrear(false)}>
-        Cancelar
-      </button>
+    <button
+  style={{
+    ...styles.botonAccion,
+    backgroundColor: "#777"
+  }}
+  onClick={() => setMostrarCrear(false)}
+>
+  Cancelar
+</button>
 
-      <button onClick={guardarPedido}>
-        Guardar
-      </button>
+    <button
+  style={{
+    ...styles.botonAccion,
+    backgroundColor: "#0a7f3f"
+  }}
+  onClick={guardarPedido}
+>
+  Guardar
+</button>
+
+      {resultadosBusqueda.map((prod, i) => (
+  <div key={i}>
+    {prod.nombre}
+
+    <button
+      onClick={() =>
+        setNuevoPedido(prev => ({
+          ...prev,
+          productos: [
+            ...prev.productos,
+            {
+              id_producto: prod.id_producto,
+              nombre: prod.nombre,
+              precio: prod.precio,
+              cantidad: 1
+            }
+          ]
+        }))
+      }
+    >
+      Agregar
+    </button>
+  </div>
+))}
     </div>
   </div>
 )}
