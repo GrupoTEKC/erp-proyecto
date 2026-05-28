@@ -191,37 +191,64 @@ const registrarPago = async (pedido) => {
   setNuevoPedido(prev => ({ ...prev, productos: nuevos }))
 }
   
-  const totalPedido = nuevoPedido.productos.reduce(
-  (acc, p) => acc + (p.precio * p.cantidad),
+const totalPedido = nuevoPedido.productos.reduce(
+  (acc, p) => acc + ((p.precio || 0) * (p.cantidad || 0)),
   0
 )
-
+  
 const guardarPedido = async () => {
-  const res = await fetch(`${API}/pedidos/manual`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(nuevoPedido)
-  })
-
-  const data = await res.json()
-
-  if (!res.ok) {
-    alert(data.error)
+  // 🔴 VALIDACIONES
+  if (!nuevoPedido.folio) {
+    alert("El folio es obligatorio")
     return
   }
 
-  alert("Pedido creado ✅")
+  if (!nuevoPedido.fecha_entrega) {
+    alert("La fecha de entrega es obligatoria")
+    return
+  }
 
-  setMostrarCrear(false)
+  if (nuevoPedido.productos.length === 0) {
+    alert("Debes agregar al menos un producto")
+    return
+  }
 
-  setNuevoPedido({
-    folio: "",
-    fecha_entrega: "",
-    productos: []
-  })
+  try {
+    const res = await fetch(`${API}/pedidos/manual`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(nuevoPedido)
+    })
 
-  cargarPedidos(clienteSeleccionado)
+      let data
+      try {
+      data = await res.json()
+      } catch {
+      data = {}
+      }
+      if (!res.ok) {
+      alert(data.error || "Error al crear pedido")
+      return
+    }
+
+    alert("Pedido creado ✅")
+
+    setMostrarCrear(false)
+
+    setNuevoPedido({
+      folio: "",
+      fecha_entrega: "",
+      productos: []
+    })
+
+    cargarPedidos(clienteSeleccionado)
+
+  } catch (error) {
+    console.error(error)
+    alert("Error de conexión con el servidor")
+  }
 }
+  
   const pedidosFiltrados = pedidos
     .filter(p =>
       `${p.folio || p.id_pedido}`.toString().includes(busquedaFolio)
@@ -476,20 +503,33 @@ return (
       borderRadius: 8,
       width: "400px"
     }}>
-      <h3>Nuevo pedido</h3>
+      <h3>Ingreso de pedido rezagado</h3>
 
-      <input
-        placeholder="Folio"
-        value={nuevoPedido.folio}
-        onChange={e =>
-          setNuevoPedido({ ...nuevoPedido, folio: e.target.value })
-        }
-        style={styles.field}
-      />
+     {!nuevoPedido.folio && (
+     <div style={{ color: "red", fontSize: 12 }}>
+     El folio es obligatorio (solo números)
+     </div>
+     )}
+
+     <input
+     placeholder="Folio"
+     value={nuevoPedido.folio}
+     onChange={e => {
+     const valor = e.target.value.replace(/\D/g, "")
+     setNuevoPedido({ ...nuevoPedido, folio: valor })
+     }}
+     style={styles.field}
+     />
 
       <small style={{ color: "#555" }}>
       Ingresa el folio correspondiente a este pedido
       </small>
+
+      {!nuevoPedido.fecha_entrega && (
+      <div style={{ color: "red", fontSize: 12 }}>
+      La fecha de entrega es obligatoria
+      </div>
+      )}
       
       <input
         type="date"
@@ -509,31 +549,50 @@ return (
       onChange={e => buscarProducto(e.target.value)}
       style={styles.field}
       />
+      
       {/* PRODUCTOS (aunque esté vacío por ahora) */}
-      {nuevoPedido.productos.map((p, i) => (
-       <div key={i}>
-  {p.nombre}
+    {nuevoPedido.productos.map((p, i) => (
+    <div key={i} style={{ marginTop: 10 }}>
+    
+    <div style={{ fontWeight: "bold" }}>{p.nombre}</div>
 
-  <input
-    type="number"
-    value={p.cantidad}
-    onChange={e => cambiarCantidad(i, Number(e.target.value))}
-    style={{ width: 60 }}
-  />
+    <div style={{ display: "flex", gap: 10, marginTop: 5 }}>
 
-  <input
-    type="number"
-    value={p.precio}
-    onChange={e => {
-      const nuevos = [...nuevoPedido.productos]
-      nuevos[i].precio = Number(e.target.value)
-      setNuevoPedido(prev => ({ ...prev, productos: nuevos }))
-    }}
-    style={{ width: 80 }}
-  />
-</div>
-      ))}
+      <input
+        type="number"
+        placeholder="Cantidad"
+        value={p.cantidad}
+        onChange={e => cambiarCantidad(i, Number(e.target.value))}
+        style={{ ...styles.field, maxWidth: 100 }}
+      />
 
+      <div style={{ display: "flex", flexDirection: "column" }}>
+         <div style={{ fontSize: 12, color: "#555" }}>
+          Precio ($ MXN)
+        </div>
+
+        <input
+          type="number"
+          placeholder="$"
+          value={p.precio}
+          onChange={e => {
+            const nuevos = [...nuevoPedido.productos]
+            nuevos[i].precio = Number(e.target.value)
+            setNuevoPedido(prev => ({ ...prev, productos: nuevos }))
+          }}
+          style={{ ...styles.field, maxWidth: 120 }}
+        />
+      </div>
+
+    </div>
+
+    <div style={{ fontSize: 12, marginTop: 5 }}>
+      Subtotal: ${p.precio * p.cantidad}
+    </div>
+
+  </div>
+))}
+      
       <h4>TOTAL: ${totalPedido}</h4>
 
     <button
@@ -546,16 +605,14 @@ return (
   Cancelar
 </button>
 
-    <button
+<button
   style={{
-    ...styles.botonAccion,
-    backgroundColor: "#0a7f3f"
+    ...styles.botonAccion
   }}
   onClick={guardarPedido}
 >
   Guardar
 </button>
-
     {resultadosBusqueda.map((prod, i) => (
   <div key={i}>
     {prod.nombre}
