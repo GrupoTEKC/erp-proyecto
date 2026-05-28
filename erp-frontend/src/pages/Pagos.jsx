@@ -510,11 +510,11 @@ return (
       maxHeight: "80vh",
       overflowY: "auto"
     }}>
-      <h3>Ingreso de pedido rezagado</h3>
+      <h3>INGRESO DE PEDIDO REZAGADO</h3>
 
      {!nuevoPedido.folio && (
      <div style={{ color: "red", fontSize: 12 }}>
-     El folio es obligatorio (solo números)
+      Ingresa el folio correspondiente a este pedido.
      </div>
      )}
 
@@ -528,13 +528,9 @@ return (
       style={styles.field}
       />
 
-      <div style={{ color: "#555", fontSize: 12, marginBottom: 5 }}>
-      Ingresa el folio correspondiente a este pedido
-      </div>
-
       {!nuevoPedido.fecha_entrega && (
       <div style={{ color: "red", fontSize: 12 }}>
-      La fecha de entrega es obligatoria
+        Selecciona la fecha en que el chofer entregó físicamente el pedido.
       </div>
       )}
       
@@ -547,9 +543,6 @@ return (
         style={styles.field}
       />
 
-      <small style={{ color: "#555" }}>
-      Selecciona la fecha en que el chofer entregó físicamente el pedido
-      </small>
 
       <input
       placeholder="Buscar producto..."
@@ -602,7 +595,10 @@ return (
         type="number"
         placeholder="Cantidad"
         value={p.cantidad}
-        onChange={e => cambiarCantidad(i, Number(e.target.value))}
+        onChange={e => {
+        const valor = e.target.value
+        cambiarCantidad(i, valor === "" ? "" : Number(valor))
+        }} 
         style={{ ...styles.field, maxWidth: 100 }}
       />
 
@@ -617,7 +613,8 @@ return (
           value={p.precio}
           onChange={e => {
             const nuevos = [...nuevoPedido.productos]
-            nuevos[i].precio = Number(e.target.value)
+            const valor = e.target.value
+            nuevos[i].precio = valor === "" ? "" : Number(valor)
             setNuevoPedido(prev => ({ ...prev, productos: nuevos }))
           }}
           style={{ ...styles.field, maxWidth: 120 }}
