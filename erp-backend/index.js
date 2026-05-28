@@ -617,6 +617,88 @@ app.post('/pedidos-completo', async (req, res) => {
 })
 
 // =============================
+// 🔥 PEDIDO MANUAL (NUEVO)
+// =============================
+app.post('/pedidos/manual', async (req, res) => {
+  const conn = await db.getConnection()
+  try {
+    const {
+      id_cliente,
+      id_vendedor,
+      productos,
+      fecha_entrega
+    } = req.body
+
+    if (!id_cliente || !productos || productos.length === 0) {
+      return res.status(400).json({ error: 'Datos incompletos' })
+    }
+
+    await conn.beginTransaction()
+
+    let total = 0
+
+    // 🔹 calcular total
+    for (const item of productos) {
+      total += Number(item.cantidad) * Number(item.precio)
+    }
+
+    // 🔥 INSERT PEDIDO
+    const [pedidoResult] = await conn.query(`
+      INSERT INTO pedidos (
+        id_cliente,
+        id_vendedor,
+        tipo_pedido,
+        total,
+        fecha,
+        fecha_entrega,
+        estado,
+        total_pagado
+      )
+      VALUES (?, ?, 'credito', ?, NOW(), ?, 'entregado', 0)
+    `, [
+      id_cliente,
+      id_vendedor || null,
+      total,
+      fecha_entrega || null
+    ])
+
+    const id_pedido = pedidoResult.insertId
+
+    // 🔹 INSERT DETALLE
+    for (const item of productos) {
+      await conn.query(`
+        INSERT INTO pedido_detalle (
+          id_pedido,
+          id_producto,
+          cantidad,
+          precio_unitario
+        )
+        VALUES (?, ?, ?, ?)
+      `, [
+        id_pedido,
+        item.id_producto,
+        item.cantidad,
+        item.precio
+      ])
+    }
+
+    await conn.commit()
+
+    res.json({
+      success: true,
+      id_pedido,
+      total
+    })
+
+  } catch (err) {
+    await conn.rollback()
+    console.error('❌ ERROR PEDIDO MANUAL:', err)
+    res.status(500).json({ error: err.message })
+  } finally {
+    conn.release()
+  }
+})
+// =============================
 // LISTAR PEDIDOS
 // =============================
 app.get('/pedidos', async (req, res) => {
