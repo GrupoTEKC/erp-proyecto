@@ -222,7 +222,10 @@ const guardarPedido = async () => {
     const res = await fetch(`${API}/pedidos/manual`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(nuevoPedido)
+      body: JSON.stringify({
+     ...nuevoPedido,
+     id_cliente: clienteSeleccionado.id_cliente
+   })
     })
 
       let data
