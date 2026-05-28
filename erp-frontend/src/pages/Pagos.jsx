@@ -154,13 +154,13 @@ const registrarPago = async (pedido) => {
   const res = await fetch(`${API}/pagos`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-  id_pedido: pedido.id_pedido,
-  monto: dataPago.monto,
-  metodo: metodoActual,
-  fecha_pago: dataPago.fecha_pago, // 👈 REGRESA ESTO
-  cuenta_destino:
-    metodoActual === "transferencia" ? dataPago.cuenta : null,
+    body: JSON.stringify({
+    id_pedido: pedido.id_pedido,
+    monto: dataPago.monto,
+    metodo: metodoActual,
+    fecha_pago: dataPago.fecha_pago, // 👈 REGRESA ESTO
+    cuenta_destino:
+   metodoActual === "transferencia" ? dataPago.cuenta : null,
   id_usuario: 1,
   tipo_usuario: "vendedor",
   nombre_usuario:
@@ -190,8 +190,13 @@ const registrarPago = async (pedido) => {
   nuevos[index].cantidad = cantidad
   setNuevoPedido(prev => ({ ...prev, productos: nuevos }))
 }
+
+  const eliminarProducto = (index) => {
+  const nuevos = nuevoPedido.productos.filter((_, i) => i !== index)
+  setNuevoPedido(prev => ({ ...prev, productos: nuevos }))
+}
   
-const totalPedido = nuevoPedido.productos.reduce(
+  const totalPedido = nuevoPedido.productos.reduce(
   (acc, p) => acc + ((p.precio || 0) * (p.cantidad || 0)),
   0
 )
@@ -501,7 +506,9 @@ return (
       background: "#fff",
       padding: 20,
       borderRadius: 8,
-      width: "400px"
+      width: "600px",
+      maxHeight: "80vh",
+      overflowY: "auto"
     }}>
       <h3>Ingreso de pedido rezagado</h3>
 
@@ -511,19 +518,19 @@ return (
      </div>
      )}
 
-     <input
-     placeholder="Folio"
-     value={nuevoPedido.folio}
-     onChange={e => {
-     const valor = e.target.value.replace(/\D/g, "")
-     setNuevoPedido({ ...nuevoPedido, folio: valor })
-     }}
-     style={styles.field}
-     />
+      <input
+      placeholder="Folio"
+      value={nuevoPedido.folio}
+      onChange={e => {
+      const valor = e.target.value.replace(/\D/g, "")
+      setNuevoPedido({ ...nuevoPedido, folio: valor })
+      }}
+      style={styles.field}
+      />
 
-      <small style={{ color: "#555" }}>
+      <div style={{ color: "#555", fontSize: 12, marginBottom: 5 }}>
       Ingresa el folio correspondiente a este pedido
-      </small>
+      </div>
 
       {!nuevoPedido.fecha_entrega && (
       <div style={{ color: "red", fontSize: 12 }}>
@@ -548,16 +555,49 @@ return (
       placeholder="Buscar producto..."
       onChange={e => buscarProducto(e.target.value)}
       style={styles.field}
-      />
+     />
       
-      {/* PRODUCTOS (aunque esté vacío por ahora) */}
-    {nuevoPedido.productos.map((p, i) => (
-    <div key={i} style={{ marginTop: 10 }}>
+    {/* PRODUCTOS (aunque esté vacío por ahora) */}
+      {nuevoPedido.productos.map((p, i) => (
+      <div key={i} style={{
+      marginTop: 12,
+      padding: 12,
+      border: "1px solid #eee",
+      borderRadius: 6,
+      position: "relative"
+    }}>
+
+  <button
+    onClick={() => eliminarProducto(i)}
+    style={{
+    position: "absolute",
+  top: 5,
+  right: 5,
+  background: "#ff4d4f",
+  color: "#fff",
+  border: "none",
+  borderRadius: "50%",
+  width: 22,
+  height: 22,
+  fontSize: 14,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  cursor: "pointer"
+}}
+  >
+    ×
+  </button>
     
-    <div style={{ fontWeight: "bold" }}>{p.nombre}</div>
+      <div style={{ fontWeight: "bold" }}>{p.nombre}</div>
 
-    <div style={{ display: "flex", gap: 10, marginTop: 5 }}>
-
+      <div style={{
+      display: "flex",
+      gap: 10,
+      marginTop: 5,
+      alignItems: "flex-end"
+      }}>
+    
       <input
         type="number"
         placeholder="Cantidad"
@@ -587,7 +627,7 @@ return (
     </div>
 
     <div style={{ fontSize: 12, marginTop: 5 }}>
-      Subtotal: ${p.precio * p.cantidad}
+    Subtotal: ${(p.precio || 0) * (p.cantidad || 0)}
     </div>
 
   </div>
@@ -595,50 +635,70 @@ return (
       
       <h4>TOTAL: ${totalPedido}</h4>
 
-    <button
-  style={{
-    ...styles.botonAccion,
-    backgroundColor: "#777"
-  }}
-  onClick={() => setMostrarCrear(false)}
->
-  Cancelar
-</button>
+<div style={{ display: "flex", gap: 10, marginTop: 15 }}>
+  <button
+    style={{
+      ...styles.botonAccion,
+      backgroundColor: "#777"
+    }}
+    onClick={() => setMostrarCrear(false)}
+  >
+    Cancelar
+  </button>
 
-<button
-  style={{
-    ...styles.botonAccion
-  }}
-  onClick={guardarPedido}
->
-  Guardar
-</button>
+  <button
+    style={styles.botonAccion}
+    onClick={guardarPedido}
+  >
+    Guardar
+  </button>
+</div>
+      
     {resultadosBusqueda.map((prod, i) => (
-  <div key={i}>
+  <div key={i} style={{
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "8px",
+    background: "#fafafa",
+    border: "1px solid #eee",
+    borderRadius: 6,
+    marginBottom: 5
+  }}>
     {prod.nombre}
     <button
-      onClick={() => {
-        const yaExiste = nuevoPedido.productos.find(
-          p => p.id_producto === prod.id_producto
-        )
-        if (yaExiste) return
-
-        setNuevoPedido(prev => ({
-          ...prev,
-          productos: [
-            ...prev.productos,
-            {
-              id_producto: prod.id_producto,
-              nombre: prod.nombre,
-              precio: prod.precio,
-              cantidad: 1
-            }
-          ]
-        }))
-      }}
-    >
-      Agregar
-    </button>
+  onClick={() => {
+    const yaExiste = nuevoPedido.productos.find(
+      p => p.id_producto === prod.id_producto
+    )
+     if (yaExiste) {
+     alert("Este producto ya está agregado")
+     return
+     }
+    setNuevoPedido(prev => ({
+      ...prev,
+      productos: [
+        ...prev.productos,
+        {
+          id_producto: prod.id_producto,
+          nombre: prod.nombre,
+          precio: prod.precio,
+          cantidad: 1
+        }
+      ]
+    }))
+  }}
+  style={{
+    backgroundColor: "#071849",
+    color: "#fff",
+    border: "none",
+    padding: "5px 10px",
+    borderRadius: "5px",
+    cursor: "pointer"
+  }}
+>
+  Agregar
+</button>
   </div>
 ))}
     </div>
