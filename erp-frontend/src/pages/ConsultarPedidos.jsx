@@ -355,7 +355,7 @@ const precio = Number(
 `
     }
 
-    const esIOS =
+  const esIOS =
   /iPad|iPhone|iPod/.test(navigator.userAgent) ||
   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
 
@@ -582,7 +582,7 @@ const imprimirPedido = async (pedido) => {
 
     const esIOS =
     /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1).
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
           
     const contenido = `
       <div class="copia">
