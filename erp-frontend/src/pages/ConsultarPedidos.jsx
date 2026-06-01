@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import logo from '../assets/TRANSPARENTE.png'
 import logo2 from '../assets/firmetec-logo.png'
 import logo3 from '../assets/pegatek-logo.png'
-import html2pdf from 'html2pdf.js'
 
 const API = 'https://erp-proyecto-production.up.railway.app'
 
@@ -355,40 +354,6 @@ const precio = Number(
 `
     }
 
-  const esIOS =
-  /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-
-if (esIOS) {
-
-  const contenedor = document.createElement('div')
-  contenedor.innerHTML = contenidoTotal
-
-  document.body.appendChild(contenedor)
-
-  await html2pdf()
-    .set({
-      margin: 5,
-      filename: 'Pedidos.pdf',
-      image: { type: 'jpeg', quality: 1 },
-      html2canvas: {
-        scale: 2,
-        useCORS: true
-      },
-      jsPDF: {
-        unit: 'mm',
-        format: 'letter',
-        orientation: 'portrait'
-      }
-    })
-    .from(contenedor)
-    .save()
-
-  document.body.removeChild(contenedor)
-
-  return
-}
-    
     // 🔥 IMPRIMIR
     const win = window.open('', '_blank')
 
@@ -525,11 +490,7 @@ if (esIOS) {
       </html>
     `)
 
-win.document.write(`
-<html>
-...
-</html>
-`)
+win.document.write(`...`)
 win.document.close()
 
 win.onload = () => {
@@ -579,11 +540,6 @@ const imprimirPedido = async (pedido) => {
     const logo2Src = logo2
     const logo3Src = logo3
 
-
-    const esIOS =
-    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-          
     const contenido = `
       <div class="copia">
         <div class="header">
@@ -641,6 +597,7 @@ const imprimirPedido = async (pedido) => {
               )
 
               const subtotal = cantidad * precio
+
               
               
               return `
@@ -679,35 +636,6 @@ const imprimirPedido = async (pedido) => {
       </div>
     `
 
-    if (esIOS) {
-
-  const contenedor = document.createElement('div')
-  contenedor.innerHTML = contenido
-
-  document.body.appendChild(contenedor)
-
-  await html2pdf()
-    .set({
-      margin: 5,
-      filename: `Pedido-${pedido.id_pedido}.pdf`,
-      image: { type: 'jpeg', quality: 1 },
-      html2canvas: {
-        scale: 2,
-        useCORS: true
-      },
-      jsPDF: {
-        unit: 'mm',
-        format: 'letter',
-        orientation: 'portrait'
-      }
-    })
-    .from(contenedor)
-    .save()
-
-  document.body.removeChild(contenedor)
-
-  return
-}
     const win = window.open('', '_blank', 'width=900,height=700')
 
     win.document.write(`
@@ -857,9 +785,10 @@ const imprimirPedido = async (pedido) => {
 
     win.document.close()
 
-   setTimeout(() => {
-    win.focus()
-    win.print()
+    setTimeout(() => {
+      win.focus()
+      win.print()
+      win.close()
     }, 900)
 
   } catch (error) {
