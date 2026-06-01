@@ -785,10 +785,9 @@ const imprimirPedido = async (pedido) => {
 
     win.document.close()
 
-    setTimeout(() => {
-      win.focus()
-      win.print()
-      win.close()
+   setTimeout(() => {
+    win.focus()
+    win.print()
     }, 900)
 
   } catch (error) {
