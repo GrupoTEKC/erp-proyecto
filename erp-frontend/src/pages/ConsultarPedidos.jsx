@@ -279,7 +279,7 @@ if (listaChoferes.length === 0) {
        const pedido = pedidosGrupo[i]
       const detalle = detalles[i]
 
-  bloquePedidos += `
+bloquePedidos += `
   <div class="pedido">
     <div class="titulo-pedido">
       Pedido ${pedido.id_pedido} |
@@ -288,46 +288,46 @@ if (listaChoferes.length === 0) {
       <br/>
       Ruta ${pedido.id_ruta} - ${obtenerNombreRuta(pedido.id_ruta)}
     </div>
-            <table>
-              ${detalle.map(p => {
-               const cantidad = Number(
-  p.cantidad_entregada ??
-  p.cantidad_planeada ??
-  p.cantidad ??
-  p.cantidad_pedida ??
-  0
-)
 
-const precio = Number(
-  p.precio_unitario ??
-  p.precio_venta ??
-  p.precio ??
-  p.precio_lista ??
-  p.precio_final ??
-  p.precio_cliente ??
-  0
-)
-                const subtotal = cantidad * precio
+    <table>
+      ${detalle.map(p => {
+        const cantidad = Number(
+          p.cantidad_entregada ??
+          p.cantidad_planeada ??
+          p.cantidad ??
+          p.cantidad_pedida ??
+          0
+        )
 
-               return `
-               <tr>
-                   <td style="width:60px; text-align:center;">${cantidad}</td>
-                   <td>${p.nombre}</td>
-                   <td style="width:90px; text-align:right;">$${precio.toFixed(2)}</td>
-                   <td style="width:110px; text-align:right;">$${subtotal.toFixed(2)}</td>
-               </tr>
-                     `
-                
-              }).join('')}
-            </table>
+        const precio = Number(
+          p.precio_unitario ??
+          p.precio_venta ??
+          p.precio ??
+          p.precio_lista ??
+          p.precio_final ??
+          p.precio_cliente ??
+          0
+        )
 
-            <div class="total">
-              TOTAL: $${Number(pedido.total || 0).toFixed(2)}
-            </div>
-          </div>
+        const subtotal = cantidad * precio
+
+        return `
+          <tr>
+            <td style="width:60px;text-align:center;">${cantidad}</td>
+            <td>${p.nombre}</td>
+            <td style="width:90px;text-align:right;">$${precio.toFixed(2)}</td>
+            <td style="width:110px;text-align:right;">$${subtotal.toFixed(2)}</td>
+          </tr>
         `
-      }
+      }).join('')}
+    </table>
 
+    <div class="total">
+      TOTAL: $${Number(pedido.total || 0).toFixed(2)}
+    </div>
+  </div>
+`
+}
      contenidoTotal += `
 <div class="hoja">
 
