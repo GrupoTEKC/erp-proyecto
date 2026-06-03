@@ -279,14 +279,15 @@ if (listaChoferes.length === 0) {
        const pedido = pedidosGrupo[i]
       const detalle = detalles[i]
 
+      const municipio = detalle[0]?.municipio || ''
 bloquePedidos += `
   <div class="pedido">
-    <div class="titulo-pedido">
+   <div class="titulo-pedido">
   Pedido ${pedido.id_pedido} |
   ${pedido.cliente}
   ${pedido.nombre_tienda ? ' - ' + pedido.nombre_tienda : ''}
   <br/>
-  Municipio: ${pedido.municipio || ''}
+  Municipio: ${municipio}
   <br/>
   Ruta ${pedido.id_ruta} - ${obtenerNombreRuta(pedido.id_ruta)}
 </div>
