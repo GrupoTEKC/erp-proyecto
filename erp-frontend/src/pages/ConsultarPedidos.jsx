@@ -276,25 +276,15 @@ if (listaChoferes.length === 0) {
   )
       let bloquePedidos = ''
       for (let i = 0; i < pedidosGrupo.length; i++) {
-      const pedido = pedidosGrupo[i]
+       const pedido = pedidosGrupo[i]
       const detalle = detalles[i]
-      bloquePedidos += `
-      <div class="pedido">
-      <div class="titulo-pedido">
-      Pedido ${pedido.id_pedido} |
-      ${pedido.cliente}
-      ${pedido.nombre_tienda ? ' - ' + pedido.nombre_tienda : ''}
-    </div>
 
-    <div style="font-size:11px; margin-bottom:5px;">
-      <strong>Ruta:</strong> ${pedido.ruta || pedido.id_ruta}
-      <br>
-      <strong>Ubicación:</strong>
-      ${pedido.municipio || ''}
-      ${pedido.estado ? ', ' + pedido.estado : ''}
-    </div>
+        bloquePedidos += `
+          <div class="pedido">
+            <div class="titulo-pedido">
+           Pedido ${pedido.id_pedido} | ${pedido.cliente}${pedido.nombre_tienda ? ' - ' + pedido.nombre_tienda : ''}
+            </div>
 
-            
             <table>
               ${detalle.map(p => {
                const cantidad = Number(
@@ -342,7 +332,7 @@ const precio = Number(
     <div class="header">
       <div class="fecha">
         <div>${new Date().toLocaleDateString()}</div>
-        <div>Chofer: ${choferNombre}</div>
+        <div>Ruta ${primerPedido.id_ruta}</div>
       </div>
     </div>
 
