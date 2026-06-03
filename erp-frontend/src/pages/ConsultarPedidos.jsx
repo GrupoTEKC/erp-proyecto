@@ -334,7 +334,6 @@ const precio = Number(
     <div class="header">
       <div class="fecha">
         <div>${new Date().toLocaleDateString()}</div>
-        <div>Ruta ${primerPedido.id_ruta}</div>
       </div>
     </div>
 
