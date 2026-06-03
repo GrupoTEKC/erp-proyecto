@@ -233,7 +233,7 @@ if (listaChoferes.length === 0) {
     // 🔥 AGRUPAR
     const grupos = {}
     pedidosValidos.forEach(p => {
-      const key = `${p.id_ruta}-${p.id_chofer}-${p.id_unidad}-${p.fecha_programada?.slice(0,10)}`
+      const key = `${p.id_chofer}-${p.id_unidad}-${p.fecha_programada?.slice(0,10)}`
       if (!grupos[key]) grupos[key] = []
       grupos[key].push(p)
     })
