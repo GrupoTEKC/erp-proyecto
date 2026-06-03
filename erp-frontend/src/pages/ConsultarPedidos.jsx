@@ -279,11 +279,13 @@ if (listaChoferes.length === 0) {
        const pedido = pedidosGrupo[i]
       const detalle = detalles[i]
 
-        bloquePedidos += `
-          <div class="pedido">
-            <div class="titulo-pedido">
-           Pedido ${pedido.id_pedido} | ${pedido.cliente}${pedido.nombre_tienda ? ' - ' + pedido.nombre_tienda : ''}
-            </div>
+      <div class="titulo-pedido">
+      Pedido ${pedido.id_pedido} |
+     ${pedido.cliente}
+  ${pedido.nombre_tienda ? ' - ' + pedido.nombre_tienda : ''}
+  <br/>
+  Ruta ${pedido.id_ruta} - ${obtenerNombreRuta(pedido.id_ruta)}
+</div>
 
             <table>
               ${detalle.map(p => {
