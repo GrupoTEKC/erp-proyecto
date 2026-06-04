@@ -1,9 +1,9 @@
+
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import logo from '../assets/TRANSPARENTE.png'
 import logo2 from '../assets/firmetec-logo.png'
 import logo3 from '../assets/pegatek-logo.png'
-import html2pdf from 'html2pdf.js'
 
 const API = 'https://erp-proyecto-production.up.railway.app'
 
@@ -511,260 +511,6 @@ win.onload = () => {
     console.error(error)
   }
 }
-
-  const descargarPdfMultiples = async () => {
-  try {
-
-    // 🔥 AGREGA ESTO AQUÍ
-  let listaChoferes = choferes
-
-if (listaChoferes.length === 0) {
-  const ch = await fetch(`${urlLimpia}/choferes`)
-  const chData = await ch.json()
-  setChoferes(chData)
-  listaChoferes = chData // 🔥 importante
-}
-
-    // 🔥 FILTRAR SOLO LOS QUE APLICAN
-    const pedidosValidos = pedidos
-      .filter(p => pedidosSeleccionados.includes(p.id_pedido))
-      .filter(p => p.estado === 'en_ruta')
-
-    if (pedidosValidos.length === 0) {
-  alert('No hay pedidos en ruta seleccionados')
-  return
-}
-
-    // 🔥 AGRUPAR
-    const grupos = {}
-    pedidosValidos.forEach(p => {
-      const key = `${p.id_chofer}-${p.id_unidad}-${p.fecha_programada?.slice(0,10)}`
-      if (!grupos[key]) grupos[key] = []
-      grupos[key].push(p)
-    })
-    
-   let contenidoTotal = `
-  <div style="text-align:center; font-size:11px; margin-bottom:10px;">
-    Carretera federal Perote – Teziutlán<br/>
-    Calle Piñón No. 2, Loc. Magueyitos
-  </div>
-`
-    
-    // 🔥 RECORRER GRUPOS
-    for (const grupoKey in grupos) {
-      const pedidosGrupo = grupos[grupoKey]
-
-      const choferesUnicos = new Set(
-  pedidosGrupo.map(p => p.id_chofer)
-)
-
-      const variosChoferes = choferesUnicos.size > 1
-      
-      const primerPedido = pedidosGrupo[0]
-
-      // 🔥 OBTENER CHOFER IGUAL QUE EN INDIVIDUAL
-      const idChofer = primerPedido.id_chofer
-
-     const choferEncontrado = listaChoferes.find(
-  c => c.id_chofer === idChofer
-)
-
-     const choferNombre = choferEncontrado
-     ? `${choferEncontrado.nombre} ${choferEncontrado.apellido_paterno || ''} ${choferEncontrado.apellido_materno || ''}`.trim()
-     : 'SIN CHOFER'
-      
-       const detalles = await Promise.all(
-    pedidosGrupo.map(p =>
-      fetch(`${urlLimpia}/pedidos/${p.id_pedido}/detalle`)
-        .then(r => r.json())
-    )
-  )
-      let bloquePedidos = ''
-      for (let i = 0; i < pedidosGrupo.length; i++) {
-       const pedido = pedidosGrupo[i]
-      const detalle = detalles[i]
-
-      const municipio = detalle[0]?.municipio || ''
-bloquePedidos += `
-  <div class="pedido">
-   <div class="titulo-pedido">
-  Pedido ${pedido.id_pedido} |
-  ${pedido.cliente}
-  ${pedido.nombre_tienda ? ' - ' + pedido.nombre_tienda : ''}
-  <br/>
-  Municipio: ${municipio}
-  <br/>
-  Ruta ${pedido.id_ruta} - ${obtenerNombreRuta(pedido.id_ruta)}
-</div>
-
-    <table>
-      ${detalle.map(p => {
-        const cantidad = Number(
-          p.cantidad_entregada ??
-          p.cantidad_planeada ??
-          p.cantidad ??
-          p.cantidad_pedida ??
-          0
-        )
-
-        const precio = Number(
-          p.precio_unitario ??
-          p.precio_venta ??
-          p.precio ??
-          p.precio_lista ??
-          p.precio_final ??
-          p.precio_cliente ??
-          0
-        )
-
-        const subtotal = cantidad * precio
-
-        return `
-          <tr>
-            <td style="width:60px;text-align:center;">${cantidad}</td>
-            <td>${p.nombre}</td>
-            <td style="width:90px;text-align:right;">$${precio.toFixed(2)}</td>
-            <td style="width:110px;text-align:right;">$${subtotal.toFixed(2)}</td>
-          </tr>
-        `
-      }).join('')}
-    </table>
-
-    <div class="total">
-      TOTAL: $${Number(pedido.total || 0).toFixed(2)}
-    </div>
-  </div>
-`
-}
-     contenidoTotal += `
-<div class="hoja">
-
-  <div class="contenido">
-    <div class="header">
-      <div class="fecha">
-        <div>${new Date().toLocaleDateString()}</div>
-      </div>
-    </div>
-
-    ${bloquePedidos}
-  </div>
-
- <div class="firmas ${variosChoferes ? 'horizontal' : 'vertical'}">
-    <div class="firma">
-      <div class="linea">CHOFER</div>
-      <div class="nombre-firma">${choferNombre}</div>
-    </div>
-    <div class="firma">
-      <div class="linea">AUTORIZO</div>
-      <div class="nombre-firma">SUPERVISOR: JOSHUA ALVAREZ MENDEZ</div>
-    </div>
-  </div>
-
-</div>
-`
-    }
-    const elemento = document.createElement('div')
-
-elemento.innerHTML = `
-<style>
-body{
-  font-family: Arial;
-  font-size:12px;
-  padding:10px;
-}
-.titulo-pedido{
-  font-weight:bold;
-  margin-bottom:5px;
-}
-table{
-  width:100%;
-  border-collapse:collapse;
-}
-td{
-  padding:3px;
-  border:1px solid #ddd;
-}
-.total{
-  text-align:right;
-  font-weight:bold;
-  margin-top:5px;
-}
-
-.hoja{
-  page-break-after:auto;
-  break-after:page;
-}
-
-.firmas{
-  margin-top:60px;
-  display:flex;
-  justify-content:space-between;
-}
-.firma{
-  width:42%;
-  text-align:center;
-}
-.linea{
-  border-top:1px solid #000;
-  padding-top:4px;
-  font-weight:bold;
-}
-
-.pedido{
-  border-top:1px solid #000;
-  margin-top:10px;
-  padding-top:5px;
-  page-break-inside: avoid;
-}
-
-th{
-  border:1px solid #ddd;
-  padding:3px;
-  background:#f5f5f5;
-}
-.firmas.horizontal{
-  display:flex;
-  justify-content:space-between;
-}
-
-.firmas.vertical{
-  display:flex;
-  justify-content:flex-end;
-  gap:40px;
-}
-</style>
-
-${contenidoTotal}
-`
-await html2pdf()
-  .set({
-    margin: 10,
-    filename: `Pedidos_${Date.now()}.pdf`,
-    image: {
-      type: 'jpeg',
-      quality: 1
-    },
-    html2canvas: {
-      scale: 2
-    },
-    jsPDF: {
-      unit: 'mm',
-      format: 'letter',
-      orientation: 'portrait'
-    },
-    pagebreak: {
-      mode: ['avoid-all', 'css', 'legacy']
-    }
-  })
-  .from(elemento)
-  .save()
-    
-    setPedidosSeleccionados([])
-    
-  } catch (error) {
-    console.error(error)
-  }
-}
   
 const imprimirPedido = async (pedido) => {
   try {
@@ -1260,29 +1006,16 @@ const programarPedido = async () => {
         </button>
       </div>
 
-      <h2 style={styles.title}>ELIS</h2>
+      <h2 style={styles.title}>Consultar pedidos</h2>
 
-  <button
+      <button
       style={{ ...styles.button, ...styles.primary, marginBottom: 10 }}
       disabled={pedidosSeleccionados.length === 0}
       onClick={imprimirMultiples}
       >
      🖨 Imprimir seleccionados ({pedidosSeleccionados.length})
        </button>
-
-      <button
-  style={{
-    ...styles.button,
-    backgroundColor: '#2c3e50',
-    color: '#fff',
-    marginBottom: 10
-  }}
-  disabled={pedidosSeleccionados.length === 0}
-  onClick={descargarPdfMultiples}
->
-  📄 Descargar PDF ({pedidosSeleccionados.length})
-</button>
-
+       
       <div style={styles.topBar}>
         <input
           style={{ ...styles.field, marginBottom: 0 }}
