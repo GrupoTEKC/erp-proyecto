@@ -1006,7 +1006,7 @@ const programarPedido = async () => {
         </button>
       </div>
 
-      <h2 style={styles.title}>Consultar pedidos</h2>
+      <h2 style={styles.title}>PRUEBA</h2>
 
       <button
       style={{ ...styles.button, ...styles.primary, marginBottom: 10 }}
