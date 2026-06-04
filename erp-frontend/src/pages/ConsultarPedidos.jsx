@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import logo from '../assets/TRANSPARENTE.png'
 import logo2 from '../assets/firmetec-logo.png'
 import logo3 from '../assets/pegatek-logo.png'
+import html2pdf from 'html2pdf.js'
 
 const API = 'https://erp-proyecto-production.up.railway.app'
 
@@ -510,7 +511,21 @@ win.onload = () => {
     console.error(error)
   }
 }
-  
+
+  const descargarPdfMultiples = async () => {
+  try {
+    alert('Frontend listo. Aquí irá html2pdf cuando instalemos librerías.')
+
+    // después aquí reutilizaremos casi todo el contenido de imprimirMultiples()
+    // pero en vez de:
+    // win.print()
+    // generaremos:
+    // html2pdf().from(elemento).save('Pedidos.pdf')
+
+  } catch (error) {
+    console.error(error)
+  }
+}
 const imprimirPedido = async (pedido) => {
   try {
     const res = await fetch(`${urlLimpia}/pedidos/${pedido.id_pedido}/detalle`)
@@ -1005,16 +1020,37 @@ const programarPedido = async () => {
         </button>
       </div>
 
-      <h2 style={styles.title}>Consultar pedidos</h2>
+      <h2 style={styles.title}>CONSULTAR PEDIDOS</h2>
 
-      <button
-      style={{ ...styles.button, ...styles.primary, marginBottom: 10 }}
-      disabled={pedidosSeleccionados.length === 0}
-      onClick={imprimirMultiples}
-      >
-     🖨 Imprimir seleccionados ({pedidosSeleccionados.length})
-       </button>
-       
+   <div
+  style={{
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10
+  }}
+>
+  <button
+    style={{ ...styles.button, ...styles.primary }}
+    disabled={pedidosSeleccionados.length === 0}
+    onClick={imprimirMultiples}
+  >
+    🖨 Imprimir seleccionados ({pedidosSeleccionados.length})
+  </button>
+
+  <button
+    style={{
+      ...styles.button,
+      backgroundColor: '#2c3e50',
+      color: '#fff'
+    }}
+    disabled={pedidosSeleccionados.length === 0}
+    onClick={descargarPdfMultiples}
+  >
+    📄 Descargar PDF ({pedidosSeleccionados.length})
+  </button>
+</div>
+      
       <div style={styles.topBar}>
         <input
           style={{ ...styles.field, marginBottom: 0 }}
