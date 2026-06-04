@@ -1262,38 +1262,27 @@ const programarPedido = async () => {
 
       <h2 style={styles.title}>CONSULTAR PEDIDOS</h2>
 
-   <div
+  <button
+      style={{ ...styles.button, ...styles.primary, marginBottom: 10 }}
+      disabled={pedidosSeleccionados.length === 0}
+      onClick={imprimirMultiples}
+      >
+     🖨 Imprimir seleccionados ({pedidosSeleccionados.length})
+       </button>
+
+      <button
   style={{
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    ...styles.button,
+    backgroundColor: '#2c3e50',
+    color: '#fff',
     marginBottom: 10
   }}
+  disabled={pedidosSeleccionados.length === 0}
+  onClick={descargarPdfMultiples}
 >
-  <button
-    style={{ ...styles.button, ...styles.primary }}
-    disabled={pedidosSeleccionados.length === 0}
-    onClick={imprimirMultiples}
-  >
-    🖨 Imprimir seleccionados ({pedidosSeleccionados.length})
-  </button>
+  📄 Descargar PDF ({pedidosSeleccionados.length})
+</button>
 
-  <button
-    style={{
-      ...styles.button,
-      backgroundColor: '#2c3e50',
-      color: '#fff'
-    }}
-    disabled={pedidosSeleccionados.length === 0}
-    onClick={descargarPdfMultiples}
-  >
-    📄 Descargar PDF ({pedidosSeleccionados.length})
-  </button>
-</div>
-      <div style={{background:'red', color:'white'}}>
-  BOTON PDF AQUI
-</div>
-      
       <div style={styles.topBar}>
         <input
           style={{ ...styles.field, marginBottom: 0 }}
