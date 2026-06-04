@@ -1290,6 +1290,9 @@ const programarPedido = async () => {
     📄 Descargar PDF ({pedidosSeleccionados.length})
   </button>
 </div>
+      <div style={{background:'red', color:'white'}}>
+  BOTON PDF AQUI
+</div>
       
       <div style={styles.topBar}>
         <input
