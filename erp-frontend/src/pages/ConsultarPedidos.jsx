@@ -1260,7 +1260,7 @@ const programarPedido = async () => {
         </button>
       </div>
 
-      <h2 style={styles.title}>CONSULTAR PEDIDOS</h2>
+      <h2 style={styles.title}>ELIS</h2>
 
   <button
       style={{ ...styles.button, ...styles.primary, marginBottom: 10 }}
