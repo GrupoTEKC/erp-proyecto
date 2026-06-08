@@ -1138,6 +1138,13 @@ app.post('/control-envios/finalizar', async (req, res) => {
 
     console.log('✅ CHECK FOLIO')
 
+    const [[pedidoInfo]] = await conn.query(`
+    SELECT id_pedido
+    FROM entregas
+    WHERE id_entrega = ?
+    `, [id_entrega])
+
+const id_pedido = pedidoInfo.id_pedido
     // 🔥 PROCESO DE PRODUCTOS
     for (const item of productos) {
       console.log('🔄 PRODUCTO', item.id_producto)
@@ -1172,7 +1179,8 @@ app.post('/control-envios/finalizar', async (req, res) => {
             id_entrega,
             item.id_producto
           ])
-        } else {
+        }
+        else {
           // 🆕 NUEVO
           await conn.query(`
             INSERT INTO entrega_detalle (
@@ -1191,6 +1199,54 @@ app.post('/control-envios/finalizar', async (req, res) => {
             item.motivo || null
           ])
         }
+
+        // 🔥 ACTUALIZAR PEDIDO_DETALLE
+
+const [productoPedido] = await conn.query(`
+  SELECT id_detalle
+  FROM pedido_detalle
+  WHERE id_pedido = ?
+  AND id_producto = ?
+`, [
+  id_pedido,
+  item.id_producto
+])
+
+if (productoPedido.length > 0) {
+
+  // 🔁 MISMO PRODUCTO → SUMAR CANTIDAD
+
+  await conn.query(`
+    UPDATE pedido_detalle
+    SET cantidad = cantidad + ?
+    WHERE id_pedido = ?
+    AND id_producto = ?
+  `, [
+    item.cantidad_entregada,
+    id_pedido,
+    item.id_producto
+  ])
+
+} else {
+
+  // 🆕 PRODUCTO NUEVO
+
+  await conn.query(`
+    INSERT INTO pedido_detalle (
+      id_pedido,
+      id_producto,
+      cantidad,
+      precio_unitario
+    )
+    VALUES (?, ?, ?, ?)
+  `, [
+    id_pedido,
+    item.id_producto,
+    item.cantidad_entregada,
+    item.precio_unitario
+  ])
+
+}
 
       } else {
 
@@ -1237,6 +1293,15 @@ app.post('/control-envios/finalizar', async (req, res) => {
 
     console.log('✅ PEDIDO CERRADO')
 
+    await conn.query(`
+  UPDATE pedidos p
+  SET total = (
+    SELECT COALESCE(SUM(subtotal),0)
+    FROM pedido_detalle pd
+    WHERE pd.id_pedido = p.id_pedido
+  )
+  WHERE p.id_pedido = ?
+`, [id_pedido])
     await conn.commit()
     console.log('🎉 COMMIT')
 
