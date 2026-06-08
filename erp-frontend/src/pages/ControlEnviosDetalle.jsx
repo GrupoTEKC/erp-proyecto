@@ -87,23 +87,37 @@ function ControlEnviosDetalle() {
   }
 
   const agregarProducto = (pIndex, producto) => {
-    const copia = [...pedidos]
+  const copia = [...pedidos]
 
-    copia[pIndex].productos.push({
-      id_producto: producto.id_producto,
-      nombre: producto.nombre,
-      precio_unitario: producto.precio_unitario,
-      cantidad_pedida: '',
-      cantidad_entregada: '',
-      tipo: 'agregado',
-      motivo: '',
-      id_cliente_destino: null
-    })
+  const existente = copia[pIndex].productos.find(
+    p => p.id_producto === producto.id_producto
+  )
 
-    setPedidos(copia)
+  if (existente) {
+    alert(
+      `El producto "${producto.nombre}" ya existe en el pedido.\n\nModifica la cantidad entregada directamente en ese renglón.`
+    )
+
     setBusquedaProducto('')
     setResultadosProductos([])
+    return
   }
+
+  copia[pIndex].productos.push({
+    id_producto: producto.id_producto,
+    nombre: producto.nombre,
+    precio_unitario: producto.precio_unitario,
+    cantidad_pedida: '',
+    cantidad_entregada: '',
+    tipo: 'agregado',
+    motivo: '',
+    id_cliente_destino: null
+  })
+
+  setPedidos(copia)
+  setBusquedaProducto('')
+  setResultadosProductos([])
+}
 
   const buscarClientes = async (texto, pIndex, dIndex) => {
     const key = `${pIndex}-${dIndex}`
