@@ -194,10 +194,22 @@ function ControlEnviosDetalle() {
         body: JSON.stringify({
           id_entrega: pedido.id_entrega,
           folio: pedido.folio,
-          productos: pedido.productos.map(p => ({
-            ...p,
-            cantidad_entregada: Number(p.cantidad_entregada)
-          }))
+         productos: pedido.productos.map(p => {
+  const entregada = Number(p.cantidad_entregada) || 0
+  const pedida = Number(p.cantidad_pedida) || 0
+
+  return {
+    ...p,
+    cantidad_entregada: entregada,
+
+    tipo:
+      p.tipo === 'agregado'
+        ? 'agregado'
+        : entregada > pedida
+          ? 'con_incremento'
+          : p.tipo
+  }
+})
         })
       })
 
@@ -385,8 +397,10 @@ function ControlEnviosDetalle() {
                         {(diferencia !== 0 || prod.tipo === 'agregado') ? (
                           <>
                             <td>
-                              {prod.tipo === 'agregado'
-                                ? <div>Agregado</div>
+                             {prod.tipo === 'agregado'
+  ? <div>Agregado</div>
+  : prod.tipo === 'con_incremento'
+    ? <div>Con incremento</div>
                                 : (
                                   <select
                                     style={fieldResponsive}
@@ -403,7 +417,7 @@ function ControlEnviosDetalle() {
                             </td>
 
                             <td>
-                              {prod.tipo === 'agregado' && (
+                           {(prod.tipo === 'agregado' || prod.tipo === 'con_incremento') && (
                                 <input
                                   style={fieldResponsive}
                                   placeholder="Comentario"
