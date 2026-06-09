@@ -60,9 +60,9 @@ function ProductosPedido({
           : x
       )
     } else {
-      lista = [...productos, { ...p, cantidad: 1 }]
+     lista = [...productos, { ...p, cantidad: 0 }]
     }
-
+    
     setProductos(lista)
     recalcular(lista)
     setOpen(false)
@@ -70,6 +70,14 @@ function ProductosPedido({
     setOpenBoquillas(false)
   }
 
+  const eliminarProducto = (idProducto) => {
+  const lista = productos.filter(
+    p => p.id_producto !== idProducto
+  )
+
+  setProductos(lista)
+  recalcular(lista)
+}
   // ================= FILTROS =================
   const normales = catalogo.filter(p => {
     const nombre = (p.nombre || '').toLowerCase()
@@ -165,11 +173,12 @@ function ProductosPedido({
         <table border="1" cellPadding="6" style={{ marginTop: 15 }}>
           <thead style={{ backgroundColor: '#f3d6d6' }}>
             <tr>
-              <th>Producto</th>
-              <th>Precio</th>
-              <th>Cantidad</th>
-              <th>Subtotal</th>
-            </tr>
+           <th>Producto</th>
+           <th>Precio</th>
+           <th>Cantidad</th>
+           <th>Subtotal</th>
+           <th>X</th>
+           </tr>
           </thead>
 
           <tbody>
@@ -212,6 +221,22 @@ function ProductosPedido({
                 <td>
                   ${p.precio * (Number(p.cantidad) || 0)}
                 </td>
+
+                <td>
+  <button
+    onClick={() => eliminarProducto(p.id_producto)}
+    style={{
+      background: '#dc3545',
+      color: '#fff',
+      border: 'none',
+      borderRadius: '4px',
+      cursor: 'pointer',
+      padding: '4px 8px'
+    }}
+  >
+    ❌
+  </button>
+</td>
               </tr>
             ))}
           </tbody>
