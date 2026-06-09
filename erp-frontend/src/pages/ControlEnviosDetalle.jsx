@@ -300,7 +300,11 @@ function ControlEnviosDetalle() {
           const pedida = Number(prod.cantidad_pedida) || 0
           const entregada = Number(prod.cantidad_entregada) || 0
 
-          totalPedido += (prod.tipo === 'agregado' ? entregada : pedida) * precio
+         if (prod.tipo === 'agregado' || entregada > pedida) {
+         totalPedido += entregada * precio
+         } else {
+         totalPedido += pedida * precio
+         }
 
           const diferencia = pedida - entregada
 
