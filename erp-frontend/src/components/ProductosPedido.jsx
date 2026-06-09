@@ -170,6 +170,15 @@ function ProductosPedido({
 
       {/* TABLA */}
       {productos.length > 0 && (
+        <>
+    <p style={{
+      marginTop: '15px',
+      marginBottom: '5px',
+      color: '#8B1E1E',
+      fontSize: '14px'
+    }}>
+      Para descartar algún producto presione ✖
+    </p>
         <table border="1" cellPadding="6" style={{ marginTop: 15 }}>
           <thead style={{ backgroundColor: '#f3d6d6' }}>
             <tr>
@@ -202,7 +211,7 @@ function ProductosPedido({
                 <td>
                   <input
                     type="number"
-                    min="1"
+                    min="0"
                     value={p.cantidad}
                     onChange={e => {
                       const value = e.target.value
@@ -241,6 +250,7 @@ function ProductosPedido({
             ))}
           </tbody>
         </table>
+          </>
       )}
     </div>
   )
