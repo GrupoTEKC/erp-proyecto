@@ -1268,6 +1268,25 @@ if (productoPedido.length > 0) {
           id_entrega,
           item.id_producto
         ])
+        
+if (item.tipo === 'con_incremento') {
+  const incremento =
+    Number(item.cantidad_entregada) -
+    Number(item.cantidad_pedida)
+
+  if (incremento > 0) {
+    await conn.query(`
+      UPDATE pedido_detalle
+      SET cantidad = cantidad + ?
+      WHERE id_pedido = ?
+      AND id_producto = ?
+    `, [
+      incremento,
+      id_pedido,
+      item.id_producto
+    ])
+  }
+}
       }
     }
 
