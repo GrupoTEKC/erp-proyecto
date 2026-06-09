@@ -1263,7 +1263,9 @@ if (productoPedido.length > 0) {
         `, [
           item.cantidad_entregada || 0,
           item.tipo || 'ninguno',
-          item.tipo === 'roto' ? (item.motivo || null) : null,
+         (item.tipo === 'roto' || item.tipo === 'con_incremento')
+         ? (item.motivo || null)
+         : null,
           item.tipo === 'prestamo' ? (item.id_cliente_destino || null) : null,
           id_entrega,
           item.id_producto
