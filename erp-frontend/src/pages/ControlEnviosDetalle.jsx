@@ -75,10 +75,28 @@ function ControlEnviosDetalle() {
   }
 
   const actualizarCampo = (pIndex, dIndex, campo, valor) => {
-    const copia = [...pedidos]
-    copia[pIndex].productos[dIndex][campo] = valor
-    setPedidos(copia)
+  const copia = [...pedidos]
+
+  copia[pIndex].productos[dIndex][campo] = valor
+
+  const prod = copia[pIndex].productos[dIndex]
+
+  if (
+    campo === 'cantidad_entregada' &&
+    prod.tipo !== 'agregado'
+  ) {
+    const entregada = Number(valor) || 0
+    const pedida = Number(prod.cantidad_pedida) || 0
+
+    if (entregada > pedida) {
+      prod.tipo = 'con_incremento'
+    } else if (prod.tipo === 'con_incremento') {
+      prod.tipo = ''
+    }
   }
+
+  setPedidos(copia)
+}
 
   const actualizarFolio = (pIndex, value) => {
     const copia = [...pedidos]
@@ -158,6 +176,10 @@ function ControlEnviosDetalle() {
       if (diferencia !== 0) {
         if (!prod.tipo) return `Falta tipo en ${prod.nombre}`
 
+        if (prod.tipo === 'con_incremento' && !prod.motivo) {
+        return `Falta comentario en ${prod.nombre}`
+        }
+        
         if (prod.tipo === 'roto' && !prod.motivo) {
           return `Falta motivo en ${prod.nombre}`
         }
