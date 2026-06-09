@@ -81,53 +81,61 @@ function Pedidos() {
 }, [cliente])
 
   // ================= GUARDAR PEDIDO =================
-  const guardarPedido = async () => {
-    if (!cliente || !tipoPedido || !idRuta || !idVendedor || productos.length === 0) {
-      alert('Complete todos los campos obligatorios')
-      return
-    }
+const guardarPedido = async () => {
 
-    // 🔥 ALINEADO AL BACKEND NUEVO
-    const nuevoPedido = {
-      id_cliente: cliente.id_cliente,
-      id_vendedor: Number(idVendedor),
-      id_ruta: Number(idRuta),
-      tipo_pedido: tipoPedido,
-      dias_credito: tipoPedido === 'credito' ? diasCredito : 0,
+  const productosValidos = productos.filter(
+    p => Number(p.cantidad) > 0
+  )
 
-      productos: productos.map(p => ({
-        id_producto: p.id_producto,
-        cantidad: p.cantidad,
-        precio: p.precio
-      }))
-    }
-
-    try {
-      const res = await fetch(`${API}/pedidos-completo`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(nuevoPedido)
-      })
-
-      if (!res.ok) throw new Error('Error al guardar')
-
-      const data = await res.json()
-
-      alert(`✅ Pedido guardado (ID: ${data.id_pedido})`)
-
-      // RESET (sin tocar diseño)
-      setCliente(null)
-      setTipoPedido('')
-      setDiasCredito(0)
-      setProductos([])
-      setTotal(0)
-      setIdRuta('')
-      setIdVendedor('')
-
-    } catch (err) {
-      alert(`❌ ${err.message}`)
-    }
+  if (
+    !cliente ||
+    !tipoPedido ||
+    !idRuta ||
+    !idVendedor ||
+    productosValidos.length === 0
+  ) {
+    alert('Complete todos los campos obligatorios')
+    return
   }
+
+  const nuevoPedido = {
+    id_cliente: cliente.id_cliente,
+    id_vendedor: Number(idVendedor),
+    id_ruta: Number(idRuta),
+    tipo_pedido: tipoPedido,
+    dias_credito: tipoPedido === 'credito' ? diasCredito : 0,
+    productos: productosValidos.map(p => ({
+      id_producto: p.id_producto,
+      cantidad: p.cantidad,
+      precio: p.precio
+    }))
+  }
+
+  try {
+    const res = await fetch(`${API}/pedidos-completo`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(nuevoPedido)
+    })
+
+    if (!res.ok) throw new Error('Error al guardar')
+
+    const data = await res.json()
+
+    alert(`✅ Pedido guardado (ID: ${data.id_pedido})`)
+
+    setCliente(null)
+    setTipoPedido('')
+    setDiasCredito(0)
+    setProductos([])
+    setTotal(0)
+    setIdRuta('')
+    setIdVendedor('')
+
+  } catch (err) {
+    alert(`❌ ${err.message}`)
+  }
+}
 
   return (
     <div style={styles.page}>
