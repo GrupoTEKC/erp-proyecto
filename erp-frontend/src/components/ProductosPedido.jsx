@@ -223,19 +223,19 @@ function ProductosPedido({
                 </td>
 
                 <td>
-  <button
-    onClick={() => eliminarProducto(p.id_producto)}
-    style={{
-      background: '#dc3545',
-      color: '#fff',
-      border: 'none',
-      borderRadius: '4px',
-      cursor: 'pointer',
-      padding: '4px 8px'
-    }}
-  >
-    ❌
-  </button>
+ <button
+  onClick={() => eliminarProducto(p.id_producto)}
+  style={{
+    background: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    color: '#dc3545',
+    fontSize: '18px',
+    fontWeight: 'bold'
+  }}
+>
+  ❌
+</button>
 </td>
               </tr>
             ))}
