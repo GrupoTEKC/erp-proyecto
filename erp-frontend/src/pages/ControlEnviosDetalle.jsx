@@ -256,7 +256,7 @@ function ControlEnviosDetalle() {
         <button style={styles.backButton} onClick={() => navigate(-1)}>
           ← Volver
         </button>
-        <h2 style={styles.title}>Control de envíos</h2>
+        <h2 style={styles.title}>ENTREGAS</h2>
       </div>
 
       {mensaje && (
