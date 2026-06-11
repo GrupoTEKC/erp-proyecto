@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import logo from '../assets/TRANSPARENTE.png'
@@ -192,18 +191,20 @@ const abrirEntrega = async (id) => {
     apellido_paterno: '',
     apellido_materno: '',
 
-    productos: data.map(p => ({
-      id_producto: p.id_producto,
-      nombre: p.nombre,
+   productos: data.map(p => {
+  const cantidadBase =
+    p.cantidad_planeada ??
+    p.cantidad_pedida ??
+    p.cantidad ??
+    0
 
-      cantidad_planeada: Number(
-        p.cantidad_planeada ?? 0
-      ),
-
-      cantidad_entregada: Number(
-        p.cantidad_planeada ?? 0
-      )
-    }))
+  return {
+    id_producto: p.id_producto,
+    nombre: p.nombre,
+    cantidad_planeada: Number(cantidadBase),
+    cantidad_entregada: Number(cantidadBase)
+  }
+})
   })
 
   setPedidoSeleccionado(id)
