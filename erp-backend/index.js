@@ -898,16 +898,24 @@ app.get('/pedidos/:id/detalle', async (req, res) => {
     const { id } = req.params
 
     const [rows] = await db.query(`
-  SELECT
+SELECT
   pd.id_producto,
   p.nombre,
   pd.precio_unitario AS precio,
+
   pd.cantidad AS cantidad_pedida,
+
   COALESCE(prd.cantidad_planeada, pd.cantidad) AS cantidad_planeada,
+
+  ed.cantidad_entregada,
+
   COALESCE(e.id_chofer, pp.id_chofer) AS id_chofer,
   COALESCE(e.id_unidad, pp.id_unidad) AS id_unidad,
+
   c.municipio,
+
   CONCAT(ch.nombre,' ',ch.apellido1,' ',ch.apellido2) AS chofer,
+
   u.nombre AS unidad
 
 FROM pedido_detalle pd
@@ -925,13 +933,17 @@ LEFT JOIN programaciones_pedido pp
   ON pp.id_pedido = pd.id_pedido
   AND pp.activo = 1
 
+LEFT JOIN programacion_detalle prd
+  ON prd.id_programacion = pp.id_programacion
+  AND prd.id_producto = pd.id_producto
+
 LEFT JOIN entregas e
   ON e.id_pedido = pd.id_pedido
   AND e.estado IN ('en_ruta','entregado')
 
-LEFT JOIN programacion_detalle prd
-  ON prd.id_programacion = pp.id_programacion
-  AND prd.id_producto = pd.id_producto
+LEFT JOIN entrega_detalle ed
+  ON ed.id_entrega = e.id_entrega
+  AND ed.id_producto = pd.id_producto
 
 LEFT JOIN choferes ch
   ON ch.id_chofer = COALESCE(e.id_chofer, pp.id_chofer)
