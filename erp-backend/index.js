@@ -1265,32 +1265,32 @@ if (productoPedido.length > 0) {
 
         console.log('✏️ UPDATE NORMAL')
 
-        await conn.query(`
-        UPDATE entrega_detalle
-        SET
-        cantidad_final = ?,
-        tipo = ?,
-        motivo = ?,
-        id_cliente_destino = ?
-        WHERE id_entrega = ? AND id_producto = ?
-        `, [
-        item.cantidad_entregada || 0,
-        item.tipo || 'ninguno',
-        (item.tipo === 'roto' || item.tipo === 'con_incremento')
-        ? (item.motivo || null)
-        : null,
-        item.tipo === 'prestamo'
-        ? (item.id_cliente_destino || null)
-        : null,
-        id_entrega,
-        item.id_producto
-        ])
+      await conn.query(`
+UPDATE entrega_detalle
+SET
+cantidad_final = ?,
+tipo = ?,
+motivo = ?,
+id_cliente_destino = ?
+WHERE id_entrega = ? AND id_producto = ?
+`, [
+item.cantidad_final || 0,
+item.tipo || 'ninguno',
+(item.tipo === 'roto' || item.tipo === 'con_incremento')
+  ? (item.motivo || null)
+  : null,
+item.tipo === 'prestamo'
+  ? (item.id_cliente_destino || null)
+  : null,
+id_entrega,
+item.id_producto
+])
         
 if (item.tipo === 'con_incremento') {
-  const incremento =
-    Number(item.cantidad_entregada) -
-    Number(item.cantidad_pedida)
-
+ const incremento =
+  Number(item.cantidad_final) -
+  Number(item.cantidad_entregada)
+  
   if (incremento > 0) {
     await conn.query(`
       UPDATE pedido_detalle
