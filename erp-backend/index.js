@@ -1287,6 +1287,9 @@ item.id_producto
 ])
         
 if (item.tipo === 'con_incremento') {
+console.log('TIPO:', item.tipo)
+console.log('EMBARCADO:', item.cantidad_entregada)
+console.log('FINAL:', item.cantidad_final)
  const incremento =
   Number(item.cantidad_final) -
   Number(item.cantidad_entregada)
