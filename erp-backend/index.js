@@ -1285,28 +1285,18 @@ item.tipo === 'prestamo'
 id_entrega,
 item.id_producto
 ])
-        
-if (item.tipo === 'con_incremento') {
-console.log('TIPO:', item.tipo)
-console.log('EMBARCADO:', item.cantidad_entregada)
-console.log('FINAL:', item.cantidad_final)
- const incremento =
-  Number(item.cantidad_final) -
-  Number(item.cantidad_entregada)
-  
-  if (incremento > 0) {
-    await conn.query(`
-      UPDATE pedido_detalle
-      SET cantidad = cantidad + ?
-      WHERE id_pedido = ?
-      AND id_producto = ?
-    `, [
-      incremento,
-      id_pedido,
-      item.id_producto
-    ])
-  }
-}
+
+await conn.query(`
+  UPDATE pedido_detalle
+  SET cantidad = ?
+  WHERE id_pedido = ?
+  AND id_producto = ?
+`, [
+  Number(item.cantidad_final) || 0,
+  id_pedido,
+  item.id_producto
+])
+      
       }
     }
 
