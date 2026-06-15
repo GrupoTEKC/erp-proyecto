@@ -1048,12 +1048,13 @@ app.get('/control-envios/:id_chofer', async (req, res) => {
 
       const [productos] = await conn.query(`
         SELECT 
-          ed.id_producto,
-          pr.nombre,
-          ed.cantidad_pedida,
-          ed.cantidad_entregada,
-          ed.tipo,
-          COALESCE(pd.precio_unitario, pr.precio) AS precio_unitario
+        ed.id_producto,
+        pr.nombre,
+        ed.cantidad_pedida,
+        ed.cantidad_entregada,
+        ed.cantidad_final,
+        ed.tipo,
+        COALESCE(pd.precio_unitario, pr.precio) AS precio_unitario
         FROM entrega_detalle ed
         INNER JOIN productos pr 
           ON ed.id_producto = pr.id_producto
