@@ -38,18 +38,21 @@ function ControlEnviosDetalle() {
       const res = await fetch(`${API}/control-envios/${id_chofer}`)
       const data = await res.json()
 
-      const inicializados = data.map(p => ({
-        ...p,
-        folio: '',
-        productos: p.productos.map(prod => ({
-          ...prod,
-          cantidad_entregada: '',
-          tipo: '',
-          motivo: '',
-          id_cliente_destino: null
-        }))
-      }))
+     const inicializados = data.map(p => ({
+     ...p,
+     folio: '',
+     productos: p.productos.map(prod => ({
+    ...prod,
 
+      cantidad_final:
+      prod.cantidad_final ??
+      prod.cantidad_entregada,
+
+      tipo: prod.tipo || '',
+      motivo: prod.motivo || '',
+      id_cliente_destino: prod.id_cliente_destino || null
+  }))
+}))
       setPedidos(inicializados)
     }
 
@@ -81,18 +84,19 @@ function ControlEnviosDetalle() {
 
   const prod = copia[pIndex].productos[dIndex]
 
-  if (
-    campo === 'cantidad_entregada' &&
+   if (
+    campo === 'cantidad_final' &&
     prod.tipo !== 'agregado'
-  ) {
-    const entregada = Number(valor) || 0
-    const pedida = Number(prod.cantidad_pedida) || 0
+      )
+  {
+ const entregado = Number(valor) || 0
+const embarcado = Number(prod.cantidad_entregada) || 0
 
-    if (entregada > pedida) {
-      prod.tipo = 'con_incremento'
-    } else if (prod.tipo === 'con_incremento') {
-      prod.tipo = ''
-    }
+if (entregado > embarcado) {
+  prod.tipo = 'con_incremento'
+} else if (prod.tipo === 'con_incremento') {
+  prod.tipo = ''
+}
   }
 
   setPedidos(copia)
@@ -121,16 +125,17 @@ function ControlEnviosDetalle() {
     return
   }
 
-  copia[pIndex].productos.push({
-    id_producto: producto.id_producto,
-    nombre: producto.nombre,
-    precio_unitario: producto.precio_unitario,
-    cantidad_pedida: '',
-    cantidad_entregada: '',
-    tipo: 'agregado',
-    motivo: '',
-    id_cliente_destino: null
-  })
+   copia[pIndex].productos.push({
+   id_producto: producto.id_producto,
+   nombre: producto.nombre,
+  precio_unitario: producto.precio_unitario,
+  cantidad_pedida: '',
+  cantidad_entregada: '',
+  cantidad_final: '',
+  tipo: 'agregado',
+  motivo: '',
+  id_cliente_destino: null
+})
 
   setPedidos(copia)
   setBusquedaProducto('')
@@ -160,18 +165,26 @@ function ControlEnviosDetalle() {
 
   const validarPedido = (pedido) => {
     for (let prod of pedido.productos) {
-      if (prod.tipo === 'agregado') {
-        if (!prod.cantidad_pedida) return `Falta embarcado en ${prod.nombre}`
-        if (!prod.cantidad_entregada) return `Falta entregado en ${prod.nombre}`
-        if (!prod.motivo) return `Falta comentario en ${prod.nombre}`
-        continue
-      }
+   if (prod.tipo === 'agregado') {
+  if (!prod.cantidad_pedida)
+    return `Falta embarcado en ${prod.nombre}`
 
-      if (prod.cantidad_entregada === '') {
+  if (!prod.cantidad_final)
+    return `Falta entregado en ${prod.nombre}`
+
+  if (!prod.motivo)
+    return `Falta comentario en ${prod.nombre}`
+
+  continue
+}
+
+        if (prod.cantidad_final === '') {
         return `Falta cantidad entregada en ${prod.nombre}`
       }
 
-      const diferencia = Number(prod.cantidad_entregada) - prod.cantidad_pedida
+     const diferencia =
+      Number(prod.cantidad_final) -
+      Number(prod.cantidad_entregada)
 
       if (diferencia !== 0) {
         if (!prod.tipo) return `Falta tipo en ${prod.nombre}`
@@ -216,21 +229,21 @@ function ControlEnviosDetalle() {
         body: JSON.stringify({
           id_entrega: pedido.id_entrega,
           folio: pedido.folio,
-         productos: pedido.productos.map(p => {
-  const entregada = Number(p.cantidad_entregada) || 0
-  const pedida = Number(p.cantidad_pedida) || 0
+          productos: pedido.productos.map(p => {
+          const embarcado = Number(p.cantidad_entregada) || 0
+          const entregado = Number(p.cantidad_final) || 0
 
-  return {
-    ...p,
-    cantidad_entregada: entregada,
-
-    tipo:
-      p.tipo === 'agregado'
-        ? 'agregado'
-        : entregada > pedida
-          ? 'con_incremento'
-          : p.tipo
-  }
+ return {
+  ...p,
+  cantidad_final: Number(p.cantidad_final) || 0,
+  cantidad_entregada: Number(p.cantidad_entregada) || 0,
+  tipo:
+    p.tipo === 'agregado'
+      ? 'agregado'
+      : entregado > embarcado
+        ? 'con_incremento'
+        : p.tipo
+}
 })
         })
       })
@@ -297,16 +310,16 @@ function ControlEnviosDetalle() {
 
         p.productos.forEach(prod => {
           const precio = parseFloat(prod.precio_unitario) || 0
-          const pedida = Number(prod.cantidad_pedida) || 0
-          const entregada = Number(prod.cantidad_entregada) || 0
+          const embarcado = Number(prod.cantidad_entregada) || 0
+          const entregado = Number(prod.cantidad_final) || 0
 
-         if (prod.tipo === 'agregado' || entregada > pedida) {
-         totalPedido += entregada * precio
+         if (prod.tipo === 'agregado' || entregado > embarcado) {
+         totalPedido += entregado * precio
          } else {
-         totalPedido += pedida * precio
+         totalPedido += embarcado * precio
          }
 
-          const diferencia = pedida - entregada
+         const diferencia = embarcado - entregado
 
           if (diferencia > 0 && prod.tipo !== 'prestamo') {
             totalDescuento += diferencia * precio
@@ -370,12 +383,12 @@ function ControlEnviosDetalle() {
                 </thead>
                 <tbody>
                   {p.productos.map((prod, j) => {
-                    const precio = parseFloat(prod.precio_unitario) || 0
-                    const entregada = Number(prod.cantidad_entregada) || 0
-                    const pedida = Number(prod.cantidad_pedida) || 0
-                    const diferencia = entregada - pedida
-                    const subtotal = entregada * precio
+                   const precio = parseFloat(prod.precio_unitario) || 0
+                   const embarcado = Number(prod.cantidad_entregada) || 0
+                   const entregado = Number(prod.cantidad_final) || 0
 
+                   const diferencia = entregado - embarcado
+                   const subtotal = entregado * precio
                     return (
                       <tr key={j}>
                         <td>{prod.nombre}</td>
@@ -404,18 +417,18 @@ function ControlEnviosDetalle() {
                                 actualizarCampo(i, j, 'cantidad_pedida', e.target.value)
                               }
                             />
-                          ) : pedida}
+                          ) : embarcado}
                         </td>
 
                         <td>
-                          <input
-                            type="number"
-                            style={fieldResponsive}
-                            value={prod.cantidad_entregada}
-                            onChange={e =>
-                              actualizarCampo(i, j, 'cantidad_entregada', e.target.value)
-                            }
-                          />
+                         <input
+                         type="number"
+                         style={fieldResponsive}
+                         value={prod.cantidad_final ?? ''}
+                         onChange={e =>
+                        actualizarCampo(i, j, 'cantidad_final', e.target.value)
+                        }
+                         />
                         </td>
 
                         <td>${subtotal.toFixed(2)}</td>
@@ -424,9 +437,9 @@ function ControlEnviosDetalle() {
                           <>
                             <td>
                              {prod.tipo === 'agregado'
-  ? <div>Agregado</div>
-  : prod.tipo === 'con_incremento'
-    ? <div>Con incremento</div>
+                             ? <div>Agregado</div>
+                             : prod.tipo === 'con_incremento'
+                           ? <div>Con incremento</div>
                                 : (
                                   <select
                                     style={fieldResponsive}
