@@ -1197,8 +1197,7 @@ VALUES (?, ?, 0, 0, ?, 'agregado', ?)
 ]
                           )
         }
-        // 🔥 ACTUALIZAR PEDIDO_DETALLE
-const [productoPedido] = await conn.query(`
+      const [productoPedido] = await conn.query(`
   SELECT id_detalle
   FROM pedido_detalle
   WHERE id_pedido = ?
@@ -1207,20 +1206,8 @@ const [productoPedido] = await conn.query(`
   id_pedido,
   item.id_producto
 ])
-if (productoPedido.length > 0) {
-  // 🔁 MISMO PRODUCTO → SUMAR CANTIDAD
-  await conn.query(`
-    UPDATE pedido_detalle
-    SET cantidad = cantidad + ?
-    WHERE id_pedido = ?
-    AND id_producto = ?
-  `, [
-    item.cantidad_final,
-    id_pedido,
-    item.id_producto
-  ])
-} else {
-  // 🆕 PRODUCTO NUEVO
+
+if (productoPedido.length === 0) {
   await conn.query(`
     INSERT INTO pedido_detalle (
       id_pedido,
@@ -1236,6 +1223,8 @@ if (productoPedido.length > 0) {
     item.precio_unitario
   ])
 }
+        
+        // 🔥 ACTUALIZAR PEDIDO_DETALLE
       } else {
         console.log('✏️ UPDATE NORMAL')
       await conn.query(`
@@ -1278,15 +1267,29 @@ item.id_producto
   )
 `, [id_entrega])
     console.log('✅ PEDIDO CERRADO')
+   
     await conn.query(`
-  UPDATE pedidos p
-  SET total = (
-    SELECT COALESCE(SUM(subtotal),0)
-    FROM pedido_detalle pd
-    WHERE pd.id_pedido = p.id_pedido
+UPDATE pedidos p
+SET total = (
+  SELECT COALESCE(
+    SUM(
+      ed.cantidad_final *
+      COALESCE(pd.precio_unitario, 0)
+    ),
+    0
   )
-  WHERE p.id_pedido = ?
-`, [id_pedido])
+  FROM entrega_detalle ed
+  INNER JOIN pedido_detalle pd
+    ON pd.id_pedido = p.id_pedido
+   AND pd.id_producto = ed.id_producto
+  WHERE ed.id_entrega = ?
+)
+WHERE p.id_pedido = ?
+`, [
+  id_entrega,
+  id_pedido
+])
+    
     await conn.commit()
     console.log('🎉 COMMIT')
     res.json({ success: true })
