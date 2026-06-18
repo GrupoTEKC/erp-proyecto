@@ -1784,52 +1784,88 @@ const programarPedido = async () => {
 ))}
       
       {productosModificar.map((p, i) => (
-        <div key={i} style={{ marginBottom: 15 }}>
+  <div
+    key={i}
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '10px',
+      marginBottom: '12px',
+      padding: '10px',
+      border: '1px solid #ddd',
+      borderRadius: '8px'
+    }}
+  >
+    <div
+      style={{
+        flex: 1,
+        fontWeight: 'bold',
+        color: '#071849'
+      }}
+    >
+      {p.nombre}
+    </div>
 
-          <strong>{p.nombre}</strong>
+    <input
+      type="number"
+      min="0"
+      value={p.cantidad}
+      style={{
+        width: '90px',
+        padding: '8px',
+        border: '1px solid #8B1E1E',
+        borderRadius: '6px'
+      }}
+      onChange={e => {
+        const copia = [...productosModificar]
+        copia[i].cantidad = Number(e.target.value)
+        setProductosModificar(copia)
+      }}
+    />
 
-          <input
-            type="number"
-            min="0"
-            style={{ ...styles.field, width:'100%' }}
-            value={p.cantidad}
-            onChange={e => {
-              const copia = [...productosModificar]
-              copia[i].cantidad = Number(e.target.value)
-              setProductosModificar(copia)
-            }}
-          />
+    <input
+      type="number"
+      step="0.01"
+      value={p.precio_unitario}
+      style={{
+        width: '110px',
+        padding: '8px',
+        border: '1px solid #8B1E1E',
+        borderRadius: '6px'
+      }}
+      onChange={e => {
+        const copia = [...productosModificar]
+        copia[i].precio_unitario = Number(e.target.value)
+        setProductosModificar(copia)
+      }}
+    />
 
-          <input
-            type="number"
-            step="0.01"
-            style={{ ...styles.field, width:'100%' }}
-            value={p.precio_unitario}
-            onChange={e => {
-              const copia = [...productosModificar]
-              copia[i].precio_unitario = Number(e.target.value)
-              setProductosModificar(copia)
-            }}
-          />
+    <button
+      style={{
+        background: '#c0392b',
+        color: '#fff',
+        border: 'none',
+        padding: '8px 12px',
+        borderRadius: '6px',
+        cursor: 'pointer'
+      }}
+      onClick={() => {
 
-            <button
-            style={{
-            ...styles.button,
-            background:'#c0392b',
-            color:'#fff'
-            }}
-            onClick={() => {
-            const copia = [...productosModificar]
-            copia[i].cantidad = 0
-            setProductosModificar(copia)
-            }}
-            >
-            Eliminar
-            </button>
-          
-        </div>
-      ))}
+        const confirmar = window.confirm(
+          `¿Estás seguro de eliminar "${p.nombre}" del pedido?`
+        )
 
+        if (!confirmar) return
+
+        const copia = [...productosModificar]
+        copia[i].cantidad = 0
+        setProductosModificar(copia)
+      }}
+    >
+      Eliminar
+    </button>
+  </div>
+))}
       <textarea
         style={{
           ...styles.field,
