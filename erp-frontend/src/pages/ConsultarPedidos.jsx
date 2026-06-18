@@ -1226,7 +1226,7 @@ const programarPedido = async () => {
                         disabled={!['pendiente', 'programado'].includes(p.estado)}
                         onClick={() => abrirEntrega(p.id_pedido)}
                       >
-                        Preparar envío
+                        Enviar
                       </button>
 
                       <button
@@ -1234,7 +1234,7 @@ const programarPedido = async () => {
                       disabled={!['pendiente', 'programado'].includes(p.estado)}
                       onClick={() => abrirProgramar(p.id_pedido)}
                       >
-                      Enviar 
+                      Planear envio
                       </button>
 
                       <button
