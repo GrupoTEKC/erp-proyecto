@@ -997,6 +997,236 @@ app.put('/pedidos/:id/cancelar', async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
+
+app.post('/pedidos/modificar', async (req, res) => {
+  const conn = await db.getConnection()
+
+  try {
+    const {
+      id_pedido,
+      password,
+      motivo,
+      usuario,
+      productos
+    } = req.body
+
+    if (!id_pedido) {
+      throw new Error('id_pedido requerido')
+    }
+
+    if (password !== 'Modific00.1') {
+      throw new Error('Contraseña incorrecta')
+    }
+
+    if (!motivo || motivo.trim() === '') {
+      throw new Error('Motivo obligatorio')
+    }
+
+    if (!Array.isArray(productos) || productos.length === 0) {
+      throw new Error('Productos inválidos')
+    }
+
+    await conn.beginTransaction()
+
+    // Validar pedido y estado
+    const [[pedido]] = await conn.query(`
+      SELECT id_pedido, estado
+      FROM pedidos
+      WHERE id_pedido = ?
+    `, [id_pedido])
+
+    if (!pedido) {
+      throw new Error('Pedido no existe')
+    }
+
+    if (
+      pedido.estado !== 'pendiente' &&
+      pedido.estado !== 'programado'
+    ) {
+      throw new Error(
+        'Solo pueden modificarse pedidos en estado pendiente o programado'
+      )
+    }
+
+    for (const item of productos) {
+
+      const [detalleActual] = await conn.query(`
+        SELECT
+          id_detalle,
+          cantidad,
+          precio_unitario
+        FROM pedido_detalle
+        WHERE id_pedido = ?
+        AND id_producto = ?
+      `, [
+        id_pedido,
+        item.id_producto
+      ])
+
+      // PRODUCTO NUEVO
+      if (detalleActual.length === 0) {
+
+        if (item.cantidad <= 0) {
+          continue
+        }
+
+        await conn.query(`
+          INSERT INTO pedido_detalle (
+            id_pedido,
+            id_producto,
+            cantidad,
+            precio_unitario
+          )
+          VALUES (?, ?, ?, ?)
+        `, [
+          id_pedido,
+          item.id_producto,
+          item.cantidad,
+          item.precio_unitario
+        ])
+
+        await conn.query(`
+          INSERT INTO pedido_modificaciones (
+            id_pedido,
+            id_producto,
+            cantidad_anterior,
+            cantidad_nueva,
+            precio_anterior,
+            precio_nuevo,
+            accion,
+            motivo,
+            usuario
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+          id_pedido,
+          item.id_producto,
+          0,
+          item.cantidad,
+          0,
+          item.precio_unitario,
+          'agregado',
+          motivo,
+          usuario || null
+        ])
+
+        continue
+      }
+
+      const anterior = detalleActual[0]
+
+      let accion = null
+
+      if (item.cantidad === 0) {
+        accion = 'eliminado'
+      } else if (item.cantidad > anterior.cantidad) {
+        accion = 'incrementado'
+      } else if (item.cantidad < anterior.cantidad) {
+        accion = 'disminuido'
+      }
+
+      if (
+        Number(item.precio_unitario) !==
+        Number(anterior.precio_unitario)
+      ) {
+        accion = 'precio_modificado'
+      }
+
+      // Eliminar producto
+      if (item.cantidad === 0) {
+
+        await conn.query(`
+          DELETE FROM pedido_detalle
+          WHERE id_pedido = ?
+          AND id_producto = ?
+        `, [
+          id_pedido,
+          item.id_producto
+        ])
+
+      } else {
+
+        await conn.query(`
+          UPDATE pedido_detalle
+          SET
+            cantidad = ?,
+            precio_unitario = ?
+          WHERE id_pedido = ?
+          AND id_producto = ?
+        `, [
+          item.cantidad,
+          item.precio_unitario,
+          id_pedido,
+          item.id_producto
+        ])
+      }
+
+      if (accion) {
+        await conn.query(`
+          INSERT INTO pedido_modificaciones (
+            id_pedido,
+            id_producto,
+            cantidad_anterior,
+            cantidad_nueva,
+            precio_anterior,
+            precio_nuevo,
+            accion,
+            motivo,
+            usuario
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+          id_pedido,
+          item.id_producto,
+          anterior.cantidad,
+          item.cantidad,
+          anterior.precio_unitario,
+          item.precio_unitario,
+          accion,
+          motivo,
+          usuario || null
+        ])
+      }
+    }
+
+    // Recalcular total
+    await conn.query(`
+      UPDATE pedidos p
+      SET total = (
+        SELECT COALESCE(
+          SUM(cantidad * precio_unitario),
+          0
+        )
+        FROM pedido_detalle pd
+        WHERE pd.id_pedido = p.id_pedido
+      )
+      WHERE p.id_pedido = ?
+    `, [id_pedido])
+
+    await conn.commit()
+
+    res.json({
+      success: true,
+      message: 'Pedido modificado correctamente'
+    })
+
+  } catch (err) {
+
+    await conn.rollback()
+
+    res.status(500).json({
+      success: false,
+      error: err.message
+    })
+
+  } finally {
+
+    conn.release()
+
+  }
+})
+
+
 // =============================
 // CHOFERES
 // =============================
