@@ -80,6 +80,14 @@ function ConsultarPedidos() {
   const [password, setPassword] = useState('')
   const [errorPassword, setErrorPassword] = useState('')
   const [modalProgramar, setModalProgramar] = useState(false)
+  const [modalModificar, setModalModificar] = useState(false)
+  const [pedidoModificar, setPedidoModificar] = useState(null)
+  const [clienteModificar, setClienteModificar] = useState(null)
+  const [productosModificar, setProductosModificar] = useState([])
+  const [catalogoProductos, setCatalogoProductos] = useState([])
+  const [busquedaProducto, setBusquedaProducto] = useState('')
+  const [motivoModificacion, setMotivoModificacion] = useState('')
+  const [passwordModificacion, setPasswordModificacion] = useState('')
   const [fechaProgramada, setFechaProgramada] = useState('')
   const [editarUnidad, setEditarUnidad] = useState(false)
   const [editarChofer, setEditarChofer] = useState(false)
@@ -115,10 +123,21 @@ function ConsultarPedidos() {
     }
   }
 
+  const cargarProductos = async () => {
+  try {
+    const res = await fetch(`${urlLimpia}/productos`)
+    const data = await res.json()
+    setCatalogoProductos(data)
+  } catch (err) {
+    console.error(err)
+  }
+ }
+
   useEffect(() => {
-    cargarPedidos()
-    cargarRutas()
-  }, [])
+     cargarPedidos()
+     cargarRutas()
+     cargarProductos()
+   }, [])
 
   const calcularDias = (fecha) => {
     if (!fecha) return 0
@@ -431,16 +450,16 @@ bloquePedidos += `
              page-break-after: always;
              }
 
-.firmas.horizontal {
-  display: flex;
-  justify-content: space-between;
-}
+             .firmas.horizontal {
+             display: flex;
+             justify-content: space-between;
+             }
 
-.firmas.vertical {
-  display: flex;
-  justify-content: flex-end; /* 👉 todo a la derecha */
-  gap: 40px; /* 👉 separación entre firmas */
-}
+             .firmas.vertical {
+             display: flex;
+             justify-content: flex-end; /* 👉 todo a la derecha */
+             gap: 40px; /* 👉 separación entre firmas */
+             }
 
             .firma {
              width: 42%;
@@ -455,38 +474,38 @@ bloquePedidos += `
             }
             
            .header {
-  position: relative;
-  display: flex;
-  justify-content: flex-end; /* todo a la derecha */
-  align-items: center;
-}
+           position: relative;
+           display: flex;
+           justify-content: flex-end; /* todo a la derecha */
+           align-items: center;
+           }
 
-.hoja {
-  display: flex;
-  flex-direction: column;
-  min-height: auto; /* 🔥 clave */
-}
+           .hoja {
+           display: flex;
+           flex-direction: column;
+           min-height: auto; /* 🔥 clave */
+           }
 
-.contenido {
-  flex-grow: 0;
-}
+          .contenido {
+          flex-grow: 0;
+          }
 
-.firmas {
-  margin-top: 60px; /* 🔥 más aire */
-  margin-bottom: 40px; /* 🔥 lo sube visualmente del fondo */
-  display: flex;
-  justify-content: space-between;
-}
+          .firmas {
+          margin-top: 60px; /* 🔥 más aire */
+          margin-bottom: 40px; /* 🔥 lo sube visualmente del fondo */
+          display: flex;
+          justify-content: space-between;
+          }
 
           .header {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-}
+          display: flex;
+          justify-content: flex-end;
+          align-items: center;
+          }
 
-            .nombre-firma {
-            margin-top: 4px;
-            min-height: 14px;
+          .nombre-firma {
+           margin-top: 4px;
+           min-height: 14px;
             }
           }
           </style>
@@ -497,30 +516,30 @@ bloquePedidos += `
       </html>
     `)
 
-win.document.write(`...`)
-win.document.close()
+     win.document.write(`...`)
+     win.document.close()
 
-win.onload = () => {
-  win.focus()
-  win.print()
-}
+     win.onload = () => {
+     win.focus()
+     win.print()
+    }
     
     
-    setPedidosSeleccionados([])
+      setPedidosSeleccionados([])
     
-  } catch (error) {
-    console.error(error)
-  }
-}
+   }  catch (error) {
+      console.error(error)
+     }
+   }
   
-const imprimirPedido = async (pedido) => {
+     const imprimirPedido = async (pedido) => {
   try {
-    const res = await fetch(`${urlLimpia}/pedidos/${pedido.id_pedido}/detalle`)
-    const detalle = await res.json()
+     const res = await fetch(`${urlLimpia}/pedidos/${pedido.id_pedido}/detalle`)
+     const detalle = await res.json()
 
-    const pedidoActual = pedidos.find(
-      p => p.id_pedido === pedido.id_pedido
-    )
+     const pedidoActual = pedidos.find(
+     p => p.id_pedido === pedido.id_pedido
+     )
 
     // 🔥 SACAR ID DE CHOFER (de donde venga)
     const idChofer =
@@ -950,6 +969,41 @@ const confirmarConPassword = async () => {
   setComentarioProgramacion('')
   setModalProgramar(true)
 }
+
+
+  const abrirModificar = async (id) => {
+  try {
+    const res = await fetch(`${urlLimpia}/pedidos/${id}/detalle`)
+    const data = await res.json()
+
+    setPedidoModificar(id)
+
+    setProductosModificar(
+      data.map(p => ({
+        id_producto: p.id_producto,
+        nombre: p.nombre,
+        cantidad: Number(
+          p.cantidad_pedida ??
+          p.cantidad ??
+          0
+        ),
+        precio_unitario: Number(
+          p.precio_unitario ??
+          p.precio ??
+          0
+        )
+      }))
+    )
+
+    setMotivoModificacion('')
+    setPasswordModificacion('')
+    setModalModificar(true)
+
+  } catch (error) {
+    console.error(error)
+    alert('Error al cargar pedido')
+  }
+}
   
 const programarPedido = async () => {
   if (!fechaProgramada) {
@@ -998,6 +1052,45 @@ const programarPedido = async () => {
   cargarPedidos()
 }
 
+  const guardarModificacion = async () => {
+
+  if (!motivoModificacion.trim()) {
+    return alert('Debes capturar el motivo')
+  }
+
+  if (!passwordModificacion.trim()) {
+    return alert('Debes capturar la contraseña')
+  }
+
+  const res = await fetch(
+    `${urlLimpia}/pedidos/modificar`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        id_pedido: pedidoModificar,
+        password: passwordModificacion,
+        motivo: motivoModificacion,
+        usuario: 'ERP',
+        productos: productosModificar
+      })
+    }
+  )
+
+  const data = await res.json()
+
+  if (!res.ok) {
+    return alert(data.error)
+  }
+
+  alert('Pedido modificado correctamente')
+
+  setModalModificar(false)
+
+  cargarPedidos()
+}
   
   return (
     <div style={styles.page}>
@@ -1141,8 +1234,20 @@ const programarPedido = async () => {
                       disabled={!['pendiente', 'programado'].includes(p.estado)}
                       onClick={() => abrirProgramar(p.id_pedido)}
                       >
-                      Programar envío
+                      Enviar 
                       </button>
+
+                      <button
+                      style={{
+                      ...styles.button,
+                      backgroundColor: '#2980b9',
+                      color: '#fff'
+                      }}
+                     disabled={!['pendiente', 'programado'].includes(p.estado)}
+                     onClick={() => abrirModificar(p.id_pedido)}
+                     >
+                     Modificar pedido
+                     </button>
                       
                       <button
                         style={{ ...styles.button, ...styles.secondary }}
@@ -1523,6 +1628,19 @@ const programarPedido = async () => {
       {productosProgramar.map((p, i) => (
         <div key={i} style={{ marginBottom: 15 }}>
           <strong>{p.nombre}</strong>
+          {
+           p.cantidad === 0 &&
+          (
+          <span
+          style={{
+          color:'red',
+          marginLeft:10
+          }}
+         >
+         ELIMINADO
+         </span>
+         )
+        }
           <br />
           Pedido: {p.cantidad_pedida}
 
@@ -1567,6 +1685,198 @@ const programarPedido = async () => {
           onClick={programarPedido}
         >
           Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+      {modalModificar && (
+  <div
+    style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0,0,0,0.5)',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center'
+    }}
+  >
+    <div
+      style={{
+        background: '#fff',
+        padding: 20,
+        width: 700,
+        borderRadius: 10,
+        maxHeight: '90vh',
+        overflowY: 'auto'
+      }}
+    >
+      <h3 style={styles.title}>
+        Modificar pedido #{pedidoModificar}
+      </h3>
+
+      <hr />
+
+      <h4>Agregar producto</h4>
+
+      <input
+      type="text"
+      placeholder="Buscar producto"
+      value={busquedaProducto}
+      onChange={e => setBusquedaProducto(e.target.value)}
+      style={{
+      ...styles.field,
+      width:'100%'
+     }}
+    />
+
+      {busquedaProducto.trim() !== '' &&
+  catalogoProductos
+    .filter(p =>
+      p.nombre
+        .toLowerCase()
+        .includes(busquedaProducto.toLowerCase())
+    )
+    .slice(0, 10)
+    .map(prod => (
+      <div
+        key={prod.id_producto}
+        style={{
+          border:'1px solid #ddd',
+          padding:10,
+          marginBottom:5,
+          cursor:'pointer'
+        }}
+        onClick={() => {
+
+          const existe = productosModificar.find(
+            x => x.id_producto === prod.id_producto
+          )
+
+          if (existe) {
+            alert('Producto ya agregado')
+            return
+          }
+
+          setProductosModificar([
+            ...productosModificar,
+            {
+              id_producto: prod.id_producto,
+              nombre: prod.nombre,
+              cantidad: 1,
+              precio_unitario: Number(
+                prod.precio_unitario ||
+                prod.precio ||
+                0
+              )
+            }
+          ])
+
+          setBusquedaProducto('')
+        }}
+      >
+        {prod.nombre}
+      </div>
+))}
+      
+      {productosModificar.map((p, i) => (
+        <div key={i} style={{ marginBottom: 15 }}>
+
+          <strong>{p.nombre}</strong>
+
+          <input
+            type="number"
+            min="0"
+            style={{ ...styles.field, width:'100%' }}
+            value={p.cantidad}
+            onChange={e => {
+              const copia = [...productosModificar]
+              copia[i].cantidad = Number(e.target.value)
+              setProductosModificar(copia)
+            }}
+          />
+
+          <input
+            type="number"
+            step="0.01"
+            style={{ ...styles.field, width:'100%' }}
+            value={p.precio_unitario}
+            onChange={e => {
+              const copia = [...productosModificar]
+              copia[i].precio_unitario = Number(e.target.value)
+              setProductosModificar(copia)
+            }}
+          />
+
+            <button
+            style={{
+            ...styles.button,
+            background:'#c0392b',
+            color:'#fff'
+            }}
+            onClick={() => {
+            const copia = [...productosModificar]
+            copia[i].cantidad = 0
+            setProductosModificar(copia)
+            }}
+            >
+            Eliminar
+            </button>
+          
+        </div>
+      ))}
+
+      <textarea
+        style={{
+          ...styles.field,
+          width:'100%',
+          height:100
+        }}
+        placeholder="Motivo de modificación"
+        value={motivoModificacion}
+        onChange={e =>
+          setMotivoModificacion(e.target.value)
+        }
+      />
+
+      <input
+        type="password"
+        placeholder="Contraseña"
+        style={{
+          ...styles.field,
+          width:'100%'
+        }}
+        value={passwordModificacion}
+        onChange={e =>
+          setPasswordModificacion(e.target.value)
+        }
+      />
+
+      <div style={{ textAlign:'right' }}>
+        <button
+          style={{
+            ...styles.button,
+            ...styles.secondary
+          }}
+          onClick={() =>
+            setModalModificar(false)
+          }
+        >
+          Cancelar
+        </button>
+
+        <button
+          style={{
+            ...styles.button,
+            ...styles.primary
+          }}
+          onClick={guardarModificacion}
+        >
+          Guardar cambios
         </button>
       </div>
     </div>
