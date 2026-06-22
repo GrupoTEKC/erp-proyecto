@@ -1,4 +1,4 @@
-console.log("🔥 VERSION:", "30 MAYO");
+console.log("🔥 VERSION:", "22 JUNIO");
 console.log("🌐 DB:", process.env.DB_NAME);
 
 require('dotenv').config()
