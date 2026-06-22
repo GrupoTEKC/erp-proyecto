@@ -17,11 +17,28 @@ function Produccion() {
   const [stock, setStock] = useState([])
   const [invSeleccionados, setInvSeleccionados] = useState([])
   const [busquedaInv, setBusquedaInv] = useState('')
+ 
   const [calendario, setCalendario] = useState({})
+
   const [mesSeleccionado, setMesSeleccionado] = useState(
   String(new Date().getMonth() + 1).padStart(2, '0')
 )
-  const anioActual = new Date().getFullYear()
+
+  const [reporte, setReporte] = useState([])
+const [totalReporte, setTotalReporte] = useState(0)
+
+const [fechaInicio, setFechaInicio] = useState(
+  new Date().toISOString().slice(0, 7) + '-01'
+)
+
+const [fechaFin, setFechaFin] = useState(
+  new Date().toISOString().slice(0, 10)
+)
+
+const [productoReporte, setProductoReporte] = useState('todos')
+
+const anioActual = new Date().getFullYear()
+  
   const diasMes = (calendario[mesSeleccionado] || [])
   .slice()
   .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
@@ -34,6 +51,12 @@ const offset = (primerDiaReal + 6) % 7
     init()
   }, [])
 
+  useEffect(() => {
+  if (!bloqueado) {
+    cargarDatos()
+  }
+}, [fecha])
+  
 const init = async () => {
   try {
     const resVal = await fetch(`${API}/produccion/validar`)
@@ -45,9 +68,10 @@ const init = async () => {
     await cargarCalendario()
     // 🔥 SOLO si NO está bloqueado carga datos
     if (!val.faltaAyer) {
-      await cargarDatos()
-      await cargarStock()
-    }
+    await cargarDatos()
+    await cargarStock()
+    await consultarReporte()
+  }
 
   } catch {
     alert('Error inicial')
@@ -100,6 +124,35 @@ setCalendario(data)
     console.error('Error calendario')
   }
 } 
+
+  const consultarReporte = async () => {
+  try {
+
+    const res = await fetch(
+      `${API}/produccion/reporte?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}&idProducto=${productoReporte}`
+    )
+
+    const data = await res.json()
+
+    if (!Array.isArray(data)) {
+      setReporte([])
+      setTotalReporte(0)
+      return
+    }
+
+    setReporte(data)
+
+    const total = data.reduce(
+      (sum, item) => sum + Number(item.cantidad || 0),
+      0
+    )
+
+    setTotalReporte(total)
+
+  } catch (err) {
+    console.error(err)
+  }
+}
   // 🔍 FILTRO
   const filtrados = productos.filter(p =>
     p.nombre.toLowerCase().includes(busqueda.toLowerCase())
@@ -171,6 +224,7 @@ const guardar = async () => {
 
     await cargarDatos()
     await cargarStock()
+    await consultarReporte()
 
   } catch {
     alert('❌ Error al guardar')
@@ -351,6 +405,108 @@ if (bloqueado) {
 </div>
 </div>
 
+
+      <h2 style={{ ...styles.title, marginTop: 30 }}>
+  CONSULTA DE PRODUCCIÓN
+</h2>
+
+<div
+  style={{
+    display: 'flex',
+    gap: 15,
+    flexWrap: 'wrap',
+    alignItems: 'end',
+    marginBottom: 20
+  }}
+>
+
+  <div>
+    <label>Fecha inicial</label>
+    <br />
+    <input
+      type="date"
+      value={fechaInicio}
+      onChange={(e) => setFechaInicio(e.target.value)}
+    />
+  </div>
+
+  <div>
+    <label>Fecha final</label>
+    <br />
+    <input
+      type="date"
+      value={fechaFin}
+      onChange={(e) => setFechaFin(e.target.value)}
+    />
+  </div>
+
+  <div>
+    <label>Producto</label>
+    <br />
+    <select
+      value={productoReporte}
+      onChange={(e) => setProductoReporte(e.target.value)}
+    >
+      <option value="todos">
+        TODOS
+      </option>
+
+      {productos.map(p => (
+        <option
+          key={p.id_producto}
+          value={p.id_producto}
+        >
+          {p.nombre}
+        </option>
+      ))}
+    </select>
+  </div>
+
+  <button
+    style={styles.save}
+    onClick={consultarReporte}
+  >
+    CONSULTAR
+  </button>
+</div>
+
+      <table style={styles.table}>
+  <thead>
+    <tr>
+      <th>Fecha</th>
+      <th>Producto</th>
+      <th>Cantidad</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    {reporte.map((r, i) => (
+      <tr key={i}>
+        <td>
+          {new Date(r.fecha).toLocaleDateString('es-MX')}
+        </td>
+        <td>
+          {r.nombre}
+        </td>
+        <td>
+          {r.cantidad}
+        </td>
+      </tr>
+    ))}
+  </tbody>
+
+  <tfoot>
+    <tr>
+      <td colSpan="2">
+        <strong>TOTAL</strong>
+      </td>
+      <td>
+        <strong>{totalReporte}</strong>
+      </td>
+    </tr>
+  </tfoot>
+</table>
+      
 <div
   style={{
     background: '#fff3cd',
