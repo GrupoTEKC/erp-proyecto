@@ -2723,6 +2723,49 @@ app.get('/produccion/validar', async (req, res) => {
   }
 })
 
+app.get('/produccion/reporte', async (req, res) => {
+  try {
+    const { fechaInicio, fechaFin, idProducto } = req.query
+
+    if (!fechaInicio || !fechaFin) {
+      return res.status(400).json({
+        error: 'fechaInicio y fechaFin son obligatorias'
+      })
+    }
+
+    let sql = `
+      SELECT
+        pd.fecha,
+        pd.id_producto,
+        p.nombre,
+        SUM(pd.cantidad) AS cantidad
+      FROM produccion_diaria pd
+      INNER JOIN productos p
+        ON p.id_producto = pd.id_producto
+      WHERE pd.fecha BETWEEN ? AND ?
+    `
+
+    const params = [fechaInicio, fechaFin]
+
+    if (idProducto && idProducto !== 'todos') {
+      sql += ` AND pd.id_producto = ?`
+      params.push(idProducto)
+    }
+
+    sql += `
+      GROUP BY pd.fecha, pd.id_producto, p.nombre
+      ORDER BY p.nombre, pd.fecha
+    `
+
+    const [rows] = await db.query(sql, params)
+
+    res.json(rows)
+
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 app.post('/inventario-inicial', async (req, res) => {
   try {
     const { datos, periodo } = req.body
