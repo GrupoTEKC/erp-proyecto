@@ -2757,13 +2757,21 @@ app.get('/produccion/reporte', async (req, res) => {
       ORDER BY p.nombre, pd.fecha
     `
 
+    console.log('SQL:', sql)
+    console.log('PARAMS:', params)
+    
     const [rows] = await db.query(sql, params)
 
     res.json(rows)
 
   } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
+  console.error('ERROR REPORTE PRODUCCION:')
+  console.error(err)
+
+  res.status(500).json({
+    error: err.message
+  })
+}
 })
 
 app.post('/inventario-inicial', async (req, res) => {
