@@ -166,7 +166,7 @@ const guardar = async () => {
       return
     }
 
-    alert('✅ Producción guardada')
+    alert('✅ Producción guardada correctamente en el servidor') 
     setSeleccionados([])
 
     await cargarDatos()
@@ -350,8 +350,23 @@ if (bloqueado) {
   </div>
 </div>
 </div>
-      
-      <h2 style={styles.title}>PRODUCCIÓN DIARIA</h2>
+
+<div
+  style={{
+    background: '#fff3cd',
+    border: '1px solid #ffe69c',
+    color: '#664d03',
+    padding: '12px 15px',
+    borderRadius: 8,
+    marginBottom: 20,
+    fontSize: 15,
+    lineHeight: 1.5
+  }}
+>
+  ⚠️ Solo cuando aparezca el mensaje <strong>"Producción guardada correctamente en el servidor"</strong> la captura queda registrada en el sistema. Si aparece un error o se pierde la conexión, la producción no se considera guardada.
+</div>
+
+<h2 style={styles.title}>PRODUCCIÓN DIARIA</h2>
 
       <div style={styles.top}>
         <label>Fecha:</label>
