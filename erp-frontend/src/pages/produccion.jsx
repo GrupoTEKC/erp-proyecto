@@ -174,7 +174,7 @@ setCalendario(data)
   const encabezados = ['Fecha', 'Producto', 'Cantidad']
 
   const filas = reporte.map(r => [
-    fechaBonita(r.fecha)
+    fechaBonita(r.fecha),
     r.nombre,
     r.cantidad
   ])
