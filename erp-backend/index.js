@@ -2684,30 +2684,6 @@ app.get('/produccion/calendario-anual', async (req, res) => {
   }
 })
 
-//OBTENER PRODUCCION DEL DIA 
-app.get('/produccion/:fecha', async (req, res) => {
-  try {
-    const { fecha } = req.params
-
-    const [rows] = await db.query(`
-      SELECT 
-        p.id_producto,
-        p.nombre,
-        COALESCE(pd.cantidad, 0) AS producido
-      FROM productos p
-      LEFT JOIN produccion_diaria pd
-        ON pd.id_producto = p.id_producto
-        AND pd.fecha = ?
-      WHERE p.activo = 1
-    `, [fecha])
-
-    res.json(rows)
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
-
-
 app.get('/produccion/validar', async (req, res) => {
   try {
     // 🔓 YA NO VALIDAMOS NADA
@@ -2773,6 +2749,32 @@ app.get('/produccion/reporte', async (req, res) => {
   })
 }
 })
+
+
+//OBTENER PRODUCCION DEL DIA 
+app.get('/produccion/:fecha', async (req, res) => {
+  try {
+    const { fecha } = req.params
+
+    const [rows] = await db.query(`
+      SELECT 
+        p.id_producto,
+        p.nombre,
+        COALESCE(pd.cantidad, 0) AS producido
+      FROM productos p
+      LEFT JOIN produccion_diaria pd
+        ON pd.id_producto = p.id_producto
+        AND pd.fecha = ?
+      WHERE p.activo = 1
+    `, [fecha])
+
+    res.json(rows)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+
 
 app.post('/inventario-inicial', async (req, res) => {
   try {
