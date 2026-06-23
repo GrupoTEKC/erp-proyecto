@@ -2711,7 +2711,7 @@ app.get('/produccion/reporte', async (req, res) => {
 
     let sql = `
       SELECT
-        pd.fecha,
+        DATE_FORMAT(pd.fecha,'%Y-%m-%d') AS fecha,
         pd.id_producto,
         p.nombre,
         SUM(pd.cantidad) AS cantidad
