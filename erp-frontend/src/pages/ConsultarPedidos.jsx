@@ -68,6 +68,7 @@ function ConsultarPedidos() {
 
   // 🔥 NUEVO
   const [estadoSeleccionado, setEstadoSeleccionado] = useState('')
+  const [fechaFiltro, setFechaFiltro] = useState('')
   const [productosProgramar, setProductosProgramar] = useState([])
   const [modalEntrega, setModalEntrega] = useState(false)
   const [modalCancelar, setModalCancelar] = useState(false)
@@ -167,20 +168,24 @@ function ConsultarPedidos() {
   }
 }
   
-  // 🔥 FILTRO COMPLETO
-  const pedidosFiltrados = pedidos.filter(p =>
-    (
-      p.id_pedido.toString().includes(busqueda) ||
-      (p.cliente || '').toLowerCase().includes(busqueda.toLowerCase())
-    )
-    &&
-    (
-      estadoSeleccionado === '' ||
-      estadoSeleccionado === 'todos' ||
-      p.estado === estadoSeleccionado
-    )
+const pedidosFiltrados = pedidos.filter(p =>
+  (
+    String(p.id_pedido || '').includes(busqueda) ||
+    (p.cliente || '').toLowerCase().includes(busqueda.toLowerCase())
   )
-
+  &&
+  (
+    estadoSeleccionado === '' ||
+    estadoSeleccionado === 'todos' ||
+    p.estado === estadoSeleccionado
+  )
+  &&
+  (
+    fechaFiltro === '' ||
+    p.fecha?.slice(0, 10) === fechaFiltro
+  )
+)
+  
   const pedidosPorRuta = pedidosFiltrados.reduce((acc, pedido) => {
     const ruta = pedido.id_ruta || 'SIN RUTA'
     if (!acc[ruta]) acc[ruta] = []
@@ -1100,7 +1105,7 @@ const programarPedido = async () => {
         </button>
       </div>
 
-      <h2 style={styles.title}>PRUEBA</h2>
+      <h2 style={styles.title}>CONTROL DE ENVIOS</h2>
 
       <button
       style={{ ...styles.button, ...styles.primary, marginBottom: 10 }}
@@ -1134,6 +1139,13 @@ const programarPedido = async () => {
           <option value="pagado">Pagado</option>
         </select>
 
+        <input
+        type="date"
+        style={{ ...styles.field, marginBottom: 0 }}
+        value={fechaFiltro}
+        onChange={e => setFechaFiltro(e.target.value)}
+        />
+        
         <div style={styles.dropdown}>
           <div
             style={styles.dropdownButton}
