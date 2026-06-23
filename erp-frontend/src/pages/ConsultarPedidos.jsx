@@ -181,8 +181,8 @@ const pedidosFiltrados = pedidos.filter(p =>
   )
   &&
   (
-    fechaFiltro === '' ||
-    p.fecha?.slice(0, 10) === fechaFiltro
+   fechaFiltro === '' ||
+   p.fecha_salida?.slice(0, 10) === fechaFiltro
   )
 )
   
