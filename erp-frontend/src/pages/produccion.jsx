@@ -383,10 +383,10 @@ if (bloqueado) {
   {/* DÍAS DEL MES */}
 {diasMes.map(d => (
     <div
-  key={d.fecha}
-  title={d.fecha}
-  onClick={() => setFecha(d.fecha)}
-  style={{
+    key={d.fecha}
+    title={d.fecha}
+    onClick={() => setFecha(d.fecha)}
+    style={{
     width: 40,
     height: 40,
     borderRadius: 8,
@@ -467,34 +467,31 @@ if (bloqueado) {
     </label>
     <br />
 
-    <select
-  multiple
-  value={productoReporte}
+  <select
+  value={productoReporte[0] || ''}
   onChange={(e) =>
     setProductoReporte(
-      [...e.target.selectedOptions].map(
-        option => option.value
-      )
+      e.target.value ? [e.target.value] : []
     )
   }
   style={{
     minWidth: 250,
-    height: 140,
     padding: 8,
     border: '1px solid #ccc',
     borderRadius: 6
   }}
 >
+  <option value="">Todos los productos</option>
 
-      {productos.map(p => (
-        <option
-          key={p.id_producto}
-          value={p.id_producto}
-        >
-          {p.nombre}
-        </option>
-      ))}
-    </select>
+  {productos.map(p => (
+    <option
+      key={p.id_producto}
+      value={p.id_producto}
+    >
+      {p.nombre}
+    </option>
+  ))}
+</select>
   </div>
 
   <button
@@ -526,9 +523,11 @@ if (bloqueado) {
     borderBottom: '1px solid #ececec'
   }}
 >
-      <td>{r.fecha.split('-').reverse().join('/')}</td>
-      <td>{r.nombre}</td>
-      <td>{r.cantidad}</td>
+      <td style={styles.td}>
+      {new Date(r.fecha).toLocaleDateString('es-MX')}
+      </td>
+      <td style={styles.td}>{r.nombre}</td>
+      <td style={styles.td}>{r.cantidad}</td>
     </tr>
   ))}
 </tbody>
@@ -544,8 +543,8 @@ if (bloqueado) {
     <td colSpan="2">
       TOTAL
     </td>
-    <td>
-      {totalReporte}
+    <td style={{ textAlign: 'center' }}>
+    {totalReporte}
     </td>
   </tr>
 </tfoot>
@@ -553,6 +552,7 @@ if (bloqueado) {
       
 <div
   style={{
+    marginTop: 20,
     background: '#fff3cd',
     border: '1px solid #ffe69c',
     color: '#664d03',
