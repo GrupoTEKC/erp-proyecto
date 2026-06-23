@@ -411,7 +411,7 @@ if (bloqueado) {
 
 
 <h2 style={{ ...styles.title, marginTop: 30 }}>
-  CONSULTA DE PRODUCCIÓN
+  CONSULTA TU PRODUCCIÓN
 </h2>
 
 <div
@@ -467,20 +467,25 @@ if (bloqueado) {
     </label>
     <br />
 
-  <select
-  value={productoReporte[0] || ''}
+ <select
+  multiple
+  value={productoReporte}
   onChange={(e) =>
     setProductoReporte(
-      e.target.value ? [e.target.value] : []
+      [...e.target.selectedOptions].map(
+        option => option.value
+      )
     )
   }
   style={{
     minWidth: 250,
+    height: 80,
     padding: 8,
     border: '1px solid #ccc',
     borderRadius: 6
   }}
 >
+   
   <option value="">Todos los productos</option>
 
   {productos.map(p => (
