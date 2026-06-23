@@ -25,27 +25,27 @@ function Produccion() {
 )
 
   const [reporte, setReporte] = useState([])
-const [totalReporte, setTotalReporte] = useState(0)
+  const [totalReporte, setTotalReporte] = useState(0)
 
-const [fechaInicio, setFechaInicio] = useState(
+  const [fechaInicio, setFechaInicio] = useState(
   new Date().toISOString().slice(0, 7) + '-01'
 )
 
-const [fechaFin, setFechaFin] = useState(
+  const [fechaFin, setFechaFin] = useState(
   new Date().toISOString().slice(0, 10)
 )
 
-const [productoReporte, setProductoReporte] = useState('todos')
+  const [productoReporte, setProductoReporte] = useState([])
 
-const anioActual = new Date().getFullYear()
+  const anioActual = new Date().getFullYear()
   
   const diasMes = (calendario[mesSeleccionado] || [])
   .slice()
   .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
 
-const primerDiaReal = new Date(anioActual, mesSeleccionado - 1, 1).getDay()
+  const primerDiaReal = new Date(anioActual, mesSeleccionado - 1, 1).getDay()
 
-const offset = (primerDiaReal + 6) % 7
+  const offset = (primerDiaReal + 6) % 7
   
   useEffect(() => {
     init()
@@ -57,7 +57,7 @@ const offset = (primerDiaReal + 6) % 7
   }
 }, [fecha])
   
-const init = async () => {
+  const init = async () => {
   try {
     const resVal = await fetch(`${API}/produccion/validar`)
     const val = await resVal.json()
@@ -112,7 +112,7 @@ const init = async () => {
  const data = await res.json()
 
 // 🔥 VALIDACIÓN CRÍTICA
-if (!res.ok || typeof data !== 'object' || Array.isArray(data)) {
+  if (!res.ok || typeof data !== 'object' || Array.isArray(data)) {
   console.error('Calendario inválido:', data)
   setCalendario({})
   return
@@ -125,11 +125,16 @@ setCalendario(data)
   }
 } 
 
-  const consultarReporte = async () => {
+ const consultarReporte = async () => {
   try {
 
+    const productosSeleccionados =
+      productoReporte.length === 0
+        ? 'todos'
+        : productoReporte.join(',')
+
     const res = await fetch(
-      `${API}/produccion/reporte?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}&idProducto=${productoReporte}`
+      `${API}/produccion/reporte?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}&idProducto=${productosSeleccionados}`
     )
 
     const data = await res.json()
@@ -157,7 +162,7 @@ setCalendario(data)
   const filtrados = productos.filter(p =>
     p.nombre.toLowerCase().includes(busqueda.toLowerCase())
   )
-const filtradosInv = stock.filter(p =>
+  const filtradosInv = stock.filter(p =>
   p.nombre.toLowerCase().includes(busquedaInv.toLowerCase())
 )
   // ➕ AGREGAR PRODUCTO
@@ -189,7 +194,7 @@ const filtradosInv = stock.filter(p =>
   }
 
   // 👇 AQUÍ VA TU NUEVA FUNCIÓN
-const handleCantidadInv = (index, value) => {
+  const handleCantidadInv = (index, value) => {
   const nuevos = [...invSeleccionados]
   nuevos[index].cantidad = value
   setInvSeleccionados(nuevos)
@@ -236,14 +241,13 @@ const guardarInventario = async () => {
       id_producto: p.id_producto,
       cantidad: Number(p.cantidad) || 0
     }))
-
-    const res = await fetch(`${API}/inventario-inicial`, {
+ const res = await fetch(`${API}/inventario-inicial`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-  datos,
-  periodo: fecha.slice(0, 7)
-})
+      body: JSON.stringify({
+      datos,
+      periodo: fecha.slice(0, 7)
+      })
     })
 
     const data = await res.json()
@@ -265,7 +269,7 @@ const guardarInventario = async () => {
 }
   
 // ⚠️ CONFIRMAR PRODUCCIÓN
-const confirmarGuardar = () => {
+  const confirmarGuardar = () => {
   if (seleccionados.length === 0) {
     alert('No hay productos')
     return
@@ -406,7 +410,7 @@ if (bloqueado) {
 </div>
 
 
-      <h2 style={{ ...styles.title, marginTop: 30 }}>
+<h2 style={{ ...styles.title, marginTop: 30 }}>
   CONSULTA DE PRODUCCIÓN
 </h2>
 
@@ -421,7 +425,10 @@ if (bloqueado) {
 >
 
   <div>
-    <label>Fecha inicial</label>
+  <label style={styles.filtroLabel}>
+    Fecha inicial
+  </label>
+    
     <br />
     <input
       type="date"
@@ -431,7 +438,9 @@ if (bloqueado) {
   </div>
 
   <div>
-    <label>Fecha final</label>
+  <label style={styles.filtroLabel}>
+  Fecha final
+  </label>
     <br />
     <input
       type="date"
@@ -441,15 +450,29 @@ if (bloqueado) {
   </div>
 
   <div>
-    <label>Producto</label>
+    <label style={styles.filtroLabel}>
+    Seleccionar productos
+    </label>
     <br />
+
     <select
-      value={productoReporte}
-      onChange={(e) => setProductoReporte(e.target.value)}
-    >
-      <option value="todos">
-        TODOS
-      </option>
+  multiple
+  value={productoReporte}
+  onChange={(e) =>
+    setProductoReporte(
+      [...e.target.selectedOptions].map(
+        option => option.value
+      )
+    )
+  }
+  style={{
+    minWidth: 250,
+    height: 140,
+    padding: 8,
+    border: '1px solid #ccc',
+    borderRadius: 6
+  }}
+>
 
       {productos.map(p => (
         <option
@@ -479,32 +502,41 @@ if (bloqueado) {
     </tr>
   </thead>
 
-  <tbody>
-    {reporte.map((r, i) => (
-      <tr key={i}>
-        <td>
-          {new Date(r.fecha).toLocaleDateString('es-MX')}
-        </td>
-        <td>
-          {r.nombre}
-        </td>
-        <td>
-          {r.cantidad}
-        </td>
-      </tr>
-    ))}
-  </tbody>
-
-  <tfoot>
-    <tr>
-      <td colSpan="2">
-        <strong>TOTAL</strong>
-      </td>
-      <td>
-        <strong>{totalReporte}</strong>
-      </td>
+ <tbody>
+  {reporte.map((r, i) => (
+    <tr
+      key={i}
+      style={{
+        backgroundColor:
+          i % 2 === 0
+            ? '#ffffff'
+            : '#fafafa'
+          borderBottom: '1px solid #ececec'
+      }}
+    >
+      <td>{r.fecha.split('-').reverse().join('/')}</td>
+      <td>{r.nombre}</td>
+      <td>{r.cantidad}</td>
     </tr>
-  </tfoot>
+  ))}
+</tbody>
+
+<tfoot>
+  <tr
+    style={{
+      background: '#8B1E1E',
+      color: '#fff',
+      fontWeight: 'bold'
+    }}
+  >
+    <td colSpan="2">
+      TOTAL
+    </td>
+    <td>
+      {totalReporte}
+    </td>
+  </tr>
+</tfoot>
 </table>
       
 <div
@@ -517,23 +549,24 @@ if (bloqueado) {
     marginBottom: 20,
     fontSize: 15,
     lineHeight: 1.5
-  }}
->
-  ⚠️ Solo cuando aparezca el mensaje <strong>"Producción guardada correctamente en el servidor"</strong> la captura queda registrada en el sistema. Si aparece un error o se pierde la conexión, la producción no se considera guardada.
-</div>
 
-<h2 style={styles.title}>PRODUCCIÓN DIARIA</h2>
+    }}
+   >
+    ⚠️ Solo cuando aparezca el mensaje <strong>"Producción guardada correctamente en el servidor"</strong> la captura queda registrada en el sistema. Si aparece un error o se pierde la conexión, la producción no se considera guardada.
+    </div>
+
+    <h2 style={styles.title}>PRODUCCIÓN DIARIA</h2>
 
       <div style={styles.top}>
         <label>Fecha:</label>
        <input
-  type="date"
-  value={fecha}
-  disabled
-  style={{
-    fontWeight: 'bold',
-    fontSize: 16,
-    padding: 6
+       type="date"
+       value={fecha}
+       disabled
+       style={{
+       fontWeight: 'bold',
+       fontSize: 16,
+       padding: 6
   }}
 />
       </div>
@@ -587,10 +620,10 @@ if (bloqueado) {
         </tbody>
       </table>
       
- <div style={{ marginTop: 20, textAlign: 'right' }}>
-  <button style={styles.save} onClick={confirmarGuardar}>
-    Guardar Producción
-  </button>
+      <div style={{ marginTop: 20, textAlign: 'right' }}>
+      <button style={styles.save} onClick={confirmarGuardar}>
+        Guardar Producción
+      </button>
 </div>
       
 <h2 style={{ ...styles.title, marginTop: 40 }}>
@@ -811,6 +844,13 @@ modalBtn: {
   border: 'none',
   borderRadius: 6,
   cursor: 'pointer'
+},
+
+filtroLabel:{
+  fontWeight:'700',
+  color:'#8B1E1E',
+  marginBottom:5,
+  display:'block'
 },
 }
 
