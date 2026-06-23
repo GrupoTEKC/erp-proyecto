@@ -158,6 +158,35 @@ setCalendario(data)
     console.error(err)
   }
 }
+
+  const exportarExcel = () => {
+  const encabezados = ['Fecha', 'Producto', 'Cantidad']
+
+  const filas = reporte.map(r => [
+    new Date(r.fecha).toLocaleDateString('es-MX'),
+    r.nombre,
+    r.cantidad
+  ])
+
+  const csv = [
+    encabezados.join(','),
+    ...filas.map(f => f.join(','))
+  ].join('\n')
+
+  const blob = new Blob([csv], {
+    type: 'text/csv;charset=utf-8;'
+  })
+
+  const url = URL.createObjectURL(blob)
+
+  const link = document.createElement('a')
+  link.href = url
+  link.download = 'produccion.csv'
+  link.click()
+
+  URL.revokeObjectURL(url)
+}
+  
   // 🔍 FILTRO
   const filtrados = productos.filter(p =>
     p.nombre.toLowerCase().includes(busqueda.toLowerCase())
@@ -531,6 +560,14 @@ if (bloqueado) {
   >
     CONSULTAR
   </button>
+
+  <button
+  style={styles.save}
+  onClick={exportarExcel}
+>
+  DESCARGAR EXCEL
+</button>
+  
 </div>
 
       <table style={styles.table}>
