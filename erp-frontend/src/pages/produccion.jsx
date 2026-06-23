@@ -477,7 +477,7 @@ if (bloqueado) {
       background: '#fff'
     }}
   >
-    Seleccionar productos ▼
+    Seleccionar productos 
   </summary>
 
   <div
