@@ -159,11 +159,22 @@ setCalendario(data)
   }
 }
 
+  const fechaBonita = (fecha) => {
+  const [anio, mes, dia] = fecha.slice(0, 10).split('-')
+
+  const meses = [
+    'enero','febrero','marzo','abril','mayo','junio',
+    'julio','agosto','septiembre','octubre','noviembre','diciembre'
+  ]
+
+  return `${Number(dia)} de ${meses[Number(mes) - 1]} de ${anio}`
+}
+  
   const exportarExcel = () => {
   const encabezados = ['Fecha', 'Producto', 'Cantidad']
 
   const filas = reporte.map(r => [
-    new Date(r.fecha).toLocaleDateString('es-MX'),
+    fechaBonita(r.fecha)
     r.nombre,
     r.cantidad
   ])
@@ -592,7 +603,7 @@ if (bloqueado) {
   }}
 >
       <td style={styles.td}>
-      {new Date(r.fecha).toLocaleDateString('es-MX')}
+      {fechaBonita(r.fecha)}
       </td>
       <td style={styles.td}>{r.nombre}</td>
       <td style={styles.td}>{r.cantidad}</td>
