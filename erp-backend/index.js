@@ -2723,10 +2723,16 @@ app.get('/produccion/reporte', async (req, res) => {
 
     const params = [fechaInicio, fechaFin]
 
-    if (idProducto && idProducto !== 'todos') {
-      sql += ` AND pd.id_producto = ?`
-      params.push(idProducto)
-    }
+   if (idProducto && idProducto !== 'todos') {
+
+  const ids = idProducto.split(',')
+
+  sql += `
+    AND pd.id_producto IN (${ids.map(() => '?').join(',')})
+  `
+
+  params.push(...ids)
+}
 
     sql += `
       GROUP BY pd.fecha, pd.id_producto, p.nombre
