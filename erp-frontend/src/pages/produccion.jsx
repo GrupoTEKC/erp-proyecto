@@ -467,37 +467,63 @@ if (bloqueado) {
     </label>
     <br />
 
- <select
-  multiple
-  value={productoReporte}
-  onChange={(e) =>
-    setProductoReporte(
-      [...e.target.selectedOptions].map(
-        option => option.value
-      )
-    )
-  }
-  style={{
-    minWidth: 250,
-    height: 80,
-    padding: 8,
-    border: '1px solid #ccc',
-    borderRadius: 6
-  }}
->
-   
-  <option value="">Todos los productos</option>
+<details style={{ minWidth: 250 }}>
+  <summary
+    style={{
+      padding: 8,
+      border: '1px solid #ccc',
+      borderRadius: 6,
+      cursor: 'pointer',
+      background: '#fff'
+    }}
+  >
+    Seleccionar productos ▼
+  </summary>
 
-  {productos.map(p => (
-    <option
-      key={p.id_producto}
-      value={p.id_producto}
-    >
-      {p.nombre}
-    </option>
-  ))}
-</select>
+  <div
+    style={{
+      border: '1px solid #ccc',
+      maxHeight: 200,
+      overflowY: 'auto',
+      padding: 10,
+      background: '#fff'
+    }}
+  >
+    {productos.map(p => (
+      <label
+        key={p.id_producto}
+        style={{
+          display: 'block',
+          marginBottom: 5
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={productoReporte.includes(
+            String(p.id_producto)
+          )}
+          onChange={(e) => {
+            if (e.target.checked) {
+              setProductoReporte([
+                ...productoReporte,
+                String(p.id_producto)
+              ])
+            } else {
+              setProductoReporte(
+                productoReporte.filter(
+                  id => id !== String(p.id_producto)
+                )
+              )
+            }
+          }}
+        />
+        {' '}
+        {p.nombre}
+      </label>
+    ))}
   </div>
+</details>
+    </div>
 
   <button
     style={styles.save}
