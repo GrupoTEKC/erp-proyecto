@@ -431,10 +431,16 @@ if (bloqueado) {
     
     <br />
     <input
-      type="date"
-      value={fechaInicio}
-      onChange={(e) => setFechaInicio(e.target.value)}
-    />
+  type="date"
+  value={fechaInicio}
+  onChange={(e) => setFechaInicio(e.target.value)}
+  style={{
+    padding: 8,
+    border: '1px solid #ccc',
+    borderRadius: 6,
+    fontWeight: 'bold'
+  }}
+/>
   </div>
 
   <div>
@@ -442,11 +448,17 @@ if (bloqueado) {
   Fecha final
   </label>
     <br />
-    <input
-      type="date"
-      value={fechaFin}
-      onChange={(e) => setFechaFin(e.target.value)}
-    />
+   <input
+  type="date"
+  value={fechaFin}
+  onChange={(e) => setFechaFin(e.target.value)}
+  style={{
+    padding: 8,
+    border: '1px solid #ccc',
+    borderRadius: 6,
+    fontWeight: 'bold'
+  }}
+/>
   </div>
 
   <div>
@@ -496,24 +508,24 @@ if (bloqueado) {
       <table style={styles.table}>
   <thead>
     <tr>
-      <th>Fecha</th>
-      <th>Producto</th>
-      <th>Cantidad</th>
+     <th style={styles.th}>Fecha</th>
+     <th style={styles.th}>Producto</th>
+     <th style={styles.th}>Cantidad</th>
     </tr>
   </thead>
 
  <tbody>
   {reporte.map((r, i) => (
-    <tr
-      key={i}
-      style={{
-        backgroundColor:
-          i % 2 === 0
-            ? '#ffffff'
-            : '#fafafa'
-          borderBottom: '1px solid #ececec'
-      }}
-    >
+  <tr
+  key={i}
+  style={{
+    backgroundColor:
+      i % 2 === 0
+        ? '#ffffff'
+        : '#fafafa',
+    borderBottom: '1px solid #ececec'
+  }}
+>
       <td>{r.fecha.split('-').reverse().join('/')}</td>
       <td>{r.nombre}</td>
       <td>{r.cantidad}</td>
