@@ -34,6 +34,8 @@ function Pedidos() {
   const [modalPreview, setModalPreview] = useState(false)
   const [guardandoPedido, setGuardandoPedido] = useState(false)
   const [pedidoGuardado, setPedidoGuardado] = useState(null)
+  const [pedidoYaGuardado, setPedidoYaGuardado] = useState(false)
+  
   // ================= CARGAR CATÁLOGOS =================
   useEffect(() => {
   const cargarDatos = async () => {
@@ -107,6 +109,12 @@ const abrirVistaPrevia = () => {
   // ================= GUARDAR PEDIDO =================
 const guardarPedido = async () => {
 
+    if (pedidoYaGuardado) {
+  alert(
+    `⚠️ Este pedido ya fue guardado con el folio #${pedidoGuardado}`
+  )
+  return
+}
     if (guardandoPedido) return
 
   setGuardandoPedido(true)
@@ -153,6 +161,7 @@ const guardarPedido = async () => {
     const data = await res.json()
 
     setPedidoGuardado(data.id_pedido)
+    setPedidoYaGuardado(true)
     setGuardandoPedido(false)
 
     } catch (err) {
@@ -413,59 +422,81 @@ const guardarPedido = async () => {
       </div>
      )}
 
-     <div
-     style={{
-     background: '#FFF3CD',
-     color: '#856404',
-     padding: 10,
-     borderRadius: 6,
-     marginTop: 15
-     }}
-     >
-     ⚠️ Verifique que su pedido sea correcto antes de guardarlo.
-     </div>
+    {pedidoYaGuardado ? (
+  <div
+    style={{
+      background: '#D4EDDA',
+      color: '#155724',
+      padding: 15,
+      borderRadius: 6,
+      marginTop: 15,
+      textAlign: 'center'
+    }}
+  >
+    <h3>✅ PEDIDO GUARDADO</h3>
+
+    <p>
+      Pedido #{pedidoGuardado} ha sido guardado correctamente.
+    </p>
+  </div>
+) : (
+  <div
+    style={{
+      background: '#FFF3CD',
+      color: '#856404',
+      padding: 10,
+      borderRadius: 6,
+      marginTop: 15
+    }}
+  >
+    ⚠️ Verifique que su pedido sea correcto antes de guardarlo.
+  </div>
+)}
         
       
      <div
-  style={{
+    style={{
     marginTop: 20,
     display: 'flex',
     justifyContent: 'flex-end',
     gap: 10
-  }}
->
+      }}
+     >
         
      <button
      disabled={guardandoPedido}
      onClick={() => setModalPreview(false)}
      style={{
      padding: '10px 16px',
-     background: '#6c757d',
+     background: pedidoYaGuardado ? '#28A745' : '#6c757d',
      color: '#fff',
      border: 'none',
      borderRadius: 6,
      cursor: 'pointer'
     }}
     >
-     Cerrar
+    {pedidoYaGuardado ? 'Aceptar' : 'Cerrar'}
     </button>
 
-    <button
+   {!pedidoYaGuardado && (
+  <button
     disabled={guardandoPedido}
     onClick={guardarPedido}
     style={{
-    padding: '10px 16px',
-    background: '#8B1E1E',
-    color: '#fff',
-    border: 'none',
-    borderRadius: 6,
-    cursor: 'pointer'
-     }}
-    >
+      padding: '10px 16px',
+      background: '#8B1E1E',
+      color: '#fff',
+      border: 'none',
+      borderRadius: 6,
+      cursor: 'pointer'
+    }}
+  >
     {guardandoPedido
       ? 'Guardando pedido...'
       : 'Guardar Pedido'}
-    </button>
+  </button>
+)}
+       
        </div>
       </div>
     </div>
