@@ -31,7 +31,9 @@ function Pedidos() {
   const [idRuta, setIdRuta] = useState('')
   const [vendedores, setVendedores] = useState([])
   const [idVendedor, setIdVendedor] = useState('')
-
+  const [modalPreview, setModalPreview] = useState(false)
+  const [guardandoPedido, setGuardandoPedido] = useState(false)
+  const [pedidoGuardado, setPedidoGuardado] = useState(null)
   // ================= CARGAR CATÁLOGOS =================
   useEffect(() => {
   const cargarDatos = async () => {
@@ -80,8 +82,9 @@ function Pedidos() {
   cargarProductosCliente()
 }, [cliente])
 
-  // ================= GUARDAR PEDIDO =================
-const guardarPedido = async () => {
+  
+//*********** Nueva actualizacion pro jiji ************************//
+const abrirVistaPrevia = () => {
 
   const productosValidos = productos.filter(
     p => Number(p.cantidad) > 0
@@ -94,6 +97,33 @@ const guardarPedido = async () => {
     !idVendedor ||
     productosValidos.length === 0
   ) {
+    alert('Complete todos los campos obligatorios')
+    return
+  }
+
+  setModalPreview(true)
+}
+  
+  // ================= GUARDAR PEDIDO =================
+const guardarPedido = async () => {
+
+    if (guardandoPedido) return
+
+  setGuardandoPedido(true)
+
+  const productosValidos = productos.filter(
+    p => Number(p.cantidad) > 0
+  )
+  
+  if (
+    !cliente ||
+    !tipoPedido ||
+    !idRuta ||
+    !idVendedor ||
+    productosValidos.length === 0
+  ) {
+    
+    setGuardandoPedido(false)
     alert('Complete todos los campos obligatorios')
     return
   }
@@ -122,8 +152,12 @@ const guardarPedido = async () => {
 
     const data = await res.json()
 
-    alert(`✅ Pedido guardado (ID: ${data.id_pedido})`)
+    setPedidoGuardado(data.id_pedido)
+    setModalPreview(false)
+    setGuardandoPedido(false)
 
+    alert(`✅ Pedido guardado (ID: ${data.id_pedido})`)
+    
     setCliente(null)
     setTipoPedido('')
     setDiasCredito(0)
@@ -132,9 +166,12 @@ const guardarPedido = async () => {
     setIdRuta('')
     setIdVendedor('')
 
-  } catch (err) {
+    } catch (err) {
+
+    setGuardandoPedido(false)
+
     alert(`❌ ${err.message}`)
-  }
+    }
 }
 
   return (
@@ -225,9 +262,122 @@ const guardarPedido = async () => {
 
           <h3 style={styles.total}>Total: ${total}</h3>
 
-          <button style={styles.guardar} onClick={guardarPedido}>
-            Guardar Pedido
-          </button>
+        <button
+        style={styles.guardar}
+        onClick={abrirVistaPrevia}
+        >
+        Procesar Pedido
+        </button>
+
+          {modalPreview && (
+  <div
+    style={{
+      position: 'fixed',
+      inset: 0,
+      background: 'rgba(0,0,0,0.5)',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 9999
+    }}
+  >
+    <div
+      style={{
+        background: '#fff',
+        padding: 20,
+        borderRadius: 10,
+        width: 500,
+        maxHeight: '80vh',
+        overflowY: 'auto'
+      }}
+    >
+      <img
+        src={logo}
+        alt=""
+        style={{ width: 120 }}
+      />
+
+      <h3 style={{ textAlign: 'center' }}>
+      CONFIRMACIÓN DE PEDIDO
+      </h3>
+
+      <p>
+        <strong>Cliente:</strong> {cliente.nombre}
+      </p>
+
+      <p>
+      <strong>Vendedor:</strong>{' '}
+      {vendedores.find(
+      v => v.id_vendedor === Number(idVendedor)
+      )?.nombre}
+      </p>
+
+      <p>
+      <strong>Fecha:</strong>{' '}
+      {new Date().toLocaleDateString('es-MX')}
+      </p>
+      
+      <p>
+        <strong>Tipo:</strong> {tipoPedido}
+      </p>
+
+      <p>
+        <strong>Total:</strong> ${total}
+      </p>
+
+      <hr />
+
+      {productos
+        .filter(p => Number(p.cantidad) > 0)
+        .map(p => (
+         <div key={p.id_producto}>
+  {p.nombre} - {p.cantidad} = $
+  {(p.cantidad * p.precio).toFixed(2)}
+</div>
+        ))}
+
+      {guardandoPedido && (
+  <div
+    style={{
+      marginTop: 15,
+      marginBottom: 15,
+      color: '#8B1E1E',
+      fontWeight: 'bold',
+      textAlign: 'center'
+    }}
+  >
+    ⏳ Guardando pedido...
+    <br />
+    No cierres esta ventana.
+  </div>
+)}
+      
+      <div
+        style={{
+          marginTop: 20,
+          display: 'flex',
+          gap: 10
+        }}
+      >
+        <button
+        disabled={guardandoPedido}
+        onClick={() => setModalPreview(false)}
+        >
+        Cerrar
+        </button>
+
+        <button
+          disabled={guardandoPedido}
+          onClick={guardarPedido}
+        >
+          {guardandoPedido
+            ? 'Guardando pedido...'
+            : 'Guardar Pedido'}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
         </>
       )}
     </div>
