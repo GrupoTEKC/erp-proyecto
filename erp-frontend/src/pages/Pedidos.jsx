@@ -35,7 +35,7 @@ function Pedidos() {
   const [guardandoPedido, setGuardandoPedido] = useState(false)
   const [pedidoGuardado, setPedidoGuardado] = useState(null)
   const [pedidoYaGuardado, setPedidoYaGuardado] = useState(false)
-  const [pdfUrl, setPdfUrl] = useState('')
+  const [pedidoUrl, setPedidoUrl] = useState('')
   const [mensajeLento, setMensajeLento] = useState(false)
   // ================= CARGAR CATÁLOGOS =================
   useEffect(() => {
@@ -172,7 +172,7 @@ if (
     clearTimeout(timeout)
     
     setPedidoGuardado(data.id_pedido)
-    setPdfUrl(data.pdf_url)
+    setPedidoUrl(data.pedido_url)
     setPedidoYaGuardado(true)
     setGuardandoPedido(false)
     setMensajeLento(false)
@@ -187,6 +187,11 @@ if (
 }
   
 const compartirWhatsApp = () => {
+  if (!pedidoUrl) {
+    alert('No existe la URL del pedido.')
+    return
+  }
+
   const mensaje = `
 Hola, ¿qué tal?
 
@@ -195,13 +200,13 @@ Le compartimos la información de su pedido.
 Cliente: ${cliente.nombre}
 Total: $${Number(total).toFixed(2)}
 
-📄 Pedido en PDF:
-${pdfUrl}
+📄 Ver pedido:
+${pedidoUrl}
 
 Por favor, confirme que los datos sean correctos.
 
 Grupo Tekc agradece su preferencia.
-  `
+`
 
   const url = `https://wa.me/?text=${encodeURIComponent(mensaje)}`
   window.location.assign(url)
