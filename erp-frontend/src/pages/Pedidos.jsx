@@ -35,7 +35,7 @@ function Pedidos() {
   const [guardandoPedido, setGuardandoPedido] = useState(false)
   const [pedidoGuardado, setPedidoGuardado] = useState(null)
   const [pedidoYaGuardado, setPedidoYaGuardado] = useState(false)
-  
+  const [pdfUrl, setPdfUrl] = useState('')
   // ================= CARGAR CATÁLOGOS =================
   useEffect(() => {
   const cargarDatos = async () => {
@@ -120,7 +120,8 @@ const guardarPedido = async () => {
     if (guardandoPedido) return
 
   setGuardandoPedido(true)
-
+  setPdfUrl(data.pdf_url)
+  
   const productosValidos = productos.filter(
     p => Number(p.cantidad) > 0
   )
@@ -180,8 +181,11 @@ Hola, ¿qué tal?
 
 Le compartimos la información de su pedido.
 
-👤 Cliente: ${cliente.nombre}
-💰 Total: $${Number(total).toFixed(2)}
+Cliente: ${cliente.nombre}
+Total: $${Number(total).toFixed(2)}
+
+📄 Pedido en PDF:
+${pdfUrl}
 
 Por favor, confirme que los datos sean correctos.
 
@@ -189,7 +193,7 @@ Grupo Tekc agradece su preferencia.
   `
 
   const url = `https://wa.me/?text=${encodeURIComponent(mensaje)}`
-  window.location.href = url
+  window.location.assign(url)
 }
   
   return (
