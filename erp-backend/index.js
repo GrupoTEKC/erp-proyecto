@@ -600,13 +600,16 @@ app.post('/pedidos-completo', async (req, res) => {
       `, [p.dias_credito || 0, id_pedido])
     }
 
-    await conn.commit()
+await conn.commit()
 
-    res.json({
-      success: true,
-      id_pedido,
-      total
-    })
+const pedido_url = `${req.protocol}://${req.get('host')}/pedidos/${id_pedido}`
+
+res.json({
+  success: true,
+  id_pedido,
+  total,
+  pedido_url
+})
 
   } catch (err) {
     await conn.rollback()
