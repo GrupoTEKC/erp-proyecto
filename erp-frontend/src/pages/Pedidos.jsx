@@ -197,10 +197,9 @@ Hola, ¿qué tal?
 
 Le compartimos la información de su pedido.
 
-Cliente: ${cliente.nombre}
-Total: $${Number(total).toFixed(2)}
+*Cliente:* ${cliente.nombre}
 
-📄 Ver pedido:
+*Ver pedido:*
 ${pedidoUrl}
 
 Por favor, confirme que los datos sean correctos.
