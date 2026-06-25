@@ -153,18 +153,7 @@ const guardarPedido = async () => {
     const data = await res.json()
 
     setPedidoGuardado(data.id_pedido)
-    setModalPreview(false)
     setGuardandoPedido(false)
-
-    alert(`✅ Pedido guardado (ID: ${data.id_pedido})`)
-    
-    setCliente(null)
-    setTipoPedido('')
-    setDiasCredito(0)
-    setProductos([])
-    setTotal(0)
-    setIdRuta('')
-    setIdVendedor('')
 
     } catch (err) {
 
@@ -327,59 +316,162 @@ const guardarPedido = async () => {
 
       <hr />
 
-      {productos
-        .filter(p => Number(p.cantidad) > 0)
-        .map(p => (
-         <div key={p.id_producto}>
-  {p.nombre} - {p.cantidad} = $
-  {(p.cantidad * p.precio).toFixed(2)}
-</div>
-        ))}
+   <table
+  style={{
+    width: '100%',
+    borderCollapse: 'collapse',
+    marginTop: 10
+  }}
+>
+  <thead>
+    <tr>
+      <th style={{ border: '1px solid #ddd', padding: 8 }}>
+        Producto
+      </th>
+      <th style={{ border: '1px solid #ddd', padding: 8 }}>
+        Cantidad
+      </th>
+      <th style={{ border: '1px solid #ddd', padding: 8 }}>
+        Precio
+      </th>
+      <th style={{ border: '1px solid #ddd', padding: 8 }}>
+        Importe
+      </th>
+    </tr>
+  </thead>
 
+  <tbody>
+    {productos
+      .filter(p => Number(p.cantidad) > 0)
+      .map(p => (
+        <tr key={p.id_producto}>
+          <td style={{ border: '1px solid #ddd', padding: 8 }}>
+            {p.nombre}
+          </td>
+
+          <td
+            style={{
+              border: '1px solid #ddd',
+              padding: 8,
+              textAlign: 'center'
+            }}
+          >
+            {p.cantidad}
+          </td>
+
+          <td
+            style={{
+              border: '1px solid #ddd',
+              padding: 8,
+              textAlign: 'right'
+            }}
+          >
+            ${Number(p.precio).toFixed(2)}
+          </td>
+
+          <td
+            style={{
+              border: '1px solid #ddd',
+              padding: 8,
+              textAlign: 'right'
+            }}
+          >
+            $
+            {(
+              Number(p.cantidad) *
+              Number(p.precio)
+            ).toFixed(2)}
+          </td>
+        </tr>
+      ))}
+  </tbody>
+</table>       
+
+      <h3
+       style={{
+       textAlign: 'right',
+       marginTop: 15,
+       color: '#071849'
+      }}
+     >
+      Total: ${Number(total).toFixed(2)}
+      </h3>
+      
       {guardandoPedido && (
-  <div
-    style={{
+      <div
+      style={{
       marginTop: 15,
       marginBottom: 15,
       color: '#8B1E1E',
       fontWeight: 'bold',
       textAlign: 'center'
-    }}
-  >
-    ⏳ Guardando pedido...
-    <br />
-    No cierres esta ventana.
-  </div>
-)}
-      
-      <div
-        style={{
-          marginTop: 20,
-          display: 'flex',
-          gap: 10
-        }}
-      >
-        <button
-        disabled={guardandoPedido}
-        onClick={() => setModalPreview(false)}
-        >
-        Cerrar
-        </button>
+      }}
+     >
+      ⏳ Guardando pedido...
+      <br />
+      No cierres esta ventana.
+      </div>
+     )}
 
-        <button
-          disabled={guardandoPedido}
-          onClick={guardarPedido}
-        >
-          {guardandoPedido
-            ? 'Guardando pedido...'
-            : 'Guardar Pedido'}
-        </button>
+     <div
+     style={{
+     background: '#FFF3CD',
+     color: '#856404',
+     padding: 10,
+     borderRadius: 6,
+     marginTop: 15
+     }}
+     >
+     ⚠️ Verifique que su pedido sea correcto antes de guardarlo.
+     </div>
+        
+      
+     <div
+  style={{
+    marginTop: 20,
+    display: 'flex',
+    justifyContent: 'flex-end',
+    gap: 10
+  }}
+>
+        
+     <button
+     disabled={guardandoPedido}
+     onClick={() => setModalPreview(false)}
+     style={{
+     padding: '10px 16px',
+     background: '#6c757d',
+     color: '#fff',
+     border: 'none',
+     borderRadius: 6,
+     cursor: 'pointer'
+    }}
+    >
+     Cerrar
+    </button>
+
+    <button
+    disabled={guardandoPedido}
+    onClick={guardarPedido}
+    style={{
+    padding: '10px 16px',
+    background: '#8B1E1E',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 6,
+    cursor: 'pointer'
+     }}
+    >
+    {guardandoPedido
+      ? 'Guardando pedido...'
+      : 'Guardar Pedido'}
+    </button>
+       </div>
       </div>
     </div>
-  </div>
-)}
+        )}
         </>
-      )}
+        )}
     </div>
   )
 }
