@@ -36,6 +36,7 @@ function Pedidos() {
   const [pedidoGuardado, setPedidoGuardado] = useState(null)
   const [pedidoYaGuardado, setPedidoYaGuardado] = useState(false)
   const [pdfUrl, setPdfUrl] = useState('')
+  const [mensajeLento, setMensajeLento] = useState(false)
   // ================= CARGAR CATÁLOGOS =================
   useEffect(() => {
   const cargarDatos = async () => {
@@ -120,24 +121,29 @@ const guardarPedido = async () => {
     if (guardandoPedido) return
 
   setGuardandoPedido(true)
-  setPdfUrl(data.pdf_url)
+  setMensajeLento(false)
+
+  const timeout = setTimeout(() => {
+  setMensajeLento(true)
+}, 15000)
   
   const productosValidos = productos.filter(
     p => Number(p.cantidad) > 0
   )
   
-  if (
-    !cliente ||
-    !tipoPedido ||
-    !idRuta ||
-    !idVendedor ||
-    productosValidos.length === 0
-  ) {
-    
-    setGuardandoPedido(false)
-    alert('Complete todos los campos obligatorios')
-    return
-  }
+if (
+  !cliente ||
+  !tipoPedido ||
+  !idRuta ||
+  !idVendedor ||
+  productosValidos.length === 0
+) {
+  clearTimeout(timeout)
+  setGuardandoPedido(false)
+  setMensajeLento(false)
+  alert('Complete todos los campos obligatorios')
+  return
+}
 
   const nuevoPedido = {
     id_cliente: cliente.id_cliente,
@@ -163,16 +169,21 @@ const guardarPedido = async () => {
 
     const data = await res.json()
 
+    clearTimeout(timeout)
+    
     setPedidoGuardado(data.id_pedido)
+    setPdfUrl(data.pdf_url)
     setPedidoYaGuardado(true)
     setGuardandoPedido(false)
+    setMensajeLento(false)
 
-    } catch (err) {
-
-    setGuardandoPedido(false)
-
-    alert(`❌ ${err.message}`)
-    }
+  } catch (err) {
+   clearTimeout(timeout)
+   setGuardandoPedido(false)
+   setMensajeLento(false)
+   alert(`❌ ${err.message}`)
+  }
+  
 }
   
 const compartirWhatsApp = () => {
@@ -446,6 +457,24 @@ Grupo Tekc agradece su preferencia.
       </div>
      )}
 
+      {mensajeLento && (
+  <div
+    style={{
+      marginTop: 12,
+      padding: 10,
+      background: '#FFF3CD',
+      color: '#856404',
+      borderRadius: 6
+    }}
+  >
+    ⚠️ El proceso está tardando más de lo esperado.
+    <br />
+    Verifique su conexión a Internet.
+    <br />
+    Si el problema continúa, vuelva a intentarlo en unos momentos.
+  </div>
+)}
+      
     {pedidoYaGuardado ? (
   <div
     style={{
