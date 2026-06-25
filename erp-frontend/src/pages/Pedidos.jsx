@@ -113,6 +113,8 @@ const guardarPedido = async () => {
   alert(
     `⚠️ Este pedido ya fue guardado con el folio #${pedidoGuardado}`
   )
+
+   
   return
 }
     if (guardandoPedido) return
@@ -171,7 +173,25 @@ const guardarPedido = async () => {
     alert(`❌ ${err.message}`)
     }
 }
+  
+const compartirWhatsApp = () => {
+  const mensaje = `
+Hola, ¿qué tal?
 
+Le compartimos la información de su pedido.
+
+👤 Cliente: ${cliente.nombre}
+💰 Total: $${Number(total).toFixed(2)}
+
+Por favor, confirme que los datos sean correctos.
+
+Grupo Tekc agradece su preferencia.
+  `
+
+  const url = `https://wa.me/?text=${encodeURIComponent(mensaje)}`
+  window.location.href = url
+}
+  
   return (
     <div style={styles.page}>
       <div style={styles.header}>
@@ -462,7 +482,23 @@ const guardarPedido = async () => {
     gap: 10
       }}
      >
-        
+
+    {pedidoYaGuardado && (
+  <button
+    onClick={compartirWhatsApp}
+    style={{
+      padding: '10px 16px',
+      background: '#25D366',
+      color: '#fff',
+      border: 'none',
+      borderRadius: 6,
+      cursor: 'pointer'
+    }}
+  >
+    📲 Compartir WhatsApp
+  </button>
+)}
+
      <button
      disabled={guardandoPedido}
      onClick={() => setModalPreview(false)}
