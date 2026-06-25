@@ -2143,6 +2143,161 @@ app.get('/pedidos-programados', async (req, res) => {
   }
 })
 
+app.get('/pedidos/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+
+    const [[pedido]] = await db.query(`
+      SELECT
+        p.*,
+        c.nombre,
+        c.apellido1,
+        c.nombre_tienda
+      FROM pedidos p
+      JOIN clientes c
+        ON p.id_cliente = c.id_cliente
+      WHERE p.id_pedido = ?
+    `, [id])
+
+    if (!pedido) {
+      return res.status(404).send('Pedido no encontrado')
+    }
+
+    const [detalle] = await db.query(`
+      SELECT
+        pd.cantidad,
+        pd.precio_unitario,
+        pr.nombre
+      FROM pedido_detalle pd
+      JOIN productos pr
+        ON pd.id_producto = pr.id_producto
+      WHERE pd.id_pedido = ?
+    `, [id])
+
+    const filas = detalle.map(d => `
+      <tr>
+        <td>${d.nombre}</td>
+        <td style="text-align:center">${d.cantidad}</td>
+        <td style="text-align:right">$${Number(d.precio_unitario).toFixed(2)}</td>
+        <td style="text-align:right">
+          $${(d.cantidad * d.precio_unitario).toFixed(2)}
+        </td>
+      </tr>
+    `).join('')
+
+    res.send(`
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Pedido #${pedido.id_pedido}</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f5f5f5;
+padding:40px;
+}
+
+.container{
+max-width:900px;
+margin:auto;
+background:white;
+padding:30px;
+border-radius:10px;
+box-shadow:0 0 10px rgba(0,0,0,.15);
+}
+
+h1{
+color:#071849;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:20px;
+}
+
+th,td{
+border:1px solid #ccc;
+padding:10px;
+}
+
+th{
+background:#8B1E1E;
+color:white;
+}
+
+.total{
+margin-top:20px;
+font-size:22px;
+text-align:right;
+font-weight:bold;
+color:#071849;
+}
+
+@media print{
+button{
+display:none;
+}
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>Pedido #${pedido.id_pedido}</h1>
+
+<p><b>Cliente:</b> ${pedido.nombre} ${pedido.apellido1}</p>
+
+<p><b>Tienda:</b> ${pedido.nombre_tienda}</p>
+
+<p><b>Fecha:</b> ${new Date(pedido.fecha).toLocaleDateString('es-MX')}</p>
+
+<p><b>Tipo:</b> ${pedido.tipo_pedido}</p>
+
+<table>
+
+<tr>
+<th>Producto</th>
+<th>Cantidad</th>
+<th>Precio</th>
+<th>Importe</th>
+</tr>
+
+${filas}
+
+</table>
+
+<div class="total">
+
+TOTAL: $${Number(pedido.total).toFixed(2)}
+
+</div>
+
+<br>
+
+<button onclick="window.print()">
+🖨️ Imprimir pedido
+</button>
+
+</div>
+
+</body>
+
+</html>
+`)
+  } catch (err) {
+    res.status(500).send(err.message)
+  }
+})
+
+
 app.post('/programaciones/:id/detalle', async (req, res) => {
   const conn = await db.getConnection()
   try {
