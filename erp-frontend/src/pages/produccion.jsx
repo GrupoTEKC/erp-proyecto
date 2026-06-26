@@ -252,8 +252,10 @@ const guardar = async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        datos: datos,
-        rol: 'supervisor'
+      body: JSON.stringify({
+      datos,
+      rol: 'supervisor',
+      fecha
       })
     })
 
