@@ -2748,7 +2748,11 @@ app.post('/produccion', async (req, res) => {
       return res.status(400).json({ error: 'datos inválidos' })
     }
 
-    const fechaFinal = fecha || new Date().toISOString().slice(0, 10)
+   const fechaFinal =
+   fecha ||
+   new Date().toLocaleDateString('en-CA', {
+   timeZone: 'America/Mexico_City'
+  })
 
     // VALIDAR PRIMERO
     for (const item of datos) {
