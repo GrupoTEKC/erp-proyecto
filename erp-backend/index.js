@@ -54,6 +54,8 @@ app.get('/clientes/busqueda', async (req, res) => {
       FROM clientes c
       LEFT JOIN pedidos p
         ON p.id_cliente = c.id_cliente
+      LEFT JOIN tablaentregas te
+        ON te.id_pedido = p.id_pedido
       WHERE
         c.activo = 1
         AND (
@@ -62,7 +64,7 @@ app.get('/clientes/busqueda', async (req, res) => {
           OR c.apellido2 LIKE ?
           OR c.nombre_tienda LIKE ?
           OR c.apodo LIKE ?
-          OR CAST(p.folio AS CHAR) LIKE ?
+          OR te.folio LIKE ?
         )
       ORDER BY
         c.nombre_tienda,
