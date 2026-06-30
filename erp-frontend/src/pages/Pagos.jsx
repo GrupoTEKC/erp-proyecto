@@ -106,22 +106,32 @@ function Pagos() {
 useEffect(() => {
   const buscarClientes = async () => {
     try {
-     const texto = busqueda.trim()
+      const texto = busqueda.trim()
 
-     if (texto.length > 0 && texto.length < 2) {
-     setClientes([])
-     return
-     }
+      if (texto.length > 0 && texto.length < 2) {
+        setClientes([])
+        return
+      }
 
-     const url = texto
-     ? `${API}/clientes/busqueda?q=${encodeURIComponent(texto)}`
-     : `${API}/clientes`
+      const url = texto
+        ? `${API}/clientes/busqueda?q=${encodeURIComponent(texto)}`
+        : `${API}/clientes`
 
       const res = await fetch(url)
+
+      if (!res.ok) {
+        console.error("Error del servidor")
+        setClientes([])
+        return
+      }
+
       const data = await res.json()
-      setClientes(data)
+
+      setClientes(Array.isArray(data) ? data : [])
+
     } catch (err) {
       console.error(err)
+      setClientes([])
     }
   }
 
