@@ -34,6 +34,58 @@ app.get('/clientes', async (req, res) => {
   }
 })
 
+
+/* =============================
+   🔍 BUSCAR CLIENTE O FOLIO
+============================= */
+app.get('/clientes/busqueda', async (req, res) => {
+  try {
+    const q = (req.query.q || '').trim()
+
+    if (!q) {
+      return res.json([])
+    }
+
+    const texto = `%${q}%`
+
+    const [rows] = await db.query(`
+      SELECT DISTINCT
+        c.*
+      FROM clientes c
+      LEFT JOIN pedidos p
+        ON p.id_cliente = c.id_cliente
+      WHERE
+        c.activo = 1
+        AND (
+          c.nombre LIKE ?
+          OR c.apellido1 LIKE ?
+          OR c.apellido2 LIKE ?
+          OR c.nombre_tienda LIKE ?
+          OR c.apodo LIKE ?
+          OR CAST(p.folio AS CHAR) LIKE ?
+        )
+      ORDER BY
+        c.nombre_tienda,
+        c.nombre
+    `, [
+      texto,
+      texto,
+      texto,
+      texto,
+      texto,
+      texto
+    ])
+
+    res.json(rows)
+
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({
+      error: err.message
+    })
+  }
+})
+
 app.get('/clientes/:id_cliente', async (req, res) => {
   try {
     const { id_cliente } = req.params
