@@ -306,6 +306,29 @@ if (listaChoferes.length === 0) {
       const detalle = detalles[i]
 
       const municipio = detalle[0]?.municipio || ''
+
+      const totalPedido = detalle.reduce((total, p) => {
+  const cantidad = Number(
+    p.cantidad_entregada ??
+    p.cantidad_planeada ??
+    p.cantidad ??
+    p.cantidad_pedida ??
+    0
+  )
+
+  const precio = Number(
+    p.precio_unitario ??
+    p.precio_venta ??
+    p.precio ??
+    p.precio_lista ??
+    p.precio_final ??
+    p.precio_cliente ??
+    0
+  )
+
+  return total + (cantidad * precio)
+}, 0)
+        
 bloquePedidos += `
   <div class="pedido">
    <div class="titulo-pedido">
@@ -351,9 +374,9 @@ bloquePedidos += `
       }).join('')}
     </table>
 
-    <div class="total">
-      TOTAL: $${Number(pedido.total || 0).toFixed(2)}
-    </div>
+   <div class="total">
+  TOTAL: $${totalPedido.toFixed(2)}
+</div>
   </div>
 `
 }
@@ -571,6 +594,29 @@ bloquePedidos += `
     const logo2Src = logo2
     const logo3Src = logo3
 
+
+    const totalPedido = detalle.reduce((total, p) => {
+  const cantidad = Number(
+    p.cantidad_entregada ??
+    p.cantidad_planeada ??
+    p.cantidad ??
+    p.cantidad_pedida ??
+    0
+  )
+
+  const precio = Number(
+    p.precio_unitario ??
+    p.precio_venta ??
+    p.precio ??
+    p.precio_lista ??
+    p.precio_final ??
+    p.precio_cliente ??
+    0
+  )
+
+  return total + (cantidad * precio)
+}, 0)
+    
     const contenido = `
       <div class="copia">
         <div class="header">
@@ -641,14 +687,14 @@ bloquePedidos += `
               `
             }).join('')}
 
-            <tr>
-              <td colspan="3" style="text-align:right;">
-                <strong>Total pedido</strong>
-              </td>
-              <td>
-                <strong>$${Number(pedidoActual?.total || 0).toFixed(2)}</strong>
-              </td>
-            </tr>
+           <tr>
+           <td colspan="3" style="text-align:right;">
+           <strong>Total pedido</strong>
+           </td>
+           <td>
+           <strong>$${totalPedido.toFixed(2)}</strong>
+           </td>
+          </tr>
           </tbody>
         </table>
 
