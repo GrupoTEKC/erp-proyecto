@@ -6,8 +6,9 @@ const API = 'https://erp-proyecto-production.up.railway.app'
 
 function Produccion() {
   const navigate = useNavigate()
-  const hoy = new Date().toISOString().slice(0, 10)
-
+  const hoy = new Date().toLocaleDateString('en-CA', {
+  timeZone: 'America/Mexico_City'
+})
   const [productos, setProductos] = useState([])
   const [seleccionados, setSeleccionados] = useState([])
   const [busqueda, setBusqueda] = useState('')
@@ -27,13 +28,16 @@ function Produccion() {
   const [reporte, setReporte] = useState([])
   const [totalReporte, setTotalReporte] = useState(0)
 
-  const [fechaInicio, setFechaInicio] = useState(
-  new Date().toISOString().slice(0, 7) + '-01'
+ const hoyMexico = new Date().toLocaleDateString('en-CA', {
+  timeZone: 'America/Mexico_City'
+})
+
+const [fechaInicio, setFechaInicio] = useState(
+  hoyMexico.slice(0, 7) + '-01'
 )
 
-  const [fechaFin, setFechaFin] = useState(
-  new Date().toISOString().slice(0, 10)
-)
+const [fechaFin, setFechaFin] = useState(hoyMexico)
+  
 
   const [productoReporte, setProductoReporte] = useState([])
 
@@ -251,7 +255,6 @@ const guardar = async () => {
     const res = await fetch(`${API}/produccion`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
       body: JSON.stringify({
       datos,
       rol: 'supervisor',
