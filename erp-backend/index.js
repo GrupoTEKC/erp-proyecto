@@ -54,7 +54,7 @@ app.get('/clientes/busqueda', async (req, res) => {
       FROM clientes c
       LEFT JOIN pedidos p
         ON p.id_cliente = c.id_cliente
-      LEFT JOIN tablaentregas te
+      LEFT JOIN entregas te
         ON te.id_pedido = p.id_pedido
       WHERE
         c.activo = 1
