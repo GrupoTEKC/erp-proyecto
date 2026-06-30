@@ -98,20 +98,36 @@ function Pagos() {
 
 
   useEffect(() => {
-    fetch(`${API}/clientes`)
-      .then(res => res.json())
-      .then(setClientes)
-    
      fetch(`${API}/productos`)
       .then(res => res.json())
       .then(setProductosCatalogo)
   }, [])
+  
+useEffect(() => {
+  const buscarClientes = async () => {
+    try {
+     const texto = busqueda.trim()
 
-  const clientesFiltrados = clientes.filter(c =>
-    `${c.nombre} ${c.apellido1} ${c.apellido2} ${c.nombre_tienda} ${c.apodo}`
-      .toLowerCase()
-      .includes(busqueda.toLowerCase())
-  )
+     if (texto.length > 0 && texto.length < 2) {
+     setClientes([])
+     return
+     }
+
+     const url = texto
+     ? `${API}/clientes/busqueda?q=${encodeURIComponent(texto)}`
+     : `${API}/clientes`
+
+      const res = await fetch(url)
+      const data = await res.json()
+      setClientes(data)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  buscarClientes()
+}, [busqueda])
+  
 
   const cargarPedidos = async (cliente) => {
     setClienteSeleccionado(cliente)
@@ -316,7 +332,7 @@ return (
             style={styles.field}
           />
 
-          {clientesFiltrados.map(c => (
+         {clientes.map(c => (
             <div key={c.id_cliente}>
               <b>{c.nombre} {c.apellido1}</b>
               <br />
