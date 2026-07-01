@@ -13,6 +13,7 @@ function Produccion() {
   const [seleccionados, setSeleccionados] = useState([])
   const [busqueda, setBusqueda] = useState('')
   const [fecha, setFecha] = useState(hoy)
+  const [periodoActual] = useState(hoy.slice(0, 7))
   const [bloqueado, setBloqueado] = useState(false)
   const [loading, setLoading] = useState(true)
   const [stock, setStock] = useState([])
@@ -71,11 +72,12 @@ const [fechaFin, setFechaFin] = useState(hoyMexico)
 
     await cargarCalendario()
     // 🔥 SOLO si NO está bloqueado carga datos
-    if (!val.faltaAyer) {
+  if (!val.faltaAyer) {
     await cargarDatos()
     await cargarStock()
+    await cargarInventarioInicial()
     await consultarReporte()
-  }
+}
 
   } catch {
     alert('Error inicial')
@@ -110,6 +112,23 @@ const [fechaFin, setFechaFin] = useState(hoyMexico)
   }
 }
 
+ const cargarInventarioInicial = async () => {
+  try {
+    const res = await fetch(`${API}/inventario-inicial/${periodoActual}`)
+    const data = await res.json()
+
+    setInvSeleccionados(
+      data.map(p => ({
+        id_producto: p.id_producto,
+        nombre: p.nombre,
+        cantidad: p.cantidad
+      }))
+    )
+  } catch (err) {
+    console.error(err)
+  }
+}
+  
  const cargarCalendario = async () => {
   try {
     const res = await fetch(`${API}/produccion/calendario-anual?anio=${anioActual}`)
@@ -206,7 +225,7 @@ setCalendario(data)
   const filtrados = productos.filter(p =>
     p.nombre.toLowerCase().includes(busqueda.toLowerCase())
   )
-  const filtradosInv = stock.filter(p =>
+  const filtradosInv = invSeleccionados.filter(p =>
   p.nombre.toLowerCase().includes(busquedaInv.toLowerCase())
 )
   // ➕ AGREGAR PRODUCTO
@@ -291,9 +310,9 @@ const guardarInventario = async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
       datos,
-      periodo: fecha.slice(0, 7)
-      })
-    })
+      periodo: periodoActual
+     })    
+ })
 
     const data = await res.json()
 
@@ -302,11 +321,11 @@ const guardarInventario = async () => {
       return
     }
 
-    alert('✅ Inventario inicial guardado')
-    setInvSeleccionados([])
-    setBusquedaInv('')
-    await cargarStock()
-
+   alert('✅ Inventario inicial guardado')
+setBusquedaInv('')
+await cargarInventarioInicial()
+await cargarStock()
+    
   } catch (error) {
     console.error(error)
     alert('❌ Error al guardar inventario')
@@ -759,7 +778,7 @@ if (bloqueado) {
     </tr>
   </thead>
   <tbody>
-    {invSeleccionados.map((p, i) => (
+   {filtradosInv.map((p, i) => (
       <tr key={p.id_producto}>
         <td>{p.nombre}</td>
         <td>
