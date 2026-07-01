@@ -3065,8 +3065,15 @@ app.get('/inventario-inicial/:periodo', async (req, res) => {
 
 app.get('/stock', async (req, res) => {
   try {
-    const [rows] = await db.query(`
-      SELECT 
+    // Obtener período actual (ejemplo: 2026-07)
+    const hoy = new Date()
+    const anio = hoy.getFullYear()
+    const mes = String(hoy.getMonth() + 1).padStart(2, '0')
+    const periodo = `${anio}-${mes}`
+
+    const [rows] = await db.query(
+      `
+      SELECT
         p.id_producto,
         p.nombre,
 
@@ -3074,36 +3081,58 @@ app.get('/stock', async (req, res) => {
         COALESCE(pd.producido, 0) AS producido,
         COALESCE(ed.salidas, 0) AS salidas,
 
-      COALESCE(ii.inicial, 0) + 
-      COALESCE(pd.producido, 0) - 
-      COALESCE(ed.salidas, 0) AS stock
+        (
+          COALESCE(ii.inicial, 0)
+          + COALESCE(pd.producido, 0)
+          - COALESCE(ed.salidas, 0)
+        ) AS stock
 
       FROM productos p
 
+      /* Inventario inicial del período */
       LEFT JOIN (
-        SELECT id_producto, SUM(cantidad) AS inicial
+        SELECT
+          id_producto,
+          cantidad AS inicial
         FROM inventario_inicial
-        GROUP BY id_producto
-      ) ii ON ii.id_producto = p.id_producto
+        WHERE periodo = ?
+      ) ii
+      ON ii.id_producto = p.id_producto
 
+      /* Producción del período */
       LEFT JOIN (
-        SELECT id_producto, SUM(cantidad) AS producido
+        SELECT
+          id_producto,
+          SUM(cantidad) AS producido
         FROM produccion_diaria
+        WHERE DATE_FORMAT(fecha, '%Y-%m') = ?
         GROUP BY id_producto
-      ) pd ON pd.id_producto = p.id_producto
+      ) pd
+      ON pd.id_producto = p.id_producto
 
+      /* Salidas del período */
       LEFT JOIN (
-        SELECT id_producto, SUM(cantidad_entregada) AS salidas
-        FROM entrega_detalle
-        GROUP BY id_producto
-      ) ed ON ed.id_producto = p.id_producto
+        SELECT
+          ed.id_producto,
+          SUM(ed.cantidad_entregada) AS salidas
+        FROM entrega_detalle ed
+        INNER JOIN entregas e
+          ON e.id_entrega = ed.id_entrega
+        WHERE DATE_FORMAT(e.fecha_salida, '%Y-%m') = ?
+        GROUP BY ed.id_producto
+      ) ed
+      ON ed.id_producto = p.id_producto
 
       WHERE p.activo = 1
       ORDER BY p.nombre
-    `)
+      `,
+      [periodo, periodo, periodo]
+    )
 
     res.json(rows)
+
   } catch (err) {
+    console.error(err)
     res.status(500).json({ error: err.message })
   }
 })
