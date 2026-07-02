@@ -249,11 +249,10 @@ setCalendario(data)
     return
   }
 
-  setInvSeleccionados([
-    ...invSeleccionados,
-    { ...producto, cantidad: '' }
-  ])
-
+ setInvSeleccionados([
+  { ...producto, cantidad:'' }
+])
+   
   setBusquedaInv('')
 }
   
@@ -331,8 +330,8 @@ const guardarInventario = async () => {
     }
 
    alert('✅ Inventario inicial guardado')
-setBusquedaInv('')
-await cargarInventarioInicial()
+   setInvSeleccionados([])
+   setBusquedaInv('')
 await cargarStock()
     
   } catch (error) {
@@ -794,31 +793,37 @@ if (bloqueado) {
 )}
       
 
-{/* 📦 TABLA */}
-<table style={styles.table}>
-  <thead>
-    <tr>
-      <th>Producto</th>
-      <th>Cantidad</th>
-    </tr>
-  </thead>
- <tbody>
-  {invSeleccionados.map((p, i) => (
-      <tr key={p.id_producto}>
-        <td>{p.nombre}</td>
-        <td>
-          <input
-            type="number"
-            value={p.cantidad}
-            onChange={(e) => handleCantidadInv(i, e.target.value)}
-            style={styles.input}
-          />
-        </td>
-      </tr>
-    ))}
-  </tbody>
-</table>
+{invSeleccionados.length > 0 && (
+  <div
+    style={{
+      border:'1px solid #ccc',
+      borderRadius:8,
+      padding:20,
+      marginTop:20,
+      background:'#fff'
+    }}
+  >
+    <h3>
+      {invSeleccionados[0].nombre}
+    </h3>
 
+    <label>
+      Cantidad
+    </label>
+
+    <input
+      type="number"
+      value={invSeleccionados[0].cantidad}
+      onChange={(e)=>handleCantidadInv(0,e.target.value)}
+      style={{
+        ...styles.input,
+        marginTop:10
+      }}
+    />
+
+  </div>
+)}
+      
 <div style={{ marginTop: 20, textAlign: 'right' }}>
   <button style={styles.save} onClick={confirmarGuardarInv}>
     Guardar Inventario Inicial
