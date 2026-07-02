@@ -676,83 +676,228 @@ res.json({
 // =============================
 // 🔥 PEDIDO MANUAL (NUEVO)
 // =============================
-app.post('/pedidos/manual', async (req, res) => {
+app.post('/pedidos-rezagados', async (req, res) => {
   const conn = await db.getConnection()
+
   try {
+
     const {
       id_cliente,
-      id_vendedor,
-      productos,
-      fecha_entrega
+      folio,
+      fecha_rezagada,
+      productos
     } = req.body
 
-    if (!id_cliente || !productos || productos.length === 0) {
-      return res.status(400).json({ error: 'Datos incompletos' })
+    if (!id_cliente) {
+      return res.status(400).json({ error: 'Cliente requerido' })
+    }
+
+    if (!folio) {
+      return res.status(400).json({ error: 'Folio requerido' })
+    }
+
+    if (!fecha_rezagada) {
+      return res.status(400).json({ error: 'Fecha requerida' })
+    }
+
+    if (!Array.isArray(productos) || productos.length === 0) {
+      return res.status(400).json({ error: 'Debe agregar al menos un producto' })
     }
 
     await conn.beginTransaction()
 
-    let total = 0
+    //==========================
+    // VALIDAR FOLIO REZAGADO
+    //==========================
 
-    // 🔹 calcular total
-    for (const item of productos) {
-      total += Number(item.cantidad) * Number(item.precio)
+    const [folioRezagado] = await conn.query(
+      `SELECT id_rezagado
+       FROM pedidos_rezagados
+       WHERE folio = ?`,
+      [folio]
+    )
+
+    if (folioRezagado.length > 0) {
+      await conn.rollback()
+      return res.status(400).json({
+        error: 'Ese folio ya existe en pedidos rezagados'
+      })
     }
 
-    // 🔥 INSERT PEDIDO
-    const [pedidoResult] = await conn.query(`
-      INSERT INTO pedidos (
+    //==========================
+    // VALIDAR FOLIO ENTREGAS
+    //==========================
+
+    const [folioEntrega] = await conn.query(
+      `SELECT id_entrega
+       FROM entregas
+       WHERE folio = ?`,
+      [folio]
+    )
+
+    if (folioEntrega.length > 0) {
+      await conn.rollback()
+      return res.status(400).json({
+        error: 'Ese folio ya existe en un pedido del sistema'
+      })
+    }
+
+    //==========================
+    // CALCULAR TOTAL
+    //==========================
+
+    let total = 0
+
+    for (const item of productos) {
+
+      const cantidad = Number(item.cantidad)
+      const precio = Number(item.precio)
+
+      total += cantidad * precio
+
+    }
+
+    //==========================
+    // INSERTAR PEDIDO
+    //==========================
+
+    const [pedido] = await conn.query(`
+      INSERT INTO pedidos_rezagados
+      (
         id_cliente,
-        id_vendedor,
-        tipo_pedido,
+        folio,
+        fecha_rezagada,
         total,
-        fecha,
-        fecha_entrega,
-        estado,
-        total_pagado
+        total_pagado,
+        estado
       )
-      VALUES (?, ?, 'credito', ?, NOW(), ?, 'entregado', 0)
+      VALUES
+      (?, ?, ?, ?, 0, 'pendiente')
     `, [
       id_cliente,
-      id_vendedor || null,
-      total,
-      fecha_entrega || null
+      folio,
+      fecha_rezagada,
+      total
     ])
 
-    const id_pedido = pedidoResult.insertId
+    const id_rezagado = pedido.insertId
 
-    // 🔹 INSERT DETALLE
+    //==========================
+    // INSERTAR DETALLE
+    //==========================
+
     for (const item of productos) {
+
       await conn.query(`
-        INSERT INTO pedido_detalle (
-          id_pedido,
+        INSERT INTO pedido_rezagado_detalle
+        (
+          id_rezagado,
           id_producto,
           cantidad,
           precio_unitario
         )
-        VALUES (?, ?, ?, ?)
+        VALUES
+        (?, ?, ?, ?)
       `, [
-        id_pedido,
+        id_rezagado,
         item.id_producto,
         item.cantidad,
         item.precio
       ])
+
     }
 
     await conn.commit()
 
     res.json({
       success: true,
-      id_pedido,
+      id_rezagado,
       total
     })
 
   } catch (err) {
+
     await conn.rollback()
-    console.error('❌ ERROR PEDIDO MANUAL:', err)
-    res.status(500).json({ error: err.message })
+
+    console.error("❌ ERROR PEDIDO REZAGADO:", err)
+
+    res.status(500).json({
+      error: err.message
+    })
+
   } finally {
+
     conn.release()
+
+  }
+
+})
+
+app.get('/pedidos-rezagados/cliente/:id_cliente', async (req, res) => {
+  try {
+
+    const { id_cliente } = req.params
+
+    const [rows] = await db.query(`
+      SELECT
+        id_rezagado,
+        id_rezagado AS id_pedido,
+        folio,
+        fecha_rezagada AS fecha_entrega,
+        total,
+        total_pagado,
+        saldo,
+        estado,
+        'rezagado' AS tipo
+      FROM pedidos_rezagados
+      WHERE id_cliente = ?
+      ORDER BY fecha_rezagada DESC
+    `, [id_cliente])
+
+    res.json(rows)
+
+  } catch (err) {
+
+    console.error('❌ ERROR OBTENER PEDIDOS REZAGADOS:', err)
+
+    res.status(500).json({
+      error: err.message
+    })
+
+  }
+})
+
+app.get('/pagos/rezagado/:id_rezagado', async (req, res) => {
+  try {
+
+    const { id_rezagado } = req.params
+
+    const [rows] = await db.query(`
+      SELECT
+        id_pago,
+        monto,
+        metodo,
+        cuenta_destino,
+        nombre_usuario,
+        fecha_pago,
+        fecha_registro
+      FROM pagos
+      WHERE
+        tipo_origen = 'rezagado'
+        AND id_rezagado = ?
+      ORDER BY fecha_pago ASC, fecha_registro ASC
+    `, [id_rezagado])
+
+    res.json(rows)
+
+  } catch (err) {
+
+    console.error('❌ ERROR HISTORIAL REZAGADO:', err)
+
+    res.status(500).json({
+      error: err.message
+    })
+
   }
 })
 // =============================
@@ -1668,16 +1813,18 @@ app.post('/pagos', async (req, res) => {
   const conn = await db.getConnection()
 
   try {
-    let {
-      id_pedido,
-      monto,
-      metodo,
-      cuenta_destino,
-      id_usuario,
-      tipo_usuario,
-      nombre_usuario,
-      fecha_pago
-    } = req.body
+   let {
+  id_pedido,
+  id_rezagado,
+  tipo_origen = 'pedido',
+  monto,
+  metodo,
+  cuenta_destino,
+  id_usuario,
+  tipo_usuario,
+  nombre_usuario,
+  fecha_pago
+} = req.body
 
     // =============================
     // 🔥 NORMALIZAR
@@ -1686,13 +1833,35 @@ app.post('/pagos', async (req, res) => {
     metodo = metodo?.toLowerCase()
     tipo_usuario = tipo_usuario?.toLowerCase()
     nombre_usuario = nombre_usuario?.trim()
+    tipo_origen = tipo_origen?.toLowerCase()
 
+    // =============================
+// 🔥 VALIDAR TIPO ORIGEN
+// =============================
+if (!['pedido', 'rezagado'].includes(tipo_origen)) {
+  return res.status(400).json({
+    error: 'Tipo de origen inválido'
+  })
+}
     // =============================
     // 🔥 VALIDACIONES BASE
     // =============================
-    if (!id_pedido || !metodo || !id_usuario || !tipo_usuario) {
-      return res.status(400).json({ error: 'Datos incompletos' })
-    }
+   if (!metodo || !id_usuario || !tipo_usuario) {
+  return res.status(400).json({ error: 'Datos incompletos' })
+}
+
+if (tipo_origen === 'pedido' && !id_pedido) {
+  return res.status(400).json({
+    error: 'Debe indicar el pedido'
+  })
+}
+
+if (tipo_origen === 'rezagado' && !id_rezagado) {
+  return res.status(400).json({
+    error: 'Debe indicar el pedido rezagado'
+  })
+}
+    
 
     if (isNaN(montoNum) || montoNum <= 0) {
       return res.status(400).json({ error: 'Monto inválido' })
@@ -1738,85 +1907,144 @@ app.post('/pagos', async (req, res) => {
     // =============================
     // 🔎 OBTENER PEDIDO
     // =============================
-    const [pedidoRows] = await conn.query(`
-      SELECT total, total_pagado, estado
-      FROM pedidos 
-      WHERE id_pedido = ?
-    `, [id_pedido])
+    let pedido
 
-    if (!pedidoRows.length) {
-      return res.status(404).json({ error: 'Pedido no existe' })
-    }
+if (tipo_origen === 'pedido') {
 
-    const pedido = pedidoRows[0]
+  const [pedidoRows] = await conn.query(`
+    SELECT total, total_pagado, estado
+    FROM pedidos
+    WHERE id_pedido = ?
+  `, [id_pedido])
 
-    if (pedido.estado === 'cancelado') {
-      return res.status(400).json({
-        error: 'No se puede pagar un pedido cancelado'
-      })
-    }
+  if (!pedidoRows.length) {
+    await conn.rollback()
+    return res.status(404).json({
+      error: 'Pedido no existe'
+    })
+  }
+
+  pedido = pedidoRows[0]
+
+} else {
+
+  const [pedidoRows] = await conn.query(`
+    SELECT total, total_pagado, estado
+    FROM pedidos_rezagados
+    WHERE id_rezagado = ?
+  `, [id_rezagado])
+
+  if (!pedidoRows.length) {
+    await conn.rollback()
+    return res.status(404).json({
+      error: 'Pedido rezagado no existe'
+    })
+  }
+
+  pedido = pedidoRows[0]
+
+}
+    
+
+ if (
+  tipo_origen === 'pedido' &&
+  pedido.estado === 'cancelado'
+) {
+  await conn.rollback()
+  return res.status(400).json({
+    error: 'No se puede pagar un pedido cancelado'
+  })
+}
 
     const total = Number(pedido.total || 0)
     const total_pagado = Number(pedido.total_pagado || 0)
     const saldoActual = total - total_pagado
 
-    if (saldoActual <= 0) {
-      return res.status(400).json({
-        error: 'Este pedido ya está liquidado'
-      })
-    }
+if (saldoActual <= 0) {
+  await conn.rollback()
+  return res.status(400).json({
+    error: 'Este pedido ya está liquidado'
+  })
+}
 
-    if (montoNum > saldoActual) {
-      return res.status(400).json({
-        error: 'El monto excede el saldo pendiente'
-      })
-    }
-
+if (montoNum > saldoActual) {
+  await conn.rollback()
+  return res.status(400).json({
+    error: 'El monto excede el saldo pendiente'
+  })
+}
     const nuevoTotalPagado = total_pagado + montoNum
 
     // =============================
     // 💾 INSERT
     // =============================
-    await conn.query(`
-      INSERT INTO pagos (
-        id_pedido,
-        fecha_pago,
-        monto,
-        metodo,
-        cuenta_destino,
-        id_usuario,
-        tipo_usuario,
-        nombre_usuario
-      )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `, [
-      id_pedido,
-      fecha_pago, 
-      montoNum,
-      metodo,
-      cuentaFinal,
-      id_usuario,
-      tipo_usuario,
-      metodo === 'efectivo' ? nombre_usuario : null
-    ])
+   await conn.query(`
+INSERT INTO pagos (
+  id_pedido,
+  id_rezagado,
+  tipo_origen,
+  fecha_pago,
+  monto,
+  metodo,
+  cuenta_destino,
+  id_usuario,
+  tipo_usuario,
+  nombre_usuario
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`, [
+  tipo_origen === 'pedido' ? id_pedido : null,
+  tipo_origen === 'rezagado' ? id_rezagado : null,
+  tipo_origen,
+  fecha_pago,
+  montoNum,
+  metodo,
+  cuentaFinal,
+  id_usuario,
+  tipo_usuario,
+  metodo === 'efectivo' ? nombre_usuario : null
+])
+    
 
     // =============================
     // 🔄 UPDATE PEDIDO (PRO)
     // =============================
-    await conn.query(`
-      UPDATE pedidos
-      SET 
-        total_pagado = ?,
-        estado = CASE 
-          WHEN ? >= total THEN 'pagado'
-          ELSE estado
-        END
-      WHERE id_pedido = ?
-    `, [
-      nuevoTotalPagado,
-      nuevoTotalPagado,
-      id_pedido
-    ])
+   if (tipo_origen === 'pedido') {
+
+  await conn.query(`
+    UPDATE pedidos
+    SET
+      total_pagado = ?,
+      estado = CASE
+        WHEN ? >= total THEN 'pagado'
+        ELSE estado
+      END
+    WHERE id_pedido = ?
+  `, [
+    nuevoTotalPagado,
+    nuevoTotalPagado,
+    id_pedido
+  ])
+
+} else {
+
+  await conn.query(`
+    UPDATE pedidos_rezagados
+    SET
+      total_pagado = ?,
+      estado = CASE
+        WHEN ? >= total THEN 'pagado'
+        ELSE 'pendiente'
+      END
+    WHERE id_rezagado = ?
+  `, [
+    nuevoTotalPagado,
+    nuevoTotalPagado,
+    id_rezagado
+  ])
+
+}
+    
 
     await conn.commit()
 
