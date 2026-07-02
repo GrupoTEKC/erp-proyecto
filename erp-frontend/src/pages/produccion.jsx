@@ -20,7 +20,7 @@ function Produccion() {
   const [stock, setStock] = useState([])
   const [invSeleccionados, setInvSeleccionados] = useState([])
   const [busquedaInv, setBusquedaInv] = useState('')
- 
+  const [inventarioCapturado, setInventarioCapturado] = useState(false)
   const [calendario, setCalendario] = useState({})
 
   const [mesSeleccionado, setMesSeleccionado] = useState(
@@ -73,10 +73,11 @@ const [fechaFin, setFechaFin] = useState(hoyMexico)
 
     await cargarCalendario()
     // 🔥 SOLO si NO está bloqueado carga datos
-  if (!val.faltaAyer) {
-    await cargarDatos()
-await cargarStock()
-await consultarReporte()
+if (!val.faltaAyer) {
+  await cargarDatos()
+  await cargarStock()
+  await consultarReporte()
+  await validarInventarioMes()
 }
 
   } catch {
@@ -111,6 +112,18 @@ await consultarReporte()
     console.error('Error stock')
   }
 }
+
+const validarInventarioMes = async () => {
+  try {
+    const res = await fetch(`${API}/inventario-inicial/validar?periodo=${periodoActual}`)
+    const data = await res.json()
+
+    setInventarioCapturado(data.existe)
+  } catch (err) {
+    console.error('Error validando inventario', err)
+  }
+}
+  
   
  const cargarCalendario = async () => {
   try {
@@ -328,6 +341,7 @@ setInvSeleccionados([])
 setBusquedaInv('')
 await cargarStock()
 await cargarDatos()
+await validarInventarioMes()
     
     
   } catch (error) {
@@ -698,6 +712,7 @@ if (bloqueado) {
         style={{ ...styles.input, marginBottom: 10 }}
       />
 
+
       <div style={{ maxHeight: 150, overflow: 'auto', marginBottom: 20 }}>
         {filtrados.map(p => (
           <div
@@ -757,7 +772,22 @@ if (bloqueado) {
   style={{ ...styles.input, marginBottom: 10 }}
 />
 
-      
+
+      {inventarioCapturado && (
+  <div
+    style={{
+      marginBottom: 15,
+      padding: '12px',
+      background: '#fff3cd',
+      border: '1px solid #ffe69c',
+      color: '#856404',
+      borderRadius: 6,
+      fontWeight: 'bold'
+    }}
+  >
+    ⚠️ El inventario inicial de este mes ya fue capturado. Por favor consulte con el programador antes de realizar cualquier modificación.
+  </div>
+)}
 {busquedaInv.trim() !== '' && (
   <div
     style={{
