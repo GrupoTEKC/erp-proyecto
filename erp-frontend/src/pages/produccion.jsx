@@ -115,10 +115,15 @@ if (!val.faltaAyer) {
 
 const validarInventarioMes = async () => {
   try {
-    const res = await fetch(`${API}/inventario-inicial/validar?periodo=${periodoActual}`)
+    const res = await fetch(
+      `${API}/inventario-inicial/${periodoActual}`
+    )
+
     const data = await res.json()
 
-    setInventarioCapturado(data.existe)
+    const existe = data.some(item => Number(item.cantidad) > 0)
+
+    setInventarioCapturado(existe)
   } catch (err) {
     console.error('Error validando inventario', err)
   }
