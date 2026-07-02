@@ -74,9 +74,8 @@ const [fechaFin, setFechaFin] = useState(hoyMexico)
     // 🔥 SOLO si NO está bloqueado carga datos
   if (!val.faltaAyer) {
     await cargarDatos()
-    await cargarStock()
-    await cargarInventarioInicial()
-    await consultarReporte()
+await cargarStock()
+await consultarReporte()
 }
 
   } catch {
@@ -109,23 +108,6 @@ const [fechaFin, setFechaFin] = useState(hoyMexico)
     setStock(data)
   } catch {
     console.error('Error stock')
-  }
-}
-
- const cargarInventarioInicial = async () => {
-  try {
-    const res = await fetch(`${API}/inventario-inicial/${periodoActual}`)
-    const data = await res.json()
-
-    setInvSeleccionados(
-      data.map(p => ({
-        id_producto: p.id_producto,
-        nombre: p.nombre,
-        cantidad: p.cantidad
-      }))
-    )
-  } catch (err) {
-    console.error(err)
   }
 }
   
@@ -340,13 +322,11 @@ const guardarInventario = async () => {
       return
     }
 
-  alert('✅ Inventario inicial guardado')
-
+alert('✅ Inventario inicial guardado')
 setInvSeleccionados([])
 setBusquedaInv('')
-
-await cargarInventarioInicial()
 await cargarStock()
+await cargarDatos()
     
     
   } catch (error) {
