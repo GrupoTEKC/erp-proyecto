@@ -225,7 +225,7 @@ setCalendario(data)
   const filtrados = productos.filter(p =>
     p.nombre.toLowerCase().includes(busqueda.toLowerCase())
   )
-  const filtradosInv = invSeleccionados.filter(p =>
+ const filtradosInv = productos.filter(p =>
   p.nombre.toLowerCase().includes(busquedaInv.toLowerCase())
 )
   // ➕ AGREGAR PRODUCTO
@@ -239,15 +239,24 @@ setCalendario(data)
     ])
   }
 
-  const agregarProductoInv = (producto) => {
-  const existe = invSeleccionados.find(p => p.id_producto === producto.id_producto)
-  if (existe) return
+ const agregarProductoInv = (producto) => {
+  const existe = invSeleccionados.find(
+    p => p.id_producto === producto.id_producto
+  )
+
+  if (existe) {
+    setBusquedaInv('')
+    return
+  }
 
   setInvSeleccionados([
     ...invSeleccionados,
     { ...producto, cantidad: '' }
   ])
+
+  setBusquedaInv('')
 }
+  
   
   // ✏️ CAMBIAR CANTIDAD
   const handleCantidad = (index, value) => {
@@ -753,21 +762,37 @@ if (bloqueado) {
   style={{ ...styles.input, marginBottom: 10 }}
 />
 
-<div style={{ maxHeight: 150, overflow: 'auto', marginBottom: 20 }}>
-  {filtradosInv.map(p => (
-    <div
-      key={p.id_producto}
-      onClick={() => agregarProductoInv(p)}
-      style={{
-        padding: 8,
-        borderBottom: '1px solid #ddd',
-        cursor: 'pointer'
-      }}
-    >
-      {p.nombre}
-    </div>
-  ))}
-</div>
+      
+{busquedaInv.trim() !== '' && (
+  <div
+    style={{
+      maxHeight: 150,
+      overflow: 'auto',
+      marginBottom: 20,
+      border: '1px solid #ccc',
+      borderRadius: 6,
+      background: '#fff'
+    }}
+  >
+    {filtradosInv.map(p => (
+      <div
+        key={p.id_producto}
+        onClick={() => {
+          agregarProductoInv(p)
+          setBusquedaInv('')
+        }}
+        style={{
+          padding: 8,
+          borderBottom: '1px solid #ddd',
+          cursor: 'pointer'
+        }}
+      >
+        {p.nombre}
+      </div>
+    ))}
+  </div>
+)}
+      
 
 {/* 📦 TABLA */}
 <table style={styles.table}>
@@ -777,8 +802,8 @@ if (bloqueado) {
       <th>Cantidad</th>
     </tr>
   </thead>
-  <tbody>
-   {filtradosInv.map((p, i) => (
+ <tbody>
+  {invSeleccionados.map((p, i) => (
       <tr key={p.id_producto}>
         <td>{p.nombre}</td>
         <td>
