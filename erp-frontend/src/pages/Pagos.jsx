@@ -612,89 +612,95 @@ return (
   boxShadow: "0 10px 35px rgba(0,0,0,.25)"
 }}>
      
-     <h3>PEDIDO REZAGADO</h3>
 
-     <div
+  <div
   style={{
+    position: "relative",
+    marginBottom: 30,
     display: "flex",
-    alignItems: "center",
-    marginBottom: 25
+    justifyContent: "center",
+    alignItems: "center"
   }}
 >
-
   <img
     src={logo}
     alt="Pegatek"
     style={{
-      width: 75,
-      marginRight: 20
+      position: "absolute",
+      left: 0,
+      width: 90,
+      objectFit: "contain"
     }}
   />
 
-  <div style={{ flex: 1 }}>
-
-    <h2
-      style={{
-        margin: 0,
-        textAlign: "center",
-        color: "#071849",
-        fontSize: 30,
-        fontWeight: "bold"
-      }}
-    >
-      PEDIDO REZAGADO
-    </h2>
-
-  </div>
-
+  <h2
+    style={{
+      margin: 0,
+      color: "#071849",
+      fontSize: 32,
+      fontWeight: "bold"
+    }}
+  >
+    PEDIDO REZAGADO
+  </h2>
 </div>
-
-     <div
+<div
   style={{
     background: "#FFF8E1",
     border: "2px solid #FFC107",
     borderLeft: "8px solid #FF9800",
     borderRadius: 10,
-    padding: 18,
+    padding: 20,
     marginBottom: 30
   }}
 >
+  <div
+    style={{
+      textAlign: "center",
+      color: "#B00020",
+      fontWeight: "bold",
+      fontSize: 22,
+      marginBottom: 15
+    }}
+  >
+    ⚠️ MUY IMPORTANTE – PATRÓN YAHIR
+  </div>
 
   <div
     style={{
       textAlign: "center",
       fontSize: 16,
-      lineHeight: 1.6,
-      color: "#8a5200"
+      lineHeight: 1.7,
+      color: "#6D4C41"
     }}
   >
-    ⚠️ Este apartado es únicamente para registrar pedidos que NO fueron registrados en SCAE (anteriores a junio de 2026).
+    Este apartado se utiliza únicamente para registrar pedidos atrasados
+    (anteriores a junio de 2026) que no fueron capturados en SCAE.
   </div>
 
   <div
     style={{
       marginTop: 18,
       textAlign: "center",
-      color: "#B00020",
+      color: "#0B7A0B",
       fontWeight: "bold",
       fontSize: 18
     }}
   >
-    NO CAPTURES PEDIDOS NUEVOS AQUÍ
+    ✅ Verifica primero que tu pedido no esté en el sistema.
   </div>
 
   <div
     style={{
+      marginTop: 12,
       textAlign: "center",
       color: "#B00020",
       fontWeight: "bold",
-      fontSize: 28,
-      marginTop: 8
+      fontSize: 17
     }}
   >
-    VERIFICA PRIMERO PATRÓN
+    📌 Recuerda que el folio no debe repetirse, de lo contrario se marcará error.
   </div>
-
 </div>
      
       
