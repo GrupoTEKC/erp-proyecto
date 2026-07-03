@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
-
+import logo from "../assets/TRANSPARENTE.png"
 const API = "https://erp-proyecto-production.up.railway.app"
 
 const styles = {
@@ -353,10 +353,21 @@ const buscarProducto = (texto) => {
 return (
   <div style={styles.page}>
 
-    <button style={styles.backTop} onClick={() => navigate("/")}>
-      ⬅ Volver
-    </button>
-
+    <button
+  style={styles.backTop}
+  onClick={() => {
+    if (clienteSeleccionado) {
+      setClienteSeleccionado(null)
+      setPedidos([])
+      setBusquedaFolio("")
+    } else {
+      navigate("/")
+    }
+  }}
+>
+  ⬅ Volver
+</button>
+    
     <button
       style={{
         ...styles.botonAccion,
@@ -590,31 +601,113 @@ return (
     justifyContent: "center",
     alignItems: "center"
   }}>
-    <div style={{
-      background: "#fff",
-      padding: 20,
-      borderRadius: 8,
-      width: "600px",
-      maxHeight: "80vh",
-      overflowY: "auto"
-    }}>
+    
+   <div style={{
+  background: "#fff",
+  padding: "30px",
+  borderRadius: 12,
+  width: "700px",
+  maxHeight: "90vh",
+  overflowY: "auto",
+  boxShadow: "0 10px 35px rgba(0,0,0,.25)"
+}}>
+     
      <h3>PEDIDO REZAGADO</h3>
 
-      <p
+     <div
   style={{
-    fontSize: 13,
-    color: "#666",
-    lineHeight: 1.5
+    display: "flex",
+    alignItems: "center",
+    marginBottom: 25
   }}
 >
-  Este apartado es únicamente para registrar pedidos, que no fueron registrados en SCAE (anteriores a junio de 2026).
-  <br />
-  <b>No captures pedidos nuevos aquí, <strong>VERIFICA PRIMERO PATRON</strong></b>
-</p>
 
+  <img
+    src={logo}
+    alt="Pegatek"
+    style={{
+      width: 75,
+      marginRight: 20
+    }}
+  />
+
+  <div style={{ flex: 1 }}>
+
+    <h2
+      style={{
+        margin: 0,
+        textAlign: "center",
+        color: "#071849",
+        fontSize: 30,
+        fontWeight: "bold"
+      }}
+    >
+      PEDIDO REZAGADO
+    </h2>
+
+  </div>
+
+</div>
+
+     <div
+  style={{
+    background: "#FFF8E1",
+    border: "2px solid #FFC107",
+    borderLeft: "8px solid #FF9800",
+    borderRadius: 10,
+    padding: 18,
+    marginBottom: 30
+  }}
+>
+
+  <div
+    style={{
+      textAlign: "center",
+      fontSize: 16,
+      lineHeight: 1.6,
+      color: "#8a5200"
+    }}
+  >
+    ⚠️ Este apartado es únicamente para registrar pedidos que NO fueron registrados en SCAE (anteriores a junio de 2026).
+  </div>
+
+  <div
+    style={{
+      marginTop: 18,
+      textAlign: "center",
+      color: "#B00020",
+      fontWeight: "bold",
+      fontSize: 18
+    }}
+  >
+    NO CAPTURES PEDIDOS NUEVOS AQUÍ
+  </div>
+
+  <div
+    style={{
+      textAlign: "center",
+      color: "#B00020",
+      fontWeight: "bold",
+      fontSize: 28,
+      marginTop: 8
+    }}
+  >
+    VERIFICA PRIMERO PATRÓN
+  </div>
+
+</div>
+     
       
      {!nuevoPedido.folio && (
-     <div style={{ color: "red", fontSize: 12 }}>
+   <div
+  style={{
+    color: "#B00020",
+    fontSize: 13,
+    marginBottom: 10,
+    marginTop: 20,
+    fontWeight: "bold"
+  }}
+>
       Ingresa el folio correspondiente a este pedido.
      </div>
      )}
@@ -630,7 +723,16 @@ return (
       />
 
       {!nuevoPedido.fecha_entrega && (
-      <div style={{ color: "red", fontSize: 12 }}>
+    
+     <div
+  style={{
+    color: "#B00020",
+    fontSize: 13,
+    marginTop: 22,
+    marginBottom: 10,
+    fontWeight: "bold"
+  }}
+>
         Selecciona la fecha en que el chofer entregó físicamente el pedido.
       </div>
       )}
@@ -648,7 +750,10 @@ return (
       <input
       placeholder="Buscar producto..."
       onChange={e => buscarProducto(e.target.value)}
-      style={styles.field}
+     style={{
+  ...styles.field,
+  marginTop: 25
+}}
      />
       
     {/* PRODUCTOS (aunque esté vacío por ahora) */}
@@ -731,7 +836,17 @@ return (
   </div>
 ))}
       
-      <h4>TOTAL: ${totalPedido}</h4>
+  <h3
+  style={{
+    marginTop: 30,
+    textAlign: "right",
+    color: "#071849",
+    fontSize: 26
+  }}
+>
+TOTAL: ${totalPedido.toFixed(2)}
+</h3>
+     
 
 <div style={{ display: "flex", gap: 10, marginTop: 15 }}>
   <button
