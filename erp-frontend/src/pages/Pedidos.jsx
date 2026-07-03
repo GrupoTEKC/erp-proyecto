@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import logo from '../assets/TRANSPARENTE.png'
 import Buscador from "../components/Buscador"
 import ProductosPedido from '../components/ProductosPedido'
@@ -36,7 +36,9 @@ function Pedidos() {
   const [pedidoGuardado, setPedidoGuardado] = useState(null)
   const [pedidoYaGuardado, setPedidoYaGuardado] = useState(false)
   const [pedidoUrl, setPedidoUrl] = useState('')
+  const navigate = useNavigate()
   const [mensajeLento, setMensajeLento] = useState(false)
+  
   // ================= CARGAR CATÁLOGOS =================
   useEffect(() => {
   const cargarDatos = async () => {
@@ -214,9 +216,32 @@ Grupo Tekc agradece su preferencia.
   return (
     <div style={styles.page}>
       <div style={styles.header}>
-        <Link to="/">
-          <button style={styles.backButton}>⬅ Volver al menú</button>
-        </Link>
+    <button
+  style={styles.backButton}
+  onClick={() => {
+    if (cliente) {
+      setCliente(null)
+      setProductos([])
+      setCatalogoProductos([])
+      setTipoPedido('')
+      setDiasCredito(0)
+      setTotal(0)
+      setIdRuta('')
+      setIdVendedor('')
+      setModalPreview(false)
+      setPedidoYaGuardado(false)
+      setPedidoGuardado(null)
+      setPedidoUrl('')
+      setGuardandoPedido(false)
+      setMensajeLento(false)
+    } else {
+      navigate('/')
+    }
+  }}
+>
+  {cliente ? '⬅ Volver a clientes' : '⬅ Volver al menú'}
+</button>
+        
         <img src={logo} alt="Logo" style={styles.logo} />
       </div>
 
