@@ -291,9 +291,11 @@ const guardarPedido = async () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-     ...nuevoPedido,
-     id_cliente: clienteSeleccionado.id_cliente
-   })
+  id_cliente: clienteSeleccionado.id_cliente,
+  folio: nuevoPedido.folio,
+  fecha_rezagada: nuevoPedido.fecha_entrega,
+  productos: nuevoPedido.productos
+})
     })
 
       let data
