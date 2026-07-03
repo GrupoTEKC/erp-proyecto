@@ -139,19 +139,42 @@ useEffect(() => {
 }, [busqueda])
   
 
-  const cargarPedidos = async (cliente) => {
-    setClienteSeleccionado(cliente)
-    const res = await fetch(`${API}/pedidos/cliente/${cliente.id_cliente}`)
-    const data = await res.json()
-    setPedidos(data)
-  }
+ const cargarPedidos = async (cliente) => {
+  setClienteSeleccionado(cliente)
 
-  const cargarDetalles = async (id_pedido) => {
-    const res = await fetch(`${API}/pagos/${id_pedido}`)
-    const data = await res.json()
-    setDetalles(data)
-    setVerDetalles(id_pedido)
-  }
+  const [resPedidos, resRezagados] = await Promise.all([
+    fetch(`${API}/pedidos/cliente/${cliente.id_cliente}`),
+    fetch(`${API}/pedidos-rezagados/cliente/${cliente.id_cliente}`)
+  ])
+
+  const pedidosNormales = await resPedidos.json()
+  const pedidosRezagados = await resRezagados.json()
+
+  setPedidos([
+    ...pedidosNormales,
+    ...pedidosRezagados
+  ])
+}
+
+ const cargarDetalles = async (pedido) => {
+
+ const url =
+  pedido.tipo === "rezagado"
+    ? `${API}/pagos/rezagado/${pedido.id_rezagado}`
+    : `${API}/pagos/${pedido.id_pedido}`
+
+  const res = await fetch(url)
+
+  const data = await res.json()
+
+  setDetalles(data)
+
+ setVerDetalles(
+  pedido.tipo === "rezagado"
+    ? pedido.id_rezagado
+    : pedido.id_pedido
+)
+}
 
   const setPagoField = (id, field, value) => {
     setPagosData(prev => ({
@@ -162,14 +185,19 @@ useEffect(() => {
       }
     }))
   }
-
 const registrarPago = async (pedido) => {
-  const dataPago = pagosData[pedido.id_pedido] || {}
+
+  const id = pedido.tipo === "rezagado"
+    ? pedido.id_rezagado
+    : pedido.id_pedido
+
+  const dataPago = pagosData[id] || {}
 
   if (!dataPago.fecha_pago) {
-  alert("Debes seleccionar fecha de pago")
-  return
-}
+    alert("Debes seleccionar fecha de pago")
+    return
+  }
+
   const metodoActual = dataPago.metodo || "efectivo"
 
   if (metodoActual === "efectivo" && !dataPago.nombreEntrega?.trim()) {
@@ -181,17 +209,29 @@ const registrarPago = async (pedido) => {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-    id_pedido: pedido.id_pedido,
-    monto: dataPago.monto,
-    metodo: metodoActual,
-    fecha_pago: dataPago.fecha_pago, // 👈 REGRESA ESTO
-    cuenta_destino:
-   metodoActual === "transferencia" ? dataPago.cuenta : null,
-  id_usuario: 1,
-  tipo_usuario: "vendedor",
-  nombre_usuario:
-    metodoActual === "efectivo" ? dataPago.nombreEntrega : null
-})
+      tipo_origen: pedido.tipo,
+      id_pedido:
+        pedido.tipo === "pedido"
+          ? pedido.id_pedido
+          : null,
+      id_rezagado:
+        pedido.tipo === "rezagado"
+          ? pedido.id_rezagado
+          : null,
+      monto: dataPago.monto,
+      metodo: metodoActual,
+      fecha_pago: dataPago.fecha_pago,
+      cuenta_destino:
+        metodoActual === "transferencia"
+          ? dataPago.cuenta
+          : null,
+      id_usuario: 1,
+      tipo_usuario: "vendedor",
+      nombre_usuario:
+        metodoActual === "efectivo"
+          ? dataPago.nombreEntrega
+          : null
+    })
   })
 
   const data = await res.json()
@@ -202,12 +242,14 @@ const registrarPago = async (pedido) => {
   }
 
   alert("Abono registrado ✅")
+
   cargarPedidos(clienteSeleccionado)
+
   setMostrarPago(null)
 
   setPagosData(prev => ({
     ...prev,
-    [pedido.id_pedido]: {}
+    [id]: {}
   }))
 }
 
@@ -245,7 +287,7 @@ const guardarPedido = async () => {
   }
 
   try {
-    const res = await fetch(`${API}/pedidos/manual`, {
+   const res = await fetch(`${API}/pedidos-rezagados`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -265,7 +307,7 @@ const guardarPedido = async () => {
       return
     }
 
-    alert("Pedido creado ✅")
+   alert("Pedido rezagado creado ✅")
 
     setMostrarCrear(false)
 
@@ -367,24 +409,39 @@ return (
             style={styles.field}
           />
 
-          {pedidosFiltrados.map(p => {
-            const totalPagado = p.total_pagado || 0
-            const saldo = p.total - totalPagado
-            const pagado = saldo <= 0
+        {pedidosFiltrados.map(p => {
 
-            const dias = calcularDias(p.fecha_entrega)
-            const colorStyle = getColorStyle(dias, pagado)
+    const id = p.tipo === "rezagado"
+      ? p.id_rezagado
+      : p.id_pedido
 
-            const dataPago = pagosData[p.id_pedido] || {}
+    const totalPagado = p.total_pagado || 0
+    const saldo = p.total - totalPagado
+    const pagado = saldo <= 0
+    const dias = calcularDias(p.fecha_entrega)
+    const colorStyle = getColorStyle(dias, pagado)
+    const dataPago = pagosData[id] || {}
 
-            return (
-              <div
-                key={p.id_pedido}
+    return (
+             <div
+  key={id}
                 style={{
                   ...styles.cardPedido,
                   ...colorStyle
                 }}
               >
+                <div
+  style={{
+    color: p.tipo === "rezagado" ? "#d97706" : "#071849",
+    fontWeight: "bold",
+    marginBottom: 5
+  }}
+>
+  {p.tipo === "rezagado"
+    ? "🟧 PEDIDO REZAGADO"
+    : "🟦 PEDIDO NORMAL"}
+</div>
+                
                 <b>Folio: {p.folio || p.id_pedido}</b>
                 <br />
 
@@ -411,7 +468,7 @@ return (
                 {!pagado && (
                   <button
                     style={styles.botonAccion}
-                    onClick={() => setMostrarPago(p.id_pedido)}
+                    onClick={() => setMostrarPago(id)}
                   >
                     Agregar abono
                   </button>
@@ -419,31 +476,31 @@ return (
 
                 <button
                   style={{ ...styles.botonAccion, backgroundColor: '#444' }}
-                  onClick={() => cargarDetalles(p.id_pedido)}
+                 onClick={() => cargarDetalles(p)}
                 >
                   Ver detalles
                 </button>
 
-                {mostrarPago === p.id_pedido && (
+               {mostrarPago === id && (
                   <div>
                     <input
                 type="date"
-                value={dataPago.fecha_pago || ""}
-                onChange={e =>
-                setPagoField(p.id_pedido, "fecha_pago", e.target.value)
+               value={dataPago.fecha_pago || ""}
+               onChange={e =>
+               setPagoField(id, "fecha_pago", e.target.value)
                }
                 style={styles.field}
               />
                     <input
                       placeholder="Monto"
                       value={dataPago.monto || ""}
-                      onChange={e => setPagoField(p.id_pedido, "monto", e.target.value)}
+                      onChange={e => setPagoField(id, "monto", e.target.value)}
                       style={styles.field}
                     />
 
                     <select
                       value={dataPago.metodo || "efectivo"}
-                      onChange={e => setPagoField(p.id_pedido, "metodo", e.target.value)}
+                      onChange={e => setPagoField(id, "metodo", e.target.value)}
                       style={styles.field}
                     >
                       <option value="efectivo">Efectivo</option>
@@ -453,7 +510,7 @@ return (
                    {(dataPago.metodo || "efectivo") === "transferencia" && (
                       <select
                         value={dataPago.cuenta || ""}
-                        onChange={e => setPagoField(p.id_pedido, "cuenta", e.target.value)}
+                        onChange={e => setPagoField(id, "cuenta", e.target.value)}
                         style={styles.field}
                       >
                        <option value="fiscal">Fiscal</option>
@@ -468,7 +525,7 @@ return (
                       <input
                         placeholder="Quién entrega"
                         value={dataPago.nombreEntrega || ""}
-                        onChange={e => setPagoField(p.id_pedido, "nombreEntrega", e.target.value)}
+                        onChange={e => setPagoField(id, "nombreEntrega", e.target.value)}
                         style={styles.field}
                       />
                     )}
@@ -479,7 +536,7 @@ return (
                   </div>
                 )}
 
-                {verDetalles === p.id_pedido && (
+                {verDetalles === id && (
                   <div style={{ marginTop: 10 }}>
                     <b>Historial:</b>
                     {detalles.map(d => (
@@ -539,8 +596,21 @@ return (
       maxHeight: "80vh",
       overflowY: "auto"
     }}>
-      <h3>INGRESO DE PEDIDO REZAGADO</h3>
+     <h3>PEDIDO REZAGADO</h3>
 
+      <p
+  style={{
+    fontSize: 13,
+    color: "#666",
+    lineHeight: 1.5
+  }}
+>
+  Este apartado es únicamente para registrar pedidos, que no fueron registrados en SCAE (anteriores a junio de 2026).
+  <br />
+  <b>No captures pedidos nuevos aquí, <strong>VERIFICA PRIMERO PATRON</strong></b>
+</p>
+
+      
      {!nuevoPedido.folio && (
      <div style={{ color: "red", fontSize: 12 }}>
       Ingresa el folio correspondiente a este pedido.
@@ -676,7 +746,7 @@ return (
     style={styles.botonAccion}
     onClick={guardarPedido}
   >
-    Guardar
+  Guardar pedido rezagado
   </button>
 </div>
       
