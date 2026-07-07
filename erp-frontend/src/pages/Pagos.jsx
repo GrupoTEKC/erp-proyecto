@@ -532,31 +532,37 @@ return (
    
 <div
   style={{
-    position: "relative",
     display: "flex",
-    alignItems: "center",
     justifyContent: "center",
+    alignItems: "center",
+    gap: "12px", // separación pequeña entre logo y título
     marginTop: "-10px",
-    marginBottom: 25
+    marginBottom: "30px"
   }}
 >
   <img
     src={logo}
     alt="Pegatek"
     style={{
-      position: "absolute",
-      left: 0,
-      width: 120,
+      width: 90,
       height: "auto",
       objectFit: "contain"
     }}
   />
 
-  <h1 style={styles.titleCenter}>
+  <h1
+    style={{
+      margin: 0,
+      color: "#8B1E1E",
+      fontSize: "42px",
+      fontWeight: "bold",
+      letterSpacing: "1px"
+    }}
+  >
     CUENTAS POR COBRAR
   </h1>
 </div>
-
+    
       {!clienteSeleccionado && (
         <>
           <input
