@@ -54,7 +54,49 @@ titleCenter: {
     border: 'none',
     borderRadius: '6px',
     cursor: 'pointer'
-  }
+  },
+
+  menuButton: {
+  position: "absolute",
+  top: 20,
+  right: 20,
+  width: 45,
+  height: 45,
+  borderRadius: 8,
+  border: "none",
+  backgroundColor: "#8B1E1E",
+  color: "#fff",
+  fontSize: 24,
+  cursor: "pointer"
+},
+
+menuOverlay: {
+  position: "fixed",
+  inset: 0,
+  backgroundColor: "rgba(0,0,0,.35)",
+  zIndex: 9998
+},
+
+menuPanel: {
+  position: "fixed",
+  top: 0,
+  right: 0,
+  width: 290,
+  height: "100%",
+  backgroundColor: "#8B1E1E",
+  color: "#fff",
+  zIndex: 9999,
+  padding: 25,
+  boxSizing: "border-box",
+  boxShadow: "-5px 0 20px rgba(0,0,0,.30)"
+},
+
+menuItem: {
+  padding: "16px 0",
+  borderBottom: "1px solid rgba(255,255,255,.15)",
+  cursor: "pointer",
+  fontSize: 18
+}
 }
 
 // 🔥 calcular días (se sigue usando para colores)
@@ -76,6 +118,8 @@ const getColorStyle = (dias, pagado) => {
 
 function Pagos() {
   const navigate = useNavigate()
+  const [menuAbierto, setMenuAbierto] = useState(false)
+  const [seccion, setSeccion] = useState("cliente")
   const [productosCatalogo, setProductosCatalogo] = useState([])
   const [resultadosBusqueda, setResultadosBusqueda] = useState([])
   const [clientes, setClientes] = useState([])
@@ -367,25 +411,30 @@ return (
 >
   ⬅ Volver
 </button>
-    
-    <button
-      style={{
-        ...styles.botonAccion,
-        position: "absolute",
-        top: 20,
-        right: 20
-      }}
-      onClick={() => {
-        if (!clienteSeleccionado) {
-          alert("Selecciona un cliente primero")
-          return
-        }
-        setMostrarCrear(true)
-      }}
-    >
-      ➕ Agregar folio
-    </button>
 
+    <button
+  style={styles.menuButton}
+  onClick={() => setMenuAbierto(true)}
+>
+  ☰
+</button>
+    
+   {clienteSeleccionado && (
+<button
+  style={{
+    ...styles.botonAccion,
+    position: "absolute",
+    top: 20,
+    right: 80
+  }}
+  onClick={() => {
+    setMostrarCrear(true)
+  }}
+>
+  ➕ Agregar folio
+</button>
+)}
+    
     <h2 style={styles.titleCenter}>CUENTAS POR COBRAR</h2>
 
       {!clienteSeleccionado && (
@@ -589,6 +638,55 @@ return (
           })}
         </>
       )}
+
+    {menuAbierto && (
+<>
+<div
+  style={styles.menuOverlay}
+  onClick={() => setMenuAbierto(false)}
+/>
+
+<div style={styles.menuPanel}>
+
+<h2 style={{marginTop:0}}>
+Menú
+</h2>
+
+<div
+style={styles.menuItem}
+onClick={()=>{
+setSeccion("cliente")
+setMenuAbierto(false)
+}}
+>
+💰 Cobranza por cliente
+</div>
+
+<div
+style={styles.menuItem}
+onClick={()=>{
+setSeccion("notas")
+setMenuAbierto(false)
+}}
+>
+📋 Control de notas
+</div>
+
+<div
+style={styles.menuItem}
+onClick={()=>{
+setSeccion("estadisticas")
+setMenuAbierto(false)
+}}
+>
+📊 Estadísticas de pagos
+</div>
+
+</div>
+
+</>
+)}
+    
       {mostrarCrear && (
   <div style={{
     position: "fixed",
