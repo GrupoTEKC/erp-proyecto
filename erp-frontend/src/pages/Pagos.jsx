@@ -184,6 +184,8 @@ useEffect(() => {
   
 
  const cargarPedidos = async (cliente) => {
+  console.log("Entró", cliente)
+
   setClienteSeleccionado(cliente)
 
   const [resPedidos, resRezagados] = await Promise.all([
@@ -193,6 +195,9 @@ useEffect(() => {
 
   const pedidosNormales = await resPedidos.json()
   const pedidosRezagados = await resRezagados.json()
+
+  console.log(pedidosNormales)
+  console.log(pedidosRezagados)
 
   setPedidos([
     ...pedidosNormales,
