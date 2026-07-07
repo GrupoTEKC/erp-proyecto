@@ -535,7 +535,7 @@ return (
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    gap: "12px", // separación pequeña entre logo y título
+    gap: "10px",
     marginTop: "-10px",
     marginBottom: "30px"
   }}
@@ -544,7 +544,7 @@ return (
     src={logo}
     alt="Pegatek"
     style={{
-      width: 90,
+      width: 110,   // más grande que el título
       height: "auto",
       objectFit: "contain"
     }}
@@ -556,7 +556,8 @@ return (
       color: "#8B1E1E",
       fontSize: "42px",
       fontWeight: "bold",
-      letterSpacing: "1px"
+      letterSpacing: "1px",
+      lineHeight: 1
     }}
   >
     CUENTAS POR COBRAR
