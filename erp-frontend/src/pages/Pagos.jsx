@@ -183,21 +183,22 @@ useEffect(() => {
 }, [busqueda])
   
 
- const cargarPedidos = async (cliente) => {
+const cargarPedidos = async (cliente) => {
   console.log("Entró", cliente)
 
   setClienteSeleccionado(cliente)
 
-  const [resPedidos, resRezagados] = await Promise.all([
-    fetch(`${API}/pedidos/cliente/${cliente.id_cliente}`),
-    fetch(`${API}/pedidos-rezagados/cliente/${cliente.id_cliente}`)
-  ])
+  const resPedidos = await fetch(`${API}/pedidos/cliente/${cliente.id_cliente}`)
+  console.log("Pedidos status:", resPedidos.status)
+
+  const resRezagados = await fetch(`${API}/pedidos-rezagados/cliente/${cliente.id_cliente}`)
+  console.log("Rezagados status:", resRezagados.status)
 
   const pedidosNormales = await resPedidos.json()
   const pedidosRezagados = await resRezagados.json()
 
-  console.log(pedidosNormales)
-  console.log(pedidosRezagados)
+  console.log("Normales:", pedidosNormales)
+  console.log("Rezagados:", pedidosRezagados)
 
   setPedidos([
     ...pedidosNormales,
