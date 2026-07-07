@@ -399,15 +399,22 @@ return (
 
     <button
   style={styles.backTop}
-  onClick={() => {
-    if (clienteSeleccionado) {
-      setClienteSeleccionado(null)
-      setPedidos([])
-      setBusquedaFolio("")
-    } else {
-      navigate("/")
-    }
-  }}
+onClick={() => {
+  if (clienteSeleccionado) {
+    setClienteSeleccionado(null)
+    setPedidos([])
+    setBusquedaFolio("")
+    return
+  }
+
+  if (seccion !== "cliente") {
+    setSeccion("cliente")
+    return
+  }
+
+  navigate("/")
+}}
+      
 >
   ⬅ Volver
 </button>
