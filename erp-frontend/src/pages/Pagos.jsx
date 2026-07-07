@@ -404,15 +404,9 @@ onClick={() => {
     setClienteSeleccionado(null)
     setPedidos([])
     setBusquedaFolio("")
-    return
+  } else {
+    navigate("/")
   }
-
-  if (seccion !== "cliente") {
-    setSeccion("cliente")
-    return
-  }
-
-  navigate("/")
 }}
       
 >
