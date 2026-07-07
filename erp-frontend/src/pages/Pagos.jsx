@@ -552,7 +552,7 @@ return (
     style={{
       margin: 0,
       color: "#8B1E1E", // rojo institucional
-      fontSize: "22px", // aproximadamente la mitad del tamaño actual
+      fontSize: "26px", // aproximadamente la mitad del tamaño actual
       fontWeight: "bold",
       letterSpacing: "1px"
     }}
