@@ -21,11 +21,13 @@ backTop: {
 },
 
 titleCenter: {
-  textAlign: 'center',
-  fontSize: '22px',
-  fontWeight: 'bold',
-  color: '#071849',
-  marginBottom: '20px'
+  textAlign: "center",
+  fontSize: "42px",
+  fontWeight: "bold",
+  color: "#071849",
+  marginTop: "10px",
+  marginBottom: "30px",
+  letterSpacing: "1px"
 },
   
   field: {
@@ -529,7 +531,29 @@ return (
 </button>
     
    
-    <h2 style={styles.titleCenter}>CUENTAS POR COBRAR</h2>
+<div
+  style={{
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    marginBottom: 35
+  }}
+>
+  <img
+    src={logo}
+    alt="Pegatek"
+    style={{
+      width: 120,
+      marginBottom: 12,
+      objectFit: "contain"
+    }}
+  />
+
+  <h1 style={styles.titleCenter}>
+    CUENTAS POR COBRAR
+  </h1>
+</div>
+    
 
       {!clienteSeleccionado && (
         <>
