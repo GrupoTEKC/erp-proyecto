@@ -54,7 +54,70 @@ titleCenter: {
     border: 'none',
     borderRadius: '6px',
     cursor: 'pointer'
-  }
+  },
+
+  hamburger: {
+  position: "fixed",
+  top: 15,
+  right: 15,
+  width: 45,
+  height: 45,
+  borderRadius: 8,
+  border: "none",
+  background: "#071849",
+  color: "#fff",
+  fontSize: 24,
+  cursor: "pointer",
+  zIndex: 1001
+},
+
+menu: {
+  position: "fixed",
+  top: 0,
+  right: 0,
+  width: 260,
+  height: "100%",
+  background: "#071849",
+  color: "#fff",
+  boxShadow: "-5px 0 15px rgba(0,0,0,.25)",
+  padding: 20,
+  zIndex: 1000
+},
+
+menuItem: {
+  display: "block",
+  width: "100%",
+  padding: "12px",
+  marginBottom: 10,
+  background: "transparent",
+  color: "#fff",
+  border: "1px solid rgba(255,255,255,.2)",
+  borderRadius: 6,
+  cursor: "pointer",
+  textAlign: "left"
+},
+
+overlay: {
+  position: "fixed",
+  inset: 0,
+  background: "rgba(0,0,0,.35)",
+  zIndex: 999
+},
+
+  menu: {
+  position: "fixed",
+  top: 0,
+  right: 0,
+  width: 260,
+  height: "100%",
+  background: "#071849",
+  color: "#fff",
+  boxShadow: "-5px 0 15px rgba(0,0,0,.25)",
+  padding: 20,
+  zIndex: 1000,
+  transition: "transform .25s ease"
+},
+  
 }
 
 // 🔥 calcular días (se sigue usando para colores)
@@ -87,6 +150,8 @@ function Pagos() {
   const [pagosData, setPagosData] = useState({})
   const [mostrarPago, setMostrarPago] = useState(null)
 
+  const [menuAbierto, setMenuAbierto] = useState(false)
+  
   const [detalles, setDetalles] = useState([])
   const [verDetalles, setVerDetalles] = useState(null)
   const [mostrarCrear, setMostrarCrear] = useState(false)
@@ -354,6 +419,62 @@ return (
   <div style={styles.page}>
 
     <button
+  style={styles.hamburger}
+  onClick={() => setMenuAbierto(true)}
+>
+☰
+</button>
+
+{menuAbierto && (
+  <>
+    <div
+      style={styles.overlay}
+      onClick={() => setMenuAbierto(false)}
+    />
+
+    <div style={styles.menu}>
+
+      <h3 style={{ marginTop: 0 }}>
+        Menú
+      </h3>
+
+      <button
+        style={styles.menuItem}
+      onClick={() => {
+  setMenuAbierto(false)
+  navigate("/")
+}}
+      >
+        🏠 Inicio
+      </button>
+
+      <button
+        style={styles.menuItem}
+        onClick={() => {
+          if (!clienteSeleccionado) {
+            alert("Selecciona un cliente primero")
+            return
+          }
+
+          setMostrarCrear(true)
+          setMenuAbierto(false)
+        }}
+      >
+        ➕ Agregar folio
+      </button>
+
+      <button
+        style={styles.menuItem}
+        onClick={() => setMenuAbierto(false)}
+      >
+        ❌ Cerrar menú
+      </button>
+
+    </div>
+  </>
+)}
+    
+    <button
   style={styles.backTop}
   onClick={() => {
     if (clienteSeleccionado) {
@@ -368,24 +489,7 @@ return (
   ⬅ Volver
 </button>
     
-    <button
-      style={{
-        ...styles.botonAccion,
-        position: "absolute",
-        top: 20,
-        right: 20
-      }}
-      onClick={() => {
-        if (!clienteSeleccionado) {
-          alert("Selecciona un cliente primero")
-          return
-        }
-        setMostrarCrear(true)
-      }}
-    >
-      ➕ Agregar folio
-    </button>
-
+   
     <h2 style={styles.titleCenter}>CUENTAS POR COBRAR</h2>
 
       {!clienteSeleccionado && (
