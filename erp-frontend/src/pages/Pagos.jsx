@@ -529,12 +529,12 @@ return (
   ⬅ Volver
 </button>
     
-   
 <div
   style={{
     display: "flex",
+    flexDirection: "column",
     alignItems: "center",
-    justifyContent: "space-between",
+    marginTop: -5,
     marginBottom: 25
   }}
 >
@@ -542,29 +542,25 @@ return (
     src={logo}
     alt="Pegatek"
     style={{
-      width: 120, // conserva el tamaño actual
-      height: "auto",
-      objectFit: "contain"
+      width: 140, // ligeramente más grande
+      objectFit: "contain",
+      marginBottom: 6
     }}
   />
 
   <h1
     style={{
-      flex: 1,
-      textAlign: "center",
       margin: 0,
-      color: "#8B1E1E",
-      fontSize: "42px",
+      color: "#8B1E1E", // rojo institucional
+      fontSize: "22px", // aproximadamente la mitad del tamaño actual
       fontWeight: "bold",
       letterSpacing: "1px"
     }}
   >
     CUENTAS POR COBRAR
   </h1>
-
-  {/* Espacio para equilibrar el ancho del logo */}
-  <div style={{ width: 120 }} />
 </div>
+    
     
       {!clienteSeleccionado && (
         <>
