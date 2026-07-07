@@ -75,24 +75,28 @@ menu: {
   position: "fixed",
   top: 0,
   right: 0,
-  width: 260,
+  width: 290,
   height: "100%",
-  background: "#071849",
-  color: "#fff",
-  boxShadow: "-5px 0 15px rgba(0,0,0,.25)",
-  padding: 20,
-  zIndex: 1000
+  background: "#ffffff",
+  color: "#222",
+  boxShadow: "-8px 0 25px rgba(0,0,0,.18)",
+  padding: "20px 18px",
+  zIndex: 1000,
+  transition: "transform .25s ease"
 },
 
 menuItem: {
-  display: "block",
   width: "100%",
-  padding: "12px",
-  marginBottom: 10,
-  background: "transparent",
-  color: "#fff",
-  border: "1px solid rgba(255,255,255,.2)",
-  borderRadius: 6,
+  display: "flex",
+  alignItems: "center",
+  gap: 12,
+  padding: "14px 12px",
+  marginBottom: 8,
+  background: "#fff",
+  color: "#333",
+  border: "none",
+  borderBottom: "1px solid #ececec",
+  fontSize: "17px",
   cursor: "pointer",
   textAlign: "left"
 },
@@ -100,24 +104,10 @@ menuItem: {
 overlay: {
   position: "fixed",
   inset: 0,
-  background: "rgba(0,0,0,.35)",
+  background:"rgba(139,30,30,.12)",
   zIndex: 999
 },
 
-  menu: {
-  position: "fixed",
-  top: 0,
-  right: 0,
-  width: 260,
-  height: "100%",
-  background: "#071849",
-  color: "#fff",
-  boxShadow: "-5px 0 15px rgba(0,0,0,.25)",
-  padding: 20,
-  zIndex: 1000,
-  transition: "transform .25s ease"
-},
-  
 }
 
 // 🔥 calcular días (se sigue usando para colores)
@@ -434,42 +424,88 @@ return (
 
     <div style={styles.menu}>
 
-      <h3 style={{ marginTop: 0 }}>
-        Menú
-      </h3>
+     <h3
+  style={{
+    marginTop: 0,
+    marginBottom: 20,
+    fontSize: 24,
+    color: "#8B1E1E",
+    fontWeight: "bold"
+  }}
+>
+☰ MENÚ
+</h3>
 
-      <button
-        style={styles.menuItem}
-      onClick={() => {
-  setMenuAbierto(false)
-  navigate("/")
-}}
-      >
-        🏠 Inicio
-      </button>
+<button
+  style={styles.menuItem}
+  onClick={() => {
+    setMenuAbierto(false)
+    navigate("/")
+  }}
+>
+  <span style={{ color: "#C62828" }}>🏠</span>
+  Inicio
+</button>
 
-      <button
-        style={styles.menuItem}
-        onClick={() => {
-          if (!clienteSeleccionado) {
-            alert("Selecciona un cliente primero")
-            return
-          }
+<button
+  style={styles.menuItem}
+  onClick={() => {
+    setMenuAbierto(false)
+    setClienteSeleccionado(null)
+    setPedidos([])
+    setBusquedaFolio("")
+  }}
+>
+  <span style={{ color: "#C62828" }}>📄</span>
+  Cuentas por cobrar
+</button>
 
-          setMostrarCrear(true)
-          setMenuAbierto(false)
-        }}
-      >
-        ➕ Agregar folio
-      </button>
+<button
+  style={styles.menuItem}
+  onClick={() => {
+    setMenuAbierto(false)
+    alert("Control de ventas en proceso.")
+  }}
+>
+  <span style={{ color: "#C62828" }}>💰</span>
+  Control de ventas
+</button>
 
-      <button
-        style={styles.menuItem}
-        onClick={() => setMenuAbierto(false)}
-      >
-        ❌ Cerrar menú
-      </button>
+<button
+  style={styles.menuItem}
+  onClick={() => {
+    setMenuAbierto(false)
+    alert("Estadísticas de pagos en proceso.")
+  }}
+>
+  <span style={{ color: "#C62828" }}>📊</span>
+  Estadísticas de pagos
+</button>
 
+<button
+  style={styles.menuItem}
+  onClick={() => {
+    if (!clienteSeleccionado) {
+      alert("Selecciona un cliente primero")
+      return
+    }
+
+    setMostrarCrear(true)
+    setMenuAbierto(false)
+  }}
+>
+  <span style={{ color: "#C62828" }}>➕</span>
+  Agregar pedido rezagado
+</button>
+
+<button
+  style={styles.menuItem}
+  onClick={() => setMenuAbierto(false)}
+>
+  <span style={{ color: "#C62828" }}>✖</span>
+  Salir del menú
+</button>
+      
     </div>
   </>
 )}
