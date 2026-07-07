@@ -24,9 +24,8 @@ titleCenter: {
   textAlign: "center",
   fontSize: "42px",
   fontWeight: "bold",
-  color: "#071849",
-  marginTop: "10px",
-  marginBottom: "30px",
+  color: "#8B1E1E", // rojo institucional
+  margin: 0,
   letterSpacing: "1px"
 },
   
@@ -533,18 +532,22 @@ return (
    
 <div
   style={{
+    position: "relative",
     display: "flex",
-    flexDirection: "column",
     alignItems: "center",
-    marginBottom: 35
+    justifyContent: "center",
+    marginTop: "-10px",
+    marginBottom: 25
   }}
 >
   <img
     src={logo}
     alt="Pegatek"
     style={{
+      position: "absolute",
+      left: 0,
       width: 120,
-      marginBottom: 12,
+      height: "auto",
       objectFit: "contain"
     }}
   />
@@ -553,7 +556,6 @@ return (
     CUENTAS POR COBRAR
   </h1>
 </div>
-    
 
       {!clienteSeleccionado && (
         <>
