@@ -435,58 +435,64 @@ return (
 </button>
 )}
     
-    <h2 style={styles.titleCenter}>CUENTAS POR COBRAR</h2>
+<h2 style={styles.titleCenter}>
+  {seccion === "cliente"
+    ? "CUENTAS POR COBRAR"
+    : seccion === "notas"
+    ? "CONTROL DE NOTAS"
+    : "ESTADÍSTICAS DE PAGOS"}
+</h2>
 
-      {!clienteSeleccionado && (
-        <>
-          <input
-            placeholder="Buscar cliente..."
-            value={busqueda}
-            onChange={e => setBusqueda(e.target.value)}
-            style={styles.field}
-          />
+{seccion === "cliente" && (
+  <>
+    <input
+      placeholder="Buscar cliente..."
+      value={busqueda}
+      onChange={e => setBusqueda(e.target.value)}
+      style={styles.field}
+    />
 
-         {clientes.map(c => (
-            <div key={c.id_cliente}>
-              <b>{c.nombre} {c.apellido1}</b>
-              <br />
-              {c.nombre_tienda}
-              <br />
-              <button onClick={() => cargarPedidos(c)} style={styles.botonAccion}>
-                Estado de cuenta
-              </button>
-            </div>
-          ))}
-        </>
-      )}
+    {clientes.map(c => (
+      <div key={c.id_cliente}>
+        <b>{c.nombre} {c.apellido1}</b>
+        <br />
+        {c.nombre_tienda}
+        <br />
+        <button
+          onClick={() => cargarPedidos(c)}
+          style={styles.botonAccion}
+        >
+          Estado de cuenta
+        </button>
+      </div>
+    ))}
 
-      {clienteSeleccionado && (
-        <>
-          <h3>{clienteSeleccionado.nombre}</h3>
+    {clienteSeleccionado && (
+      <>
+        <h3>{clienteSeleccionado.nombre}</h3>
 
-          <input
-            placeholder="Buscar folio..."
-            value={busquedaFolio}
-            onChange={e => setBusquedaFolio(e.target.value)}
-            style={styles.field}
-          />
+        <input
+          placeholder="Buscar folio..."
+          value={busquedaFolio}
+          onChange={e => setBusquedaFolio(e.target.value)}
+          style={styles.field}
+        />
 
         {pedidosFiltrados.map(p => {
+          const id =
+            p.tipo === "rezagado"
+              ? p.id_rezagado
+              : p.id_pedido
 
-    const id = p.tipo === "rezagado"
-      ? p.id_rezagado
-      : p.id_pedido
-
-    const totalPagado = p.total_pagado || 0
-    const saldo = p.total - totalPagado
-    const pagado = saldo <= 0
-    const dias = calcularDias(p.fecha_entrega)
-    const colorStyle = getColorStyle(dias, pagado)
-    const dataPago = pagosData[id] || {}
-
-    return (
-             <div
-  key={id}
+          const totalPagado = p.total_pagado || 0
+          const saldo = p.total - totalPagado
+          const pagado = saldo <= 0
+          const dias = calcularDias(p.fecha_entrega)
+          const colorStyle = getColorStyle(dias, pagado)
+          const dataPago = pagosData[id] || {}
+            
+        return (
+             <div key={id}
                 style={{
                   ...styles.cardPedido,
                   ...colorStyle
@@ -597,49 +603,49 @@ return (
                     </button>
                   </div>
                 )}
-
                 {verDetalles === id && (
                   <div style={{ marginTop: 10 }}>
                     <b>Historial:</b>
+
                     {detalles.map(d => (
-  <div key={d.id_pago} style={{ marginBottom: 8 }}>
-    💰 ${d.monto} - {d.metodo}
+                      <div key={d.id_pago} style={{ marginBottom: 8 }}>
+                        💰 ${d.monto} - {d.metodo}
 
-    {d.metodo === 'transferencia' && d.cuenta_destino && (
-      <> ({d.cuenta_destino})</>
-    )}
+                        {d.metodo === "transferencia" && d.cuenta_destino && (
+                          <> ({d.cuenta_destino})</>
+                        )}
 
-    {" - "}
-    👤 {d.nombre_usuario || '-'}
+                        {" - "}
+                        👤 {d.nombre_usuario || "-"}
 
-    <br />
+                        <br />
 
-    📅 Fecha de pago: {
-  d.fecha_pago
-    ? new Date(d.fecha_pago).toLocaleDateString("es-MX", {
-  timeZone: "UTC"
-})
-    : '—'
-}
+                        📅 Fecha de pago:{" "}
+                        {d.fecha_pago
+                          ? new Date(d.fecha_pago).toLocaleDateString("es-MX", {
+                              timeZone: "UTC"
+                            })
+                          : "—"}
 
-    <br />
+                        <br />
 
-    🕒 Fecha de registro: {
-      d.fecha_registro
-        ? new Date(d.fecha_registro).toLocaleString()
-        : '—'
-    }
-  </div>
-))}
+                        🕒 Fecha de registro:{" "}
+                        {d.fecha_registro
+                          ? new Date(d.fecha_registro).toLocaleString()
+                          : "—"}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
             )
           })}
-        </>
-      )}
+      </>
+    )}
+  </>
+)}
 
-    {menuAbierto && (
+{menuAbierto && (
 <>
 <div
   style={styles.menuOverlay}
@@ -684,9 +690,9 @@ setMenuAbierto(false)
 
 </div>
 
-</>
+      )}
+    </>
 )}
-    
       {mostrarCrear && (
   <div style={{
     position: "fixed",
