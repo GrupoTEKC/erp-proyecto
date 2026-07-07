@@ -56,19 +56,18 @@ titleCenter: {
     cursor: 'pointer'
   },
 
-  hamburger: {
+ hamburger: {
   position: "fixed",
-  top: 15,
-  right: 15,
-  width: 45,
-  height: 45,
-  borderRadius: 8,
+  top: 18,
+  right: 18,
+  background: "transparent",
   border: "none",
-  background: "#071849",
-  color: "#fff",
-  fontSize: 24,
+  color: "#C62828",
+  fontSize: 30,
   cursor: "pointer",
-  zIndex: 1001
+  zIndex: 1001,
+  padding: 0,
+  lineHeight: 1
 },
 
 menu: {
@@ -408,13 +407,15 @@ const buscarProducto = (texto) => {
 return (
   <div style={styles.page}>
 
-    <button
-  style={styles.hamburger}
-  onClick={() => setMenuAbierto(true)}
->
-☰
-</button>
-
+    {!menuAbierto && (
+  <button
+    style={styles.hamburger}
+    onClick={() => setMenuAbierto(true)}
+  >
+    ☰
+  </button>
+)}
+    
 {menuAbierto && (
   <>
     <div
@@ -424,13 +425,15 @@ return (
 
     <div style={styles.menu}>
 
-     <h3
+   <h3
   style={{
-    marginTop: 0,
-    marginBottom: 20,
+    margin: 0,
+    paddingBottom: 18,
+    marginBottom: 18,
+    borderBottom: "1px solid #E5E5E5",
     fontSize: 24,
     color: "#8B1E1E",
-    fontWeight: "bold"
+    fontWeight: "700"
   }}
 >
 ☰ MENÚ
