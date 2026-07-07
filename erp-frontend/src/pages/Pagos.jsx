@@ -544,7 +544,7 @@ return (
     src={logo}
     alt="Pegatek"
     style={{
-      width: 110,   // más grande que el título
+      width: 130,   // más grande que el título
       height: "auto",
       objectFit: "contain"
     }}
