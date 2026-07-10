@@ -2093,6 +2093,239 @@ app.get('/pagos/:id_pedido', async (req, res) => {
   }
 })
 
+
+// =============================
+// CONTROL DE VENTAS
+// =============================
+app.get('/control-ventas', async (req, res) => {
+  try {
+
+    // =============================
+    // CONSULTA PRINCIPAL
+    // =============================
+    const [clientes] = await db.query(`
+      SELECT
+          c.id_cliente,
+          c.nombre_tienda AS cliente,
+
+          COALESCE(
+              ent.ultima_entrega,
+              ped.ultima_entrega,
+              rez.ultima_entrega
+          ) AS ultima_entrega,
+
+          COALESCE(ped.pedidos,0) +
+          COALESCE(rez.pedidos,0) AS pedidos,
+
+          COALESCE(ped.vendido,0) +
+          COALESCE(rez.vendido,0) AS vendido,
+
+          COALESCE(ped.cobrado,0) +
+          COALESCE(rez.cobrado,0) AS cobrado
+
+      FROM clientes c
+
+      /* =========================
+         PEDIDOS NORMALES
+      ========================= */
+      LEFT JOIN (
+
+          SELECT
+              p.id_cliente,
+
+              COUNT(*) AS pedidos,
+
+              SUM(p.total) AS vendido,
+
+              SUM(COALESCE(pg.pagado,0)) AS cobrado,
+
+              MAX(p.fecha_entrega) AS ultima_entrega
+
+          FROM pedidos p
+
+          LEFT JOIN (
+
+              SELECT
+                  id_pedido,
+                  SUM(monto) AS pagado
+              FROM pagos
+              WHERE tipo_origen='pedido'
+              GROUP BY id_pedido
+
+          ) pg
+          ON pg.id_pedido=p.id_pedido
+
+          WHERE p.estado<>'cancelado'
+
+          GROUP BY p.id_cliente
+
+      ) ped
+      ON ped.id_cliente=c.id_cliente
+
+      /* =========================
+         PEDIDOS REZAGADOS
+      ========================= */
+      LEFT JOIN (
+
+          SELECT
+              pr.id_cliente,
+
+              COUNT(*) AS pedidos,
+
+              SUM(pr.total) AS vendido,
+
+              SUM(COALESCE(pg.pagado,0)) AS cobrado,
+
+              MAX(pr.fecha_rezagada) AS ultima_entrega
+
+          FROM pedidos_rezagados pr
+
+          LEFT JOIN (
+
+              SELECT
+                  id_rezagado,
+                  SUM(monto) AS pagado
+              FROM pagos
+              WHERE tipo_origen='rezagado'
+              GROUP BY id_rezagado
+
+          ) pg
+          ON pg.id_rezagado=pr.id_rezagado
+
+          GROUP BY pr.id_cliente
+
+      ) rez
+      ON rez.id_cliente=c.id_cliente
+
+      /* =========================
+         ÚLTIMA ENTREGA REAL
+      ========================= */
+      LEFT JOIN (
+
+          SELECT
+
+              p.id_cliente,
+
+              MAX(e.fecha_salida) AS ultima_entrega
+
+          FROM entregas e
+
+          INNER JOIN pedidos p
+              ON p.id_pedido=e.id_pedido
+
+          WHERE p.estado<>'cancelado'
+
+          GROUP BY p.id_cliente
+
+      ) ent
+      ON ent.id_cliente=c.id_cliente
+
+      WHERE c.activo=1
+    `);
+
+    // =============================
+    // CALCULAR DEUDA, ESTATUS Y CRÉDITO
+    // =============================
+    for (const cliente of clientes) {
+
+      cliente.vendido = Number(cliente.vendido || 0);
+      cliente.cobrado = Number(cliente.cobrado || 0);
+
+      cliente.deuda = cliente.vendido - cliente.cobrado;
+
+      cliente.estatus =
+        cliente.deuda > 0
+          ? "pendiente"
+          : "pagado";
+
+      // =============================
+      // CRÉDITO MÁS ANTIGUO PENDIENTE
+      // =============================
+      const [credito] = await db.query(`
+        SELECT
+            fecha_entrega,
+            dias_credito
+        FROM pedidos
+        WHERE
+            id_cliente = ?
+            AND dias_credito > 0
+            AND estado <> 'cancelado'
+            AND saldo > 0
+        ORDER BY fecha_entrega ASC
+        LIMIT 1
+      `,[cliente.id_cliente]);
+
+      if (credito.length > 0) {
+
+        const hoy = new Date();
+
+        const fechaPedido = new Date(
+          credito[0].fecha_entrega
+        );
+
+        const dias = Math.floor(
+          (hoy - fechaPedido) /
+          (1000 * 60 * 60 * 24)
+        );
+
+        cliente.credito =
+          `${dias}/${credito[0].dias_credito}`;
+
+      } else {
+
+        cliente.credito = null;
+
+      }
+
+    }
+
+    // =============================
+    // ORDENAR POR MAYOR DEUDA
+    // =============================
+    clientes.sort((a,b)=>b.deuda-a.deuda);
+
+    // =============================
+    // RESUMEN GENERAL
+    // =============================
+    const resumen = {
+
+      clientes: clientes.length,
+
+      vendido: clientes.reduce(
+        (t,c)=>t+c.vendido,
+        0
+      ),
+
+      cobrado: clientes.reduce(
+        (t,c)=>t+c.cobrado,
+        0
+      ),
+
+      deuda: clientes.reduce(
+        (t,c)=>t+c.deuda,
+        0
+      )
+
+    };
+
+    // =============================
+    // RESPUESTA
+    // =============================
+    res.json({
+      resumen,
+      clientes
+    });
+
+  } catch (err) {
+
+    console.error(err);
+
+    res.status(500).json({
+      error: err.message
+    });
+
+  }
+});
 // =============================
 // 📊 ESTADO DE CUENTA PEDIDO
 // =============================
