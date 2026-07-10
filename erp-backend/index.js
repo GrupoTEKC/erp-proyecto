@@ -2155,8 +2155,8 @@ app.get('/control-ventas', async (req, res) => {
           ) pg
           ON pg.id_pedido=p.id_pedido
 
-          WHERE p.estado<>'cancelado'
-
+         WHERE p.estado IN ('entregado','pagado')
+         
           GROUP BY p.id_cliente
 
       ) ped
@@ -2213,8 +2213,8 @@ app.get('/control-ventas', async (req, res) => {
           INNER JOIN pedidos p
               ON p.id_pedido=e.id_pedido
 
-          WHERE p.estado<>'cancelado'
-
+          WHERE p.estado IN ('entregado','pagado')
+          
           GROUP BY p.id_cliente
 
       ) ent
