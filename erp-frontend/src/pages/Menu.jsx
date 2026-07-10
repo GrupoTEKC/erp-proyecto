@@ -84,7 +84,7 @@ function Menu() {
       <aside style={styles.sidebar}>
         
         <div style={styles.header}>
-          <div style={styles.title}>SCAE-MT</div>
+          <div style={styles.title}>SCAE</div>
           <img
             src={logo}
             alt="Logo empresa"
