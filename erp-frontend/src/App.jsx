@@ -17,6 +17,7 @@ import ProduccionLogin from './pages/produccionLogin'
 
 // 🔥 NUEVO COMPONENTE
 import ClientePrecios from './pages/ClientePrecios'
+import ControlVentas from './pages/ControlVentas'
 
 function App() {
   return (
@@ -47,6 +48,12 @@ function App() {
 
         {/* 💵 PAGOS */}
         <Route path="/pagos" element={<Pagos />} />
+
+        {/* 📈 CONTROL DE VENTAS */}
+        <Route
+        path="/control-ventas"
+        element={<ControlVentas />}
+        />
 
         {/* 🚚 ENVÍOS */}
         <Route path="/control-envios" element={<ControlEnvios />} />
