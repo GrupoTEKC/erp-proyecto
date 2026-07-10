@@ -39,11 +39,51 @@ const styles = {
     boxShadow: "0 2px 8px rgba(0,0,0,.08)"
   },
 
-  numero: {
-    color: "#8B1E1E",
-    fontSize: "28px",
-    margin: 0
-  }
+numero: {
+  color: "#8B1E1E",
+  fontSize: "28px",
+  margin: 0
+},
+
+tableContainer: {
+  marginTop: 40,
+  background: "#fff",
+  borderRadius: 10,
+  overflow: "hidden",
+  boxShadow: "0 2px 10px rgba(0,0,0,.08)"
+},
+
+table: {
+  width: "100%",
+  borderCollapse: "collapse"
+},
+
+thead: {
+  background: "#8B1E1E",
+  color: "#fff"
+},
+
+th: {
+  padding: "14px",
+  textAlign: "left",
+  fontSize: 15
+},
+
+td: {
+  padding: "12px",
+  borderBottom: "1px solid #eee",
+  fontSize: 14
+},
+
+pendiente: {
+  color: "#C62828",
+  fontWeight: "bold"
+},
+
+pagado: {
+  color: "#2E7D32",
+  fontWeight: "bold"
+}
 }
 
 function ControlVentas() {
@@ -194,6 +234,107 @@ function ControlVentas() {
             })}
           </h2>
         </div>
+
+      </div>
+
+      <div style={styles.tableContainer}>
+
+        <table style={styles.table}>
+
+          <thead style={styles.thead}>
+            <tr>
+
+              <th style={styles.th}>Cliente</th>
+
+              <th style={styles.th}>Última entrega</th>
+
+              <th style={styles.th}>Pedidos</th>
+
+              <th style={styles.th}>Vendido</th>
+
+              <th style={styles.th}>Cobrado</th>
+
+              <th style={styles.th}>Deuda</th>
+
+              <th style={styles.th}>Crédito</th>
+
+              <th style={styles.th}>Estatus</th>
+
+            </tr>
+          </thead>
+
+          <tbody>
+
+            {datos.clientes.map(cliente => (
+
+              <tr key={cliente.id_cliente}>
+
+                <td style={styles.td}>
+                  {cliente.cliente}
+                </td>
+
+                <td style={styles.td}>
+                  {
+                    cliente.ultima_entrega
+                      ? new Date(cliente.ultima_entrega)
+                          .toLocaleDateString("es-MX", {
+                            timeZone: "UTC"
+                          })
+                      : "-"
+                  }
+                </td>
+
+                <td style={styles.td}>
+                  {cliente.pedidos}
+                </td>
+
+                <td style={styles.td}>
+                  $
+                  {Number(cliente.vendido || 0).toLocaleString("es-MX", {
+                    minimumFractionDigits: 2
+                  })}
+                </td>
+
+                <td style={styles.td}>
+                  $
+                  {Number(cliente.cobrado || 0).toLocaleString("es-MX", {
+                    minimumFractionDigits: 2
+                  })}
+                </td>
+
+                <td style={styles.td}>
+                  $
+                  {Number(cliente.deuda || 0).toLocaleString("es-MX", {
+                    minimumFractionDigits: 2
+                  })}
+                </td>
+
+                <td style={styles.td}>
+                  {cliente.credito || "-"}
+                </td>
+
+                <td
+                  style={{
+                    ...styles.td,
+                    ...(cliente.estatus === "pagado"
+                      ? styles.pagado
+                      : styles.pendiente)
+                  }}
+                >
+                  {
+                    cliente.estatus === "pagado"
+                      ? "🟢 Pagado"
+                      : "🟡 Pendiente"
+                  }
+                </td>
+
+              </tr>
+
+            ))}
+
+          </tbody>
+
+        </table>
 
       </div>
 
