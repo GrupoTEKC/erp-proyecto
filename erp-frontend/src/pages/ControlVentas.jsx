@@ -1,7 +1,7 @@
 function ControlVentas() {
   return (
     <div>
-      <h1>Control de Ventas</h1>
+      <h1>Mamorcito que tengas un excelente dia, te amo mucho feliz viernes mi niño lindo</h1>
     </div>
   )
 }
