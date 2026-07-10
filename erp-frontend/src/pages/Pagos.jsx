@@ -468,7 +468,7 @@ return (
   style={styles.menuItem}
   onClick={() => {
     setMenuAbierto(false)
-    alert("Control de ventas en proceso.")
+    navigate("/control-ventas")
   }}
 >
   <span style={{ color: "#C62828" }}>💰</span>
