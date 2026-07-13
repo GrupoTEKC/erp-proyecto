@@ -235,7 +235,7 @@ if (entregado > embarcado) {
 
  return {
   ...p,
-  cantidad_final: Number(p.cantidad_final) || 0,
+  cantidad_final: Number(p.cantidad_final),
   cantidad_entregada: Number(p.cantidad_entregada) || 0,
   tipo:
     p.tipo === 'agregado'
