@@ -1676,7 +1676,7 @@ if (
   item.cantidad_final === null ||
   item.cantidad_final === undefined ||
   Number.isNaN(cantidadFinal) ||
-  cantidadFinal < 0
+  cantidadFinal <= 0
 ) {
   throw new Error(
     `Cantidad final inválida para el producto ${item.id_producto}`
