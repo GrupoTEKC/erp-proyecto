@@ -265,7 +265,9 @@ function ControlVentas() {
 
           <tbody>
 
-            {datos.clientes.map(cliente => (
+           {datos.clientes
+           .filter(cliente => Number(cliente.pedidos) > 0)
+           .map(cliente => (
 
               <tr key={cliente.id_cliente}>
 
