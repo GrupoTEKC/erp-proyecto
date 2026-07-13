@@ -1668,7 +1668,17 @@ if (productoPedido.length === 0) {
         // 🔥 ACTUALIZAR PEDIDO_DETALLE
       } else {
         console.log('✏️ UPDATE NORMAL')
-      await conn.query(`
+   if (
+  item.cantidad_final === '' ||
+  item.cantidad_final === null ||
+  item.cantidad_final === undefined
+) {
+  throw new Error(
+    `Cantidad final inválida para el producto ${item.id_producto}`
+  )
+}
+
+await conn.query(`
 UPDATE entrega_detalle
 SET
 cantidad_final = ?,
@@ -1677,7 +1687,7 @@ motivo = ?,
 id_cliente_destino = ?
 WHERE id_entrega = ? AND id_producto = ?
 `, [
-item.cantidad_final || 0,
+Number(item.cantidad_final),
 item.tipo || 'ninguno',
 (item.tipo === 'roto' || item.tipo === 'con_incremento')
   ? (item.motivo || null)
@@ -1688,7 +1698,6 @@ item.tipo === 'prestamo'
 id_entrega,
 item.id_producto
 ])
-      
       }
     }
     console.log('✅ PRODUCTOS OK')
