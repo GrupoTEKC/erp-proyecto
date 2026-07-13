@@ -1668,10 +1668,15 @@ if (productoPedido.length === 0) {
         // 🔥 ACTUALIZAR PEDIDO_DETALLE
       } else {
         console.log('✏️ UPDATE NORMAL')
-   if (
+ 
+        const cantidadFinal = Number(item.cantidad_final)
+
+if (
   item.cantidad_final === '' ||
   item.cantidad_final === null ||
-  item.cantidad_final === undefined
+  item.cantidad_final === undefined ||
+  Number.isNaN(cantidadFinal) ||
+  cantidadFinal < 0
 ) {
   throw new Error(
     `Cantidad final inválida para el producto ${item.id_producto}`
@@ -1687,7 +1692,7 @@ motivo = ?,
 id_cliente_destino = ?
 WHERE id_entrega = ? AND id_producto = ?
 `, [
-Number(item.cantidad_final),
+cantidadFinal,
 item.tipo || 'ninguno',
 (item.tipo === 'roto' || item.tipo === 'con_incremento')
   ? (item.motivo || null)
@@ -1698,7 +1703,7 @@ item.tipo === 'prestamo'
 id_entrega,
 item.id_producto
 ])
-      }
+  }
     }
     console.log('✅ PRODUCTOS OK')
     await conn.query(`
