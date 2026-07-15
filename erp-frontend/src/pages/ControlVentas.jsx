@@ -95,11 +95,14 @@ function ControlVentas() {
     clientes: []
   })
 
+  const [pendientes, setPendientes] = useState([])
+
   const [cargando, setCargando] = useState(true)
 
   useEffect(() => {
-    cargarControlVentas()
-  }, [])
+  cargarControlVentas()
+  cargarPendientes()
+}, [])
 
   const cargarControlVentas = async () => {
     try {
@@ -125,6 +128,62 @@ function ControlVentas() {
 
     }
   }
+
+  const cargarPendientes = async () => {
+  try {
+    const res = await fetch(
+      `${API}/control-ventas/cantidades-pendientes`
+    )
+
+    if (!res.ok) {
+      throw new Error()
+    }
+
+    const data = await res.json()
+
+    setPendientes(data)
+
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+
+ const guardarCantidadFinal = async (
+  id_detalle,
+  cantidad_final
+) => {
+  try {
+
+    const res = await fetch(
+      `${API}/control-ventas/cantidad-final`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          id_detalle,
+          cantidad_final
+        })
+      }
+    )
+
+    if (!res.ok) {
+      const data = await res.json()
+      alert(data.error || "No fue posible guardar.")
+      return
+    }
+
+    await cargarControlVentas()
+    await cargarPendientes()
+
+  } catch (err) {
+    console.error(err)
+    alert("Error de conexión")
+  }
+}
+  
 
   if (cargando) {
     return (
@@ -328,6 +387,117 @@ function ControlVentas() {
                       ? "🟢 Pagado"
                       : "🟡 Pendiente"
                   }
+                </td>
+
+              </tr>
+
+            ))}
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+
+      {/* TABLA DE SANEAMIENTO */}
+
+      <div style={styles.tableContainer}>
+
+        <h2
+          style={{
+            padding:20,
+            margin:0,
+            color:"#8B1E1E"
+          }}
+        >
+          SANEAMIENTO DE DATOS 
+        </h2>
+
+        <table style={styles.table}>
+
+          <thead style={styles.thead}>
+            <tr>
+              <th style={styles.th}>Folio</th>
+              <th style={styles.th}>Cliente</th>
+              <th style={styles.th}>Producto</th>
+              <th style={styles.th}>Entregada</th>
+              <th style={styles.th}>Cantidad final</th>
+              <th style={styles.th}>Guardar</th>
+            </tr>
+          </thead>
+
+          <tbody>
+
+            {pendientes.length===0 && (
+
+              <tr>
+
+                <td
+                  colSpan={6}
+                  style={{
+                    padding:20,
+                    textAlign:"center"
+                  }}
+                >
+                  No existen pedidos pendientes de saneamiento.
+                </td>
+
+              </tr>
+
+            )}
+
+            {pendientes.map(item=>(
+
+              <tr key={item.id_detalle}>
+
+                <td style={styles.td}>
+                  {item.folio}
+                </td>
+
+                <td style={styles.td}>
+                  {item.cliente}
+                </td>
+
+                <td style={styles.td}>
+                  {item.producto}
+                </td>
+
+                <td style={styles.td}>
+                  {item.cantidad_entregada}
+                </td>
+
+                <td style={styles.td}>
+
+                  <input
+
+                    type="number"
+
+                    defaultValue={
+                      item.cantidad_final ??
+                      item.cantidad_entregada
+                    }
+
+                    onBlur={(e)=>{
+
+                      guardarCantidadFinal(
+                        item.id_detalle,
+                        Number(e.target.value)
+                      )
+
+                    }}
+
+                    style={{
+                      width:90,
+                      padding:5
+                    }}
+
+                  />
+
+                </td>
+
+                <td style={styles.td}>
+                  Se guarda al salir del campo
                 </td>
 
               </tr>
