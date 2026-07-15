@@ -1929,14 +1929,80 @@ app.put('/control-ventas/cantidad-final', async (req, res) => {
       throw new Error('Detalle no encontrado')
     }
 
-    await conn.query(`
-      UPDATE entrega_detalle
-      SET cantidad_final = ?
-      WHERE id_detalle = ?
-    `,[
-      cantidad,
-      id_detalle
-    ])
+    // Actualizar cantidad_final
+await conn.query(`
+  UPDATE entrega_detalle
+  SET cantidad_final = ?
+  WHERE id_detalle = ?
+`, [
+  cantidad,
+  id_detalle
+])
+
+// Obtener el pedido y producto al que pertenece
+const [[info]] = await conn.query(`
+  SELECT
+    e.id_pedido,
+    ed.id_producto
+  FROM entrega_detalle ed
+  INNER JOIN entregas e
+    ON e.id_entrega = ed.id_entrega
+  WHERE ed.id_detalle = ?
+`, [id_detalle])
+
+if (!info) {
+  throw new Error("No se encontró el pedido.")
+}
+
+// Calcular la cantidad final TOTAL entregada de ese producto
+const [[cantidades]] = await conn.query(`
+  SELECT
+    SUM(cantidad_final) AS cantidad_final
+  FROM entrega_detalle ed
+  INNER JOIN entregas e
+    ON e.id_entrega = ed.id_entrega
+  WHERE
+    e.id_pedido = ?
+    AND ed.id_producto = ?
+`, [
+  info.id_pedido,
+  info.id_producto
+])
+
+const nuevaCantidad = Number(cantidades.cantidad_final || 0)
+
+// Actualizar pedido_detalle con la nueva cantidad
+await conn.query(`
+  UPDATE pedido_detalle
+  SET cantidad = ?
+  WHERE
+    id_pedido = ?
+    AND id_producto = ?
+`, [
+  nuevaCantidad,
+  info.id_pedido,
+  info.id_producto
+])
+
+// Recalcular el total del pedido
+const [[total]] = await conn.query(`
+  SELECT
+    COALESCE(SUM(cantidad * precio_unitario),0) AS total
+  FROM pedido_detalle
+  WHERE id_pedido = ?
+`, [
+  info.id_pedido
+])
+
+await conn.query(`
+  UPDATE pedidos
+  SET total = ?
+  WHERE id_pedido = ?
+`, [
+  total.total,
+  info.id_pedido
+])
+    
 
     res.json({
       success: true,
