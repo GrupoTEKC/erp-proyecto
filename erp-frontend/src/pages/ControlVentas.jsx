@@ -473,11 +473,11 @@ function ControlVentas() {
 
                     type="number"
 
-                    defaultValue={
-                      item.cantidad_final ??
-                      item.cantidad_entregada
-                    }
-
+                   defaultValue={
+                   item.cantidad_final ?? 0
+                   
+                  }
+                  
                     onBlur={(e)=>{
 
                       guardarCantidadFinal(
