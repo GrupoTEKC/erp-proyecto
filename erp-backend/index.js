@@ -1835,8 +1835,7 @@ app.get('/control-ventas/cantidades-pendientes', async (req, res) => {
         p.id_pedido,
 
         c.id_cliente,
-        c.nombre,
-        c.nombre_tienda,
+        c.nombre_tienda AS cliente,
 
         pr.id_producto,
         pr.nombre AS producto,
