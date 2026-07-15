@@ -1820,6 +1820,147 @@ app.post('/control-envios/cancelar', async (req, res) => {
   }
 })
 
+app.get('/control-ventas/cantidades-pendientes', async (req, res) => {
+  const conn = await db.getConnection()
+
+  try {
+
+    const [rows] = await conn.query(`
+      SELECT
+        ed.id_detalle,
+        ed.id_entrega,
+        e.folio,
+        e.fecha_entrega,
+
+        p.id_pedido,
+
+        c.id_cliente,
+        c.nombre,
+        c.nombre_tienda,
+
+        pr.id_producto,
+        pr.nombre AS producto,
+
+        ed.cantidad_entregada,
+        ed.cantidad_final,
+        ed.tipo
+
+      FROM entrega_detalle ed
+
+      INNER JOIN entregas e
+        ON e.id_entrega = ed.id_entrega
+
+      INNER JOIN pedidos p
+        ON p.id_pedido = e.id_pedido
+
+      INNER JOIN clientes c
+        ON c.id_cliente = p.id_cliente
+
+      INNER JOIN productos pr
+        ON pr.id_producto = ed.id_producto
+
+      WHERE
+        e.estado = 'entregado'
+        AND e.folio IS NOT NULL
+        AND e.folio <> ''
+        AND (
+          ed.cantidad_final IS NULL
+          OR ed.cantidad_final = 0
+        )
+
+      ORDER BY
+        e.fecha_entrega DESC,
+        e.id_entrega DESC,
+        c.nombre,
+        pr.nombre
+    `)
+
+    res.json(rows)
+
+  } catch (err) {
+
+    console.error(err)
+
+    res.status(500).json({
+      error: err.message
+    })
+
+  } finally {
+    conn.release()
+  }
+})
+
+app.put('/control-ventas/cantidad-final', async (req, res) => {
+
+  const conn = await db.getConnection()
+
+  try {
+
+    const {
+      id_detalle,
+      cantidad_final
+    } = req.body
+
+    if (!id_detalle) {
+      throw new Error('id_detalle requerido')
+    }
+
+    const cantidad = Number(cantidad_final)
+
+    if (
+      cantidad_final === '' ||
+      cantidad_final === null ||
+      cantidad_final === undefined ||
+      Number.isNaN(cantidad) ||
+      cantidad < 0
+    ) {
+      throw new Error('Cantidad final inválida')
+    }
+
+    const [detalle] = await conn.query(`
+      SELECT
+        id_detalle,
+        cantidad_entregada,
+        cantidad_final
+      FROM entrega_detalle
+      WHERE id_detalle = ?
+    `,[id_detalle])
+
+    if (detalle.length === 0) {
+      throw new Error('Detalle no encontrado')
+    }
+
+    await conn.query(`
+      UPDATE entrega_detalle
+      SET cantidad_final = ?
+      WHERE id_detalle = ?
+    `,[
+      cantidad,
+      id_detalle
+    ])
+
+    res.json({
+      success: true,
+      mensaje: 'Cantidad final actualizada correctamente'
+    })
+
+  } catch(err){
+
+    console.error(err)
+
+    res.status(500).json({
+      error: err.message
+    })
+
+  } finally {
+
+    conn.release()
+
+  }
+
+})
+
+
 // =============================
 // 💰 PAGOS (ABONOS)
 // =============================
