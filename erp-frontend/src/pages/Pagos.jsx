@@ -240,74 +240,63 @@ useEffect(() => {
       }
     }))
   }
-const registrarPago = async (pedido) => {
 
-  const id = pedido.tipo === "rezagado"
-    ? pedido.id_rezagado
-    : pedido.id_pedido
+  const registrarPago = async (pedido) => {
+  const esRezagado = pedido.tipo === "rezagado";
+  const id = esRezagado ? pedido.id_rezagado : pedido.id_pedido;
+  const dataPago = pagosData[id] || {};
 
-  const dataPago = pagosData[id] || {}
-
+  // Validaciones locales antes de enviar la petición
   if (!dataPago.fecha_pago) {
-    alert("Debes seleccionar fecha de pago")
-    return
+    alert("Debes seleccionar fecha de pago");
+    return;
   }
 
-  const metodoActual = dataPago.metodo || "efectivo"
+  if (!dataPago.monto || Number(dataPago.monto) <= 0) {
+    alert("Debes ingresar un monto válido mayor a 0");
+    return;
+  }
 
+  const metodoActual = dataPago.metodo || "efectivo";
   if (metodoActual === "efectivo" && !dataPago.nombreEntrega?.trim()) {
-    alert("Debes poner quién entrega el dinero")
-    return
+    alert("Debes poner quién entrega el dinero");
+    return;
   }
 
-  const res = await fetch(`${API}/pagos`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      tipo_origen: pedido.tipo,
-      id_pedido:
-        pedido.tipo === "pedido"
-          ? pedido.id_pedido
-          : null,
-      id_rezagado:
-        pedido.tipo === "rezagado"
-          ? pedido.id_rezagado
-          : null,
-      monto: dataPago.monto,
-      metodo: metodoActual,
-      fecha_pago: dataPago.fecha_pago,
-      cuenta_destino:
-        metodoActual === "transferencia"
-          ? dataPago.cuenta
-          : null,
-      id_usuario: 1,
-      tipo_usuario: "vendedor",
-      nombre_usuario:
-        metodoActual === "efectivo"
-          ? dataPago.nombreEntrega
-          : null
-    })
-  })
+  try {
+    const res = await fetch(`${API}/pagos`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tipo_origen: esRezagado ? "rezagado" : "pedido",
+        id_pedido: !esRezagado ? pedido.id_pedido : null,
+        id_rezagado: esRezagado ? pedido.id_rezagado : null,
+        monto: Number(dataPago.monto), // 👈 Convertido a número para evitar Error 400
+        metodo: metodoActual,
+        fecha_pago: dataPago.fecha_pago,
+        cuenta_destino: metodoActual === "transferencia" ? (dataPago.cuenta || "fiscal") : null,
+        id_usuario: 1,
+        tipo_usuario: "vendedor",
+        nombre_usuario: metodoActual === "efectivo" ? dataPago.nombreEntrega : null
+      })
+    });
 
-  const data = await res.json()
+    const data = await res.json();
 
-  if (!res.ok) {
-    alert(data.error)
-    return
+    if (!res.ok) {
+      alert(data.error || "Error al registrar el abono");
+      return;
+    }
+
+    alert("Abono registrado ✅");
+    cargarPedidos(clienteSeleccionado);
+    setMostrarPago(null);
+    setPagosData(prev => ({ ...prev, [id]: {} }));
+  } catch (error) {
+    console.error("Error al registrar abono:", error);
+    alert("Error de conexión con el servidor");
   }
-
-  alert("Abono registrado ✅")
-
-  cargarPedidos(clienteSeleccionado)
-
-  setMostrarPago(null)
-
-  setPagosData(prev => ({
-    ...prev,
-    [id]: {}
-  }))
-}
-
+};
   const cambiarCantidad = (index, cantidad) => {
   const nuevos = [...nuevoPedido.productos]
   nuevos[index].cantidad = cantidad
