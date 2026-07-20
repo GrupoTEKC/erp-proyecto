@@ -446,30 +446,30 @@ function ControlVentas() {
               }}
             />
           </td>
-         <td style={styles.td}>
-  <button
-    onClick={() => {
-      const inputElem = document.getElementById(`cant-${item.id_detalle}`);
-      const inputVal = inputElem ? inputElem.value : 0;
-      guardarCantidadFinal(item.id_detalle, Number(inputVal));
-    }}
-    style={{
-      backgroundColor: "#2E7D32",
-      color: "#ffffff",
-      border: "none",
-      padding: "6px 14px",
-      borderRadius: "4px",
-      cursor: "pointer",
-      fontWeight: "bold",
-      fontSize: "13px"
-    }}
-  >
-    Guardar
-  </button>
-</td>
-        </tr>
-      ))
-    </tbody>
+      <td style={styles.td}>
+            <button
+              onClick={() => {
+                const inputElem = document.getElementById(`cant-${item.id_detalle}`);
+                const inputVal = inputElem ? inputElem.value : 0;
+                guardarCantidadFinal(item.id_detalle, Number(inputVal));
+              }}
+              style={{
+                backgroundColor: "#2E7D32",
+                color: "#ffffff",
+                border: "none",
+                padding: "6px 14px",
+                borderRadius: "4px",
+                cursor: "pointer",
+                fontWeight: "bold",
+                fontSize: "13px"
+              }}
+            >
+              Guardar
+         </button>
+  </td>
+</tr>
+))}
+</tbody>
   </table>
 </div>
     </div>
