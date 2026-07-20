@@ -402,114 +402,76 @@ function ControlVentas() {
 
       {/* TABLA DE SANEAMIENTO */}
 
-      <div style={styles.tableContainer}>
-
-        <h2
-          style={{
-            padding:20,
-            margin:0,
-            color:"#8B1E1E"
-          }}
-        >
-          SANEAMIENTO DE DATOS 
-        </h2>
-
-        <table style={styles.table}>
-
-          <thead style={styles.thead}>
-            <tr>
-              <th style={styles.th}>Folio</th>
-              <th style={styles.th}>Cliente</th>
-              <th style={styles.th}>Producto</th>
-              <th style={styles.th}>Entregada</th>
-              <th style={styles.th}>Cantidad final</th>
-              <th style={styles.th}>Guardar</th>
-            </tr>
-          </thead>
-
-          <tbody>
-
-            {pendientes.length===0 && (
-
-              <tr>
-
-                <td
-                  colSpan={6}
-                  style={{
-                    padding:20,
-                    textAlign:"center"
-                  }}
-                >
-                  No existen pedidos pendientes de saneamiento.
-                </td>
-
-              </tr>
-
-            )}
-
-            {pendientes.map(item=>(
-
-              <tr key={item.id_detalle}>
-
-                <td style={styles.td}>
-                  {item.folio}
-                </td>
-
-                <td style={styles.td}>
-                  {item.cliente}
-                </td>
-
-                <td style={styles.td}>
-                  {item.producto}
-                </td>
-
-                <td style={styles.td}>
-                  {item.cantidad_entregada}
-                </td>
-
-                <td style={styles.td}>
-
-                  <input
-
-                    type="number"
-
-                   defaultValue={
-                   item.cantidad_final ?? 0
-                   
-                  }
-                  
-                    onBlur={(e)=>{
-
-                      guardarCantidadFinal(
-                        item.id_detalle,
-                        Number(e.target.value)
-                      )
-
-                    }}
-
-                    style={{
-                      width:90,
-                      padding:5
-                    }}
-
-                  />
-
-                </td>
-
-                <td style={styles.td}>
-                  Se guarda al salir del campo
-                </td>
-
-              </tr>
-
-            ))}
-
-          </tbody>
-
-        </table>
-
-      </div>
-
+{/* TABLA DE SANEAMIENTO */}
+<div style={styles.tableContainer}>
+  <h2 style={{ padding: 20, margin: 0, color: "#8B1E1E" }}>
+    SANEAMIENTO DE DATOS
+  </h2>
+  <table style={styles.table}>
+    <thead style={styles.thead}>
+      <tr>
+        <th style={styles.th}>Folio</th>
+        <th style={styles.th}>Cliente</th>
+        <th style={styles.th}>Producto</th>
+        <th style={styles.th}>Entregada</th>
+        <th style={styles.th}>Cantidad final</th>
+        <th style={styles.th}>Guardar</th>
+      </tr>
+    </thead>
+    <tbody>
+      {pendientes.length === 0 && (
+        <tr>
+          <td colSpan={6} style={{ padding: 20, textAlign: "center" }}>
+            No existen pedidos pendientes de saneamiento.
+          </td>
+        </tr>
+      )}
+      {pendientes.map((item) => (
+        <tr key={item.id_detalle}>
+          <td style={styles.td}>{item.folio}</td>
+          <td style={styles.td}>{item.cliente}</td>
+          <td style={styles.td}>{item.producto}</td>
+          <td style={styles.td}>{item.cantidad_entregada}</td>
+          <td style={styles.td}>
+            <input
+              type="number"
+              id={`cant-${item.id_detalle}`}
+              defaultValue={item.cantidad_final ?? 0}
+              style={{
+                width: 90,
+                padding: "6px",
+                borderRadius: "4px",
+                border: "1px solid #ccc",
+                textAlign: "center",
+              }}
+            />
+          </td>
+         <td style={styles.td}>
+  <button
+    onClick={() => {
+      const inputElem = document.getElementById(`cant-${item.id_detalle}`);
+      const inputVal = inputElem ? inputElem.value : 0;
+      guardarCantidadFinal(item.id_detalle, Number(inputVal));
+    }}
+    style={{
+      backgroundColor: "#2E7D32",
+      color: "#ffffff",
+      border: "none",
+      padding: "6px 14px",
+      borderRadius: "4px",
+      cursor: "pointer",
+      fontWeight: "bold",
+      fontSize: "13px"
+    }}
+  >
+    Guardar
+  </button>
+</td>
+        </tr>
+      ))
+    </tbody>
+  </table>
+</div>
     </div>
   )
 
