@@ -348,6 +348,7 @@ const imprimirMultiples = async () => {
 
         contenidoTotal += `
           <div class="hoja">
+          <img src="${logo}" class="watermark" alt="marca de agua" />
             <div class="contenido">
               <div class="header">
                 <div class="fecha">
@@ -405,7 +406,19 @@ const imprimirMultiples = async () => {
 }
                 .firmas { margin-top: 40px; display: flex; justify-content: space-between; }
                 .firma { width: 42%; text-align: center; font-size: 10px; }
+
+                .watermark {
+  position: absolute;  /* Hace que la imagen "flote" encima de la hoja sin empujar el texto */
+  top: 50%;            /* Centra verticalmente */
+  left: 50%;           /* Centra horizontalmente */
+  transform: translate(-50%, -50%); /* Ajusta el centro exacto de la imagen */
+  width: 350px;        /* Tamaño del logo en la hoja */
+  opacity: 0.08;       /* Qué tan transparente se ve (0.08 es muy tenue) */
+  pointer-events: none;
+  z-index: 0;
+}
                 .linea { border-top: 1px solid #000; padding-top: 4px; font-weight: bold; }
+                
            </style>
 </head>
 <body>
