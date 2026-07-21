@@ -412,7 +412,7 @@ const imprimirMultiples = async () => {
   top: 50%;            /* Centra verticalmente */
   left: 50%;           /* Centra horizontalmente */
   transform: translate(-50%, -50%); /* Ajusta el centro exacto de la imagen */
-  width: 350px;        /* Tamaño del logo en la hoja */
+  width: 480px;        /* Tamaño del logo en la hoja */
   opacity: 0.08;       /* Qué tan transparente se ve (0.08 es muy tenue) */
   pointer-events: none;
   z-index: 0;
