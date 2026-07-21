@@ -265,11 +265,18 @@ const imprimirMultiples = async () => {
         grupos[key].push(p)
       })
 
-      let contenidoTotal = `
-        <div style="text-align:center; font-size:11px; margin-bottom:10px;">
-          Carretera federal Perote – Teziutlán<br/> Calle Piñón No. 2, Loc. Magueyitos
-        </div>
-      `
+let contenidoTotal = `
+  <div class="header-empresa">
+    <div class="texto-empresa">
+      <div class="titulo-empresa">GRUPO TEKC</div>
+      <div>Carretera federal Perote – Teziutlán, Calle Piñón No. 2, Loc. Magueyitos</div>
+    </div>
+    <div class="logos-secundarios">
+      <img src="${logo2}" alt="Firmetec" />
+      <img src="${logo3}" alt="Pegatek" />
+    </div>
+  </div>
+`
 
       for (const grupoKey in grupos) {
         const pedidosGrupo = grupos[grupoKey]
@@ -418,7 +425,41 @@ const imprimirMultiples = async () => {
   z-index: 0;
 }
                 .linea { border-top: 1px solid #000; padding-top: 4px; font-weight: bold; }
-                
+
+                /* 🟢 AGREGA ESTAS REGLAS DENTRO DE LA ETIQUETA <style>: */
+
+.header-empresa {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #ddd;
+}
+
+.texto-empresa {
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.titulo-empresa {
+  font-size: 16px;
+  font-weight: bold;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+
+.logos-secundarios {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logos-secundarios img {
+  height: 38px; /* 👈 Garantiza que ambos logos tengan exactamente el mismo tamaño */
+  width: auto;
+  object-fit: contain;
+}
            </style>
 </head>
 <body>
