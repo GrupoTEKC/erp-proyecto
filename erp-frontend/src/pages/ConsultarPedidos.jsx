@@ -238,327 +238,188 @@ const abrirEntrega = async (id) => {
 }
   
 const imprimirMultiples = async () => {
-  try {
+    try {
+      let listaChoferes = choferes
+      if (listaChoferes.length === 0) {
+        const ch = await fetch(`${urlLimpia}/choferes`)
+        const chData = await ch.json()
+        setChoferes(chData)
+        listaChoferes = chData
+      }
 
-    
-    // 🔥 AGREGA ESTO AQUÍ
-  let listaChoferes = choferes
+      // Filtrar solo los pedidos seleccionados que estén en ruta o entregados
+      const pedidosValidos = pedidos
+        .filter(p => pedidosSeleccionados.includes(p.id_pedido))
+        .filter(p => p.estado === 'en_ruta' || p.estado === 'entregado')
 
-if (listaChoferes.length === 0) {
-  const ch = await fetch(`${urlLimpia}/choferes`)
-  const chData = await ch.json()
-  setChoferes(chData)
-  listaChoferes = chData // 🔥 importante
-}
+      if (pedidosValidos.length === 0) {
+        alert("Selecciona al menos un pedido en ruta o entregado para imprimir.")
+        return
+      }
 
-    // 🔥 FILTRAR SOLO LOS QUE APLICAN
-    const pedidosValidos = pedidos
-      .filter(p => pedidosSeleccionados.includes(p.id_pedido))
-      .filter(p => p.estado === 'en_ruta')
+      // Agrupar por chofer, unidad y fecha
+      const grupos = {}
+      pedidosValidos.forEach(p => {
+        const key = `${p.id_chofer}-${p.id_unidad}-${p.fecha_programada?.slice(0, 10)}`
+        if (!grupos[key]) grupos[key] = []
+        grupos[key].push(p)
+      })
 
-    // 🔥 AGRUPAR
-    const grupos = {}
-    pedidosValidos.forEach(p => {
-      const key = `${p.id_chofer}-${p.id_unidad}-${p.fecha_programada?.slice(0,10)}`
-      if (!grupos[key]) grupos[key] = []
-      grupos[key].push(p)
-    })
-    
-   let contenidoTotal = `
-  <div style="text-align:center; font-size:11px; margin-bottom:10px;">
-    Carretera federal Perote – Teziutlán<br/>
-    Calle Piñón No. 2, Loc. Magueyitos
-  </div>
-`
-    
-    // 🔥 RECORRER GRUPOS
-    for (const grupoKey in grupos) {
-      const pedidosGrupo = grupos[grupoKey]
+      let contenidoTotal = `
+        <div style="text-align:center; font-size:11px; margin-bottom:10px;">
+          Carretera federal Perote – Teziutlán<br/> Calle Piñón No. 2, Loc. Magueyitos
+        </div>
+      `
 
-      const choferesUnicos = new Set(
-  pedidosGrupo.map(p => p.id_chofer)
-)
+      for (const grupoKey in grupos) {
+        const pedidosGrupo = grupos[grupoKey]
+        const choferesUnicos = new Set(pedidosGrupo.map(p => p.id_chofer))
+        const variosChoferes = choferesUnicos.size > 1
+        const primerPedido = pedidosGrupo[0]
 
-      const variosChoferes = choferesUnicos.size > 1
-      
-      const primerPedido = pedidosGrupo[0]
+        const idChofer = primerPedido.id_chofer
+        const choferEncontrado = listaChoferes.find(c => c.id_chofer === idChofer)
+        const choferNombre = choferEncontrado 
+          ? `${choferEncontrado.nombre} ${choferEncontrado.apellido_paterno || ''} ${choferEncontrado.apellido_materno || ''}`.trim() 
+          : 'SIN CHOFER'
 
-      // 🔥 OBTENER CHOFER IGUAL QUE EN INDIVIDUAL
-      const idChofer = primerPedido.id_chofer
-
-     const choferEncontrado = listaChoferes.find(
-  c => c.id_chofer === idChofer
-)
-
-     const choferNombre = choferEncontrado
-     ? `${choferEncontrado.nombre} ${choferEncontrado.apellido_paterno || ''} ${choferEncontrado.apellido_materno || ''}`.trim()
-     : 'SIN CHOFER'
-      
-       const detalles = await Promise.all(
-    pedidosGrupo.map(p =>
-      fetch(`${urlLimpia}/pedidos/${p.id_pedido}/detalle`)
-        .then(r => r.json())
-    )
-  )
-      let bloquePedidos = ''
-      for (let i = 0; i < pedidosGrupo.length; i++) {
-       const pedido = pedidosGrupo[i]
-      const detalle = detalles[i]
-
-      const municipio = detalle[0]?.municipio || ''
-
-      const totalPedido = detalle.reduce((total, p) => {
-  const cantidad = Number(
-    p.cantidad_entregada ??
-    p.cantidad_planeada ??
-    p.cantidad ??
-    p.cantidad_pedida ??
-    0
-  )
-
-  const precio = Number(
-    p.precio_unitario ??
-    p.precio_venta ??
-    p.precio ??
-    p.precio_lista ??
-    p.precio_final ??
-    p.precio_cliente ??
-    0
-  )
-
-  return total + (cantidad * precio)
-}, 0)
-        
-bloquePedidos += `
-  <div class="pedido">
-   <div class="titulo-pedido">
-  Pedido ${pedido.id_pedido} |
-  ${pedido.cliente}
-  ${pedido.nombre_tienda ? ' - ' + pedido.nombre_tienda : ''}
-  <br/>
-  Municipio: ${municipio}
-  <br/>
-  Ruta ${pedido.id_ruta} - ${obtenerNombreRuta(pedido.id_ruta)}
-</div>
-
-    <table>
-      ${detalle.map(p => {
-        const cantidad = Number(
-          p.cantidad_entregada ??
-          p.cantidad_planeada ??
-          p.cantidad ??
-          p.cantidad_pedida ??
-          0
+        const detalles = await Promise.all(
+          pedidosGrupo.map(p => fetch(`${urlLimpia}/pedidos/${p.id_pedido}/detalle`).then(r => r.json()))
         )
 
-        const precio = Number(
-          p.precio_unitario ??
-          p.precio_venta ??
-          p.precio ??
-          p.precio_lista ??
-          p.precio_final ??
-          p.precio_cliente ??
-          0
-        )
+        let bloquePedidos = ''
 
-        const subtotal = cantidad * precio
+        for (let i = 0; i < pedidosGrupo.length; i++) {
+          const pedido = pedidosGrupo[i]
+          const detalle = detalles[i]
+          const municipio = detalle[0]?.municipio || ''
 
-        return `
-          <tr>
-            <td style="width:60px;text-align:center;">${cantidad}</td>
-            <td>${p.nombre}</td>
-            <td style="width:90px;text-align:right;">$${precio.toFixed(2)}</td>
-            <td style="width:110px;text-align:right;">$${subtotal.toFixed(2)}</td>
-          </tr>
+          // 🟢 Procesar detalle para Priorizar 'cantidad_entregada' estricta
+          const detalleProcesado = detalle.map(p => {
+            const cantEntregada = (p.cantidad_entregada !== undefined && p.cantidad_entregada !== null)
+              ? Number(p.cantidad_entregada)
+              : Number(p.cantidad_planeada ?? p.cantidad ?? p.cantidad_pedida ?? 0)
+
+            const precio = Number(p.precio_unitario ?? p.precio_venta ?? p.precio ?? p.precio_lista ?? 0)
+
+            return {
+              ...p,
+              cantidadFinal: cantEntregada,
+              precioFinal: precio,
+              subtotal: cantEntregada * precio
+            }
+          }).filter(p => p.cantidadFinal > 0) // 👈 Oculta renglones sin entrega (> 0)
+
+          const totalPedido = detalleProcesado.reduce((total, p) => total + p.subtotal, 0)
+
+          bloquePedidos += `
+            <div class="pedido">
+              <div class="titulo-pedido">
+                Pedido ${pedido.id_pedido} | ${pedido.cliente} ${pedido.nombre_tienda ? ' - ' + pedido.nombre_tienda : ''}
+                <br/> Municipio: ${municipio}
+                <br/> Ruta ${pedido.id_ruta} - ${obtenerNombreRuta(pedido.id_ruta)}
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width:60px;text-align:center;">Cant. Entregada</th>
+                    <th>Producto</th>
+                    <th style="width:90px;text-align:right;">P. Unit.</th>
+                    <th style="width:110px;text-align:right;">Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${detalleProcesado.map(p => `
+                    <tr>
+                      <td style="width:60px;text-align:center;">${p.cantidadFinal}</td>
+                      <td>${p.nombre || ''}</td>
+                      <td style="width:90px;text-align:right;">$${p.precioFinal.toFixed(2)}</td>
+                      <td style="width:110px;text-align:right;">$${p.subtotal.toFixed(2)}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+              <div class="total">
+                TOTAL: $${totalPedido.toFixed(2)}
+              </div>
+            </div>
+          `
+        }
+
+        contenidoTotal += `
+          <div class="hoja">
+            <div class="contenido">
+              <div class="header">
+                <div class="fecha">
+                  <div>${new Date().toLocaleDateString()}</div>
+                </div>
+              </div>
+              ${bloquePedidos}
+            </div>
+            <div class="firmas ${variosChoferes ? 'horizontal' : 'vertical'}">
+              <div class="firma">
+                <div class="linea">CHOFER</div>
+                <div class="nombre-firma">${choferNombre}</div>
+              </div>
+              <div class="firma">
+                <div class="linea">AUTORIZO</div>
+                <div class="nombre-firma">SUPERVISOR: JOSHUA ALVAREZ MENDEZ</div>
+              </div>
+            </div>
+          </div>
         `
-      }).join('')}
-    </table>
+      }
 
-   <div class="total">
-  TOTAL: $${totalPedido.toFixed(2)}
-</div>
-  </div>
-`
-}
-     contenidoTotal += `
-<div class="hoja">
+      // Abre y escribe UNA SOLA VEZ en la ventana
+      const win = window.open('', '_blank')
+      win.document.write(`
+        <html>
+          <head>
+            <title>Pedidos Seleccionados</title>
+            <style>
+              body { font-family: Arial; font-size: 12px; padding: 10px; }
+              .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+              .pedido { border-top: 1px solid #000; margin-top: 10px; padding-top: 5px; }
+              .titulo-pedido { font-weight: bold; margin-bottom: 5px; }
+              table { width: 100%; border-collapse: collapse; }
+              td, th { padding: 4px; border: 1px solid #ccc; }
+              .total { text-align: right; font-weight: bold; margin-top: 5px; }
+              @media print {
+              .hoja { 
+              display: flex; 
+              flex-direction: column; 
+              justify-content: space-between; 
+              height: 100vh; 
+              page-break-after: always; 
+              box-sizing: border-box;
+              }
+              body { margin: 0; padding: 0; }
+              }
+                .firmas { margin-top: 40px; display: flex; justify-content: space-between; }
+                .firma { width: 42%; text-align: center; font-size: 10px; }
+                .linea { border-top: 1px solid #000; padding-top: 4px; font-weight: bold; }
+           </style>
+</head>
+<body>
+  ${contenidoTotal}
+</body>
+</html>
+`);
 
-  <div class="contenido">
-    <div class="header">
-      <div class="fecha">
-        <div>${new Date().toLocaleDateString()}</div>
-      </div>
-    </div>
+win.document.close();
+win.focus();
 
-    ${bloquePedidos}
-  </div>
-
- <div class="firmas ${variosChoferes ? 'horizontal' : 'vertical'}">
-    <div class="firma">
-      <div class="linea">CHOFER</div>
-      <div class="nombre-firma">${choferNombre}</div>
-    </div>
-    <div class="firma">
-      <div class="linea">AUTORIZO</div>
-      <div class="nombre-firma">SUPERVISOR: JOSHUA ALVAREZ MENDEZ</div>
-    </div>
-  </div>
-
-</div>
-`
-    }
-
-    // 🔥 IMPRIMIR
-    const win = window.open('', '_blank')
-
-    win.document.write(`
-      <html>
-        <head>
-          <title>Pedidos</title>
-          <style>
-            body {
-              font-family: Arial;
-              font-size: 12px;
-              padding: 10px;
-            }
-
-            .header {
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              margin-bottom: 10px;
-            }
-
-            .logo {
-              height: 50px;
-            }
-
-            .info {
-              text-align: center;
-              font-size: 11px;
-            }
-
-            .fecha {
-              text-align: right;
-              font-size: 11px;
-            }
-
-            .pedido {
-              border-top: 1px solid #000;
-              margin-top: 10px;
-              padding-top: 5px;
-            }
-
-            .titulo-pedido {
-              font-weight: bold;
-              margin-bottom: 5px;
-            }
-
-            table {
-              width: 100%;
-              border-collapse: collapse;
-            }
-
-            td {
-              padding: 3px;
-            }
-
-            .total {
-              text-align: right;
-              font-weight: bold;
-              margin-top: 5px;
-            }
-
-            @media print {
-             .hoja {
-             display: flex;
-             flex-direction: column;
-             min-height: 95vh;
-             justify-content: space-between;
-             page-break-after: always;
-             }
-
-             .firmas.horizontal {
-             display: flex;
-             justify-content: space-between;
-             }
-
-             .firmas.vertical {
-             display: flex;
-             justify-content: flex-end; /* 👉 todo a la derecha */
-             gap: 40px; /* 👉 separación entre firmas */
-             }
-
-            .firma {
-             width: 42%;
-             text-align: center;
-             font-size: 10px;
-            }
-
-            .linea {
-            border-top: 1px solid #000;
-            padding-top: 4px;
-            font-weight: bold;
-            }
-            
-           .header {
-           position: relative;
-           display: flex;
-           justify-content: flex-end; /* todo a la derecha */
-           align-items: center;
-           }
-
-           .hoja {
-           display: flex;
-           flex-direction: column;
-           min-height: auto; /* 🔥 clave */
-           }
-
-          .contenido {
-          flex-grow: 0;
-          }
-
-          .firmas {
-          margin-top: 60px; /* 🔥 más aire */
-          margin-bottom: 40px; /* 🔥 lo sube visualmente del fondo */
-          display: flex;
-          justify-content: space-between;
-          }
-
-          .header {
-          display: flex;
-          justify-content: flex-end;
-          align-items: center;
-          }
-
-          .nombre-firma {
-           margin-top: 4px;
-           min-height: 14px;
-            }
-          }
-          </style>
-        </head>
-        <body>
-          ${contenidoTotal}
-        </body>
-      </html>
-    `)
-
-     win.document.write(`...`)
-     win.document.close()
-
-     win.onload = () => {
-     win.focus()
-     win.print()
-    }
-    
-    
+setTimeout(() => {
+  win.print();
+  win.close(); // 👈 Al quitar las dos barras '//', la pestaña en blanco se cerrará sola al terminar de imprimir
+}, 500);
+      
       setPedidosSeleccionados([])
-    
-   }  catch (error) {
-      console.error(error)
-     }
-   }
+    } catch (error) {
+      console.error("Error al imprimir múltiples:", error)
+      alert("Ocurrió un error al generar la impresión.")
+    }
+  }
   
      const imprimirPedido = async (pedido) => {
   try {
