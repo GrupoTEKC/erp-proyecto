@@ -443,7 +443,7 @@ let contenidoTotal = `
 }
 
 .titulo-empresa {
-  font-size: 16px;
+  font-size: 20px;
   font-weight: bold;
   text-transform: uppercase;
   margin-bottom: 3px;
