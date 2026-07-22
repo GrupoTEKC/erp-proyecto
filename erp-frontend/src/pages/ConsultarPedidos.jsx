@@ -7,18 +7,18 @@ import logo3 from '../assets/pegatek-logo.png'
 const API = 'https://erp-proyecto-production.up.railway.app'
 
 const styles = {
-  page: { backgroundColor: '#ffffff', minHeight: '100vh', padding: '20px', fontFamily: 'Arial, sans-serif' },
-  header: { marginBottom: '20px' },
-  backButton: { display: 'inline-flex', alignItems: 'center', padding: '10px 14px', fontSize: '14px', backgroundColor: '#fff', color: '#8B1E1E', border: '1px solid #8B1E1E', borderRadius: '6px', cursor: 'pointer' },
-  title: { marginTop: '20px', marginBottom: '15px', color: '#071849', fontWeight: 'bold' },
-  field: { width: '260px', padding: '8px 10px', fontSize: '14px', borderRadius: '6px', border: '1px solid #8B1E1E', boxSizing: 'border-box', marginBottom: 15 },
-  columnas: { display: 'flex', gap: '15px', overflowX: 'auto' },
-  columna: { minWidth: '320px', background: '#f4f6f8', borderRadius: '10px', padding: '10px' },
-  tarjeta: { border: '1px solid #ddd', borderRadius: '8px', padding: '10px', marginBottom: '10px', backgroundColor: '#fff' },
-  button: { padding: '6px 10px', margin: '2px', borderRadius: '6px', border: 'none', cursor: 'pointer' },
-  primary: { backgroundColor: '#8B1E1E', color: '#fff' },
-  secondary: { backgroundColor: '#fff', border: '1px solid #8B1E1E', color: '#8B1E1E' },
-  estado: (estado) => ({
+    page: { backgroundColor: '#ffffff', minHeight: '100vh', padding: '20px', fontFamily: 'Arial, sans-serif' },
+    header: { marginBottom: '20px' },
+    backButton: { display: 'inline-flex', alignItems: 'center', padding: '10px 14px', fontSize: '14px', backgroundColor: '#fff', color: '#8B1E1E', border: '1px solid #8B1E1E', borderRadius: '6px', cursor: 'pointer' },
+    title: { marginTop: '20px', marginBottom: '15px', color: '#071849', fontWeight: 'bold' },
+    field: { width: '260px', padding: '8px 10px', fontSize: '14px', borderRadius: '6px', border: '1px solid #8B1E1E', boxSizing: 'border-box', marginBottom: 15 },
+    columnas: { display: 'flex', gap: '15px', overflowX: 'auto' },
+    columna: { minWidth: '320px', background: '#f4f6f8', borderRadius: '10px', padding: '10px' },
+    tarjeta: { border: '1px solid #ddd', borderRadius: '8px', padding: '10px', marginBottom: '10px', backgroundColor: '#fff' },
+    button: { padding: '6px 10px', margin: '2px', borderRadius: '6px', border: 'none', cursor: 'pointer' },
+    primary: { backgroundColor: '#8B1E1E', color: '#fff' },
+    secondary: { backgroundColor: '#fff', border: '1px solid #8B1E1E', color: '#8B1E1E' },
+    estado: (estado) => ({
     color: '#fff',
     padding: '4px 8px',
     borderRadius: '6px',
@@ -32,7 +32,14 @@ const styles = {
      estado === 'cancelado' ? '#7f8c8d' :
      '#34495e'
   }),
-  topBar: { display: 'flex', gap: '10px', alignItems: 'center' },
+topBar: { 
+  display: 'flex', 
+  gap: '10px', 
+  alignItems: 'center', 
+  justifyContent: 'space-between', // Push del nuevo botón hacia la derecha
+  width: '100%' 
+},
+  
   dropdown: { position: 'relative', width: '260px' },
   dropdownButton: {
     width: '100%',
@@ -496,6 +503,129 @@ setPedidosSeleccionados([]);
       alert("Ocurrió un error al generar la impresión.")
     }
   }
+
+
+  const imprimirPreviaMultiples = async () => {
+  try {
+    // 1. Filtrar SOLO pedidos seleccionados que estén en 'pendiente' o 'programado'
+    const pedidosValidos = pedidos
+      .filter(p => pedidosSeleccionados.includes(p.id_pedido))
+      .filter(p => p.estado === 'pendiente' || p.estado === 'programado')
+
+    if (pedidosValidos.length === 0) {
+      alert("Selecciona al menos un pedido PENDIENTE o PROGRAMADO para realizar la impresión previa.")
+      return
+    }
+
+    // 2. Traer el detalle de los pedidos seleccionados desde el Backend
+    const detalles = await Promise.all(
+      pedidosValidos.map(p => 
+        fetch(`${urlLimpia}/pedidos/${p.id_pedido}/detalle`).then(r => r.json())
+      )
+    )
+
+    let bloquesPedidos = ''
+
+    for (let i = 0; i < pedidosValidos.length; i++) {
+      const pedido = pedidosValidos[i]
+      const detalle = detalles[i]
+
+      // Lógica COALESCE: usa cantidad_planeada si existe y es > 0, de lo contrario la 'cantidad' original
+      const detalleProcesado = detalle.map(p => {
+        const cantPlaneada = Number(p.cantidad_planeada)
+        const cantOriginal = Number(p.cantidad ?? p.cantidad_pedida ?? 0)
+        
+        const cantFinal = (cantPlaneada && cantPlaneada > 0) ? cantPlaneada : cantOriginal
+        const precio = Number(p.precio_unitario ?? p.precio_venta ?? p.precio ?? 0)
+        const subtotalNum = cantFinal * precio
+
+        return {
+          ...p,
+          cantFinal,
+          cantFormateada: cantFinal.toLocaleString('es-MX'),
+          precioFormateado: precio.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+          subtotalFormateado: subtotalNum.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+          subtotal: subtotalNum
+        }
+      }).filter(p => p.cantFinal > 0)
+
+      const totalPedido = detalleProcesado.reduce((sum, item) => sum + item.subtotal, 0)
+      const totalPedidoFormateado = totalPedido.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+      bloquesPedidos += `
+        <div class="pedido" style="page-break-inside: avoid; border: 1px solid #000; padding: 12px; margin-bottom: 20px; border-radius: 6px;">
+          <div style="font-weight: bold; font-size: 14px; margin-bottom: 8px; border-bottom: 1px solid #ccc; padding-bottom: 6px; display: flex; justify-content: space-between;">
+            <span>ORDEN DE SURTIDO (PREVIA) - PEDIDO #${pedido.id_pedido}</span>
+            <span style="text-transform: uppercase;">ESTATUS: <b>${pedido.estado || ''}</b></span>
+          </div>
+          <div style="font-size: 12px; margin-bottom: 10px;">
+            <b>Cliente:</b> ${pedido.cliente || ''} ${pedido.nombre_tienda ? ' - ' + pedido.nombre_tienda : ''} <br/>
+            <b>Ruta:</b> Ruta ${pedido.id_ruta || ''} - ${obtenerNombreRuta(pedido.id_ruta)}
+          </div>
+          <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+            <thead>
+              <tr style="background: #f0f0f0;">
+                <th style="border: 1px solid #ccc; padding: 6px; text-align: center; width: 90px;">Cant. A Surtir</th>
+                <th style="border: 1px solid #ccc; padding: 6px; text-align: left;">Producto</th>
+                <th style="border: 1px solid #ccc; padding: 6px; text-align: right; width: 100px;">P. Unit.</th>
+                <th style="border: 1px solid #ccc; padding: 6px; text-align: right; width: 110px;">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${detalleProcesado.map(item => `
+                <tr>
+                  <td style="border: 1px solid #ccc; padding: 6px; text-align: center; font-weight: bold; font-size: 13px;">${item.cantFormateada}</td>
+                  <td style="border: 1px solid #ccc; padding: 6px;">${item.nombre || ''}</td>
+                  <td style="border: 1px solid #ccc; padding: 6px; text-align: right;">$${item.precioFormateado}</td>
+                  <td style="border: 1px solid #ccc; padding: 6px; text-align: right;">$${item.subtotalFormateado}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <div style="text-align: right; font-weight: bold; margin-top: 8px; font-size: 13px;">
+            ESTIMADO TOTAL: $${totalPedidoFormateado}
+          </div>
+        </div>
+      `
+    }
+
+    // 3. Abrir la ventana de impresión
+    const win = window.open('', '_blank')
+    win.document.write(`
+      <html>
+        <head>
+          <title>Impresión Previa de Pedidos</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 15px; font-size: 12px; }
+            .header-banner { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #8B1E1E; padding-bottom: 10px; }
+            .watermark-text { color: #8B1E1E; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+            @media print {
+              @page { size: letter portrait; margin: 8mm; }
+              body { margin: 0; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header-banner">
+            <h2 style="margin: 0; color: #071849;">GRUPO TEKC - HOJA DE SURTIDO PREVIA</h2>
+            <span class="watermark-text">*** DOCUMENTO PREVIO - NO VÁLIDO COMO ENTREGA EN RUTA ***</span>
+          </div>
+          ${bloquesPedidos}
+        </body>
+      </html>
+    `)
+    win.document.close()
+    
+    win.onload = () => {
+      win.focus()
+      win.print()
+    }
+
+  } catch (error) {
+    console.error("Error en la impresión previa:", error)
+    alert("Ocurrió un error al generar la impresión previa.")
+  }
+}
   
      const imprimirPedido = async (pedido) => {
   try {
@@ -1158,6 +1288,20 @@ const programarPedido = async () => {
             </div>
           )}
         </div>
+
+        <button 
+    style={{ 
+      ...styles.button, 
+      backgroundColor: '#2b6cb0', 
+      color: '#ffffff',
+      fontWeight: 'bold',
+      padding: '8px 14px'
+    }} 
+    onClick={imprimirPreviaMultiples}
+  >
+    📄 Impresión Previa
+  </button>
+        
       </div>
 
       <div style={styles.columnas}>
@@ -1193,11 +1337,12 @@ const programarPedido = async () => {
                     ...styles.tarjeta,
                     backgroundColor: alerta ? '#ffe5e5' : '#fff'
                   }}>
-                    <input
-                    type="checkbox"
-                    checked={pedidosSeleccionados.includes(p.id_pedido)}
-                    onChange={() => togglePedido(p.id_pedido)}
-                    disabled={p.estado !== 'en_ruta'} // 🔥 aquí va
+                    <input 
+                    type="checkbox" 
+                    checked={pedidosSeleccionados.includes(p.id_pedido)} 
+                    onChange={() => togglePedido(p.id_pedido)} 
+                    // 🟢 Habilita el checkbox según el estatus del pedido:
+                    disabled={p.estado !== 'en_ruta' && p.estado !== 'pendiente' && p.estado !== 'programado'} 
                     />
                     
                     <strong>ID:</strong> {p.id_pedido} <br />
