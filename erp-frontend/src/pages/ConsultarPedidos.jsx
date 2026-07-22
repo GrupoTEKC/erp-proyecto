@@ -394,25 +394,35 @@ let contenidoTotal = `
               .total { text-align: right; font-weight: bold; margin-top: 5px; }
 @media print {
   @page {
-    size: auto;
-    margin: 8mm; /* Margen de seguridad para que todo quepa en 1 sola hoja */
+    size: letter portrait;
+    margin: 6mm 8mm;
   }
   body { 
     margin: 0; 
     padding: 0; 
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
   .hoja {
-    display: flex; 
-    flex-direction: column; 
-    justify-content: space-between; 
-    min-height: 92vh; /* Se cambia height: 100vh por min-height flexible */
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
     page-break-after: always; 
-    page-break-inside: avoid; /* Evita que las firmas o tablas se corten entre hojas */
+    page-break-inside: avoid; 
     box-sizing: border-box; 
   }
 }
-                .firmas { margin-top: 40px; display: flex; justify-content: space-between; }
-                .firma { width: 42%; text-align: center; font-size: 10px; }
+.firmas { 
+  margin-top: 25px; 
+  display: flex; 
+  justify-content: space-between; 
+  page-break-inside: avoid;
+}
+.firma { 
+  width: 42%; 
+  text-align: center; 
+  font-size: 10px; 
+}
 
                 .watermark {
   position: absolute;  /* Hace que la imagen "flote" encima de la hoja sin empujar el texto */
@@ -425,8 +435,6 @@ let contenidoTotal = `
   z-index: 0;
 }
                 .linea { border-top: 1px solid #000; padding-top: 4px; font-weight: bold; }
-
-                /* 🟢 AGREGA ESTAS REGLAS DENTRO DE LA ETIQUETA <style>: */
 
 .header-empresa {
   display: flex;
