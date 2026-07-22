@@ -301,24 +301,29 @@ let contenidoTotal = `
           const detalle = detalles[i]
           const municipio = detalle[0]?.municipio || ''
 
-          // 🟢 Procesar detalle para Priorizar 'cantidad_entregada' estricta
-          const detalleProcesado = detalle.map(p => {
-            const cantEntregada = (p.cantidad_entregada !== undefined && p.cantidad_entregada !== null)
-              ? Number(p.cantidad_entregada)
-              : Number(p.cantidad_planeada ?? p.cantidad ?? p.cantidad_pedida ?? 0)
+       // 🟢 Procesar detalle para Priorizar 'cantidad_entregada' estricta y formatear números
+      const detalleProcesado = detalle.map(p => {
+        const cantEntregada = (p.cantidad_entregada !== undefined && p.cantidad_entregada !== null) 
+          ? Number(p.cantidad_entregada) 
+          : Number(p.cantidad_planeada ?? p.cantidad ?? p.cantidad_pedida ?? 0);
+          
+        const precio = Number(p.precio_unitario ?? p.precio_venta ?? p.precio ?? p.precio_lista ?? 0);
+        const subtotalNum = cantEntregada * precio;
 
-            const precio = Number(p.precio_unitario ?? p.precio_venta ?? p.precio ?? p.precio_lista ?? 0)
+        return {
+          ...p,
+          cantidadFinal: cantEntregada,
+          // Formateo con comas en español (México)
+          cantidadFormateada: cantEntregada.toLocaleString('es-MX'),
+          precioFinal: precio.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+          subtotalFormateado: subtotalNum.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+          subtotal: subtotalNum
+        };
+      }).filter(p => p.cantidadFinal > 0);
 
-            return {
-              ...p,
-              cantidadFinal: cantEntregada,
-              precioFinal: precio,
-              subtotal: cantEntregada * precio
-            }
-          }).filter(p => p.cantidadFinal > 0) // 👈 Oculta renglones sin entrega (> 0)
-
-          const totalPedido = detalleProcesado.reduce((total, p) => total + p.subtotal, 0)
-
+      const totalPedido = detalleProcesado.reduce((total, p) => total + p.subtotal, 0);
+      const totalPedidoFormateado = totalPedido.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          
           bloquePedidos += `
             <div class="pedido">
               <div class="titulo-pedido">
@@ -337,18 +342,19 @@ let contenidoTotal = `
                 </thead>
                 <tbody>
                   ${detalleProcesado.map(p => `
-                    <tr>
-                      <td style="width:60px;text-align:center;">${p.cantidadFinal}</td>
-                      <td>${p.nombre || ''}</td>
-                      <td style="width:90px;text-align:right;">$${p.precioFinal.toFixed(2)}</td>
-                      <td style="width:110px;text-align:right;">$${p.subtotal.toFixed(2)}</td>
-                    </tr>
-                  `).join('')}
+        <tr>
+          <td style="width:60px;text-align:center;">${p.cantidadFormateada}</td>
+          <td>${p.nombre || ''}</td>
+          <td style="width:90px;text-align:right;">$${p.precioFinal}</td>
+          <td style="width:110px;text-align:right;">$${p.subtotalFormateado}</td>
+        </tr>
+      `).join('')}
+      
                 </tbody>
               </table>
-              <div class="total">
-                TOTAL: $${totalPedido.toFixed(2)}
-              </div>
+          <div class="total">
+        TOTAL: $${totalPedidoFormateado}
+      </div>
             </div>
           `
         }
@@ -413,7 +419,7 @@ let contenidoTotal = `
   }
 }
 .firmas { 
-  margin-top: 25px; 
+  margin-top: 40px; 
   display: flex; 
   justify-content: space-between; 
   page-break-inside: avoid;
