@@ -562,26 +562,33 @@ setPedidosSeleccionados([]);
             <b>Cliente:</b> ${pedido.cliente || ''} ${pedido.nombre_tienda ? ' - ' + pedido.nombre_tienda : ''} <br/>
             <b>Ruta:</b> Ruta ${pedido.id_ruta || ''} - ${obtenerNombreRuta(pedido.id_ruta)}
           </div>
-          <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
-            <thead>
-              <tr style="background: #f0f0f0;">
-                <th style="border: 1px solid #ccc; padding: 6px; text-align: center; width: 90px;">Cant. A Surtir</th>
-                <th style="border: 1px solid #ccc; padding: 6px; text-align: left;">Producto</th>
-                <th style="border: 1px solid #ccc; padding: 6px; text-align: right; width: 100px;">P. Unit.</th>
-                <th style="border: 1px solid #ccc; padding: 6px; text-align: right; width: 110px;">Subtotal</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${detalleProcesado.map(item => `
-                <tr>
-                  <td style="border: 1px solid #ccc; padding: 6px; text-align: center; font-weight: bold; font-size: 13px;">${item.cantFormateada}</td>
-                  <td style="border: 1px solid #ccc; padding: 6px;">${item.nombre || ''}</td>
-                  <td style="border: 1px solid #ccc; padding: 6px; text-align: right;">$${item.precioFormateado}</td>
-                  <td style="border: 1px solid #ccc; padding: 6px; text-align: right;">$${item.subtotalFormateado}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
+          
+     <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+  <thead>
+    <tr style="background: #f0f0f0;">
+      <!-- 🟢 NUEVA COLUMNA DE VERIFICACIÓN / CHECK -->
+      <th style="border: 1px solid #ccc; padding: 6px; text-align: center; width: 45px;">Check</th>
+      <th style="border: 1px solid #ccc; padding: 6px; text-align: center; width: 90px;">Cant. A Surtir</th>
+      <th style="border: 1px solid #ccc; padding: 6px; text-align: left;">Producto</th>
+      <th style="border: 1px solid #ccc; padding: 6px; text-align: right; width: 100px;">P. Unit.</th>
+      <th style="border: 1px solid #ccc; padding: 6px; text-align: right; width: 110px;">Subtotal</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${detalleProcesado.map(item => `
+      <tr>
+        <td style="border: 1px solid #ccc; padding: 4px; text-align: center;">
+          <div style="width: 18px; height: 18px; border: 1.5px solid #333; margin: 0 auto; border-radius: 3px;"></div>
+        </td>
+        <td style="border: 1px solid #ccc; padding: 6px; text-align: center; font-weight: bold; font-size: 13px;">${item.cantFormateada}</td>
+        <td style="border: 1px solid #ccc; padding: 6px;">${item.nombre || ''}</td>
+        <td style="border: 1px solid #ccc; padding: 6px; text-align: right;">$${item.precioFormateado}</td>
+        <td style="border: 1px solid #ccc; padding: 6px; text-align: right;">$${item.subtotalFormateado}</td>
+      </tr>
+    `).join('')}
+  </tbody>
+</table>
+
           <div style="text-align: right; font-weight: bold; margin-top: 8px; font-size: 13px;">
             ESTIMADO TOTAL: $${totalPedidoFormateado}
           </div>
@@ -607,8 +614,8 @@ setPedidosSeleccionados([]);
         </head>
         <body>
           <div class="header-banner">
-            <h2 style="margin: 0; color: #071849;">GRUPO TEKC - HOJA DE SURTIDO PREVIA</h2>
-            <span class="watermark-text">*** DOCUMENTO PREVIO - NO VÁLIDO COMO ENTREGA EN RUTA ***</span>
+            <h2 style="margin: 0; color: #071849;">GRUPO TEKC - HOJA DE PRE-EMBARQUE</h2>
+            <span class="watermark-text">*** DOCUMENTO PREVIO - NO VÁLIDO COMO ENTREGA FINAL ***</span>
           </div>
           ${bloquesPedidos}
         </body>
