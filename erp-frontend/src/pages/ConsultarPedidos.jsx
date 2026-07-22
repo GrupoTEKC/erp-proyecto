@@ -1227,14 +1227,26 @@ const programarPedido = async () => {
 
       <h2 style={styles.title}>CONTROL DE ENVIOS</h2>
 
-      <button
-      style={{ ...styles.button, ...styles.primary, marginBottom: 10 }}
-      disabled={pedidosSeleccionados.length === 0}
-      onClick={imprimirMultiples}
-      >
-     🖨 Imprimir seleccionados ({pedidosSeleccionados.length})
-       </button>
-       
+
+        <div style={{ display: 'flex', gap: '10px', marginBottom: 10 }}>
+          <button 
+            style={{ ...styles.button, ...styles.primary }} 
+            disabled={pedidosSeleccionados.length === 0}
+            onClick={imprimirMultiples}
+          >
+            🖨 Imprimir seleccionados ({pedidosSeleccionados.length})
+          </button>
+
+          <button 
+            style={{ ...styles.button, ...styles.primary, backgroundColor: '#2b6cb0' }} 
+            disabled={pedidosSeleccionados.length === 0}
+            onClick={imprimirPreviaMultiples}
+          >
+            📄 Impresión Previa
+          </button>
+        </div>
+
+        
       <div style={styles.topBar}>
         <input
           style={{ ...styles.field, marginBottom: 0 }}
@@ -1296,20 +1308,7 @@ const programarPedido = async () => {
           )}
         </div>
 
-        <button 
-    style={{ 
-      ...styles.button, 
-      backgroundColor: '#2b6cb0', 
-      color: '#ffffff',
-      fontWeight: 'bold',
-      padding: '8px 14px'
-    }} 
-    onClick={imprimirPreviaMultiples}
-  >
-    📄 Impresión Previa
-  </button>
-        
-      </div>
+      
 
       <div style={styles.columnas}>
 
