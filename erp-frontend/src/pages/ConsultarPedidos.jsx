@@ -419,7 +419,7 @@ let contenidoTotal = `
   }
 }
 .firmas { 
-  margin-top: 40px; 
+  margin-top: 65px; 
   display: flex; 
   justify-content: space-between; 
   page-break-inside: avoid;
