@@ -467,16 +467,16 @@ let contenidoTotal = `
 </body>
 </html>
 `);
-
-win.document.close();
-win.focus();
-
-setTimeout(() => {
-  win.print();
-  win.close(); // 👈 Al quitar las dos barras '//', la pestaña en blanco se cerrará sola al terminar de imprimir
-}, 500);
       
-      setPedidosSeleccionados([])
+win.document.close();
+
+// 🔥 Regresar a la lógica de win.onload que tenías antes:
+win.onload = () => {
+  win.focus();
+  win.print();
+};
+
+setPedidosSeleccionados([]);
     } catch (error) {
       console.error("Error al imprimir múltiples:", error)
       alert("Ocurrió un error al generar la impresión.")
