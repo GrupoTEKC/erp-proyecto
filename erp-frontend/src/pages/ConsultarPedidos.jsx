@@ -1217,19 +1217,8 @@ const programarPedido = async () => {
   cargarPedidos()
 }
   
-  return (
-    <div style={styles.page}>
-      <div style={styles.header}>
-        <button style={styles.backButton} onClick={() => navigate('/')}>
-          ⬅ Volver
-        </button>
-      </div>
-
-      <h2 style={styles.title}>CONTROL DE ENVIOS</h2>
-
-
-  <div style={styles.topBar}>
-        {/* 🟢 1. GRUPO DE BOTONES JUNTOS A LA IZQUIERDA */}
+ <div style={styles.topBar}>
+        {/* 🟢 1. AMBOS BOTONES JUNTOS A LA IZQUIERDA */}
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <button 
             style={{ ...styles.button, ...styles.primary }} 
@@ -1248,7 +1237,7 @@ const programarPedido = async () => {
           </button>
         </div>
 
-        {/* 🟢 2. FILTROS Y BUSCADORES A LA DERECHA */}
+        {/* 🟢 2. FILTROS Y CONTROLES A LA DERECHA */}
         <input
           style={{ ...styles.field, marginBottom: 0, width: '180px' }}
           placeholder="Buscar..."
@@ -1280,8 +1269,8 @@ const programarPedido = async () => {
 
         {/* Dropdown de Selección de Rutas */}
         {renderDropdownRutas && renderDropdownRutas()}
-      </div>
-        
+      
+          
         {/* 2. FILTROS Y CONTROLES (SE MUEVEN AL CENTRO / DERECHA) */}
         <input
           style={{ ...styles.field, marginBottom: 0, width: '180px' }}
