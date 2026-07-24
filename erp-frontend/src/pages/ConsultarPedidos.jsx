@@ -33,14 +33,15 @@ const styles = {
      '#34495e'
   }),
     
-topBar: { 
-  display: 'flex', 
-  gap: '12px', 
-  alignItems: 'center', 
-  flexWrap: 'wrap', 
-  width: '100%',
-  marginBottom: '15px'
-},
+topBar: {
+    display: 'flex',
+    justifyContent: 'flex-start',
+    gap: '12px',                  
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    width: '100%',
+    marginBottom: '15px',
+  },
   
   dropdown: { position: 'relative', width: '260px' },
   dropdownButton: {
@@ -1261,7 +1262,7 @@ const programarPedido = async () => {
           <option value="pagado">Pagado</option>
         </select>
 
-        <input
+     <input
           type="date"
           style={{ ...styles.field, marginBottom: 0, width: '160px' }}
           value={fechaFiltro}
@@ -1269,15 +1270,15 @@ const programarPedido = async () => {
         />
 
         {renderDropdownRutas && renderDropdownRutas()}
-    
-    
-        <div style={styles.dropdown}>
-          <div
-            style={styles.dropdownButton}
-            onClick={() => setMostrarDropdown(!mostrarDropdown)}
-          >
-            Seleccionar rutas ▼
-          </div>
+      </div>
+
+      <div style={styles.dropdown}>
+        <div
+          style={styles.dropdownButton}
+          onClick={() => setMostrarDropdown(!mostrarDropdown)}
+        >
+          Seleccionar rutas ▼
+        </div>
 
           {mostrarDropdown && (
             <div style={styles.dropdownContent}>
