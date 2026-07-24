@@ -32,12 +32,14 @@ const styles = {
      estado === 'cancelado' ? '#7f8c8d' :
      '#34495e'
   }),
+    
 topBar: { 
   display: 'flex', 
-  gap: '10px', 
+  gap: '12px', 
   alignItems: 'center', 
-  justifyContent: 'space-between', // Push del nuevo botón hacia la derecha
-  width: '100%' 
+  flexWrap: 'wrap', 
+  width: '100%',
+  marginBottom: '15px'
 },
   
   dropdown: { position: 'relative', width: '260px' },
@@ -1217,27 +1219,26 @@ const programarPedido = async () => {
   cargarPedidos()
 }
   
- <div style={styles.topBar}>
-        {/* 🟢 1. AMBOS BOTONES JUNTOS A LA IZQUIERDA */}
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <button 
-            style={{ ...styles.button, ...styles.primary }} 
-            disabled={pedidosSeleccionados.length === 0}
-            onClick={imprimirMultiples}
-          >
-            🖨 Imprimir seleccionados ({pedidosSeleccionados.length})
-          </button>
+<div style={styles.topBar}>
+  {/* 🟢 AMBOS BOTONES JUNTOS EN SU CONTENEDOR FLEX */}
+  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+    <button 
+      style={{ ...styles.button, ...styles.primary }} 
+      disabled={pedidosSeleccionados.length === 0}
+      onClick={imprimirMultiples}
+    >
+      🖨 Imprimir seleccionados ({pedidosSeleccionados.length})
+    </button>
 
-          <button 
-            style={{ ...styles.button, ...styles.primary, backgroundColor: '#2b6cb0' }} 
-            disabled={pedidosSeleccionados.length === 0}
-            onClick={imprimirPreviaMultiples}
-          >
-            📄 Impresión Previa
-          </button>
-        </div>
+    <button 
+      style={{ ...styles.button, ...styles.primary, backgroundColor: '#2b6cb0' }} 
+      disabled={pedidosSeleccionados.length === 0}
+      onClick={imprimirPreviaMultiples}
+    >
+      📄 Impresión Previa
+    </button>
+  </div>
 
-        {/* 🟢 2. FILTROS Y CONTROLES A LA DERECHA */}
         <input
           style={{ ...styles.field, marginBottom: 0, width: '180px' }}
           placeholder="Buscar..."
@@ -1267,70 +1268,9 @@ const programarPedido = async () => {
           onChange={e => setFechaFiltro(e.target.value)}
         />
 
-        {/* Dropdown de Selección de Rutas */}
         {renderDropdownRutas && renderDropdownRutas()}
-      
-          
-        {/* 2. FILTROS Y CONTROLES (SE MUEVEN AL CENTRO / DERECHA) */}
-        <input
-          style={{ ...styles.field, marginBottom: 0, width: '180px' }}
-          placeholder="Buscar..."
-          value={busqueda}
-          onChange={e => setBusqueda(e.target.value)}
-        />
-
-        <select
-          style={{ ...styles.field, marginBottom: 0, width: '180px' }}
-          value={estadoSeleccionado}
-          onChange={e => setEstadoSeleccionado(e.target.value)}
-        >
-          <option value="">Seleccionar por estatus</option>
-          <option value="todos">Todos</option>
-          <option value="pendiente">Pendiente</option>
-          <option value="programado">Programado</option>
-          <option value="en_ruta">En ruta</option>
-          <option value="entregado">Entregado</option>
-          <option value="cancelado">Cancelado</option>
-          <option value="pagado">Pagado</option>
-        </select>
-
-        <input
-          type="date"
-          style={{ ...styles.field, marginBottom: 0, width: '160px' }}
-          value={fechaFiltro}
-          onChange={e => setFechaFiltro(e.target.value)}
-        
-      <div style={styles.topBar}>
-        <input
-          style={{ ...styles.field, marginBottom: 0 }}
-          placeholder="Buscar..."
-          value={busqueda}
-          onChange={e => setBusqueda(e.target.value)}
-        />
-
-        {/* 🔥 SELECT ESTATUS */}
-        <select
-          style={{ ...styles.field, marginBottom: 0 }}
-          value={estadoSeleccionado}
-          onChange={e => setEstadoSeleccionado(e.target.value)}
-        >
-          <option value="">Seleccionar por estatus</option>
-          <option value="todos">Todos</option>
-          <option value="pendiente">Pendiente</option>
-          <option value="programado">Programado</option>
-          <option value="en_ruta">En ruta</option>
-          <option value="entregado">Entregado</option>
-          <option value="cancelado">Cancelado</option>
-          <option value="pagado">Pagado</option>
-        </select>
-
-        <input
-        type="date"
-        style={{ ...styles.field, marginBottom: 0 }}
-        value={fechaFiltro}
-        onChange={e => setFechaFiltro(e.target.value)}
-        />
-        
+    
+    
         <div style={styles.dropdown}>
           <div
             style={styles.dropdownButton}
