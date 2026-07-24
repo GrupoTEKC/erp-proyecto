@@ -1221,25 +1221,26 @@ const programarPedido = async () => {
 }
   
 <div style={styles.topBar}>
-  {/* 🟢 AMBOS BOTONES JUNTOS EN SU CONTENEDOR FLEX */}
-  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-    <button 
-      style={{ ...styles.button, ...styles.primary }} 
-      disabled={pedidosSeleccionados.length === 0}
-      onClick={imprimirMultiples}
-    >
-      🖨 Imprimir seleccionados ({pedidosSeleccionados.length})
-    </button>
+        {/* 🟢 AMBOS BOTONES JUNTOS AL INICIO */}
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <button 
+            style={{ ...styles.button, ...styles.primary }} 
+            disabled={pedidosSeleccionados.length === 0}
+            onClick={imprimirMultiples}
+          >
+            🖨 Imprimir seleccionados ({pedidosSeleccionados.length})
+          </button>
 
-    <button 
-      style={{ ...styles.button, ...styles.primary, backgroundColor: '#2b6cb0' }} 
-      disabled={pedidosSeleccionados.length === 0}
-      onClick={imprimirPreviaMultiples}
-    >
-      📄 Impresión Previa
-    </button>
-  </div>
+          <button 
+            style={{ ...styles.button, ...styles.primary, backgroundColor: '#2b6cb0' }} 
+            disabled={pedidosSeleccionados.length === 0}
+            onClick={imprimirPreviaMultiples}
+          >
+            📄 Impresión Previa
+          </button>
+        </div>
 
+        {/* 🔵 FILTROS DE BÚSQUEDA A CONTINUACIÓN */}
         <input
           style={{ ...styles.field, marginBottom: 0, width: '180px' }}
           placeholder="Buscar..."
@@ -1262,7 +1263,7 @@ const programarPedido = async () => {
           <option value="pagado">Pagado</option>
         </select>
 
-     <input
+        <input
           type="date"
           style={{ ...styles.field, marginBottom: 0, width: '160px' }}
           value={fechaFiltro}
