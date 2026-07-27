@@ -23,6 +23,23 @@ function Produccion() {
   const [inventarioCapturado, setInventarioCapturado] = useState(false)
   const [calendario, setCalendario] = useState({})
 
+  const [fechaSalidaInicio, setFechaSalidaInicio] = useState(hoyMexico)
+  const [fechaSalidaFin, setFechaSalidaFin] = useState(hoyMexico)
+  const [salidasReporte, setSalidasReporte] = useState([])
+
+  const consultarSalidas = async () => {
+    try {
+      const res = await fetch(`${API}/pedidos/salidas?fechaInicio=${fechaSalidaInicio}&fechaFin=${fechaSalidaFin}`)
+      const data = await res.json()
+      if (!Array.isArray(data)) {
+        setSalidasReporte([])
+        return
+      }
+      setSalidasReporte(data)
+    } catch (err) {
+      console.error('Error al consultar salidas:', err)
+    }
+  }
   const [mesSeleccionado, setMesSeleccionado] = useState(
   String(new Date().getMonth() + 1).padStart(2, '0')
 )
@@ -692,6 +709,104 @@ if (bloqueado) {
    >
     ⚠️ Solo cuando aparezca el mensaje <strong>"Producción guardada correctamente en el servidor"</strong> la captura queda registrada en el sistema. Si aparece un error o se pierde la conexión, la producción no se considera guardada.
     </div>
+
+
+      {/* 🚚 CONSULTA DE SALIDAS (PEDIDOS ENTREGADOS) */}
+      <h2 style={{ ...styles.title, marginTop: 40 }}>CONSULTA DE SALIDAS</h2>
+
+      <div style={{ display: 'flex', gap: 15, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 20 }}>
+        <div>
+          <label style={styles.label}>Fecha inicial</label>
+          <input 
+            type="date" 
+            value={fechaSalidaInicio} 
+            onChange={(e) => setFechaSalidaInicio(e.target.value)} 
+            style={{ ...styles.field, marginBottom: 0 }} 
+          />
+        </div>
+
+        <div>
+          <label style={styles.label}>Fecha final</label>
+          <input 
+            type="date" 
+            value={fechaSalidaFin} 
+            onChange={(e) => setFechaSalidaFin(e.target.value)} 
+            style={{ ...styles.field, marginBottom: 0 }} 
+          />
+        </div>
+
+        <button style={styles.save} onClick={consultarSalidas}>
+          CONSULTAR
+        </button>
+      </div>
+
+      <table style={styles.table}>
+        <thead>
+          <tr>
+            <th style={styles.th}>Fecha Salida</th>
+            <th style={styles.th}>Nº Pedido</th>
+            <th style={styles.th}>Cliente</th>
+            <th style={styles.th}>Tienda</th>
+            <th style={styles.th}>Productos / Cantidad Entregada</th>
+            <th style={styles.th}>Municipio</th>
+          </tr>
+        </thead>
+        <tbody>
+          {salidasReporte.length === 0 ? (
+            <tr>
+              <td colSpan="6" style={{ ...styles.td, textAlign: 'center', color: '#666' }}>
+                No hay salidas registradas para las fechas seleccionadas.
+              </td>
+            </tr>
+          ) : (
+            salidasReporte.map((item) => {
+              const prods = typeof item.productos === 'string' ? JSON.parse(item.productos) : item.productos
+
+              return (
+                <tr key={item.id_pedido}>
+                  <td style={styles.td}>
+                    {item.fecha_salida 
+                      ? new Date(item.fecha_salida + 'T00:00:00').toLocaleDateString('es-MX', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric'
+                        })
+                      : 'N/A'
+                    }
+                  </td>
+                  <td style={{ ...styles.td, fontWeight: 'bold' }}>#{item.id_pedido}</td>
+                  <td style={{ ...styles.td, textAlign: 'left' }}>{item.cliente}</td>
+                  <td style={{ ...styles.td, textAlign: 'left' }}>{item.tienda}</td>
+                  <td style={{ ...styles.td, textAlign: 'left' }}>
+                    {prods && prods.map((p, idx) => (
+                      <div key={idx} style={{ marginBottom: 2 }}>
+                        • <strong>{p.producto}</strong>: {p.cantidad}
+                      </div>
+                    ))}
+                  </td>
+                  <td style={styles.td}>{item.municipio}</td>
+                </tr>
+              )
+            })
+          )}
+        </tbody>
+        {salidasReporte.length > 0 && (
+          <tfoot>
+            <tr style={{ fontWeight: 'bold', backgroundColor: '#f0f0f0' }}>
+              <td colSpan="4" style={{ ...styles.td, textAlign: 'right' }}>TOTAL ENTREGADO:</td>
+              <td style={{ ...styles.td, textAlign: 'left' }}>
+                {salidasReporte.reduce((acc, item) => {
+                  const prods = typeof item.productos === 'string' ? JSON.parse(item.productos) : item.productos
+                  const sub = prods ? prods.reduce((s, p) => s + (Number(p.cantidad) || 0), 0) : 0
+                  return acc + sub
+                }, 0)}{' '}
+                unidades
+              </td>
+              <td style={styles.td}></td>
+            </tr>
+          </tfoot>
+        )}
+      </table>
 
     <h2 style={styles.title}>PRODUCCIÓN DIARIA</h2>
 
