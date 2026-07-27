@@ -711,8 +711,7 @@ if (bloqueado) {
     ⚠️ Solo cuando aparezca el mensaje <strong>"Producción guardada correctamente en el servidor"</strong> la captura queda registrada en el sistema. Si aparece un error o se pierde la conexión, la producción no se considera guardada.
     </div>
 
-
-      {/* 🚚 CONSULTA DE SALIDAS (PEDIDOS ENTREGADOS) */}
+{/* 🚚 CONSULTA DE SALIDAS (PEDIDOS ENTREGADOS) */}
       <h2 style={{ ...styles.title, marginTop: 40 }}>CONSULTA DE SALIDAS</h2>
 
       <div style={{ display: 'flex', gap: 15, flexWrap: 'wrap', alignItems: 'end', marginBottom: 20 }}>
@@ -721,7 +720,7 @@ if (bloqueado) {
           <br />
           <input 
             type="date" 
-            value={fechaSalidaInicio} 
+            value={fechaSalidaInicio || ''} 
             onChange={(e) => setFechaSalidaInicio(e.target.value)} 
             style={{ padding: 8, border: '1px solid #ccc', borderRadius: 6, fontWeight: 'bold' }} 
           />
@@ -732,7 +731,7 @@ if (bloqueado) {
           <br />
           <input 
             type="date" 
-            value={fechaSalidaFin} 
+            value={fechaSalidaFin || ''} 
             onChange={(e) => setFechaSalidaFin(e.target.value)} 
             style={{ padding: 8, border: '1px solid #ccc', borderRadius: 6, fontWeight: 'bold' }} 
           />
@@ -755,7 +754,7 @@ if (bloqueado) {
           </tr>
         </thead>
         <tbody>
-          {salidasReporte.length === 0 ? (
+          {(!salidasReporte || !Array.isArray(salidasReporte) || salidasReporte.length === 0) ? (
             <tr>
               <td colSpan="6" style={{ ...styles.td, textAlign: 'center', color: '#666', padding: '15px' }}>
                 No hay salidas registradas para las fechas seleccionadas. Presiona "CONSULTAR SALIDAS".
@@ -763,10 +762,15 @@ if (bloqueado) {
             </tr>
           ) : (
             salidasReporte.map((item) => {
-              const prods = typeof item.productos === 'string' ? JSON.parse(item.productos) : item.productos
+              let prods = []
+              try {
+                prods = typeof item.productos === 'string' ? JSON.parse(item.productos) : (item.productos || [])
+              } catch (e) {
+                prods = []
+              }
 
               return (
-                <tr key={item.id_pedido}>
+                <tr key={item.id_pedido || Math.random()}>
                   <td style={styles.td}>
                     {item.fecha_salida 
                       ? new Date(item.fecha_salida + 'T00:00:00').toLocaleDateString('es-MX', {
@@ -778,29 +782,38 @@ if (bloqueado) {
                     }
                   </td>
                   <td style={{ ...styles.td, fontWeight: 'bold' }}>#{item.id_pedido}</td>
-                  <td style={{ ...styles.td, textAlign: 'left' }}>{item.cliente}</td>
-                  <td style={{ ...styles.td, textAlign: 'left' }}>{item.tienda}</td>
+                  <td style={{ ...styles.td, textAlign: 'left' }}>{item.cliente || 'N/A'}</td>
+                  <td style={{ ...styles.td, textAlign: 'left' }}>{item.tienda || 'N/A'}</td>
                   <td style={{ ...styles.td, textAlign: 'left' }}>
-                    {prods && prods.map((p, idx) => (
-                      <div key={idx} style={{ marginBottom: 2 }}>
-                        • <strong>{p.producto}</strong>: {p.cantidad}
-                      </div>
-                    ))}
+                    {Array.isArray(prods) && prods.length > 0 ? (
+                      prods.map((p, idx) => (
+                        <div key={idx} style={{ marginBottom: 2 }}>
+                          • <strong>{p.producto || p.nombre}</strong>: {p.cantidad}
+                        </div>
+                      ))
+                    ) : (
+                      <span>Sin detalle</span>
+                    )}
                   </td>
-                  <td style={styles.td}>{item.municipio}</td>
+                  <td style={styles.td}>{item.municipio || 'N/A'}</td>
                 </tr>
               )
             })
           )}
         </tbody>
-        {salidasReporte.length > 0 && (
+        {Array.isArray(salidasReporte) && salidasReporte.length > 0 && (
           <tfoot>
             <tr style={{ fontWeight: 'bold', backgroundColor: '#f0f0f0' }}>
               <td colSpan="4" style={{ ...styles.td, textAlign: 'right' }}>TOTAL ENTREGADO:</td>
               <td style={{ ...styles.td, textAlign: 'left' }}>
                 {salidasReporte.reduce((acc, item) => {
-                  const prods = typeof item.productos === 'string' ? JSON.parse(item.productos) : item.productos
-                  const sub = prods ? prods.reduce((s, p) => s + (Number(p.cantidad) || 0), 0) : 0
+                  let prods = []
+                  try {
+                    prods = typeof item.productos === 'string' ? JSON.parse(item.productos) : (item.productos || [])
+                  } catch (e) {
+                    prods = []
+                  }
+                  const sub = Array.isArray(prods) ? prods.reduce((s, p) => s + (Number(p.cantidad) || 0), 0) : 0
                   return acc + sub
                 }, 0)}{' '}
                 unidades
