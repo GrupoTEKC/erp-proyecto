@@ -94,6 +94,7 @@ function Produccion() {
         await cargarDatos()
         await cargarStock()
         await consultarReporte()
+        await consultarSalidas()
         await validarInventarioMes()
       }
     } catch {
@@ -693,7 +694,7 @@ if (bloqueado) {
 </tfoot>
 </table>
       
-<div
+      <div
   style={{
     marginTop: 20,
     background: '#fff3cd',
@@ -714,29 +715,31 @@ if (bloqueado) {
       {/* 🚚 CONSULTA DE SALIDAS (PEDIDOS ENTREGADOS) */}
       <h2 style={{ ...styles.title, marginTop: 40 }}>CONSULTA DE SALIDAS</h2>
 
-      <div style={{ display: 'flex', gap: 15, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 20 }}>
+      <div style={{ display: 'flex', gap: 15, flexWrap: 'wrap', alignItems: 'end', marginBottom: 20 }}>
         <div>
-          <label style={styles.label}>Fecha inicial</label>
+          <label style={styles.filtroLabel}>Fecha inicial (Salida)</label>
+          <br />
           <input 
             type="date" 
             value={fechaSalidaInicio} 
             onChange={(e) => setFechaSalidaInicio(e.target.value)} 
-            style={{ ...styles.field, marginBottom: 0 }} 
+            style={{ padding: 8, border: '1px solid #ccc', borderRadius: 6, fontWeight: 'bold' }} 
           />
         </div>
 
         <div>
-          <label style={styles.label}>Fecha final</label>
+          <label style={styles.filtroLabel}>Fecha final (Salida)</label>
+          <br />
           <input 
             type="date" 
             value={fechaSalidaFin} 
             onChange={(e) => setFechaSalidaFin(e.target.value)} 
-            style={{ ...styles.field, marginBottom: 0 }} 
+            style={{ padding: 8, border: '1px solid #ccc', borderRadius: 6, fontWeight: 'bold' }} 
           />
         </div>
 
         <button style={styles.save} onClick={consultarSalidas}>
-          CONSULTAR
+          CONSULTAR SALIDAS
         </button>
       </div>
 
@@ -754,8 +757,8 @@ if (bloqueado) {
         <tbody>
           {salidasReporte.length === 0 ? (
             <tr>
-              <td colSpan="6" style={{ ...styles.td, textAlign: 'center', color: '#666' }}>
-                No hay salidas registradas para las fechas seleccionadas.
+              <td colSpan="6" style={{ ...styles.td, textAlign: 'center', color: '#666', padding: '15px' }}>
+                No hay salidas registradas para las fechas seleccionadas. Presiona "CONSULTAR SALIDAS".
               </td>
             </tr>
           ) : (
@@ -807,7 +810,7 @@ if (bloqueado) {
           </tfoot>
         )}
       </table>
-
+      
     <h2 style={styles.title}>PRODUCCIÓN DIARIA</h2>
 
       <div style={styles.top}>
