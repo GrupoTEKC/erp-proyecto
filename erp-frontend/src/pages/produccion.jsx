@@ -710,8 +710,7 @@ if (bloqueado) {
    >
     ⚠️ Solo cuando aparezca el mensaje <strong>"Producción guardada correctamente en el servidor"</strong> la captura queda registrada en el sistema. Si aparece un error o se pierde la conexión, la producción no se considera guardada.
     </div>
-
-
+{/* 🚚 CONSULTA DE SALIDAS (PEDIDOS ENTREGADOS) */}
       <h2 style={{ ...styles.title, marginTop: 40 }}>CONSULTA DE SALIDAS</h2>
 
       <div style={{ display: 'flex', gap: 15, flexWrap: 'wrap', alignItems: 'end', marginBottom: 20 }}>
@@ -761,16 +760,20 @@ if (bloqueado) {
               </td>
             </tr>
           ) : (
-            salidasReporte.map((item) => {
+            salidasReporte.map((item, index) => {
               let prods = []
               try {
-                prods = typeof item.productos === 'string' ? JSON.parse(item.productos) : (item.productos || [])
+                if (typeof item.productos === 'string') {
+                  prods = JSON.parse(item.productos)
+                } else if (Array.isArray(item.productos)) {
+                  prods = item.productos
+                }
               } catch (e) {
                 prods = []
               }
 
               return (
-                <tr key={item.id_pedido || Math.random()}>
+                <tr key={item.id_pedido || index}>
                   <td style={styles.td}>
                     {item.fecha_salida 
                       ? new Date(item.fecha_salida + 'T00:00:00').toLocaleDateString('es-MX', {
@@ -809,7 +812,11 @@ if (bloqueado) {
                 {salidasReporte.reduce((acc, item) => {
                   let prods = []
                   try {
-                    prods = typeof item.productos === 'string' ? JSON.parse(item.productos) : (item.productos || [])
+                    if (typeof item.productos === 'string') {
+                      prods = JSON.parse(item.productos)
+                    } else if (Array.isArray(item.productos)) {
+                      prods = item.productos
+                    }
                   } catch (e) {
                     prods = []
                   }
