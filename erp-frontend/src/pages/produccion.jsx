@@ -711,7 +711,7 @@ if (bloqueado) {
     ⚠️ Solo cuando aparezca el mensaje <strong>"Producción guardada correctamente en el servidor"</strong> la captura queda registrada en el sistema. Si aparece un error o se pierde la conexión, la producción no se considera guardada.
     </div>
 
-{/* 🚚 CONSULTA DE SALIDAS (PEDIDOS ENTREGADOS) */}
+
       <h2 style={{ ...styles.title, marginTop: 40 }}>CONSULTA DE SALIDAS</h2>
 
       <div style={{ display: 'flex', gap: 15, flexWrap: 'wrap', alignItems: 'end', marginBottom: 20 }}>
@@ -824,7 +824,7 @@ if (bloqueado) {
         )}
       </table>
       
-    <h2 style={styles.title}>PRODUCCIÓN DIARIA</h2>
+      <h2 style={styles.title}>PRODUCCIÓN DIARIA</h2>
 
       <div style={styles.top}>
         <label>Fecha:</label>
