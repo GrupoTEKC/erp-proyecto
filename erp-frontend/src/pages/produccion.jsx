@@ -2,14 +2,23 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import logo from '../assets/TRANSPARENTE.png'
 
-
 const API = 'https://erp-proyecto-production.up.railway.app'
 
 function Produccion() {
   const navigate = useNavigate()
-  const hoy = new Date().toLocaleDateString('en-CA', {
-  timeZone: 'America/Mexico_City'
-})
+
+  // 1. Definimos la constante de fecha Mexico al inicio
+  const hoyMexico = new Date().toLocaleDateString('en-CA', {
+    timeZone: 'America/Mexico_City'
+  })
+  const hoy = hoyMexico
+
+  // 2. Estados para el Consultor de Salidas
+  const [fechaSalidaInicio, setFechaSalidaInicio] = useState(hoyMexico)
+  const [fechaSalidaFin, setFechaSalidaFin] = useState(hoyMexico)
+  const [salidasReporte, setSalidasReporte] = useState([])
+
+  // 3. Estados principales de Producción
   const [productos, setProductos] = useState([])
   const [seleccionados, setSeleccionados] = useState([])
   const [busqueda, setBusqueda] = useState('')
@@ -23,10 +32,7 @@ function Produccion() {
   const [inventarioCapturado, setInventarioCapturado] = useState(false)
   const [calendario, setCalendario] = useState({})
 
-  const [fechaSalidaInicio, setFechaSalidaInicio] = useState(hoyMexico)
-  const [fechaSalidaFin, setFechaSalidaFin] = useState(hoyMexico)
-  const [salidasReporte, setSalidasReporte] = useState([])
-
+  // 4. Función de consulta de Salidas
   const consultarSalidas = async () => {
     try {
       const res = await fetch(`${API}/pedidos/salidas?fechaInicio=${fechaSalidaInicio}&fechaFin=${fechaSalidaFin}`)
@@ -40,69 +46,63 @@ function Produccion() {
       console.error('Error al consultar salidas:', err)
     }
   }
-  const [mesSeleccionado, setMesSeleccionado] = useState(
-  String(new Date().getMonth() + 1).padStart(2, '0')
-)
 
+  // 5. Estados del Reporte de Producción
+  const [mesSeleccionado, setMesSeleccionado] = useState(
+    String(new Date().getMonth() + 1).padStart(2, '0')
+  )
   const [reporte, setReporte] = useState([])
   const [totalReporte, setTotalReporte] = useState(0)
 
- const hoyMexico = new Date().toLocaleDateString('en-CA', {
-  timeZone: 'America/Mexico_City'
-})
-
-const [fechaInicio, setFechaInicio] = useState(
-  hoyMexico.slice(0, 7) + '-01'
-)
-
-const [fechaFin, setFechaFin] = useState(hoyMexico)
-  
-
+  const [fechaInicio, setFechaInicio] = useState(
+    hoyMexico.slice(0, 7) + '-01'
+  )
+  const [fechaFin, setFechaFin] = useState(hoyMexico)
   const [productoReporte, setProductoReporte] = useState([])
 
+  // 6. Configuración de Calendario e Inicializaciones
   const anioActual = new Date().getFullYear()
-  
+
   const diasMes = (calendario[mesSeleccionado] || [])
-  .slice()
-  .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
+    .slice()
+    .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
 
   const primerDiaReal = new Date(anioActual, mesSeleccionado - 1, 1).getDay()
-
   const offset = (primerDiaReal + 6) % 7
-  
+
   useEffect(() => {
     init()
   }, [])
 
   useEffect(() => {
-  if (!bloqueado) {
-    cargarDatos()
-  }
-}, [fecha])
-  
+    if (!bloqueado) {
+      cargarDatos()
+    }
+  }, [fecha])
+
   const init = async () => {
-  try {
-    const resVal = await fetch(`${API}/produccion/validar`)
-    const val = await resVal.json()
+    try {
+      const resVal = await fetch(`${API}/produccion/validar`)
+      const val = await resVal.json()
 
-    // 🔥 PRIMERO define bloqueo
-    setBloqueado(val.faltaAyer)
+      // 🔥 PRIMERO define bloqueo
+      setBloqueado(val.faltaAyer)
 
-    await cargarCalendario()
-    // 🔥 SOLO si NO está bloqueado carga datos
-if (!val.faltaAyer) {
-  await cargarDatos()
-  await cargarStock()
-  await consultarReporte()
-  await validarInventarioMes()
-}
-
-  } catch {
-    alert('Error inicial')
-  } finally {
-    setLoading(false)
+      await cargarCalendario()
+      // 🔥 SOLO si NO está bloqueado carga datos
+      if (!val.faltaAyer) {
+        await cargarDatos()
+        await cargarStock()
+        await consultarReporte()
+        await validarInventarioMes()
+      }
+    } catch {
+      alert('Error inicial')
+    } finally {
+      setLoading(false)
+    }
   }
-}
+  
   const cargarDatos = async () => {
     try {
       const res = await fetch(`${API}/produccion/${fecha}`)
