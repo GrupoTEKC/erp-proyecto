@@ -23,6 +23,31 @@ function Produccion() {
   const [inventarioCapturado, setInventarioCapturado] = useState(false)
   const [calendario, setCalendario] = useState({})
 
+ 
+  const [fechaSalidaInicio, setFechaSalidaInicio] = useState(hoy)
+  const [fechaSalidaFin, setFechaSalidaFin] = useState(hoy)
+  const [salidasReporte, setSalidasReporte] = useState([])
+  const [cargandoSalidas, setCargandoSalidas] = useState(false)
+
+  const consultarSalidas = async () => {
+    try {
+      setCargandoSalidas(true)
+      const res = await fetch(`${API}/pedidos/salidas?fechaInicio=${fechaSalidaInicio}&fechaFin=${fechaSalidaFin}`)
+      const data = await res.json()
+      
+      if (Array.isArray(data)) {
+        setSalidasReporte(data)
+      } else {
+        setSalidasReporte([])
+      }
+    } catch (err) {
+      console.error('Error al consultar salidas:', err)
+      setSalidasReporte([])
+    } finally {
+      setCargandoSalidas(false)
+    }
+  }
+  
   const [mesSeleccionado, setMesSeleccionado] = useState(
   String(new Date().getMonth() + 1).padStart(2, '0')
 )
@@ -902,6 +927,113 @@ if (bloqueado) {
     })}
   </tbody>
 </table>
+
+      {/* 🚚 CONSULTOR DE SALIDAS (PEDIDOS ENTREGADOS) */}
+      <div style={{ marginTop: 40, marginBottom: 40, padding: 20, backgroundColor: '#fff', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+        <h2 style={{ color: '#8B1E1E', fontSize: 20, marginBottom: 15, display: 'flex', alignItems: 'center', gap: 10 }}>
+          🚚 CONSULTA DE SALIDAS (ENTREGAS)
+        </h2>
+
+        {/* Controles de Filtro */}
+        <div style={{ display: 'flex', gap: 15, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 20 }}>
+          <div>
+            <label style={{ fontWeight: 'bold', fontSize: 14, display: 'block', marginBottom: 5 }}>Fecha Inicial:</label>
+            <input 
+              type="date" 
+              value={fechaSalidaInicio} 
+              onChange={(e) => setFechaSalidaInicio(e.target.value)} 
+              style={{ padding: 8, borderRadius: 6, border: '1px solid #ccc', fontWeight: 'bold' }} 
+            />
+          </div>
+
+          <div>
+            <label style={{ fontWeight: 'bold', fontSize: 14, display: 'block', marginBottom: 5 }}>Fecha Final:</label>
+            <input 
+              type="date" 
+              value={fechaSalidaFin} 
+              onChange={(e) => setFechaSalidaFin(e.target.value)} 
+              style={{ padding: 8, borderRadius: 6, border: '1px solid #ccc', fontWeight: 'bold' }} 
+            />
+          </div>
+
+          <button 
+            onClick={consultarSalidas}
+            disabled={cargandoSalidas}
+            style={{ 
+              padding: '9px 18px', 
+              background: cargandoSalidas ? '#ccc' : '#8B1E1E', 
+              color: '#fff', 
+              border: 'none', 
+              borderRadius: 6, 
+              cursor: cargandoSalidas ? 'not-allowed' : 'pointer', 
+              fontWeight: 'bold' 
+            }}
+          >
+            {cargandoSalidas ? 'CARGANDO...' : 'CONSULTAR SALIDAS'}
+          </button>
+        </div>
+
+        {/* Tabla de Resultados */}
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 10 }}>
+            <thead>
+              <tr style={{ background: '#8B1E1E', color: '#fff' }}>
+                <th style={{ padding: 10, border: '1px solid #ddd' }}>Fecha Salida</th>
+                <th style={{ padding: 10, border: '1px solid #ddd' }}>Nº Pedido</th>
+                <th style={{ padding: 10, border: '1px solid #ddd' }}>Cliente</th>
+                <th style={{ padding: 10, border: '1px solid #ddd' }}>Tienda</th>
+                <th style={{ padding: 10, border: '1px solid #ddd' }}>Productos / Cantidad Entregada</th>
+                <th style={{ padding: 10, border: '1px solid #ddd' }}>Municipio</th>
+              </tr>
+            </thead>
+            <tbody>
+              {salidasReporte.length === 0 ? (
+                <tr>
+                  <td colSpan="6" style={{ padding: 20, textAlign: 'center', color: '#666', border: '1px solid #ddd' }}>
+                    No hay entregas en las fechas seleccionadas o aún no has realizado la consulta.
+                  </td>
+                </tr>
+              ) : (
+                salidasReporte.map((item, idx) => {
+                  let productosLista = [];
+                  try {
+                    productosLista = typeof item.productos === 'string' ? JSON.parse(item.productos) : (item.productos || []);
+                  } catch (e) {
+                    productosLista = [];
+                  }
+
+                  const fechaLimpia = item.fecha_salida ? item.fecha_salida.split('T')[0] : 'N/A';
+
+                  return (
+                    <tr key={item.id_pedido || idx} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#fafafa' }}>
+                      <td style={{ padding: 10, border: '1px solid #ddd', textAlign: 'center', fontWeight: 'bold' }}>
+                        {fechaLimpia}
+                      </td>
+                      <td style={{ padding: 10, border: '1px solid #ddd', textAlign: 'center', fontWeight: 'bold', color: '#071849' }}>
+                        #{item.id_pedido}
+                      </td>
+                      <td style={{ padding: 10, border: '1px solid #ddd' }}>{item.cliente || 'N/A'}</td>
+                      <td style={{ padding: 10, border: '1px solid #ddd' }}>{item.tienda || 'N/A'}</td>
+                      <td style={{ padding: 10, border: '1px solid #ddd' }}>
+                        {Array.isArray(productosLista) && productosLista.length > 0 ? (
+                          productosLista.map((p, pIdx) => (
+                            <div key={pIdx} style={{ marginBottom: 3 }}>
+                              • <strong>{p.producto || p.nombre}</strong>: <span style={{ color: '#8B1E1E', fontWeight: 'bold' }}>{p.cantidad}</span>
+                            </div>
+                          ))
+                        ) : (
+                          <span>Sin detalles</span>
+                        )}
+                      </td>
+                      <td style={{ padding: 10, border: '1px solid #ddd', textAlign: 'center' }}>{item.municipio || 'N/A'}</td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div> 
 </div>
   )
 }
