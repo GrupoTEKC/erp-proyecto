@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import logo from '../assets/TRANSPARENTE.png'
 
 
+
 const API = 'https://erp-proyecto-production.up.railway.app'
 
 function Produccion() {
