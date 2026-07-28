@@ -15,6 +15,7 @@ function Clientes() {
   /* ================= SINCRONIZACIÓN DE SCROLL ================= */
   const topScrollRef = useRef(null)
   const bottomScrollRef = useRef(null)
+  const [anchoTabla, setAnchoTabla] = useState(0)
 
   const handleTopScroll = () => {
     if (bottomScrollRef.current && topScrollRef.current) {
@@ -58,6 +59,13 @@ function Clientes() {
       .toLowerCase()
       .includes(term)
   )
+
+  /* 🟢 MEDIMOS EL ANCHO DE LA TABLA (AQUÍ YA EXISTE clientesFiltrados) */
+  useEffect(() => {
+    if (bottomScrollRef.current) {
+      setAnchoTabla(bottomScrollRef.current.scrollWidth)
+    }
+  }, [clientesFiltrados, loading])
 
   /* ================= ELIMINAR ================= */
   const eliminarCliente = async (id) => {
@@ -119,9 +127,9 @@ function Clientes() {
       {loading && <p>Cargando información...</p>}
       {error && <p style={{ color: 'red' }}>⚠️ Error: {error}</p>}
 
-  {!loading && !error && (
+      {!loading && !error && (
         <div style={tablaWrapper}>
-          {/* 🔴 BARRA DE DESPLAZAMIENTO SUPERIOR */}
+
           <div
             ref={topScrollRef}
             onScroll={handleTopScroll}
@@ -132,11 +140,11 @@ function Clientes() {
               width: '100%'
             }}
           >
-            {/* Simulamos un ancho amplio de 2200px para recorrer todas las columnas */}
-            <div style={{ width: '2200px', height: '1px' }} />
+            {/* Usa dinámicamente los píxeles exactos de la tabla */}
+            <div style={{ width: `${anchoTabla}px`, height: '1px' }} />
           </div>
 
-          {/* 🟢 TABLA Y BARRA DE DESPLAZAMIENTO INFERIOR */}
+          {/* 🟢 ABAJO SIGUE LA TABLA DE SIEMPRE */}
           <div
             ref={bottomScrollRef}
             onScroll={handleBottomScroll}
@@ -285,10 +293,11 @@ const buscador = {
 const tablaWrapper = {
   background: '#fff',
   borderRadius: 8,
-  overflow: 'hidden', // 👈 Permite que los divs hijos manejen libremente sus scrolls completos
+  overflow: 'hidden',
   boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
-  padding: '10px' // 👈 Le da un pequeño margen estético
+  padding: '10px'
 }
+
 const tabla = {
   width: '100%',
   borderCollapse: 'collapse',
