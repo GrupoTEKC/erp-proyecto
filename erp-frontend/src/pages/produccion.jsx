@@ -7,9 +7,7 @@ const API = 'https://erp-proyecto-production.up.railway.app'
 
 function Produccion() {
   const navigate = useNavigate()
-  const hoy = new Date().toLocaleDateString('en-CA', {
-  timeZone: 'America/Mexico_City'
-})
+  const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
   const [productos, setProductos] = useState([])
   const [seleccionados, setSeleccionados] = useState([])
   const [busqueda, setBusqueda] = useState('')
@@ -23,7 +21,7 @@ function Produccion() {
   const [inventarioCapturado, setInventarioCapturado] = useState(false)
   const [calendario, setCalendario] = useState({})
 
- 
+  // 🚚 CONSULTOR DE SALIDAS
   const [fechaSalidaInicio, setFechaSalidaInicio] = useState(hoy)
   const [fechaSalidaFin, setFechaSalidaFin] = useState(hoy)
   const [salidasReporte, setSalidasReporte] = useState([])
@@ -34,7 +32,6 @@ function Produccion() {
       setCargandoSalidas(true)
       const res = await fetch(`${API}/pedidos/salidas?fechaInicio=${fechaSalidaInicio}&fechaFin=${fechaSalidaFin}`)
       const data = await res.json()
-      
       if (Array.isArray(data)) {
         setSalidasReporte(data)
       } else {
@@ -47,34 +44,29 @@ function Produccion() {
       setCargandoSalidas(false)
     }
   }
-  
-  const [mesSeleccionado, setMesSeleccionado] = useState(
-  String(new Date().getMonth() + 1).padStart(2, '0')
-)
 
+  // REPORTE DE PRODUCCIÓN
+  const [mesSeleccionado, setMesSeleccionado] = useState(
+    String(new Date().getMonth() + 1).padStart(2, '0')
+  )
   const [reporte, setReporte] = useState([])
   const [totalReporte, setTotalReporte] = useState(0)
 
- const hoyMexico = new Date().toLocaleDateString('en-CA', {
-  timeZone: 'America/Mexico_City'
-})
+  const hoyMexico = hoy
 
-const [fechaInicio, setFechaInicio] = useState(
-  hoyMexico.slice(0, 7) + '-01'
-)
-
-const [fechaFin, setFechaFin] = useState(hoyMexico)
-  
-
+  const [fechaInicio, setFechaInicio] = useState(
+    hoyMexico.slice(0, 7) + '-01'
+  )
+  const [fechaFin, setFechaFin] = useState(hoyMexico)
   const [productoReporte, setProductoReporte] = useState([])
 
   const anioActual = new Date().getFullYear()
-  
-  const diasMes = (calendario[mesSeleccionado] || [])
-  .slice()
-  .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
 
-  const primerDiaReal = new Date(anioActual, mesSeleccionado - 1, 1).getDay()
+  const diasMes = (calendario[mesSeleccionado] || [])
+    .slice()
+    .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
+
+  const primerDiaReal = new Date(anioActual, Number(mesSeleccionado) - 1, 1).getDay()
 
   const offset = (primerDiaReal + 6) % 7
   
