@@ -119,21 +119,21 @@ function Clientes() {
       {loading && <p>Cargando información...</p>}
       {error && <p style={{ color: 'red' }}>⚠️ Error: {error}</p>}
 
-   {!loading && !error && (
+  {!loading && !error && (
         <div style={tablaWrapper}>
-          {/* 🔴 BARRA DE DESPLAZAMIENTO SUPERIOR CORREGIDA */}
+          {/* 🔴 BARRA DE DESPLAZAMIENTO SUPERIOR */}
           <div
             ref={topScrollRef}
             onScroll={handleTopScroll}
             style={{
               overflowX: 'auto',
               overflowY: 'hidden',
-              marginBottom: '8px',
+              marginBottom: '10px',
               width: '100%'
             }}
           >
-            {/* Ancho expandido a 1800px para cubrir todas las columnas hasta Acciones */}
-            <div style={{ width: '1800px', height: '1px' }} />
+            {/* Simulamos un ancho amplio de 2200px para recorrer todas las columnas */}
+            <div style={{ width: '2200px', height: '1px' }} />
           </div>
 
           {/* 🟢 TABLA Y BARRA DE DESPLAZAMIENTO INFERIOR */}
@@ -142,7 +142,7 @@ function Clientes() {
             onScroll={handleBottomScroll}
             style={{ overflowX: 'auto', width: '100%' }}
           >
-            <table style={{ ...tabla, minWidth: '1800px' }}>
+            <table style={{ ...tabla, minWidth: '2200px' }}>
               <thead style={thead}>
                 <tr>
                   <th style={th}>Nombre Completo</th>
@@ -285,10 +285,10 @@ const buscador = {
 const tablaWrapper = {
   background: '#fff',
   borderRadius: 8,
-  overflowX: 'auto',
-  boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
+  overflow: 'hidden', // 👈 Permite que los divs hijos manejen libremente sus scrolls completos
+  boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+  padding: '10px' // 👈 Le da un pequeño margen estético
 }
-
 const tabla = {
   width: '100%',
   borderCollapse: 'collapse',
