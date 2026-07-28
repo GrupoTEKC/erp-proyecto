@@ -7,40 +7,100 @@ import logo3 from '../assets/pegatek-logo.png'
 
 const API = 'https://erp-proyecto-production.up.railway.app'
 
+const vino = '#8B1E1E'
+
 const styles = {
-    page: { backgroundColor: '#ffffff', minHeight: '100vh', padding: '20px', fontFamily: 'Arial, sans-serif' },
-    header: { marginBottom: '20px' },
-    backButton: { display: 'inline-flex', alignItems: 'center', padding: '10px 14px', fontSize: '14px', backgroundColor: '#fff', color: '#8B1E1E', border: '1px solid #8B1E1E', borderRadius: '6px', cursor: 'pointer' },
-    title: { marginTop: '20px', marginBottom: '15px', color: '#071849', fontWeight: 'bold' },
-    field: { width: '260px', padding: '8px 10px', fontSize: '14px', borderRadius: '6px', border: '1px solid #8B1E1E', boxSizing: 'border-box', marginBottom: 15 },
-    columnas: { display: 'flex', gap: '15px', overflowX: 'auto' },
-    columna: { minWidth: '320px', background: '#f4f6f8', borderRadius: '10px', padding: '10px' },
-    tarjeta: { border: '1px solid #ddd', borderRadius: '8px', padding: '10px', marginBottom: '10px', backgroundColor: '#fff' },
-    button: { padding: '6px 10px', margin: '2px', borderRadius: '6px', border: 'none', cursor: 'pointer' },
-    primary: { backgroundColor: '#8B1E1E', color: '#fff' },
-    secondary: { backgroundColor: '#fff', border: '1px solid #8B1E1E', color: '#8B1E1E' },
-    estado: (estado) => ({
+  page: {
+    padding: 20,
+    width: '85%',
+    margin: '0 auto',
+    textAlign: 'left',
+    fontFamily: 'Arial, sans-serif'
+  },
+  header: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 30
+  },
+  mainTitle: {
+    color: vino,
+    fontSize: 48,
+    fontWeight: '900',
+    letterSpacing: 2,
+    margin: 0
+  },
+  logo: {
+    height: 170
+  },
+  cancel: {
+    background: '#fff',
+    color: vino,
+    border: `1px solid ${vino}`,
+    padding: 10,
+    borderRadius: 6,
+    cursor: 'pointer',
+    fontWeight: 'bold'
+  },
+  topBar: { 
+    display: 'flex', 
+    gap: '10px', 
+    alignItems: 'center', 
+    flexWrap: 'wrap',
+    marginBottom: '20px',
+    width: '100%' 
+  },
+  field: { 
+    width: '260px', 
+    padding: '8px 10px', 
+    fontSize: '14px', 
+    borderRadius: '6px', 
+    border: '1px solid #8B1E1E', 
+    boxSizing: 'border-box'
+  },
+  columnas: { 
+    display: 'flex', 
+    gap: '15px', 
+    overflowX: 'auto',
+    width: '100%',
+    paddingBottom: '20px'
+  },
+  columna: { 
+    minWidth: '320px', 
+    background: '#f4f6f8', 
+    borderRadius: '10px', 
+    padding: '10px' 
+  },
+  tarjeta: { 
+    border: '1px solid #ddd', 
+    borderRadius: '8px', 
+    padding: '10px', 
+    marginBottom: '10px', 
+    backgroundColor: '#fff' 
+  },
+  button: { 
+    padding: '6px 10px', 
+    margin: '2px', 
+    borderRadius: '6px', 
+    border: 'none', 
+    cursor: 'pointer' 
+  },
+  primary: { backgroundColor: vino, color: '#fff' },
+  secondary: { backgroundColor: '#fff', border: `1px solid ${vino}`, color: vino },
+  estado: (estado) => ({
     color: '#fff',
     padding: '4px 8px',
     borderRadius: '6px',
     fontSize: '12px',
     backgroundColor:
-     estado === 'pendiente' ? '#c0392b' :
-     estado === 'programado' ? '#f39c12' : // 🔥 AÑADIR
-     estado === 'en_ruta' ? '#27ae60' :
-     estado === 'entregado' ? '#2c3e50' : // 🔥 AÑADIR
-     estado === 'pagado' ? '#8e44ad' : // 🔥 AÑADIR
-     estado === 'cancelado' ? '#7f8c8d' :
-     '#34495e'
+      estado === 'pendiente' ? '#c0392b' :
+      estado === 'programado' ? '#f39c12' :
+      estado === 'en_ruta' ? '#27ae60' :
+      estado === 'entregado' ? '#2c3e50' :
+      estado === 'pagado' ? '#8e44ad' :
+      estado === 'cancelado' ? '#7f8c8d' :
+      '#34495e'
   }),
-topBar: { 
-  display: 'flex', 
-  gap: '10px', 
-  alignItems: 'center', 
-  justifyContent: 'space-between', // Push del nuevo botón hacia la derecha
-  width: '100%' 
-},
-  
   dropdown: { position: 'relative', width: '260px' },
   dropdownButton: {
     width: '100%',
@@ -1218,8 +1278,9 @@ const programarPedido = async () => {
  cargarPedidos()
   }
 
-  return (
-    <div>
+return (
+    <div style={styles.page}>
+   
       <div style={styles.header}>
         <button
           style={styles.cancel}
@@ -1229,14 +1290,14 @@ const programarPedido = async () => {
         </button>
 
         <h1 style={styles.mainTitle}>
-          CONSULTAR PEDIDOS
+          MÓDULO DE PEDIDOS
         </h1>
 
         <img src={logo} alt="logo" style={styles.logo} />
       </div>
 
       {/* 🟢 BARRA SUPERIOR DE FILTROS */}
-      <div style={styles.topBar}>
+      <div style={styles.topBar}>>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <button 
             style={{ ...styles.button, ...styles.primary }} 
