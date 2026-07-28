@@ -14,6 +14,7 @@ import ControlEnviosDetalle from './pages/ControlEnviosDetalle'
 import EmbarquesLogin from './pages/EmbarquesLogin'
 import Produccion from './pages/produccion'
 import ProduccionLogin from './pages/produccionLogin'
+import ClientesLogin from './pages/ClientesLogin'
 
 // 🔥 NUEVO COMPONENTE
 import ClientePrecios from './pages/ClientePrecios'
@@ -33,6 +34,7 @@ function App() {
         <Route path="/login-pedidos" element={<PedidosLogin />} />
 
         {/* 👥 CLIENTES */}
+        <Route path="/clientes-login" element={<ClientesLogin />} />
         <Route path="/clientes" element={<Clientes />} />
         <Route path="/clientes/nuevo" element={<NuevoCliente />} />
         <Route path="/clientes/editar/:id_cliente" element={<EditarCliente />} />
