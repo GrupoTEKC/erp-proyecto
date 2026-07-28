@@ -1281,7 +1281,7 @@ const programarPedido = async () => {
           Seleccionar rutas ▼
         </div>
 
-          {mostrarDropdown && (
+      {mostrarDropdown && (
             <div style={styles.dropdownContent}>
               {rutas.map(r => (
                 <label key={r.id_ruta} style={{ display: 'block' }}>
@@ -1302,8 +1302,6 @@ const programarPedido = async () => {
             </div>
           )}
         </div>
-
-      
 
       <div style={styles.columnas}>
 
