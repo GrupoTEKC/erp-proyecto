@@ -1215,11 +1215,13 @@ const programarPedido = async () => {
 
   setModalModificar(false)
 
-  cargarPedidos()
-}
+ cargarPedidos()
+  }
+
+  return (
+    <div style={styles.topBar}>
   
- <div style={styles.topBar}>
-        {/* 🟢 1. AMBOS BOTONES JUNTOS A LA IZQUIERDA */}
+        {/* 🟢 1. BOTONES DE IMPRESIÓN */}
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <button 
             style={{ ...styles.button, ...styles.primary }} 
@@ -1238,7 +1240,7 @@ const programarPedido = async () => {
           </button>
         </div>
 
-        {/* 🟢 2. FILTROS Y CONTROLES A LA DERECHA */}
+        {/* 🟢 2. FILTROS Y BÚSQUEDA */}
         <input
           style={{ ...styles.field, marginBottom: 0, width: '180px' }}
           placeholder="Buscar..."
@@ -1268,70 +1270,7 @@ const programarPedido = async () => {
           onChange={e => setFechaFiltro(e.target.value)}
         />
 
-        {/* Dropdown de Selección de Rutas */}
-        {renderDropdownRutas && renderDropdownRutas()}
-      
-          
-        {/* 2. FILTROS Y CONTROLES (SE MUEVEN AL CENTRO / DERECHA) */}
-        <input
-          style={{ ...styles.field, marginBottom: 0, width: '180px' }}
-          placeholder="Buscar..."
-          value={busqueda}
-          onChange={e => setBusqueda(e.target.value)}
-        />
-
-        <select
-          style={{ ...styles.field, marginBottom: 0, width: '180px' }}
-          value={estadoSeleccionado}
-          onChange={e => setEstadoSeleccionado(e.target.value)}
-        >
-          <option value="">Seleccionar por estatus</option>
-          <option value="todos">Todos</option>
-          <option value="pendiente">Pendiente</option>
-          <option value="programado">Programado</option>
-          <option value="en_ruta">En ruta</option>
-          <option value="entregado">Entregado</option>
-          <option value="cancelado">Cancelado</option>
-          <option value="pagado">Pagado</option>
-        </select>
-
-        <input
-          type="date"
-          style={{ ...styles.field, marginBottom: 0, width: '160px' }}
-          value={fechaFiltro}
-          onChange={e => setFechaFiltro(e.target.value)}
-        
-      <div style={styles.topBar}>
-        <input
-          style={{ ...styles.field, marginBottom: 0 }}
-          placeholder="Buscar..."
-          value={busqueda}
-          onChange={e => setBusqueda(e.target.value)}
-        />
-
-        {/* 🔥 SELECT ESTATUS */}
-        <select
-          style={{ ...styles.field, marginBottom: 0 }}
-          value={estadoSeleccionado}
-          onChange={e => setEstadoSeleccionado(e.target.value)}
-        >
-          <option value="">Seleccionar por estatus</option>
-          <option value="todos">Todos</option>
-          <option value="pendiente">Pendiente</option>
-          <option value="programado">Programado</option>
-          <option value="en_ruta">En ruta</option>
-          <option value="entregado">Entregado</option>
-          <option value="cancelado">Cancelado</option>
-          <option value="pagado">Pagado</option>
-        </select>
-
-        <input
-        type="date"
-        style={{ ...styles.field, marginBottom: 0 }}
-        value={fechaFiltro}
-        onChange={e => setFechaFiltro(e.target.value)}
-        />
-        
+       {/* Dropdown de Selección de Rutas */}
         <div style={styles.dropdown}>
           <div
             style={styles.dropdownButton}
@@ -1349,7 +1288,7 @@ const programarPedido = async () => {
                     checked={rutasSeleccionadas.includes(r.id_ruta)}
                     onChange={() => toggleRuta(r.id_ruta)}
                   />
-                  {' '}Ruta {r.id_ruta} - {r.nombre.replace(/^Ruta\s*\d+\s*-\s*/i, '')}
+                  {' '}Ruta {r.id_ruta} - {r.nombre ? r.nombre.replace(/^Ruta\s*\d+\s*-\s*/i, '') : ''}
                 </label>
               ))}
               <button
@@ -1361,12 +1300,9 @@ const programarPedido = async () => {
             </div>
           )}
         </div>
-
-      
-
+   
       <div style={styles.columnas}>
-
-        {/* 🔥 MENSAJE VACÍO */}
+    
         {Object.entries(pedidosPorRuta).length === 0 && (
           <div style={{ textAlign:'center', padding:'20px', color:'#777' }}>
             📭 No hay pedidos en este estado
@@ -1391,7 +1327,7 @@ const programarPedido = async () => {
               {lista.map(p => {
                 const dias = calcularDias(p.fecha)
                 const alerta = dias > 7
-
+                
                 return (
                   <div key={p.id_pedido} style={{
                     ...styles.tarjeta,
