@@ -1281,6 +1281,14 @@ const programarPedido = async () => {
           Seleccionar rutas ▼
         </div>
 
+     <div style={styles.dropdown}>
+        <div
+          style={styles.dropdownButton}
+          onClick={() => setMostrarDropdown(!mostrarDropdown)}
+        >
+          Seleccionar rutas ▼
+        </div>
+
         {mostrarDropdown && (
           <div style={styles.dropdownContent}>
             {rutas.map(r => (
@@ -1302,7 +1310,7 @@ const programarPedido = async () => {
           </div>
         )}
       </div>
-          
+
       <div style={styles.columnas}>
 
         {/* 🔥 MENSAJE VACÍO */}
