@@ -1273,7 +1273,7 @@ const programarPedido = async () => {
         {renderDropdownRutas && renderDropdownRutas()}
       </div>
 
-      <div style={styles.dropdown}>
+     <div style={styles.dropdown}>
         <div
           style={styles.dropdownButton}
           onClick={() => setMostrarDropdown(!mostrarDropdown)}
@@ -1281,28 +1281,28 @@ const programarPedido = async () => {
           Seleccionar rutas ▼
         </div>
 
-      {mostrarDropdown && (
-            <div style={styles.dropdownContent}>
-              {rutas.map(r => (
-                <label key={r.id_ruta} style={{ display: 'block' }}>
-                  <input
-                    type="checkbox"
-                    checked={rutasSeleccionadas.includes(r.id_ruta)}
-                    onChange={() => toggleRuta(r.id_ruta)}
-                  />
-                  {' '}Ruta {r.id_ruta} - {r.nombre.replace(/^Ruta\s*\d+\s*-\s*/i, '')}
-                </label>
-              ))}
-              <button
-                style={{ ...styles.button, ...styles.secondary, marginTop: 5 }}
-                onClick={() => setRutasSeleccionadas([])}
-              >
-                Ver todas
-              </button>
-            </div>
-          )}
-        </div>
-
+        {mostrarDropdown && (
+          <div style={styles.dropdownContent}>
+            {rutas.map(r => (
+              <label key={r.id_ruta} style={{ display: 'block' }}>
+                <input
+                  type="checkbox"
+                  checked={rutasSeleccionadas.includes(r.id_ruta)}
+                  onChange={() => toggleRuta(r.id_ruta)}
+                />
+                {' '}Ruta {r.id_ruta} - {r.nombre ? r.nombre.replace(/^Ruta\s*\d+\s*-\s*/i, '') : ''}
+              </label>
+            ))}
+            <button
+              style={{ ...styles.button, ...styles.secondary, marginTop: 5 }}
+              onClick={() => setRutasSeleccionadas([])}
+            >
+              Ver todas
+            </button>
+          </div>
+        )}
+      </div>
+          
       <div style={styles.columnas}>
 
         {/* 🔥 MENSAJE VACÍO */}
