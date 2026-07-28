@@ -88,49 +88,6 @@ app.get('/clientes/busqueda', async (req, res) => {
   }
 })
 
-/* =============================
-🚚 CONSULTA DE SALIDAS (PEDIDOS ENTREGADOS)
-============================= */
-app.get('/pedidos/salidas', async (req, res) => {
-  try {
-    const { fechaInicio, fechaFin } = req.query;
-
-    if (!fechaInicio || !fechaFin) {
-      return res.status(400).json({ error: 'Debes proporcionar fechaInicio y fechaFin' });
-    }
-
-    const query = `
-      SELECT 
-          p.id_pedido,
-          c.nombre AS cliente,
-          COALESCE(c.nombre_tienda, 'N/A') AS tienda,
-          COALESCE(c.municipio, 'Sin municipio') AS municipio,
-          DATE(e.fecha_salida) AS fecha_salida,
-          JSON_ARRAYAGG(
-              JSON_OBJECT(
-                  'producto', pr.nombre,
-                  'cantidad', COALESCE(ed.cantidad_entregada, 0)
-              )
-          ) AS productos
-      FROM entregas e
-      JOIN pedidos p ON e.id_pedido = p.id_pedido
-      JOIN clientes c ON p.id_cliente = c.id_cliente
-      JOIN entrega_detalle ed ON e.id_entrega = ed.id_entrega
-      JOIN productos pr ON ed.id_producto = pr.id_producto
-      WHERE (p.estado = 'entregado' OR e.estado = 'entregado')
-        AND DATE(e.fecha_salida) BETWEEN ? AND ?
-      GROUP BY p.id_pedido, c.nombre, c.nombre_tienda, c.municipio, DATE(e.fecha_salida)
-      ORDER BY fecha_salida DESC;
-    `;
-
-    const [rows] = await db.query(query, [fechaInicio, fechaFin]);
-    res.json(rows);
-  } catch (err) {
-    console.error('Error en /pedidos/salidas:', err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
 app.get('/clientes/:id_cliente', async (req, res) => {
   try {
     const { id_cliente } = req.params
@@ -3861,6 +3818,48 @@ app.get('/stock', async (req, res) => {
   }
 })
 
+/* =============================================
+   CONSULTA DE SALIDAS (PEDIDOS ENTREGADOS)
+============================================= */
+app.get('/pedidos/salidas', async (req, res) => {
+  try {
+    const { fechaInicio, fechaFin } = req.query;
+
+    if (!fechaInicio || !fechaFin) {
+      return res.status(400).json({ error: 'Debes proporcionar fechaInicio y fechaFin' });
+    }
+
+    const query = `
+      SELECT 
+          p.id_pedido,
+          c.nombre AS cliente,
+          COALESCE(c.nombre_tienda, 'N/A') AS tienda,
+          COALESCE(c.municipio, 'Sin municipio') AS municipio,
+          DATE(e.fecha_salida) AS fecha_salida,
+          JSON_ARRAYAGG(
+              JSON_OBJECT(
+                  'producto', pr.nombre,
+                  'cantidad', COALESCE(ed.cantidad_entregada, 0)
+              )
+          ) AS productos
+      FROM entregas e
+      JOIN pedidos p ON e.id_pedido = p.id_pedido
+      JOIN clientes c ON p.id_cliente = c.id_cliente
+      JOIN entrega_detalle ed ON e.id_entrega = ed.id_entrega
+      JOIN productos pr ON ed.id_producto = pr.id_producto
+      WHERE (p.estado = 'entregado' OR e.estado = 'entregado')
+        AND DATE(e.fecha_salida) BETWEEN ? AND ?
+      GROUP BY p.id_pedido, c.nombre, c.nombre_tienda, c.municipio, DATE(e.fecha_salida)
+      ORDER BY fecha_salida DESC;
+    `;
+
+    const [rows] = await db.query(query, [fechaInicio, fechaFin]);
+    res.json(rows);
+  } catch (err) {
+    console.error('Error en /pedidos/salidas:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // =============================
 // SERVER
