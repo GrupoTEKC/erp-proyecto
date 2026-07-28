@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import logo from '../assets/TRANSPARENTE.png'
 
 const API = 'https://erp-proyecto-production.up.railway.app'
@@ -11,6 +11,22 @@ function Clientes() {
   const [busqueda, setBusqueda] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  /* ================= SINCRONIZACIÓN DE SCROLL ================= */
+  const topScrollRef = useRef(null)
+  const bottomScrollRef = useRef(null)
+
+  const handleTopScroll = () => {
+    if (bottomScrollRef.current && topScrollRef.current) {
+      bottomScrollRef.current.scrollLeft = topScrollRef.current.scrollLeft
+    }
+  }
+
+  const handleBottomScroll = () => {
+    if (topScrollRef.current && bottomScrollRef.current) {
+      topScrollRef.current.scrollLeft = bottomScrollRef.current.scrollLeft
+    }
+  }
 
   /* ================= CARGAR CLIENTES ================= */
   useEffect(() => {
@@ -103,94 +119,116 @@ function Clientes() {
       {loading && <p>Cargando información...</p>}
       {error && <p style={{ color: 'red' }}>⚠️ Error: {error}</p>}
 
-      {!loading && !error && (
+     {!loading && !error && (
         <div style={tablaWrapper}>
-          <table style={tabla}>
-            <thead style={thead}>
-              <tr>
-                <th style={th}>Nombre Completo</th>
-                <th style={th}>Apodo</th>
-                <th style={th}>RFC</th>
-                <th style={th}>Categoría</th>
-                <th style={th}>Tienda</th>
-                <th style={th}>Tel. Dueño</th>
-                <th style={th}>Tel. Tienda</th>
-                <th style={th}>Calle</th>
-                <th style={th}>Nº</th>
-                <th style={th}>CP</th>
-                <th style={th}>Municipio</th>
-                <th style={th}>Estado</th>
-                <th style={th}>Entre calles</th>
-                <th style={th}>Referencia</th>
-                <th style={th}>Email</th>
-                <th style={th}>ID Ruta</th>
-                <th style={th}>Acciones</th>
-              </tr>
-            </thead>
+          {/* 🔴 BARRA DE DESPLAZAMIENTO SUPERIOR */}
+          <div
+            ref={topScrollRef}
+            onScroll={handleTopScroll}
+            style={{
+              overflowX: 'auto',
+              overflowY: 'hidden',
+              marginBottom: '5px'
+            }}
+          >
+            {/* Div transparente que simula el ancho de 1500px de la tabla */}
+            <div style={{ width: '1500px', height: '1px' }} />
+          </div>
 
-            <tbody>
-              {clientesFiltrados.length === 0 ? (
+          {/* 🟢 TABLA Y BARRA DE DESPLAZAMIENTO INFERIOR */}
+          <div
+            ref={bottomScrollRef}
+            onScroll={handleBottomScroll}
+            style={{ overflowX: 'auto' }}
+          >
+            <table style={tabla}>
+              <thead style={thead}>
                 <tr>
-                  <td colSpan="17" style={sinDatos}>
-                    No se encontraron clientes
-                  </td>
+                  <th style={th}>Nombre Completo</th>
+                  <th style={th}>Apodo</th>
+                  <th style={th}>RFC</th>
+                  <th style={th}>Categoría</th>
+                  <th style={th}>Tienda</th>
+                  <th style={th}>Tel. Dueño</th>
+                  <th style={th}>Tel. Tienda</th>
+                  <th style={th}>Calle</th>
+                  <th style={th}>Nº</th>
+                  <th style={th}>CP</th>
+                  <th style={th}>Municipio</th>
+                  <th style={th}>Estado</th>
+                  <th style={th}>Entre calles</th>
+                  <th style={th}>Referencia</th>
+                  <th style={th}>Email</th>
+                  <th style={th}>ID Ruta</th>
+                  <th style={th}>Acciones</th>
                 </tr>
-              ) : (
-                clientesFiltrados.map((c, i) => (
-                  <tr
-                    key={c.id_cliente}
-                    style={{ background: i % 2 === 0 ? '#f9f9f9' : 'white' }}
-                  >
-                    <td style={td}>{c.nombre} {c.apellido1} {c.apellido2}</td>
-                    <td style={td}>{c.apodo}</td>
-                    <td style={td}>{c.rfc}</td>
-                    <td style={td}>
-                      {c.categoria}{c.categoria_otro ? ` (${c.categoria_otro})` : ''}
-                    </td>
-                    <td style={td}>{c.nombre_tienda}</td>
-                    <td style={td}>{c.telefono || '-'}</td>
-                    <td style={td}>{c.telefono_local || '-'}</td>
-                    <td style={td}>{c.calle}</td>
-                    <td style={td}>{c.numero}</td>
-                    <td style={td}>{c.cp}</td>
-                    <td style={td}>{c.municipio}</td>
-                    <td style={td}>{c.estado}</td>
-                    <td style={td}>{c.entre_calles}</td>
-                    <td style={td}>{c.referencia}</td>
-                    <td style={td}>{c.email}</td>
-                    <td style={td}>{c.id_ruta || 'N/A'}</td>
-                    <td style={td}>
-                      <div style={{ display: 'flex', gap: '5px' }}>
-                        <button
-                          style={btnEditar}
-                          onClick={() => navigate(`/clientes/editar/${c.id_cliente}`)}
-                        >
-                          Editar
-                        </button>
-                        <button
-                          style={{ ...btnEditar, color: 'red', borderColor: 'red' }}
-                          onClick={() => eliminarCliente(c.id_cliente)}
-                        >
-                          Eliminar
-                        </button>
-                        <button
-                          style={{ ...btnEditar, borderColor: '#071849', color: '#071849' }}
-                          onClick={() => navigate(`/clientes/${c.id_cliente}/precios`)}
-                        >
-                          + Precios
-                        </button>
-                      </div>
+              </thead>
+
+              <tbody>
+                {clientesFiltrados.length === 0 ? (
+                  <tr>
+                    <td colSpan="17" style={sinDatos}>
+                      No se encontraron clientes
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : (
+                  clientesFiltrados.map((c, i) => (
+                    <tr
+                      key={c.id_cliente}
+                      style={{ background: i % 2 === 0 ? '#f9f9f9' : 'white' }}
+                    >
+                      <td style={td}>{c.nombre} {c.apellido1} {c.apellido2}</td>
+                      <td style={td}>{c.apodo}</td>
+                      <td style={td}>{c.rfc}</td>
+                      <td style={td}>
+                        {c.categoria}{c.categoria_otro ? ` (${c.categoria_otro})` : ''}
+                      </td>
+                      <td style={td}>{c.nombre_tienda}</td>
+                      <td style={td}>{c.telefono || '-'}</td>
+                      <td style={td}>{c.telefono_local || '-'}</td>
+                      <td style={td}>{c.calle}</td>
+                      <td style={td}>{c.numero}</td>
+                      <td style={td}>{c.cp}</td>
+                      <td style={td}>{c.municipio}</td>
+                      <td style={td}>{c.estado}</td>
+                      <td style={td}>{c.entre_calles}</td>
+                      <td style={td}>{c.referencia}</td>
+                      <td style={td}>{c.email}</td>
+                      <td style={td}>{c.id_ruta || 'N/A'}</td>
+                      <td style={td}>
+                        <div style={{ display: 'flex', gap: '5px' }}>
+                          <button
+                            style={btnEditar}
+                            onClick={() => navigate(`/clientes/editar/${c.id_cliente}`)}
+                          >
+                            Editar
+                          </button>
+                          <button
+                            style={{ ...btnEditar, color: 'red', borderColor: 'red' }}
+                            onClick={() => eliminarCliente(c.id_cliente)}
+                          >
+                            Eliminar
+                          </button>
+                          <button
+                            style={{ ...btnEditar, borderColor: '#071849', color: '#071849' }}
+                            onClick={() => navigate(`/clientes/${c.id_cliente}/precios`)}
+                          >
+                            + Precios
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+      </div>
       )}
     </div>
   )
 }
+
 
 /* ================= ESTILOS ================= */
 const vino = '#8B1E1E'
