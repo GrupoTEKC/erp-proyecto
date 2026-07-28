@@ -1220,6 +1220,21 @@ const programarPedido = async () => {
 
   return (
     <div>
+      <div style={styles.header}>
+        <button
+          style={styles.cancel}
+          onClick={() => navigate('/')}
+        >
+          Volver
+        </button>
+
+        <h1 style={styles.mainTitle}>
+          CONSULTAR PEDIDOS
+        </h1>
+
+        <img src={logo} alt="logo" style={styles.logo} />
+      </div>
+
       {/* 🟢 BARRA SUPERIOR DE FILTROS */}
       <div style={styles.topBar}>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
