@@ -66,30 +66,32 @@ function Clientes() {
 
   return (
     <div style={container}>
-    <div style={header}>
+      {/* 🔴 ENCABEZADO IDÉNTICO A PRODUCCIÓN */}
+      <div style={header}>
+        <button
+          style={cancel}
+          onClick={() => navigate('/')}
+        >
+          Volver
+        </button>
 
-    {/* FILA 1 */}
-    <div style={rowTop}>
-    <h1 style={titulo}>GESTIÓN DE CLIENTES</h1>
-    <img src={logo} alt="logo" style={logoStyle} />
-    </div>
+        <h1 style={mainTitle}>
+          GESTIÓN DE CLIENTES
+        </h1>
 
-    {/* FILA 2 */}
-    <div style={rowBottom}>
-    <button style={btnVino} onClick={() => navigate('/')}>
-      ← Volver
-    </button>
+        <img src={logo} alt="logo" style={logoStyle} />
+      </div>
 
-    <button
-      style={btnVino}
-      onClick={() => navigate('/clientes/nuevo')}
-    >
-      + Nuevo Cliente
-    </button>
-  </div>
+      {/* 🟢 BOTÓN DE NUEVO CLIENTE */}
+      <div style={{ marginBottom: 20 }}>
+        <button 
+          style={{ ...btnVino, background: vino, color: '#fff', fontWeight: 'bold' }} 
+          onClick={() => navigate('/clientes/nuevo')}
+        >
+          + Nuevo Cliente
+        </button>
+      </div>
 
-</div>
-      
       <input
         type="text"
         placeholder="Buscar por nombre, tienda o apodo..."
@@ -156,11 +158,9 @@ function Clientes() {
                     <td style={td}>{c.entre_calles}</td>
                     <td style={td}>{c.referencia}</td>
                     <td style={td}>{c.email}</td>
-                    {/* Solo el ID de la Ruta */}
                     <td style={td}>{c.id_ruta || 'N/A'}</td>
                     <td style={td}>
-                      <div style={{display: 'flex', gap: '5px'}}>
-                        
+                      <div style={{ display: 'flex', gap: '5px' }}>
                         <button
                           style={btnEditar}
                           onClick={() => navigate(`/clientes/editar/${c.id_cliente}`)}
@@ -174,12 +174,11 @@ function Clientes() {
                           Eliminar
                         </button>
                         <button
-                        style={{ ...btnEditar, borderColor: '#071849', color: '#071849' }}
-                        onClick={() => navigate(`/clientes/${c.id_cliente}/precios`)}
+                          style={{ ...btnEditar, borderColor: '#071849', color: '#071849' }}
+                          onClick={() => navigate(`/clientes/${c.id_cliente}/precios`)}
                         >
                           + Precios
                         </button>
-                        
                       </div>
                     </td>
                   </tr>
@@ -198,31 +197,27 @@ const vino = '#8B1E1E'
 
 const container = {
   padding: 20,
-  background: '#ffffff',
-  minHeight: '100vh',
-  fontFamily: 'Arial'
+  width: '85%',
+  margin: '0 auto',
+  textAlign: 'left',
+  fontFamily: 'Arial, sans-serif'
 }
 
-// 🔥 CONTENEDOR GENERAL HEADER
+const cancel = {
+  background: '#fff',
+  color: vino,
+  border: `1px solid ${vino}`,
+  padding: 10,
+  borderRadius: 6,
+  cursor: 'pointer',
+  fontWeight: 'bold'
+}
+
 const header = {
   display: 'flex',
-  flexDirection: 'column',
-  gap: 15,
-  marginBottom: 25
-}
-
-// 🔥 FILA 1 (TÍTULO + LOGO)
-const rowTop = {
-  display: 'flex',
+  alignItems: 'center',
   justifyContent: 'space-between',
-  alignItems: 'center'
-}
-
-// 🔥 FILA 2 (BOTONES SEPARADOS)
-const rowBottom = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center'
+  marginBottom: 30
 }
 
 const btnVino = {
@@ -281,18 +276,16 @@ const sinDatos = {
   textAlign: 'center'
 }
 
-// 🔥 LOGO DERECHA
 const logoStyle = {
-  width: '140px'
+  height: 170
 }
 
-// 🔥 TÍTULO GRANDE Y MAYÚSCULAS
-const titulo = {
-  margin: 0,
-  color: '#071849',
-  fontSize: '38px',
-  fontWeight: 'bold',
-  textTransform: 'uppercase'
+const mainTitle = {
+  color: vino,
+  fontSize: 48,
+  fontWeight: '900',
+  letterSpacing: 2,
+  margin: 0
 }
 
 export default Clientes
