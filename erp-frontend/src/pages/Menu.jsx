@@ -119,10 +119,9 @@ function Menu() {
             </button>
           </Link>
 
-          <Link to="/clientes" style={styles.link}>
+          <Link to="/clientes-login" style={styles.link}>
             <button style={styles.button}>
-              <span style={styles.icon}>👥</span>
-              Clientes
+              <span style={styles.icon}>👥</span> Clientes
             </button>
           </Link>
 
