@@ -1219,9 +1219,9 @@ const programarPedido = async () => {
   }
 
   return (
-    <div style={styles.topBar}>
-  
-        {/* 🟢 1. BOTONES DE IMPRESIÓN */}
+    <div>
+      {/* 🟢 BARRA SUPERIOR DE FILTROS */}
+      <div style={styles.topBar}>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <button 
             style={{ ...styles.button, ...styles.primary }} 
@@ -1240,7 +1240,6 @@ const programarPedido = async () => {
           </button>
         </div>
 
-        {/* 🟢 2. FILTROS Y BÚSQUEDA */}
         <input
           style={{ ...styles.field, marginBottom: 0, width: '180px' }}
           placeholder="Buscar..."
@@ -1270,7 +1269,7 @@ const programarPedido = async () => {
           onChange={e => setFechaFiltro(e.target.value)}
         />
 
-       {/* Dropdown de Selección de Rutas */}
+        {/* Dropdown de Selección de Rutas */}
         <div style={styles.dropdown}>
           <div
             style={styles.dropdownButton}
@@ -1300,11 +1299,12 @@ const programarPedido = async () => {
             </div>
           )}
         </div>
-   
+      </div>
+
+      {/* 🟢 COLUMNAS DE PEDIDOS */}
       <div style={styles.columnas}>
-    
         {Object.entries(pedidosPorRuta).length === 0 && (
-          <div style={{ textAlign:'center', padding:'20px', color:'#777' }}>
+          <div style={{ textAlign:'center', padding:'20px', color:'#777', width: '100%' }}>
             📭 No hay pedidos en este estado
           </div>
         )}
