@@ -119,27 +119,28 @@ function Clientes() {
       {loading && <p>Cargando información...</p>}
       {error && <p style={{ color: 'red' }}>⚠️ Error: {error}</p>}
 
-     {!loading && !error && (
+    {!loading && !error && (
         <div style={tablaWrapper}>
-          {/* 🔴 BARRA DE DESPLAZAMIENTO SUPERIOR */}
+          {/* 🔴 BARRA DE DESPLAZAMIENTO SUPERIOR (ANCHO COMPLETO) */}
           <div
             ref={topScrollRef}
             onScroll={handleTopScroll}
             style={{
               overflowX: 'auto',
               overflowY: 'hidden',
-              marginBottom: '5px'
+              marginBottom: '5px',
+              width: '100%'
             }}
           >
-            {/* Div transparente que simula el ancho de 1500px de la tabla */}
-            <div style={{ width: '1500px', height: '1px' }} />
+            {/* Div transparente que simula el ancho total de la tabla */}
+            <div style={{ width: '100%', minWidth: '1500px', height: '1px' }} />
           </div>
 
           {/* 🟢 TABLA Y BARRA DE DESPLAZAMIENTO INFERIOR */}
           <div
             ref={bottomScrollRef}
             onScroll={handleBottomScroll}
-            style={{ overflowX: 'auto' }}
+            style={{ overflowX: 'auto', width: '100%' }}
           >
             <table style={tabla}>
               <thead style={thead}>
@@ -223,7 +224,7 @@ function Clientes() {
               </tbody>
             </table>
           </div>
-      </div>
+        </div>
       )}
     </div>
   )
