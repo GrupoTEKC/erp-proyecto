@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import logo from '../assets/TRANSPARENTE.png'
@@ -32,16 +33,13 @@ const styles = {
      estado === 'cancelado' ? '#7f8c8d' :
      '#34495e'
   }),
-    
-topBar: {
-    display: 'flex',
-    justifyContent: 'flex-start',
-    gap: '12px',                  
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    width: '100%',
-    marginBottom: '15px',
-  },
+topBar: { 
+  display: 'flex', 
+  gap: '10px', 
+  alignItems: 'center', 
+  justifyContent: 'space-between', // Push del nuevo botón hacia la derecha
+  width: '100%' 
+},
   
   dropdown: { position: 'relative', width: '260px' },
   dropdownButton: {
@@ -1220,8 +1218,8 @@ const programarPedido = async () => {
   cargarPedidos()
 }
   
-<div style={styles.topBar}>
-        {/* 🟢 AMBOS BOTONES JUNTOS AL INICIO */}
+ <div style={styles.topBar}>
+        {/* 🟢 1. AMBOS BOTONES JUNTOS A LA IZQUIERDA */}
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <button 
             style={{ ...styles.button, ...styles.primary }} 
@@ -1240,7 +1238,7 @@ const programarPedido = async () => {
           </button>
         </div>
 
-        {/* 🔵 FILTROS DE BÚSQUEDA A CONTINUACIÓN */}
+        {/* 🟢 2. FILTROS Y CONTROLES A LA DERECHA */}
         <input
           style={{ ...styles.field, marginBottom: 0, width: '180px' }}
           placeholder="Buscar..."
@@ -1270,46 +1268,101 @@ const programarPedido = async () => {
           onChange={e => setFechaFiltro(e.target.value)}
         />
 
+        {/* Dropdown de Selección de Rutas */}
         {renderDropdownRutas && renderDropdownRutas()}
-      </div>
+      
+          
+        {/* 2. FILTROS Y CONTROLES (SE MUEVEN AL CENTRO / DERECHA) */}
+        <input
+          style={{ ...styles.field, marginBottom: 0, width: '180px' }}
+          placeholder="Buscar..."
+          value={busqueda}
+          onChange={e => setBusqueda(e.target.value)}
+        />
 
-     <div style={styles.dropdown}>
-        <div
-          style={styles.dropdownButton}
-          onClick={() => setMostrarDropdown(!mostrarDropdown)}
+        <select
+          style={{ ...styles.field, marginBottom: 0, width: '180px' }}
+          value={estadoSeleccionado}
+          onChange={e => setEstadoSeleccionado(e.target.value)}
         >
-          Seleccionar rutas ▼
-        </div>
+          <option value="">Seleccionar por estatus</option>
+          <option value="todos">Todos</option>
+          <option value="pendiente">Pendiente</option>
+          <option value="programado">Programado</option>
+          <option value="en_ruta">En ruta</option>
+          <option value="entregado">Entregado</option>
+          <option value="cancelado">Cancelado</option>
+          <option value="pagado">Pagado</option>
+        </select>
 
-     <div style={styles.dropdown}>
-        <div
-          style={styles.dropdownButton}
-          onClick={() => setMostrarDropdown(!mostrarDropdown)}
+        <input
+          type="date"
+          style={{ ...styles.field, marginBottom: 0, width: '160px' }}
+          value={fechaFiltro}
+          onChange={e => setFechaFiltro(e.target.value)}
+        
+      <div style={styles.topBar}>
+        <input
+          style={{ ...styles.field, marginBottom: 0 }}
+          placeholder="Buscar..."
+          value={busqueda}
+          onChange={e => setBusqueda(e.target.value)}
+        />
+
+        {/* 🔥 SELECT ESTATUS */}
+        <select
+          style={{ ...styles.field, marginBottom: 0 }}
+          value={estadoSeleccionado}
+          onChange={e => setEstadoSeleccionado(e.target.value)}
         >
-          Seleccionar rutas ▼
-        </div>
+          <option value="">Seleccionar por estatus</option>
+          <option value="todos">Todos</option>
+          <option value="pendiente">Pendiente</option>
+          <option value="programado">Programado</option>
+          <option value="en_ruta">En ruta</option>
+          <option value="entregado">Entregado</option>
+          <option value="cancelado">Cancelado</option>
+          <option value="pagado">Pagado</option>
+        </select>
 
-        {mostrarDropdown && (
-          <div style={styles.dropdownContent}>
-            {rutas.map(r => (
-              <label key={r.id_ruta} style={{ display: 'block' }}>
-                <input
-                  type="checkbox"
-                  checked={rutasSeleccionadas.includes(r.id_ruta)}
-                  onChange={() => toggleRuta(r.id_ruta)}
-                />
-                {' '}Ruta {r.id_ruta} - {r.nombre ? r.nombre.replace(/^Ruta\s*\d+\s*-\s*/i, '') : ''}
-              </label>
-            ))}
-            <button
-              style={{ ...styles.button, ...styles.secondary, marginTop: 5 }}
-              onClick={() => setRutasSeleccionadas([])}
-            >
-              Ver todas
-            </button>
+        <input
+        type="date"
+        style={{ ...styles.field, marginBottom: 0 }}
+        value={fechaFiltro}
+        onChange={e => setFechaFiltro(e.target.value)}
+        />
+        
+        <div style={styles.dropdown}>
+          <div
+            style={styles.dropdownButton}
+            onClick={() => setMostrarDropdown(!mostrarDropdown)}
+          >
+            Seleccionar rutas ▼
           </div>
-        )}
-      </div>
+
+          {mostrarDropdown && (
+            <div style={styles.dropdownContent}>
+              {rutas.map(r => (
+                <label key={r.id_ruta} style={{ display: 'block' }}>
+                  <input
+                    type="checkbox"
+                    checked={rutasSeleccionadas.includes(r.id_ruta)}
+                    onChange={() => toggleRuta(r.id_ruta)}
+                  />
+                  {' '}Ruta {r.id_ruta} - {r.nombre.replace(/^Ruta\s*\d+\s*-\s*/i, '')}
+                </label>
+              ))}
+              <button
+                style={{ ...styles.button, ...styles.secondary, marginTop: 5 }}
+                onClick={() => setRutasSeleccionadas([])}
+              >
+                Ver todas
+              </button>
+            </div>
+          )}
+        </div>
+
+      
 
       <div style={styles.columnas}>
 
