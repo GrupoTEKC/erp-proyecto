@@ -119,21 +119,21 @@ function Clientes() {
       {loading && <p>Cargando información...</p>}
       {error && <p style={{ color: 'red' }}>⚠️ Error: {error}</p>}
 
-    {!loading && !error && (
+   {!loading && !error && (
         <div style={tablaWrapper}>
-          {/* 🔴 BARRA DE DESPLAZAMIENTO SUPERIOR (ANCHO COMPLETO) */}
+          {/* 🔴 BARRA DE DESPLAZAMIENTO SUPERIOR CORREGIDA */}
           <div
             ref={topScrollRef}
             onScroll={handleTopScroll}
             style={{
               overflowX: 'auto',
               overflowY: 'hidden',
-              marginBottom: '5px',
+              marginBottom: '8px',
               width: '100%'
             }}
           >
-            {/* Div transparente que simula el ancho total de la tabla */}
-            <div style={{ width: '100%', minWidth: '1500px', height: '1px' }} />
+            {/* Ancho expandido a 1800px para cubrir todas las columnas hasta Acciones */}
+            <div style={{ width: '1800px', height: '1px' }} />
           </div>
 
           {/* 🟢 TABLA Y BARRA DE DESPLAZAMIENTO INFERIOR */}
@@ -142,7 +142,7 @@ function Clientes() {
             onScroll={handleBottomScroll}
             style={{ overflowX: 'auto', width: '100%' }}
           >
-            <table style={tabla}>
+            <table style={{ ...tabla, minWidth: '1800px' }}>
               <thead style={thead}>
                 <tr>
                   <th style={th}>Nombre Completo</th>
