@@ -43,31 +43,35 @@ function ControlEnviosDetalle() {
     setPassPrecio('')
   }
   
-  useEffect(() => {
+ useEffect(() => {
     const cargarPedidos = async () => {
       const res = await fetch(`${API}/control-envios/${id_chofer}`)
       const data = await res.json()
 
-     const inicializados = data.map(p => ({
-     ...p,
-     folio: '',
-     productos: p.productos.map(prod => ({
-    ...prod,
+      const inicializados = data.map(p => ({
+        ...p,
+        folio: '',
+        // 🔹 Se agrega .filter() justo antes del .map() de productos:
+        productos: p.productos
+          .filter(prod => Number(prod.cantidad_entregada) > 0 || prod.tipo === 'agregado')
+          .map(prod => ({
+            ...prod,
 
-      cantidad_final:
-      prod.cantidad_final ??
-      prod.cantidad_entregada,
+            cantidad_final:
+              prod.cantidad_final ??
+              prod.cantidad_entregada,
 
-      tipo: prod.tipo || '',
-      motivo: prod.motivo || '',
-      id_cliente_destino: prod.id_cliente_destino || null
-  }))
-}))
+            tipo: prod.tipo || '',
+            motivo: prod.motivo || '',
+            id_cliente_destino: prod.id_cliente_destino || null
+          }))
+      }))
       setPedidos(inicializados)
     }
 
     cargarPedidos()
   }, [id_chofer])
+  
 
   const buscarProductos = async (texto) => {
     setBusquedaProducto(texto)
