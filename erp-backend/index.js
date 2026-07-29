@@ -1565,6 +1565,7 @@ app.post('/control-envios/finalizar', async (req, res) => {
     console.log('📦 DATA:', { id_entrega, folio, productos: productos.length })
     await conn.beginTransaction()
     console.log('🟡 TX START')
+
     const [entregaCheck] = await conn.query(
       'SELECT estado FROM entregas WHERE id_entrega = ?',
       [id_entrega]
@@ -1573,6 +1574,7 @@ app.post('/control-envios/finalizar', async (req, res) => {
       throw new Error('Entrega no existe')
     }
     console.log('✅ CHECK ENTREGA')
+
     const [folioExiste] = await conn.query(
       'SELECT id_entrega FROM entregas WHERE folio = ? AND id_entrega != ?',
       [folio, id_entrega]
@@ -1581,20 +1583,22 @@ app.post('/control-envios/finalizar', async (req, res) => {
       throw new Error('Folio ya existe')
     }
     console.log('✅ CHECK FOLIO')
+
     const [[pedidoInfo]] = await conn.query(`
-    SELECT id_pedido
-    FROM entregas
-    WHERE id_entrega = ?
+      SELECT id_pedido
+      FROM entregas
+      WHERE id_entrega = ?
     `, [id_entrega])
-const id_pedido = pedidoInfo.id_pedido
+    const id_pedido = pedidoInfo.id_pedido
+
     // 🔥 PROCESO DE PRODUCTOS
     for (const item of productos) {
       console.log('🔄 PRODUCTO', item.id_producto)
       if (item.tipo === 'agregado') {
         // 🔥 VALIDACIÓN EXTRA (no rompe nada)
-       if (!item.cantidad_final || item.cantidad_final <= 0) {
-       throw new Error('Cantidad inválida en producto agregado')
-       }
+        if (!item.cantidad_final || item.cantidad_final <= 0) {
+          throw new Error('Cantidad inválida en producto agregado')
+        }
         console.log('🆕 INSERT/UPDATE AGREGADO')
         const [existe] = await conn.query(`
           SELECT id_producto 
@@ -1603,108 +1607,134 @@ const id_pedido = pedidoInfo.id_pedido
           AND id_producto = ? 
           AND tipo = 'agregado'
         `, [id_entrega, item.id_producto])
+
         if (existe.length > 0) {
           // 🔁 YA EXISTE → SUMAR
           await conn.query(`
-           UPDATE entrega_detalle
-SET cantidad_final = cantidad_final + ?
-WHERE id_entrega = ?
-AND id_producto = ?
-AND tipo = 'agregado'
+            UPDATE entrega_detalle
+            SET cantidad_final = cantidad_final + ?
+            WHERE id_entrega = ?
+            AND id_producto = ?
+            AND tipo = 'agregado'
           `, [
             item.cantidad_final || 0,
             id_entrega,
             item.id_producto
           ])
-        }
-        else {
+        } else {
           // 🆕 NUEVO
           await conn.query(`
-          INSERT INTO entrega_detalle (
-  id_entrega,
-  id_producto,
-  cantidad_pedida,
-  cantidad_entregada,
-  cantidad_final,
-  tipo,
-  motivo
-)
-VALUES (?, ?, 0, 0, ?, 'agregado', ?)
-          `,[
-  id_entrega,
-  item.id_producto,
-  item.cantidad_final,
-  item.motivo || null
-]
-                          )
+            INSERT INTO entrega_detalle (
+              id_entrega,
+              id_producto,
+              cantidad_pedida,
+              cantidad_entregada,
+              cantidad_final,
+              tipo,
+              motivo
+            )
+            VALUES (?, ?, 0, 0, ?, 'agregado', ?)
+          `, [
+            id_entrega,
+            item.id_producto,
+            item.cantidad_final,
+            item.motivo || null
+          ])
         }
-      const [productoPedido] = await conn.query(`
-  SELECT id_detalle
-  FROM pedido_detalle
-  WHERE id_pedido = ?
-  AND id_producto = ?
-`, [
-  id_pedido,
-  item.id_producto
-])
 
-if (productoPedido.length === 0) {
-  await conn.query(`
-    INSERT INTO pedido_detalle (
-      id_pedido,
-      id_producto,
-      cantidad,
-      precio_unitario
-    )
-    VALUES (?, ?, ?, ?)
-  `, [
-    id_pedido,
-    item.id_producto,
-    item.cantidad_final,
-    item.precio_unitario
-  ])
-}
-        
-        // 🔥 ACTUALIZAR PEDIDO_DETALLE
+        const [productoPedido] = await conn.query(`
+          SELECT id_detalle
+          FROM pedido_detalle
+          WHERE id_pedido = ?
+          AND id_producto = ?
+        `, [
+          id_pedido,
+          item.id_producto
+        ])
+
+        if (productoPedido.length === 0) {
+          await conn.query(`
+            INSERT INTO pedido_detalle (
+              id_pedido,
+              id_producto,
+              cantidad,
+              precio_unitario
+            )
+            VALUES (?, ?, ?, ?)
+          `, [
+            id_pedido,
+            item.id_producto,
+            item.cantidad_final,
+            item.precio_unitario
+          ])
+        } else {
+          // Si ya existía el agregado, actualizar su precio si viene
+          if (item.precio_unitario !== undefined && item.precio_unitario !== null) {
+            await conn.query(`
+              UPDATE pedido_detalle
+              SET precio_unitario = ?
+              WHERE id_pedido = ? AND id_producto = ?
+            `, [
+              item.precio_unitario,
+              id_pedido,
+              item.id_producto
+            ])
+          }
+        }
+
       } else {
         console.log('✏️ UPDATE NORMAL')
- 
+
         const cantidadFinal = Number(item.cantidad_final)
 
-if (
-  item.cantidad_final === '' ||
-  item.cantidad_final === null ||
-  item.cantidad_final === undefined ||
-  Number.isNaN(cantidadFinal) ||
-  cantidadFinal <= 0
-) {
-  throw new Error(
-    `Cantidad final inválida para el producto ${item.id_producto}`
-  )
-}
+        if (
+          item.cantidad_final === '' ||
+          item.cantidad_final === null ||
+          item.cantidad_final === undefined ||
+          Number.isNaN(cantidadFinal) ||
+          cantidadFinal <= 0
+        ) {
+          throw new Error(
+            `Cantidad final inválida para el producto ${item.id_producto}`
+          )
+        }
 
-await conn.query(`
-UPDATE entrega_detalle
-SET
-cantidad_final = ?,
-tipo = ?,
-motivo = ?,
-id_cliente_destino = ?
-WHERE id_entrega = ? AND id_producto = ?
-`, [
-cantidadFinal,
-item.tipo || 'ninguno',
-(item.tipo === 'roto' || item.tipo === 'con_incremento')
-  ? (item.motivo || null)
-  : null,
-item.tipo === 'prestamo'
-  ? (item.id_cliente_destino || null)
-  : null,
-id_entrega,
-item.id_producto
-])
-  }
+        await conn.query(`
+          UPDATE entrega_detalle
+          SET
+            cantidad_final = ?,
+            tipo = ?,
+            motivo = ?,
+            id_cliente_destino = ?
+          WHERE id_entrega = ? AND id_producto = ?
+        `, [
+          cantidadFinal,
+          item.tipo || 'ninguno',
+          (item.tipo === 'roto' || item.tipo === 'con_incremento')
+            ? (item.motivo || null)
+            : null,
+          item.tipo === 'prestamo'
+            ? (item.id_cliente_destino || null)
+            : null,
+          id_entrega,
+          item.id_producto
+        ])
+
+        // 🟢 NUEVO: Actualizar precio unitario en el detalle del pedido si viene editado
+        if (item.precio_unitario !== undefined && item.precio_unitario !== null) {
+          await conn.query(`
+            UPDATE pedido_detalle
+            SET precio_unitario = ?
+            WHERE id_pedido = ? AND id_producto = ?
+          `, [
+            item.precio_unitario,
+            id_pedido,
+            item.id_producto
+          ])
+        }
+      }
     }
+
     console.log('✅ PRODUCTOS OK')
     await conn.query(`
       UPDATE entregas 
@@ -1712,39 +1742,41 @@ item.id_producto
       WHERE id_entrega = ?
     `, [folio, id_entrega])
     console.log('✅ ENTREGA CERRADA')
-   await conn.query(`
-  UPDATE pedidos
-  SET 
-    estado = 'entregado',
-    fecha_entrega = NOW()
-  WHERE id_pedido = (
-    SELECT id_pedido FROM entregas WHERE id_entrega = ?
-  )
-`, [id_entrega])
-    console.log('✅ PEDIDO CERRADO')
-   
+
     await conn.query(`
-UPDATE pedidos p
-SET total = (
-  SELECT COALESCE(
-    SUM(
-      ed.cantidad_final *
-      COALESCE(pd.precio_unitario, 0)
-    ),
-    0
-  )
-  FROM entrega_detalle ed
-  INNER JOIN pedido_detalle pd
-    ON pd.id_pedido = p.id_pedido
-   AND pd.id_producto = ed.id_producto
-  WHERE ed.id_entrega = ?
-)
-WHERE p.id_pedido = ?
-`, [
-  id_entrega,
-  id_pedido
-])
-    
+      UPDATE pedidos
+      SET 
+        estado = 'entregado',
+        fecha_entrega = NOW()
+      WHERE id_pedido = (
+        SELECT id_pedido FROM entregas WHERE id_entrega = ?
+      )
+    `, [id_entrega])
+    console.log('✅ PEDIDO CERRADO')
+
+    // 🔥 Recalcula total usando los precios recién actualizados en pedido_detalle
+    await conn.query(`
+      UPDATE pedidos p
+      SET total = (
+        SELECT COALESCE(
+          SUM(
+            ed.cantidad_final *
+            COALESCE(pd.precio_unitario, 0)
+          ),
+          0
+        )
+        FROM entrega_detalle ed
+        INNER JOIN pedido_detalle pd
+          ON pd.id_pedido = p.id_pedido
+         AND pd.id_producto = ed.id_producto
+        WHERE ed.id_entrega = ?
+      )
+      WHERE p.id_pedido = ?
+    `, [
+      id_entrega,
+      id_pedido
+    ])
+
     await conn.commit()
     console.log('🎉 COMMIT')
     res.json({ success: true })
