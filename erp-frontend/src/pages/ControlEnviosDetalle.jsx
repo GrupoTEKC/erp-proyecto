@@ -26,6 +26,10 @@ function ControlEnviosDetalle() {
   const [busquedaProducto, setBusquedaProducto] = useState('')
   const [resultadosProductos, setResultadosProductos] = useState([])
 
+  const [modalPrecio, setModalPrecio] = useState({ visible: false, pIndex: null, dIndex: null })
+  const [passPrecio, setPassPrecio] = useState('')
+  const [nuevoPrecioTemp, setNuevoPrecioTemp] = useState('')
+  
   const esMovil = window.innerWidth < 768
 
   const fieldResponsive = {
@@ -33,6 +37,12 @@ function ControlEnviosDetalle() {
     width: esMovil ? '90px' : '200px'
   }
 
+  const abrirModalPrecio = (pIndex, dIndex, precioActual) => {
+    setModalPrecio({ visible: true, pIndex, dIndex })
+    setNuevoPrecioTemp(precioActual)
+    setPassPrecio('')
+  }
+  
   useEffect(() => {
     const cargarPedidos = async () => {
       const res = await fetch(`${API}/control-envios/${id_chofer}`)
@@ -392,7 +402,7 @@ if (entregado > embarcado) {
                     return (
                       <tr key={j}>
                         <td>{prod.nombre}</td>
-                        <td>
+                       <td>
                           {prod.tipo === 'agregado' ? (
                             <input
                               type="number"
@@ -403,9 +413,26 @@ if (entregado > embarcado) {
                               }
                             />
                           ) : (
-                            `$${precio.toFixed(2)}`
+                        
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                              <span>${precio.toFixed(2)}</span>
+                              <button
+                                type="button"
+                                style={{
+                                  background: 'transparent',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  fontSize: '14px'
+                                }}
+                                title="Editar precio"
+                                onClick={() => abrirModalPrecio(i, j, prod.precio_unitario)}
+                              >
+                                ✏️
+                              </button>
+                            </div>
                           )}
                         </td>
+                        
 
                         <td>
                           {prod.tipo === 'agregado' ? (
@@ -599,10 +626,81 @@ if (entregado > embarcado) {
                   Confirmar cancelación
                 </button>
               </div>
-            )}
+           )}
           </div>
         )
       })}
+
+      {/* 🔒 MODAL DE AUTORIZACIÓN PARA CAMBIAR PRECIO */}
+      {modalPrecio.visible && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: '#fff',
+            padding: '20px',
+            borderRadius: '8px',
+            width: '300px',
+            boxShadow: '0 4px 8px rgba(0,0,0,0.2)'
+          }}>
+            <h3 style={{ marginTop: 0, color: '#071849' }}>Editar Precio</h3>
+            
+            <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Nuevo Precio:</label>
+            <input
+              type="number"
+              style={{ ...styles.field, width: '100%', marginBottom: '10px', marginTop: '5px' }}
+              value={nuevoPrecioTemp}
+              onChange={e => setNuevoPrecioTemp(e.target.value)}
+            />
+
+            <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Contraseña de autorización:</label>
+            <input
+              type="password"
+              placeholder="Ingrese clave"
+              style={{ ...styles.field, width: '100%', marginBottom: '15px', marginTop: '5px' }}
+              value={passPrecio}
+              onChange={e => setPassPrecio(e.target.value)}
+            />
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                style={{ ...styles.guardar, backgroundColor: '#6c757d', marginTop: 0 }}
+                onClick={() => setModalPrecio({ visible: false, pIndex: null, dIndex: null })}
+              >
+                Cancelar
+              </button>
+              
+              <button
+                style={{ ...styles.guardar, marginTop: 0 }}
+                onClick={() => {
+                  if (passPrecio !== '24022004') {
+                    alert('Contraseña incorrecta')
+                    return
+                  }
+                  if (!nuevoPrecioTemp || Number(nuevoPrecioTemp) < 0) {
+                    alert('Ingrese un precio válido')
+                    return
+                  }
+                  
+                  actualizarCampo(modalPrecio.pIndex, modalPrecio.dIndex, 'precio_unitario', nuevoPrecioTemp)
+                  setModalPrecio({ visible: false, pIndex: null, dIndex: null })
+                }}
+              >
+                Aplicar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
