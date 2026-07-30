@@ -969,60 +969,89 @@ if (bloqueado) {
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 10 }}>
             <thead>
-              <tr style={{ background: '#8B1E1E', color: '#fff' }}>
-                <th style={{ padding: 10, border: '1px solid #ddd' }}>Fecha Salida</th>
-                <th style={{ padding: 10, border: '1px solid #ddd' }}>Nº Pedido</th>
-                <th style={{ padding: 10, border: '1px solid #ddd' }}>Cliente</th>
-                <th style={{ padding: 10, border: '1px solid #ddd' }}>Tienda</th>
-                <th style={{ padding: 10, border: '1px solid #ddd' }}>Productos / Cantidad Entregada</th>
-                <th style={{ padding: 10, border: '1px solid #ddd' }}>Municipio</th>
-              </tr>
+            <tr style={{ background: '#8B1E1E', color: '#fff' }}>
+            <th style={{ padding: 10, border: '1px solid #ddd' }}>Fecha Salida</th>
+            <th style={{ padding: 10, border: '1px solid #ddd' }}>Nº Pedido</th>
+            <th style={{ padding: 10, border: '1px solid #ddd' }}>Estado</th> {/* 👈 NUEVA COLUMNA */}
+            <th style={{ padding: 10, border: '1px solid #ddd' }}>Cliente</th>
+            <th style={{ padding: 10, border: '1px solid #ddd' }}>Tienda</th>
+            <th style={{ padding: 10, border: '1px solid #ddd' }}>Productos / Cantidad</th>
+            <th style={{ padding: 10, border: '1px solid #ddd' }}>Municipio</th>
+            </tr>
             </thead>
-            <tbody>
-              {salidasReporte.length === 0 ? (
-                <tr>
-                  <td colSpan="6" style={{ padding: 20, textAlign: 'center', color: '#666', border: '1px solid #ddd' }}>
-                    No hay entregas en las fechas seleccionadas o aún no has realizado la consulta.
-                  </td>
-                </tr>
-              ) : (
-                salidasReporte.map((item, idx) => {
-                  let productosLista = [];
-                  try {
-                    productosLista = typeof item.productos === 'string' ? JSON.parse(item.productos) : (item.productos || []);
-                  } catch (e) {
-                    productosLista = [];
-                  }
+          <tbody>
+  {salidasReporte.length === 0 ? (
+    <tr>
+      <td colSpan="7" style={{ padding: 20, textAlign: 'center', color: '#666', border: '1px solid #ddd' }}>
+        No hay salidas registradas en las fechas seleccionadas.
+      </td>
+    </tr>
+  ) : (
+    salidasReporte.map((item, idx) => {
+      let productosLista = [];
+      try {
+        productosLista = typeof item.productos === 'string' ? JSON.parse(item.productos) : (item.productos || []);
+      } catch (e) {
+        productosLista = [];
+      }
+      const fechaLimpia = item.fecha_salida ? item.fecha_salida.split('T')[0] : 'N/A';
+      
+      // 🎨 Función para definir color e icono del Estado
+      const estadoActual = item.estado_pedido || item.estado_entrega || 'pendiente';
+      let badgeBg = '#6c757d';
+      let estadoTexto = estadoActual.toUpperCase().replace('_', ' ');
 
-                  const fechaLimpia = item.fecha_salida ? item.fecha_salida.split('T')[0] : 'N/A';
+      if (estadoActual === 'en_ruta') {
+        badgeBg = '#d97706'; // Naranja / Ámbar
+      } else if (estadoActual === 'entregado') {
+        badgeBg = '#2563eb'; // Azul
+      } else if (estadoActual === 'pagado') {
+        badgeBg = '#16a34a'; // Verde
+      }
 
-                  return (
-                    <tr key={item.id_pedido || idx} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#fafafa' }}>
-                      <td style={{ padding: 10, border: '1px solid #ddd', textAlign: 'center', fontWeight: 'bold' }}>
-                        {fechaLimpia}
-                      </td>
-                      <td style={{ padding: 10, border: '1px solid #ddd', textAlign: 'center', fontWeight: 'bold', color: '#071849' }}>
-                        #{item.id_pedido}
-                      </td>
-                      <td style={{ padding: 10, border: '1px solid #ddd' }}>{item.cliente || 'N/A'}</td>
-                      <td style={{ padding: 10, border: '1px solid #ddd' }}>{item.tienda || 'N/A'}</td>
-                      <td style={{ padding: 10, border: '1px solid #ddd' }}>
-                        {Array.isArray(productosLista) && productosLista.length > 0 ? (
-                          productosLista.map((p, pIdx) => (
-                            <div key={pIdx} style={{ marginBottom: 3 }}>
-                              • <strong>{p.producto || p.nombre}</strong>: <span style={{ color: '#8B1E1E', fontWeight: 'bold' }}>{p.cantidad}</span>
-                            </div>
-                          ))
-                        ) : (
-                          <span>Sin detalles</span>
-                        )}
-                      </td>
-                      <td style={{ padding: 10, border: '1px solid #ddd', textAlign: 'center' }}>{item.municipio || 'N/A'}</td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
+      return (
+        <tr key={item.id_pedido || idx} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#fafafa' }}>
+          <td style={{ padding: 10, border: '1px solid #ddd', textAlign: 'center', fontWeight: 'bold' }}>
+            {fechaLimpia}
+          </td>
+          <td style={{ padding: 10, border: '1px solid #ddd', textAlign: 'center', fontWeight: 'bold', color: '#071849' }}>
+            #{item.id_pedido}
+          </td>
+          
+          {/* 🔹 CELDA CON EL ESTADO ILUSTRADO */}
+          <td style={{ padding: 10, border: '1px solid #ddd', textAlign: 'center' }}>
+            <span style={{
+              backgroundColor: badgeBg,
+              color: '#fff',
+              padding: '4px 10px',
+              borderRadius: '12px',
+              fontSize: '12px',
+              fontWeight: 'bold',
+              display: 'inline-block'
+            }}>
+              {estadoTexto}
+            </span>
+          </td>
+
+          <td style={{ padding: 10, border: '1px solid #ddd' }}>{item.cliente || 'N/A'}</td>
+          <td style={{ padding: 10, border: '1px solid #ddd' }}>{item.tienda || 'N/A'}</td>
+          <td style={{ padding: 10, border: '1px solid #ddd' }}>
+            {Array.isArray(productosLista) && productosLista.length > 0 ? (
+              productosLista.map((p, pIdx) => (
+                <div key={pIdx} style={{ marginBottom: 3 }}>
+                  • <strong>{p.producto || p.nombre}</strong>: <span style={{ color: '#8B1E1E', fontWeight: 'bold' }}>{p.cantidad}</span>
+                </div>
+              ))
+            ) : (
+              <span>Sin detalles</span>
+            )}
+          </td>
+          <td style={{ padding: 10, border: '1px solid #ddd', textAlign: 'center' }}>{item.municipio || 'N/A'}</td>
+        </tr>
+      );
+    })
+  )}
+</tbody>
           </table>
         </div>
       </div> 
