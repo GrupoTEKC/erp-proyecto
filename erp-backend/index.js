@@ -2911,7 +2911,6 @@ app.get('/pedidos-programados', async (req, res) => {
 })
 
 
-// 1. PRIMERO LA RUTA ESPECÍFICA DE SALIDAS
 app.get('/pedidos/salidas', async (req, res) => {
   try {
     const { fechaInicio, fechaFin } = req.query;
@@ -2923,6 +2922,8 @@ app.get('/pedidos/salidas', async (req, res) => {
     const query = `
       SELECT 
           p.id_pedido,
+          p.estado AS estado_pedido,
+          e.estado AS estado_entrega,
           c.nombre AS cliente,
           COALESCE(c.nombre_tienda, 'N/A') AS tienda,
           COALESCE(c.municipio, 'Sin municipio') AS municipio,
@@ -2938,9 +2939,9 @@ app.get('/pedidos/salidas', async (req, res) => {
       JOIN clientes c ON p.id_cliente = c.id_cliente
       JOIN entrega_detalle ed ON e.id_entrega = ed.id_entrega
       JOIN productos pr ON ed.id_producto = pr.id_producto
-      WHERE (p.estado = 'entregado' OR e.estado = 'entregado')
+      WHERE (p.estado IN ('en_ruta', 'entregado', 'pagado') OR e.estado IN ('en_ruta', 'entregado', 'pagado'))
         AND DATE(e.fecha_salida) BETWEEN ? AND ?
-      GROUP BY p.id_pedido, c.nombre, c.nombre_tienda, c.municipio, DATE(e.fecha_salida)
+      GROUP BY p.id_pedido, p.estado, e.estado, c.nombre, c.nombre_tienda, c.municipio, DATE(e.fecha_salida)
       ORDER BY fecha_salida DESC;
     `;
 
