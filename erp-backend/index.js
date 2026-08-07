@@ -3916,13 +3916,16 @@ app.get('/stock', async (req, res) => {
         COALESCE(ii.inicial, 0) AS inicial,
         COALESCE(pd.producido, 0) AS producido,
         COALESCE(ed.salidas, 0) AS salidas,
-        COALESCE(m.mermas, 0) AS mermas,
+        
+        COALESCE(m.merma_produccion, 0) AS merma_produccion,
+        COALESCE(m.merma_almacen, 0) AS merma_almacen,
+        COALESCE(m.total_mermas, 0) AS mermas,
 
         (
           COALESCE(ii.inicial, 0)
           + COALESCE(pd.producido, 0)
           - COALESCE(ed.salidas, 0)
-          - COALESCE(m.mermas, 0)
+          - COALESCE(m.total_mermas, 0)
         ) AS stock
 
       FROM productos p
@@ -3961,11 +3964,13 @@ app.get('/stock', async (req, res) => {
       ) ed
       ON ed.id_producto = p.id_producto
 
-      /* Mermas del período (utiliza fecha_registro) */
+      /* Mermas del período desglosadas por tipo */
       LEFT JOIN (
         SELECT
           id_producto,
-          SUM(cantidad) AS mermas
+          SUM(CASE WHEN tipo_merma = 'produccion' THEN cantidad ELSE 0 END) AS merma_produccion,
+          SUM(CASE WHEN tipo_merma = 'almacen' THEN cantidad ELSE 0 END) AS merma_almacen,
+          SUM(cantidad) AS total_mermas
         FROM mermas
         WHERE DATE_FORMAT(fecha_registro, '%Y-%m') = ?
         GROUP BY id_producto
@@ -3985,6 +3990,7 @@ app.get('/stock', async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
+
 
 // =============================
 // SERVER
