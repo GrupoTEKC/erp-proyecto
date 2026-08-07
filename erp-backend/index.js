@@ -3819,9 +3819,89 @@ app.get('/inventario-inicial/:periodo', async (req, res) => {
   }
 })
 
+// =============================
+// REGISTRAR MERMA
+// =============================
+app.post('/mermas', async (req, res) => {
+  try {
+    const { id_producto, tipo_merma, cantidad, motivo } = req.body
+
+    // Validaciones de campos obligatorios
+    if (!id_producto || !tipo_merma || cantidad === undefined) {
+      return res.status(400).json({ 
+        error: 'Los campos id_producto, tipo_merma y cantidad son requeridos' 
+      })
+    }
+
+    // Validar que tipo_merma sea uno de los valores ENUM permitidos
+    const tiposPermitidos = ['produccion', 'almacen']
+    if (!tiposPermitidos.includes(tipo_merma)) {
+      return res.status(400).json({ 
+        error: "El campo tipo_merma debe ser 'produccion' o 'almacen'" 
+      })
+    }
+
+    // Validar cantidad positiva
+    const cantidadNum = Number(cantidad)
+    if (isNaN(cantidadNum) || cantidadNum <= 0) {
+      return res.status(400).json({ error: 'La cantidad debe ser un número mayor a 0' })
+    }
+
+    await db.query(
+      `
+      INSERT INTO mermas (id_producto, tipo_merma, cantidad, motivo)
+      VALUES (?, ?, ?, ?)
+      `,
+      [id_producto, tipo_merma, cantidadNum, motivo || null]
+    )
+
+    res.json({ 
+      success: true, 
+      message: 'Merma registrada exitosamente' 
+    })
+
+  } catch (err) {
+    console.error('❌ ERROR AL REGISTRAR MERMA:', err)
+    res.status(500).json({ error: err.message })
+  }
+})
+
+
+// =============================
+// OBTENER HISTORIAL DE MERMAS
+// =============================
+app.get('/mermas', async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      `
+      SELECT 
+        m.id_merma,
+        m.id_producto,
+        p.nombre AS producto,
+        m.tipo_merma,
+        m.cantidad,
+        m.motivo,
+        m.fecha_registro
+      FROM mermas m
+      INNER JOIN productos p ON p.id_producto = m.id_producto
+      ORDER BY m.fecha_registro DESC
+      `
+    )
+
+    res.json(rows)
+
+  } catch (err) {
+    console.error('❌ ERROR AL CONSULTAR MERMAS:', err)
+    res.status(500).json({ error: err.message })
+  }
+})
+
+
+// =============================
+// CONSULTA DE STOCK DE PRODUCTOS
+// =============================
 app.get('/stock', async (req, res) => {
   try {
-    // Obtener período actual (ejemplo: 2026-07)
     const hoy = new Date()
     const anio = hoy.getFullYear()
     const mes = String(hoy.getMonth() + 1).padStart(2, '0')
@@ -3836,11 +3916,13 @@ app.get('/stock', async (req, res) => {
         COALESCE(ii.inicial, 0) AS inicial,
         COALESCE(pd.producido, 0) AS producido,
         COALESCE(ed.salidas, 0) AS salidas,
+        COALESCE(m.mermas, 0) AS mermas,
 
         (
           COALESCE(ii.inicial, 0)
           + COALESCE(pd.producido, 0)
           - COALESCE(ed.salidas, 0)
+          - COALESCE(m.mermas, 0)
         ) AS stock
 
       FROM productos p
@@ -3879,20 +3961,30 @@ app.get('/stock', async (req, res) => {
       ) ed
       ON ed.id_producto = p.id_producto
 
+      /* Mermas del período (utiliza fecha_registro) */
+      LEFT JOIN (
+        SELECT
+          id_producto,
+          SUM(cantidad) AS mermas
+        FROM mermas
+        WHERE DATE_FORMAT(fecha_registro, '%Y-%m') = ?
+        GROUP BY id_producto
+      ) m
+      ON m.id_producto = p.id_producto
+
       WHERE p.activo = 1
       ORDER BY p.nombre
       `,
-      [periodo, periodo, periodo]
+      [periodo, periodo, periodo, periodo]
     )
 
     res.json(rows)
 
   } catch (err) {
-    console.error(err)
+    console.error('❌ ERROR AL OBTENER STOCK:', err)
     res.status(500).json({ error: err.message })
   }
 })
-
 
 // =============================
 // SERVER
