@@ -407,55 +407,61 @@ function Produccion() {
     return <div style={styles.page}>Cargando...</div>
   }
 
-  const handleGuardarMerma = async (e) => {
-    e.preventDefault()
+ const handleGuardarMerma = async (e) => {
+  e.preventDefault()
 
-    if (!mermaForm.id_producto || !mermaForm.cantidad || Number(mermaForm.cantidad) <= 0) {
-      alert('Por favor selecciona un producto e ingresa una cantidad válida mayor a 0.')
-      return
-    }
-
-    setGuardandoMerma(true)
-    try {
-      const res = await fetch(`${API}/mermas`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id_producto: Number(mermaForm.id_producto),
-          tipo_merma: mermaForm.tipo_merma,
-          cantidad: Number(mermaForm.cantidad),
-          motivo: mermaForm.motivo
-        })
-      })
-
-      const data = await res.json()
-
-      if (res.ok) {
-        alert('✅ Merma registrada exitosamente')
-        setMermaForm({
-          id_producto: '',
-          tipo_merma: 'produccion',
-          cantidad: '',
-          motivo: ''
-        })
-        setMostrarModalMerma(false)
-        
-        if (typeof cargarStock === 'function') {
-          cargarStock()
-        } else {
-          window.location.reload()
-        }
-      } else {
-        alert(`❌ Error al guardar merma: ${data.error || 'Error desconocido'}`)
-      }
-    } catch (err) {
-      console.error('Error al guardar merma:', err)
-      alert('❌ Ocurrió un error de conexión al guardar la merma.')
-    } finally {
-      setGuardandoMerma(false)
-    }
+  // 🛑 Validación estricta: Producto, cantidad mayor a 0 y motivo obligatorio (sin espacios vacíos)
+  if (!mermaForm.id_producto || !mermaForm.cantidad || Number(mermaForm.cantidad) <= 0) {
+    alert('Por favor selecciona un producto e ingresa una cantidad válida mayor a 0.')
+    return
   }
 
+  if (!mermaForm.motivo || !mermaForm.motivo.trim()) {
+    alert('Por favor ingresa el motivo u observación de la merma. Este campo es obligatorio.')
+    return
+  }
+
+  setGuardandoMerma(true)
+  try {
+    const res = await fetch(`${API}/mermas`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id_producto: Number(mermaForm.id_producto),
+        tipo_merma: mermaForm.tipo_merma,
+        cantidad: Number(mermaForm.cantidad),
+        motivo: mermaForm.motivo.trim() // ✅ Se envían los datos limpios sin espacios extras
+      })
+    })
+
+    const data = await res.json()
+
+    if (res.ok) {
+      alert('✅ Merma registrada exitosamente')
+      setMermaForm({
+        id_producto: '',
+        tipo_merma: 'produccion',
+        cantidad: '',
+        motivo: ''
+      })
+      setMostrarModalMerma(false)
+      
+      if (typeof cargarStock === 'function') {
+        cargarStock()
+      } else {
+        window.location.reload()
+      }
+    } else {
+      alert(`❌ Error al guardar merma: ${data.error || 'Error desconocido'}`)
+    }
+  } catch (err) {
+    console.error('Error al guardar merma:', err)
+    alert('❌ Ocurrió un error de conexión al guardar la merma.')
+  } finally {
+    setGuardandoMerma(false)
+  }
+}
+  
   if (bloqueado) {
     return (
       <div style={styles.overlay}>
@@ -1108,8 +1114,7 @@ function Produccion() {
             </table>
           </div>
         </div> 
-
-        {/* 🔴 MODAL DE REGISTRO DE MERMA */}
+{/* 🔴 MODAL DE REGISTRO DE MERMA */}
         {mostrarModalMerma && (
           <div style={styles.overlay}>
             <div style={{ ...styles.modal, width: 450, textAlign: 'left' }}>
@@ -1158,13 +1163,17 @@ function Produccion() {
                   />
                 </div>
 
+                {/* ✅ MOTIVO OBLIGATORIO */}
                 <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: 'block', fontWeight: 'bold', marginBottom: 5 }}>Motivo / Observación:</label>
+                  <label style={{ display: 'block', fontWeight: 'bold', marginBottom: 5 }}>
+                    Motivo / Observación <span style={{ color: 'red' }}>*</span>:
+                  </label>
                   <textarea
-                    placeholder="Escribe la causa de la pérdida..."
+                    placeholder="Escribe la causa de la pérdida (obligatorio)..."
                     value={mermaForm.motivo}
                     onChange={(e) => setMermaForm({ ...mermaForm, motivo: e.target.value })}
                     rows="3"
+                    required
                     style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
                   />
                 </div>
