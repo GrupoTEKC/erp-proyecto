@@ -946,8 +946,8 @@ function Produccion() {
             {stock.map(p => {
               const mermaProd = Number(p.merma_produccion || 0)
               const mermaAlm = Number(p.merma_almacen || 0)
-              const stockFinal = Number(p.inicial || 0) + Number(p.producido || 0) - Number(p.salidas || 0) - mermaProd - mermaAlm
-
+// ✅ Solo se resta mermaAlm; mermaProd solo se almacena en la variable para mostrarse en la columna
+              const stockFinal = Number(p.inicial || 0) + Number(p.producido || 0) - Number(p.salidas || 0) - mermaAlm
               return (
                 <tr key={p.id_producto}>
                   <td style={{
