@@ -3899,7 +3899,6 @@ app.get('/mermas', async (req, res) => {
 
 // =============================
 // CONSULTA DE STOCK DE PRODUCTOS
-// =============================
 app.get('/stock', async (req, res) => {
   try {
     const hoy = new Date()
@@ -3919,13 +3918,14 @@ app.get('/stock', async (req, res) => {
         
         COALESCE(m.merma_produccion, 0) AS merma_produccion,
         COALESCE(m.merma_almacen, 0) AS merma_almacen,
-        COALESCE(m.total_mermas, 0) AS mermas,
+        COALESCE(m.total_mermas, 0) AS total_mermas,
 
+        /* ✅ Fórmula igual a la del frontend: solo resta merma de almacén */
         (
           COALESCE(ii.inicial, 0)
           + COALESCE(pd.producido, 0)
           - COALESCE(ed.salidas, 0)
-          - COALESCE(m.total_mermas, 0)
+          - COALESCE(m.merma_almacen, 0)
         ) AS stock
 
       FROM productos p
@@ -3990,7 +3990,6 @@ app.get('/stock', async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
-
 
 // =============================
 // SERVER
