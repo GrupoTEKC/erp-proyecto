@@ -3826,10 +3826,10 @@ app.post('/mermas', async (req, res) => {
   try {
     const { id_producto, tipo_merma, cantidad, motivo } = req.body
 
-    // Validaciones de campos obligatorios
-    if (!id_producto || !tipo_merma || cantidad === undefined) {
+    // Validaciones de campos obligatorios (incluyendo motivo)
+    if (!id_producto || !tipo_merma || cantidad === undefined || !motivo || !motivo.trim()) {
       return res.status(400).json({ 
-        error: 'Los campos id_producto, tipo_merma y cantidad son requeridos' 
+        error: 'Los campos id_producto, tipo_merma, cantidad y motivo son requeridos' 
       })
     }
 
@@ -3852,7 +3852,7 @@ app.post('/mermas', async (req, res) => {
       INSERT INTO mermas (id_producto, tipo_merma, cantidad, motivo)
       VALUES (?, ?, ?, ?)
       `,
-      [id_producto, tipo_merma, cantidadNum, motivo || null]
+      [id_producto, tipo_merma, cantidadNum, motivo.trim()]
     )
 
     res.json({ 
@@ -3865,7 +3865,6 @@ app.post('/mermas', async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
-
 
 // =============================
 // OBTENER HISTORIAL DE MERMAS
