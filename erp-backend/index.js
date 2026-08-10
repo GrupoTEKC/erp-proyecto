@@ -1437,6 +1437,38 @@ app.post('/pedidos/modificar', async (req, res) => {
   }
 })
 
+app.get('/pedidos/:id/detalle-nota', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [filas] = await db.query(
+      `SELECT 
+          p.id_pedido,
+          e.folio AS folio_entrega,
+          c.nombre AS cliente,
+          e.fecha_salida,
+          e.fecha_entrega,
+          pr.nombre AS producto,
+          ed.cantidad_final,
+          pd.precio_unitario,
+          (ed.cantidad_final * pd.precio_unitario) AS subtotal_actualizado,
+          SUM(ed.cantidad_final * pd.precio_unitario) OVER(PARTITION BY e.id_entrega) AS total_nota_actualizado
+       FROM entregas e
+       JOIN entrega_detalle ed ON e.id_entrega = ed.id_entrega
+       JOIN pedidos p ON e.id_pedido = p.id_pedido
+       JOIN pedido_detalle pd ON p.id_pedido = pd.id_pedido AND ed.id_producto = pd.id_producto
+       JOIN productos pr ON ed.id_producto = pr.id_producto
+       LEFT JOIN clientes c ON p.id_cliente = c.id_cliente
+       WHERE p.id_pedido = ?`,
+      [id]
+    );
+
+    res.json(filas);
+  } catch (error) {
+    console.error("Error al obtener detalle de nota:", error);
+    res.status(500).json({ error: "Error interno del servidor al consultar la nota" });
+  }
+});
+
 
 // =============================
 // CHOFERES
