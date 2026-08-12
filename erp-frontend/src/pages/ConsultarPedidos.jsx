@@ -1010,17 +1010,21 @@ setPedidosSeleccionados([]);
   
 const guardarEntrega = async () => {
     try {
-      // 1. Obtener la referencia del pedido activo sin importar el nombre de variable de estado que uses
-      const pedidoActual = typeof pedido !== 'undefined' && pedido ? pedido : (typeof pedidoSalida !== 'undefined' ? pedidoSalida : null)
-      
+      // Intenta obtener el pedido desde las variables de estado más comunes
+      const pedidoActual = 
+        (typeof pedidoSeleccionado !== 'undefined' && pedidoSeleccionado) ||
+        (typeof pedidoSalida !== 'undefined' && pedidoSalida) ||
+        (typeof pedido !== 'undefined' && pedido) ||
+        null
+
       if (!pedidoActual) {
-        alert('No se ha seleccionado ningún pedido para procesar')
+        alert('No se ha seleccionado ningún pedido para procesar. Revisa la variable de estado del modal.')
         return
       }
 
       const isVentaBodega = Number(pedidoActual.id_cliente) === 234
 
-      // 2. Validaciones únicamente para clientes estándar (NO Venta en Bodega)
+      // 1. Validaciones únicamente para clientes estándar (NO Venta en Bodega)
       if (!isVentaBodega) {
         if (form.otro_chofer) {
           if (!form.nombre_chofer?.trim() || !form.apellido_paterno?.trim() || !form.apellido_materno?.trim()) {
@@ -1038,13 +1042,13 @@ const guardarEntrega = async () => {
         }
       }
 
-      // 3. Validar productos
+      // 2. Validar productos
       if (!productosSalida || productosSalida.length === 0) {
         alert('No hay productos en la lista para procesar')
         return
       }
 
-      // 4. Validar comentario si hay diferencias de cantidad (Aplica para ambos casos)
+      // 3. Validar comentario si hay diferencias de cantidad
       const hayDiferencias = productosSalida.some(
         p => Number(p.cantidad_entregada) !== Number(p.cantidad_planeada)
       )
@@ -1054,7 +1058,7 @@ const guardarEntrega = async () => {
         return
       }
 
-      // 5. Mapear payload exactamente como lo requiere la destructuración del endpoint
+      // 4. Preparar payload para la API
       const payload = {
         id_chofer: isVentaBodega ? null : (form.otro_chofer ? null : Number(form.id_chofer)),
         id_unidad: isVentaBodega ? null : Number(form.id_unidad),
@@ -1070,7 +1074,7 @@ const guardarEntrega = async () => {
         }))
       }
 
-      // 6. Enviar petición al backend
+      // 5. Petición HTTP al Backend
       const res = await fetch(`${API_URL}/pedidos/${pedidoActual.id_pedido}/en-curso`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1089,8 +1093,9 @@ const guardarEntrega = async () => {
           : 'Salida de almacén procesada correctamente.'
       )
 
-      // 7. Limpieza de modales y recarga de datos
+      // 6. Limpieza de modales
       if (typeof setModalSalidaOpen === 'function') setModalSalidaOpen(false)
+      if (typeof setPedidoSeleccionado === 'function') setPedidoSeleccionado(null)
       if (typeof setPedidoSalida === 'function') setPedidoSalida(null)
       if (typeof setPedido === 'function') setPedido(null)
 
@@ -1103,7 +1108,6 @@ const guardarEntrega = async () => {
       alert(err.message || 'Ocurrió un error al guardar la entrega')
     }
   }
-  
   
 
 const confirmarConPassword = async () => {
