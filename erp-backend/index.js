@@ -961,15 +961,13 @@ app.get('/pedidos/cliente/:id_cliente', async (req, res) => {
   }
 })
 
-// =============================
-// 🔥 PEDIDO EN CURSO (CORREGIDO)
-// =============================
-
+// ==========================================
+// 🔥 PROCESAR SALIDA DE ALMACÉN / EN CURSO
+// ==========================================
 app.post('/pedidos/:id/en-curso', async (req, res) => {
   const conn = await db.getConnection()
   try {
     const { id } = req.params
-    // 🔥 NUEVO: recibimos campos extra
     const { 
       id_chofer, 
       id_unidad, 
@@ -980,27 +978,111 @@ app.post('/pedidos/:id/en-curso', async (req, res) => {
       apellido_paterno,
       apellido_materno
     } = req.body
+
     await conn.beginTransaction()
+
+    // 1. Obtener la información actual del pedido
+    const [[pedidoInfo]] = await conn.query(
+      'SELECT id_cliente, total FROM pedidos WHERE id_pedido = ?',
+      [id]
+    )
+
+    if (!pedidoInfo) {
+      throw new Error('El pedido especificado no existe')
+    }
+
+    const ID_VENTA_BODEGA = 234
+
+    // ==========================================
+    // CASO A: VENTA BODEGA (id_cliente === 234)
+    // ==========================================
+    if (Number(pedidoInfo.id_cliente) === ID_VENTA_BODEGA) {
+
+      const folioVB = `VB-${id}`
+
+      // A1. Crear entrega directa (id_chofer e id_unidad se envían en NULL)
+      const [entregaResult] = await conn.query(`
+        INSERT INTO entregas (
+          id_pedido,
+          id_chofer,
+          id_unidad,
+          fecha_salida,
+          comentario,
+          folio,
+          estado,
+          fecha_entrega
+        )
+        VALUES (?, NULL, NULL, NOW(), ?, ?, 'entregado', NOW())
+      `, [id, comentario || 'Venta directa en bodega', folioVB])
+
+      const id_entrega = entregaResult.insertId
+
+      // A2. Copiar detalles a entrega_detalle especificando cantidad_final
+      for (const item of productos) {
+        const cantEntregada = Number(item.cantidad_entregada)
+
+        await conn.query(`
+          INSERT INTO entrega_detalle (
+            id_entrega,
+            id_producto,
+            cantidad_pedida,
+            cantidad_entregada,
+            cantidad_final
+          )
+          VALUES (?, ?, ?, ?, ?)
+        `, [
+          id_entrega,
+          item.id_producto,
+          item.cantidad_planeada || cantEntregada,
+          cantEntregada,
+          cantEntregada
+        ])
+      }
+
+      // A3. Marcar el pedido como pagado y saldar el total
+      await conn.query(`
+        UPDATE pedidos
+        SET 
+          estado = 'pagado',
+          total_pagado = total,
+          fecha_entrega = CURRENT_DATE()
+        WHERE id_pedido = ?
+      `, [id])
+
+      await conn.commit()
+
+      return res.json({
+        success: true,
+        id_entrega,
+        message: 'Venta en bodega procesada y liquidada correctamente'
+      })
+    }
+
+    // ==========================================
+    // CASO B: FLUJO NORMAL (Clientes Estándar)
+    // ==========================================
     const [programacion] = await conn.query(`
-    SELECT 
-      id_programacion,
-      id_chofer,
-      id_unidad
-     FROM programaciones_pedido
-     WHERE id_pedido = ?
-     AND activo = 1
-  LIMIT 1 
-`, [id])
+      SELECT 
+        id_programacion,
+        id_chofer,
+        id_unidad
+      FROM programaciones_pedido
+      WHERE id_pedido = ?
+      AND activo = 1
+      LIMIT 1 
+    `, [id])
     
     let idChoferFinal = id_chofer || null
-let idUnidadFinal = id_unidad || null
-if (programacion.length) {
-  idChoferFinal = id_chofer || programacion[0].id_chofer || null
-  idUnidadFinal = id_unidad || programacion[0].id_unidad || null
-}
-if (!idChoferFinal || !idUnidadFinal) {
-  throw new Error('Debe seleccionar chofer y unidad')
-}
+    let idUnidadFinal = id_unidad || null
+
+    if (programacion.length) {
+      idChoferFinal = id_chofer || programacion[0].id_chofer || null
+      idUnidadFinal = id_unidad || programacion[0].id_unidad || null
+    }
+
+    if (!idChoferFinal || !idUnidadFinal) {
+      throw new Error('Debe seleccionar chofer y unidad')
+    }
     
     if (otro_chofer) {
       if (!nombre_chofer || !apellido_paterno || !apellido_materno) {
@@ -1016,53 +1098,64 @@ if (!idChoferFinal || !idUnidadFinal) {
       ])
       idChoferFinal = nuevoChofer.insertId
     }
-    // 🔥 SOLO cambiamos id_chofer por idChoferFinal
+
+    // Crear registro de entrega en ruta
     const [entregaResult] = await conn.query(`
       INSERT INTO entregas (
         id_pedido,
         id_chofer,
         id_unidad,
+        fecha_salida,
         comentario,
         estado
       )
-      VALUES (?, ?, ?, ?, 'en_ruta')
-      `, [id, idChoferFinal, idUnidadFinal, comentario || null])
-        const id_entrega = entregaResult.insertId
-        for (const item of productos) {
-  if (
-    Number(item.cantidad_entregada) !== Number(item.cantidad_planeada) &&
-    !comentario
-  ) {
-    throw new Error('Comentario obligatorio por diferencia de cantidades')
-  }
-  await conn.query(`
-    INSERT INTO entrega_detalle (
-      id_entrega,
-      id_producto,
-      cantidad_pedida,
-      cantidad_entregada
-    )
-    VALUES (?, ?, ?, ?)
-  `, [
-    id_entrega,
-    item.id_producto,
-    item.cantidad_planeada,
-    item.cantidad_entregada
-  ])
-    
+      VALUES (?, ?, ?, NOW(), ?, 'en_ruta')
+    `, [id, idChoferFinal, idUnidadFinal, comentario || null])
+
+    const id_entrega = entregaResult.insertId
+
+    for (const item of productos) {
+      if (
+        Number(item.cantidad_entregada) !== Number(item.cantidad_planeada) &&
+        !comentario
+      ) {
+        throw new Error('Comentario obligatorio por diferencia de cantidades')
+      }
+
+      await conn.query(`
+        INSERT INTO entrega_detalle (
+          id_entrega,
+          id_producto,
+          cantidad_pedida,
+          cantidad_entregada,
+          cantidad_final
+        )
+        VALUES (?, ?, ?, ?, ?)
+      `, [
+        id_entrega,
+        item.id_producto,
+        item.cantidad_planeada,
+        item.cantidad_entregada,
+        item.cantidad_entregada
+      ])
     }
-        await conn.query(`
+
+    // Cambiar estado a 'en_ruta'
+    await conn.query(`
       UPDATE pedidos
       SET 
         id_chofer = ?,
         estado = 'en_ruta'
       WHERE id_pedido = ?
-    `, [idChoferFinal, id]) // 🔥 aquí también
+    `, [idChoferFinal, id])
+
     await conn.commit()
+
     res.json({
       success: true,
       id_entrega
     })
+
   } catch (err) {
     await conn.rollback()
     res.status(500).json({ error: err.message })
@@ -1070,6 +1163,7 @@ if (!idChoferFinal || !idUnidadFinal) {
     conn.release()
   }
 })
+
 
 // ENTREGAR PEDIDO (MEJORADO)
 // =============================
