@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import logo from '../assets/TRANSPARENTE.png'
@@ -1011,13 +1010,18 @@ setPedidosSeleccionados([]);
   
 const guardarEntrega = async () => {
     try {
-      if (!pedidoSalida) return
+      // 1. Obtener la referencia del pedido activo sin importar el nombre de variable de estado que uses
+      const pedidoActual = typeof pedido !== 'undefined' && pedido ? pedido : (typeof pedidoSalida !== 'undefined' ? pedidoSalida : null)
+      
+      if (!pedidoActual) {
+        alert('No se ha seleccionado ningún pedido para procesar')
+        return
+      }
 
-      const isVentaBodega = Number(pedidoSalida.id_cliente) === 234
+      const isVentaBodega = Number(pedidoActual.id_cliente) === 234
 
-      // 1. Validaciones únicamente si NO es Venta en Bodega
+      // 2. Validaciones únicamente para clientes estándar (NO Venta en Bodega)
       if (!isVentaBodega) {
-        // VALIDAR CHOFER NUEVO
         if (form.otro_chofer) {
           if (!form.nombre_chofer?.trim() || !form.apellido_paterno?.trim() || !form.apellido_materno?.trim()) {
             alert('Completa el nombre y apellidos del chofer')
@@ -1034,23 +1038,23 @@ const guardarEntrega = async () => {
         }
       }
 
-      // 2. Validar que la lista de productos no esté vacía
+      // 3. Validar productos
       if (!productosSalida || productosSalida.length === 0) {
         alert('No hay productos en la lista para procesar')
         return
       }
 
-      // 3. Validar comentario si hay diferencias de cantidad (aplica para todos)
+      // 4. Validar comentario si hay diferencias de cantidad (Aplica para ambos casos)
       const hayDiferencias = productosSalida.some(
         p => Number(p.cantidad_entregada) !== Number(p.cantidad_planeada)
       )
 
-      if (hayDiferencias && !form.comentario.trim()) {
+      if (hayDiferencias && !form.comentario?.trim()) {
         alert('Hay diferencias entre la cantidad planeada y la entregada. El comentario es obligatorio.')
         return
       }
 
-      // 4. Preparar el payload de envío
+      // 5. Mapear payload exactamente como lo requiere la destructuración del endpoint
       const payload = {
         id_chofer: isVentaBodega ? null : (form.otro_chofer ? null : Number(form.id_chofer)),
         id_unidad: isVentaBodega ? null : Number(form.id_unidad),
@@ -1066,8 +1070,8 @@ const guardarEntrega = async () => {
         }))
       }
 
-      // 5. Petición HTTP al Backend
-      const res = await fetch(`${API_URL}/pedidos/${pedidoSalida.id_pedido}/en-curso`, {
+      // 6. Enviar petición al backend
+      const res = await fetch(`${API_URL}/pedidos/${pedidoActual.id_pedido}/en-curso`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -1085,16 +1089,21 @@ const guardarEntrega = async () => {
           : 'Salida de almacén procesada correctamente.'
       )
 
-      // 6. Limpieza de estado y actualización de la vista
-      setModalSalidaOpen(false)
-      setPedidoSalida(null)
-      cargarPedidos() // Recarga la tabla de pedidos
+      // 7. Limpieza de modales y recarga de datos
+      if (typeof setModalSalidaOpen === 'function') setModalSalidaOpen(false)
+      if (typeof setPedidoSalida === 'function') setPedidoSalida(null)
+      if (typeof setPedido === 'function') setPedido(null)
+
+      if (typeof cargarPedidos === 'function') {
+        cargarPedidos()
+      }
 
     } catch (err) {
       console.error('Error al guardar entrega:', err)
       alert(err.message || 'Ocurrió un error al guardar la entrega')
     }
   }
+  
   
 
 const confirmarConPassword = async () => {
