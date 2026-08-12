@@ -1000,7 +1000,7 @@ app.post('/pedidos/:id/en-curso', async (req, res) => {
 
       const folioVB = `VB-${id}`
 
-      // A1. Crear entrega directa (id_chofer e id_unidad se envían en NULL)
+      // A1. Crear entrega directa (id_chofer e id_unidad en NULL)
       const [entregaResult] = await conn.query(`
         INSERT INTO entregas (
           id_pedido,
@@ -1163,7 +1163,6 @@ app.post('/pedidos/:id/en-curso', async (req, res) => {
     conn.release()
   }
 })
-
 
 // ENTREGAR PEDIDO (MEJORADO)
 // =============================
