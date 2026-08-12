@@ -850,7 +850,7 @@ setPedidosSeleccionados([]);
 
     const win = window.open('', '_blank', 'width=900,height=700')
 
-    win.document.write(`
+  win.document.write(`
       <html>
         <head>
           <title>Remisión ${pedido.id_pedido}</title>
@@ -877,12 +877,12 @@ setPedidosSeleccionados([]);
               overflow: hidden;
             }
 
-             .header {
+            .header {
               display: flex;
               align-items: center;
-              justify-content: space-between; /* 🔥 déjalo así */
+              justify-content: space-between;
               margin-bottom: 10px;
-              }
+            }
 
             .logos {
               display: flex;
@@ -906,19 +906,20 @@ setPedidosSeleccionados([]);
               width: auto;
             }
 
-          .empresa {
-          flex: 1;
-          text-align: center;
-          font-size: 11px;
-          line-height: 1.4;
-          margin: 0 auto; /* 🔥 esto lo centra REAL */
-          }
-         .titulo {
-          font-size: 19px;
-          font-weight: bold;
-          letter-spacing: 0.5px; /* 🔥 se ve más “empresa” */
-          margin-bottom: 4px;
-          }
+            .empresa {
+              flex: 1;
+              text-align: center;
+              font-size: 11px;
+              line-height: 1.4;
+              margin: 0 auto;
+            }
+
+            .titulo {
+              font-size: 19px;
+              font-weight: bold;
+              letter-spacing: 0.5px;
+              margin-bottom: 4px;
+            }
 
             .folio {
               width: 130px;
@@ -940,8 +941,7 @@ setPedidosSeleccionados([]);
               font-size: 10px;
             }
 
-            th,
-            td {
+            th, td {
               border: 1px solid #888;
               padding: 5px 6px;
             }
@@ -1010,71 +1010,92 @@ setPedidosSeleccionados([]);
 }
   
 const guardarEntrega = async () => {
-  try {
-    // VALIDAR CHOFER NUEVO
-    if (form.otro_chofer) {
-      if (
-        !form.nombre_chofer.trim() ||
-        !form.apellido_paterno.trim() ||
-        !form.apellido_materno.trim()
-      ) {
-        return alert("Completa los datos del chofer")
+    try {
+      if (!pedidoSalida) return
+
+      const isVentaBodega = Number(pedidoSalida.id_cliente) === 234
+
+      // 1. Validaciones únicamente si NO es Venta en Bodega
+      if (!isVentaBodega) {
+        // VALIDAR CHOFER NUEVO
+        if (form.otro_chofer) {
+          if (!form.nombre_chofer?.trim() || !form.apellido_paterno?.trim() || !form.apellido_materno?.trim()) {
+            alert('Completa el nombre y apellidos del chofer')
+            return
+          }
+        } else if (!form.id_chofer) {
+          alert('Selecciona un chofer o agrega uno nuevo')
+          return
+        }
+
+        if (!form.id_unidad) {
+          alert('Selecciona una unidad')
+          return
+        }
       }
-    }
 
-    // VALIDAR UNIDAD
-    if (!form.id_unidad) {
-      return alert("Selecciona unidad")
-    }
-
-    // VALIDAR CHOFER
-    if (!form.id_chofer && !form.otro_chofer) {
-      return alert("Selecciona chofer")
-    }
-
-    // VALIDAR DIFERENCIAS
-    const hayDiferencias = form.productos.some(
-      p => Number(p.cantidad_entregada) !== Number(p.cantidad_planeada)
-    )
-
-    if (hayDiferencias && !form.comentario.trim()) {
-      return alert("Debes agregar comentario por diferencias")
-    }
-
-    // ENVIAR AL BACKEND
-    const res = await fetch(
-      `${urlLimpia}/pedidos/${pedidoSeleccionado}/en-curso`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(form)
+      // 2. Validar que la lista de productos no esté vacía
+      if (!productosSalida || productosSalida.length === 0) {
+        alert('No hay productos en la lista para procesar')
+        return
       }
-    )
 
-    const data = await res.json()
+      // 3. Validar comentario si hay diferencias de cantidad (aplica para todos)
+      const hayDiferencias = productosSalida.some(
+        p => Number(p.cantidad_entregada) !== Number(p.cantidad_planeada)
+      )
 
-    if (!res.ok) {
-      return alert(data.error || "Error al guardar entrega")
+      if (hayDiferencias && !form.comentario.trim()) {
+        alert('Hay diferencias entre la cantidad planeada y la entregada. El comentario es obligatorio.')
+        return
+      }
+
+      // 4. Preparar el payload de envío
+      const payload = {
+        id_chofer: isVentaBodega ? null : (form.otro_chofer ? null : Number(form.id_chofer)),
+        id_unidad: isVentaBodega ? null : Number(form.id_unidad),
+        comentario: form.comentario || null,
+        otro_chofer: isVentaBodega ? false : Boolean(form.otro_chofer),
+        nombre_chofer: form.nombre_chofer || null,
+        apellido_paterno: form.apellido_paterno || null,
+        apellido_materno: form.apellido_materno || null,
+        productos: productosSalida.map(p => ({
+          id_producto: p.id_producto,
+          cantidad_planeada: Number(p.cantidad_planeada),
+          cantidad_entregada: Number(p.cantidad_entregada)
+        }))
+      }
+
+      // 5. Petición HTTP al Backend
+      const res = await fetch(`${API_URL}/pedidos/${pedidoSalida.id_pedido}/en-curso`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Error al procesar la salida')
+      }
+
+      alert(
+        isVentaBodega
+          ? 'Venta en bodega procesada y liquidada correctamente.'
+          : 'Salida de almacén procesada correctamente.'
+      )
+
+      // 6. Limpieza de estado y actualización de la vista
+      setModalSalidaOpen(false)
+      setPedidoSalida(null)
+      cargarPedidos() // Recarga la tabla de pedidos
+
+    } catch (err) {
+      console.error('Error al guardar entrega:', err)
+      alert(err.message || 'Ocurrió un error al guardar la entrega')
     }
-
-    // CERRAR MODALES
-    setModalEntrega(false)
-    setModalPassword(false)
-
-    // LIMPIAR PASSWORD
-    setPassword("")
-    setErrorPassword("")
-
-    // RECARGAR PEDIDOS
-   cargarPedidos()
-
-  } catch (error) {
-    console.error(error)
-    alert("Error de conexión con servidor")
   }
-}
+  
 
 const confirmarConPassword = async () => {
   if (password !== "JMAemb#1?_") {
@@ -1297,7 +1318,7 @@ return (
       </div>
 
       {/* 🟢 BARRA SUPERIOR DE FILTROS */}
-      <div style={styles.topBar}>>
+      <div style={styles.topBar}>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <button 
             style={{ ...styles.button, ...styles.primary }} 
