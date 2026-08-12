@@ -1009,105 +1009,97 @@ setPedidosSeleccionados([]);
 }
   
 const guardarEntrega = async () => {
-    try {
-      // Intenta obtener el pedido desde las variables de estado más comunes
-      const pedidoActual = 
-        (typeof pedidoSeleccionado !== 'undefined' && pedidoSeleccionado) ||
-        (typeof pedidoSalida !== 'undefined' && pedidoSalida) ||
-        (typeof pedido !== 'undefined' && pedido) ||
-        null
+  try {
+    // 1. Obtener los datos del pedido actual
+    const pedidoActual = pedidos.find(p => p.id_pedido === pedidoSeleccionado)
 
-      if (!pedidoActual) {
-        alert('No se ha seleccionado ningún pedido para procesar. Revisa la variable de estado del modal.')
-        return
-      }
-
-      const isVentaBodega = Number(pedidoActual.id_cliente) === 234
-
-      // 1. Validaciones únicamente para clientes estándar (NO Venta en Bodega)
-      if (!isVentaBodega) {
-        if (form.otro_chofer) {
-          if (!form.nombre_chofer?.trim() || !form.apellido_paterno?.trim() || !form.apellido_materno?.trim()) {
-            alert('Completa el nombre y apellidos del chofer')
-            return
-          }
-        } else if (!form.id_chofer) {
-          alert('Selecciona un chofer o agrega uno nuevo')
-          return
-        }
-
-        if (!form.id_unidad) {
-          alert('Selecciona una unidad')
-          return
-        }
-      }
-
-      // 2. Validar productos
-      if (!productosSalida || productosSalida.length === 0) {
-        alert('No hay productos en la lista para procesar')
-        return
-      }
-
-      // 3. Validar comentario si hay diferencias de cantidad
-      const hayDiferencias = productosSalida.some(
-        p => Number(p.cantidad_entregada) !== Number(p.cantidad_planeada)
-      )
-
-      if (hayDiferencias && !form.comentario?.trim()) {
-        alert('Hay diferencias entre la cantidad planeada y la entregada. El comentario es obligatorio.')
-        return
-      }
-
-      // 4. Preparar payload para la API
-      const payload = {
-        id_chofer: isVentaBodega ? null : (form.otro_chofer ? null : Number(form.id_chofer)),
-        id_unidad: isVentaBodega ? null : Number(form.id_unidad),
-        comentario: form.comentario || null,
-        otro_chofer: isVentaBodega ? false : Boolean(form.otro_chofer),
-        nombre_chofer: form.nombre_chofer || null,
-        apellido_paterno: form.apellido_paterno || null,
-        apellido_materno: form.apellido_materno || null,
-        productos: productosSalida.map(p => ({
-          id_producto: p.id_producto,
-          cantidad_planeada: Number(p.cantidad_planeada),
-          cantidad_entregada: Number(p.cantidad_entregada)
-        }))
-      }
-
-      // 5. Petición HTTP al Backend
-      const res = await fetch(`${API_URL}/pedidos/${pedidoActual.id_pedido}/en-curso`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Error al procesar la salida')
-      }
-
-      alert(
-        isVentaBodega
-          ? 'Venta en bodega procesada y liquidada correctamente.'
-          : 'Salida de almacén procesada correctamente.'
-      )
-
-      // 6. Limpieza de modales
-      if (typeof setModalSalidaOpen === 'function') setModalSalidaOpen(false)
-      if (typeof setPedidoSeleccionado === 'function') setPedidoSeleccionado(null)
-      if (typeof setPedidoSalida === 'function') setPedidoSalida(null)
-      if (typeof setPedido === 'function') setPedido(null)
-
-      if (typeof cargarPedidos === 'function') {
-        cargarPedidos()
-      }
-
-    } catch (err) {
-      console.error('Error al guardar entrega:', err)
-      alert(err.message || 'Ocurrió un error al guardar la entrega')
+    if (!pedidoActual) {
+      alert('No se ha seleccionado ningún pedido válido para procesar.')
+      return
     }
+
+    const isVentaBodega = Number(pedidoActual.id_cliente) === 234
+
+    // 2. Validaciones exclusivas para clientes estándar (NO Venta en Bodega)
+    if (!isVentaBodega) {
+      if (form.otro_chofer) {
+        if (!form.nombre_chofer?.trim() || !form.apellido_paterno?.trim() || !form.apellido_materno?.trim()) {
+          alert('Completa el nombre y apellidos del chofer')
+          return
+        }
+      } else if (!form.id_chofer) {
+        alert('Selecciona un chofer o agrega uno nuevo')
+        return
+      }
+
+      if (!form.id_unidad) {
+        alert('Selecciona una unidad')
+        return
+      }
+    }
+
+    // 3. Validar productos desde form.productos
+    if (!form.productos || form.productos.length === 0) {
+      alert('No hay productos en la lista para procesar')
+      return
+    }
+
+    // 4. Validar comentario si existen diferencias de cantidad
+    const hayDiferencias = form.productos.some(
+      p => Number(p.cantidad_entregada) !== Number(p.cantidad_planeada)
+    )
+
+    if (hayDiferencias && !form.comentario?.trim()) {
+      alert('Hay diferencias entre la cantidad planeada y la entregada. El comentario es obligatorio.')
+      return
+    }
+
+    // 5. Preparar payload para el Backend
+    const payload = {
+      id_chofer: isVentaBodega ? null : (form.otro_chofer ? null : Number(form.id_chofer)),
+      id_unidad: isVentaBodega ? null : Number(form.id_unidad),
+      comentario: form.comentario || null,
+      otro_chofer: isVentaBodega ? false : Boolean(form.otro_chofer),
+      nombre_chofer: form.nombre_chofer || null,
+      apellido_paterno: form.apellido_paterno || null,
+      apellido_materno: form.apellido_materno || null,
+      productos: form.productos.map(p => ({
+        id_producto: p.id_producto,
+        cantidad_planeada: Number(p.cantidad_planeada),
+        cantidad_entregada: Number(p.cantidad_entregada)
+      }))
+    }
+
+    // 6. Enviar petición HTTP usando la URL limpia
+    const res = await fetch(`${urlLimpia}/pedidos/${pedidoActual.id_pedido}/en-curso`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      throw new Error(data.error || 'Error al procesar la salida')
+    }
+
+    alert(
+      isVentaBodega
+        ? 'Venta en bodega procesada y liquidada correctamente.'
+        : 'Salida de almacén procesada correctamente.'
+    )
+
+    // 7. Cerrar modales y recargar lista de pedidos
+    setModalPassword(false)
+    setModalEntrega(false)
+    setPedidoSeleccionado(null)
+    cargarPedidos()
+
+  } catch (err) {
+    console.error('Error al guardar entrega:', err)
+    alert(err.message || 'Ocurrió un error al guardar la entrega')
   }
+}
   
 
 const confirmarConPassword = async () => {
