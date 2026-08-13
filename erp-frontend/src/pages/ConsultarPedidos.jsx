@@ -1444,10 +1444,11 @@ return (
                     ...styles.tarjeta,
                     backgroundColor: alerta ? '#ffe5e5' : '#fff'
                   }}>
-                  <input
-                  type="checkbox"
-                  checked={pedidosSeleccionados.includes(p.id_pedido)}
-                  onChange={() => handleSelectPedido(p.id_pedido)}
+                    
+                  <input 
+                  type="checkbox" 
+                  checked={pedidosSeleccionados.includes(p.id_pedido)} 
+                  onChange={() => togglePedido(p.id_pedido)} 
                   disabled={(() => {
                   const isVentaBodega = Number(p.id_cliente) === 234 || Number(p.cliente_id) === 234;
                   const estado = (p.estado || '').toLowerCase();
@@ -1457,8 +1458,9 @@ return (
                   } else {
                   return estado !== 'en_ruta' && estado !== 'en ruta';
                   }
-                  })()}
-                   />
+                  })()} 
+                  />
+                    
                     <strong>ID:</strong> {p.id_pedido} <br />
                     <strong>Cliente:</strong> {p.cliente} <br />
                     <strong>Tienda:</strong> {p.nombre_tienda || '-'} <br />
