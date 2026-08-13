@@ -1452,11 +1452,14 @@ return (
                   disabled={(() => {
                   const isVentaBodega = Number(p.id_cliente) === 234 || Number(p.cliente_id) === 234;
                   const estado = (p.estado || '').toLowerCase();
-    
+
+                   // 1. Venta en Bodega: SOLO se permite 'pagado'
                   if (isVentaBodega) {
                   return estado !== 'pagado';
-                  } else {
-                  return estado !== 'en_ruta' && estado !== 'en ruta';
+                  } 
+                  // 2. Pedidos Normales: Se permite 'en_ruta' (o 'en ruta'), 'pendiente' y 'programado'
+                  else {
+                  return !['en_ruta', 'en ruta', 'pendiente', 'programado'].includes(estado);
                   }
                   })()} 
                   />
