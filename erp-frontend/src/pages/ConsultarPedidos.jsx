@@ -1464,6 +1464,7 @@ return (
                     <strong>ID:</strong> {p.id_pedido} <br />
                     <strong>Cliente:</strong> {p.cliente} <br />
                     <strong>Tienda:</strong> {p.nombre_tienda || '-'} <br />
+                    <strong>Municipio:</strong> {p.municipio || 'Sin municipio'} <br />
                     <strong>Fecha:</strong> {p.fecha ? new Date(p.fecha).toLocaleDateString() : '-'} <br />
                     {p.fecha_programada && (
                    <>
