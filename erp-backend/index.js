@@ -902,29 +902,29 @@ app.get('/pagos/rezagado/:id_rezagado', async (req, res) => {
 })
 // =============================
 // LISTAR PEDIDOS
-// =============================
 app.get('/pedidos', async (req, res) => {
   try {
     const [rows] = await db.query(`
     SELECT
-    p.*,
-    e.fecha_salida,
-    CONCAT(c.nombre,' ',c.apellido1) AS cliente,
-    c.nombre_tienda,
-    r.nombre AS ruta
+      p.*,
+      e.fecha_salida,
+      CONCAT(c.nombre,' ',c.apellido1) AS cliente,
+      c.nombre_tienda,
+      c.municipio, 
+      r.nombre AS ruta
     FROM pedidos p
     LEFT JOIN clientes c
-    ON p.id_cliente = c.id_cliente
+      ON p.id_cliente = c.id_cliente
     LEFT JOIN rutas r
-    ON p.id_ruta = r.id_ruta
+      ON p.id_ruta = r.id_ruta
     LEFT JOIN (
-    SELECT
-    id_pedido,
-    MAX(fecha_salida) AS fecha_salida
-    FROM entregas
-    GROUP BY id_pedido
+      SELECT
+        id_pedido,
+        MAX(fecha_salida) AS fecha_salida
+      FROM entregas
+      GROUP BY id_pedido
     ) e
-    ON p.id_pedido = e.id_pedido
+      ON p.id_pedido = e.id_pedido
     ORDER BY p.fecha DESC
     `)
     res.json(rows)
@@ -932,7 +932,6 @@ app.get('/pedidos', async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
-
 // =============================
 // PEDIDOS POR CLIENTE
 // =============================
