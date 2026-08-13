@@ -632,30 +632,34 @@ const imprimirPreviaMultiples = async () => {
             <b>Ruta:</b> Ruta ${pedido.id_ruta || ''} - ${obtenerNombreRuta(pedido.id_ruta)}
           </div>
           
-          <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
-            <thead>
-              <tr style="background: #f0f0f0;">
-                <th style="border: 1px solid #ccc; padding: 6px; text-align: center; width: 45px;">Check</th>
-                <th style="border: 1px solid #ccc; padding: 6px; text-align: center; width: 90px;">Cant. A Surtir</th>
-                <th style="border: 1px solid #ccc; padding: 6px; text-align: left;">Producto</th>
-                <th style="border: 1px solid #ccc; padding: 6px; text-align: right; width: 100px;">P. Unit.</th>
-                <th style="border: 1px solid #ccc; padding: 6px; text-align: right; width: 110px;">Subtotal</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${detalleProcesado.map(item => `
-                <tr>
-                  <td style="border: 1px solid #ccc; padding: 4px; text-align: center;">
-                    <div style="width: 18px; height: 18px; border: 1.5px solid #333; margin: 0 auto; border-radius: 3px;"></div>
-                  </td>
-                  <td style="border: 1px solid #ccc; padding: 6px; text-align: center; font-weight: bold; font-size: 13px;">${item.cantFormateada}</td>
-                  <td style="border: 1px solid #ccc; padding: 6px;">${item.nombre || ''}</td>
-                  <td style="border: 1px solid #ccc; padding: 6px; text-align: right;">$${item.precioFormateado}</td>
-                  <td style="border: 1px solid #ccc; padding: 6px; text-align: right;">$${item.subtotalFormateado}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
+       <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+  <thead>
+    <tr style="background: #f0f0f0;">
+      <th style="border: 1px solid #ccc; padding: 6px; text-align: center; width: 45px;">Check</th>
+      <th style="border: 1px solid #ccc; padding: 6px; text-align: center; width: 90px;">Cant. A Surtir</th>
+      <th style="border: 1px solid #ccc; padding: 6px; text-align: left;">Producto</th>
+      <!-- 🟢 NUEVA COLUMNA -->
+      <th style="border: 1px solid #ccc; padding: 6px; text-align: center; width: 100px;">Cant. Real Embarcada</th>
+      <th style="border: 1px solid #ccc; padding: 6px; text-align: right; width: 90px;">P. Unit.</th>
+      <th style="border: 1px solid #ccc; padding: 6px; text-align: right; width: 100px;">Subtotal</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${detalleProcesado.map(item => `
+      <tr>
+        <td style="border: 1px solid #ccc; padding: 4px; text-align: center;">
+          <div style="width: 18px; height: 18px; border: 1.5px solid #333; margin: 0 auto; border-radius: 3px;"></div>
+        </td>
+        <td style="border: 1px solid #ccc; padding: 6px; text-align: center; font-weight: bold; font-size: 13px;">${item.cantFormateada}</td>
+        <td style="border: 1px solid #ccc; padding: 6px;">${item.nombre || ''}</td>
+        <!-- 🟢 CELDA VACÍA PARA ESCRIBIR A MANO -->
+        <td style="border: 1px solid #ccc; padding: 6px;"></td>
+        <td style="border: 1px solid #ccc; padding: 6px; text-align: right;">$${item.precioFormateado}</td>
+        <td style="border: 1px solid #ccc; padding: 6px; text-align: right;">$${item.subtotalFormateado}</td>
+      </tr>
+    `).join('')}
+  </tbody>
+</table>
 
           <div style="text-align: right; font-weight: bold; margin-top: 8px; font-size: 13px;">
             ESTIMADO TOTAL: $${totalPedidoFormateado}
