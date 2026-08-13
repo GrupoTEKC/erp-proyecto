@@ -574,7 +574,7 @@ setPedidosSeleccionados([]);
   }
 
 
- const imprimirPreviaMultiples = async () => {
+const imprimirPreviaMultiples = async () => {
   try {
     // 1. Filtrar SOLO pedidos seleccionados que estén en 'pendiente' o 'programado'
     const pedidosValidos = pedidos
@@ -660,19 +660,6 @@ setPedidosSeleccionados([]);
           <div style="text-align: right; font-weight: bold; margin-top: 8px; font-size: 13px;">
             ESTIMADO TOTAL: $${totalPedidoFormateado}
           </div>
-
-          <!-- 🟢 SECCIÓN DE FIRMAS DE MONTACARGISTAS -->
-          <div style="margin-top: 35px; display: flex; justify-content: space-around; text-align: center;">
-            <div style="width: 40%;">
-              <div style="border-bottom: 1px solid #000; margin-bottom: 5px;"></div>
-              <span style="font-size: 11px; font-weight: bold; text-transform: uppercase;">Firma Montacargista 1</span>
-            </div>
-            <div style="width: 40%;">
-              <div style="border-bottom: 1px solid #000; margin-bottom: 5px;"></div>
-              <span style="font-size: 11px; font-weight: bold; text-transform: uppercase;">Firma Montacargista 2</span>
-            </div>
-          </div>
-
         </div>
       `
     }
@@ -698,7 +685,21 @@ setPedidosSeleccionados([]);
             <h2 style="margin: 0; color: #071849;">GRUPO TEKC - HOJA DE PRE-EMBARQUE</h2>
             <span class="watermark-text">*** DOCUMENTO PREVIO - NO VÁLIDO COMO ENTREGA FINAL ***</span>
           </div>
+
+          <!-- Todos los pedidos impresos -->
           ${bloquesPedidos}
+
+          <!-- 🟢 FIRMAS GENERALES DE HOJA (Aparece una sola vez al final del documento) -->
+          <div style="margin-top: 40px; page-break-inside: avoid; display: flex; justify-content: space-around; text-align: center;">
+            <div style="width: 40%;">
+              <div style="border-bottom: 1px solid #000; margin-bottom: 5px;"></div>
+              <span style="font-size: 11px; font-weight: bold; text-transform: uppercase;">Firma y nombre del montacargista 1</span>
+            </div>
+            <div style="width: 40%;">
+              <div style="border-bottom: 1px solid #000; margin-bottom: 5px;"></div>
+              <span style="font-size: 11px; font-weight: bold; text-transform: uppercase;">Firma y nombre del montacargista 2</span>
+            </div>
+          </div>
         </body>
       </html>
     `)
