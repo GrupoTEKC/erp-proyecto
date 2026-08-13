@@ -314,16 +314,25 @@ const imprimirMultiples = async () => {
         listaChoferes = chData
       }
 
-      // Filtrar solo los pedidos seleccionados que estén en ruta o entregados
+     // Filtrar solo los pedidos válidos según la regla estricta (Bodega = pagado / Normal = en_ruta)
       const pedidosValidos = pedidos
         .filter(p => pedidosSeleccionados.includes(p.id_pedido))
-        .filter(p => p.estado === 'en_ruta' || p.estado === 'entregado')
+        .filter(p => {
+          const isVentaBodega = Number(p.id_cliente) === 234 || Number(p.cliente_id) === 234;
+          const estado = (p.estado || '').toLowerCase();
+          
+          if (isVentaBodega) {
+            return estado === 'pagado';
+          } else {
+            return estado === 'en_ruta' || estado === 'en ruta';
+          }
+        });
 
       if (pedidosValidos.length === 0) {
-        alert("Selecciona al menos un pedido en ruta o entregado para imprimir.")
-        return
+        alert("No hay pedidos elegibles para imprimir en tu selección.\n\n- Pedidos normales: Deben estar EN RUTA.\n- Venta en Bodega: Debe estar PAGADO.");
+        return;
       }
-
+      
       // Agrupar por chofer, unidad y fecha
       const grupos = {}
       pedidosValidos.forEach(p => {
@@ -1435,14 +1444,21 @@ return (
                     ...styles.tarjeta,
                     backgroundColor: alerta ? '#ffe5e5' : '#fff'
                   }}>
-                    <input 
-                    type="checkbox" 
-                    checked={pedidosSeleccionados.includes(p.id_pedido)} 
-                    onChange={() => togglePedido(p.id_pedido)} 
-                    // 🟢 Habilita el checkbox según el estatus del pedido:
-                    disabled={p.estado !== 'en_ruta' && p.estado !== 'pendiente' && p.estado !== 'programado'} 
-                    />
-                    
+                  <input
+                  type="checkbox"
+                  checked={pedidosSeleccionados.includes(p.id_pedido)}
+                  onChange={() => handleSelectPedido(p.id_pedido)}
+                  disabled={(() => {
+                  const isVentaBodega = Number(p.id_cliente) === 234 || Number(p.cliente_id) === 234;
+                  const estado = (p.estado || '').toLowerCase();
+    
+                  if (isVentaBodega) {
+                  return estado !== 'pagado';
+                  } else {
+                  return estado !== 'en_ruta' && estado !== 'en ruta';
+                  }
+                  })()}
+                   />
                     <strong>ID:</strong> {p.id_pedido} <br />
                     <strong>Cliente:</strong> {p.cliente} <br />
                     <strong>Tienda:</strong> {p.nombre_tienda || '-'} <br />
