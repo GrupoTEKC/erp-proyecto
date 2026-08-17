@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useLocation } from "react-router-dom"
 import logo from "../assets/TRANSPARENTE.png"
+
 const API = "https://erp-proyecto-production.up.railway.app"
 
 const styles = {
@@ -120,6 +121,8 @@ const getColorStyle = (dias, pagado) => {
 
 function Pagos() {
   const navigate = useNavigate()
+  const location = useLocation() // 🟢 Declaración de location para leer el estado de navegación
+
   const [productosCatalogo, setProductosCatalogo] = useState([])
   const [resultadosBusqueda, setResultadosBusqueda] = useState([])
   const [clientes, setClientes] = useState([])
@@ -202,6 +205,13 @@ function Pagos() {
       ...pedidosRezagados
     ])
   }
+
+  // 🟢 Carga automática al recibir el cliente desde Control de Ventas
+  useEffect(() => {
+    if (location.state?.cliente) {
+      cargarPedidos(location.state.cliente)
+    }
+  }, [location.state])
 
   const cargarDetalles = async (pedido) => {
     const url =
