@@ -324,7 +324,7 @@ function ControlVentas() {
                       onClick={() => irAPagosConCliente(cliente)}
                       style={styles.btnVerAccion}
                     >
-                      👁️ Ver pagos
+                      👁️ Ver detalles
                     </button>
                   </td>
                   <td
