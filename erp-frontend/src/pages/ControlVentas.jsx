@@ -282,7 +282,6 @@ function ControlVentas() {
               <th style={styles.th}>Vendido</th>
               <th style={styles.th}>Cobrado</th>
               <th style={styles.th}>Deuda</th>
-              <th style={styles.th}>Crédito</th>
               <th style={styles.th}>Acción</th>
               <th style={styles.th}>Estatus</th>
             </tr>
@@ -320,7 +319,6 @@ function ControlVentas() {
                       minimumFractionDigits: 2
                     })}
                   </td>
-                  <td style={styles.td}>{cliente.credito || "-"}</td>
                   <td style={styles.td}>
                     <button
                       onClick={() => irAPagosConCliente(cliente)}
