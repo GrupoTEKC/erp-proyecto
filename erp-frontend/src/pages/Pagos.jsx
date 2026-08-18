@@ -121,7 +121,7 @@ const getColorStyle = (dias, pagado) => {
 
 function Pagos() {
   const navigate = useNavigate()
-  const location = useLocation() // 🟢 Declaración de location para leer el estado de navegación
+  const location = useLocation()
 
   const [productosCatalogo, setProductosCatalogo] = useState([])
   const [resultadosBusqueda, setResultadosBusqueda] = useState([])
@@ -206,7 +206,6 @@ function Pagos() {
     ])
   }
 
-  // 🟢 Carga automática al recibir el cliente desde Control de Ventas
   useEffect(() => {
     if (location.state?.cliente) {
       cargarPedidos(location.state.cliente)
@@ -472,6 +471,17 @@ function Pagos() {
             >
               <span style={{ color: "#C62828" }}>💰</span>
               Control de ventas
+            </button>
+
+            <button
+              style={styles.menuItem}
+              onClick={() => {
+                setMenuAbierto(false)
+                navigate("/control-folios")
+              }}
+            >
+              <span style={{ color: "#C62828" }}>📋</span>
+              Control de folios
             </button>
 
             <button
