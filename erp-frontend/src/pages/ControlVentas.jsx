@@ -109,7 +109,8 @@ function ControlVentas() {
   const [cantidadesInput, setCantidadesInput] = useState({})
   const [cargando, setCargando] = useState(true)
   const [busqueda, setBusqueda] = useState("")
-
+  const [fechaInicio, setFechaInicio] = useState("")
+  const [fechaFin, setFechaFin] = useState("")
   useEffect(() => {
     const inicializar = async () => {
       setCargando(true)
@@ -283,7 +284,17 @@ function ControlVentas() {
         </div>
       </div>
 
-      <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: -25 }}>
+    {/* 🟢 BARRA DE FILTROS ALINEADOS */}
+      <div
+        style={{
+          display: "flex",
+          gap: "15px",
+          alignItems: "center",
+          flexWrap: "wrap",
+          marginBottom: -25
+        }}
+      >
+        {/* Buscador de Cliente */}
         <input
           type="text"
           placeholder="🔍 Buscar cliente..."
@@ -291,6 +302,53 @@ function ControlVentas() {
           onChange={(e) => setBusqueda(e.target.value)}
           style={styles.inputBusqueda}
         />
+
+        {/* Filtro Fecha Inicio */}
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <label style={{ fontSize: "13px", fontWeight: "bold", color: "#8B1E1E" }}>
+            Desde:
+          </label>
+          <input
+            type="date"
+            value={fechaInicio}
+            onChange={(e) => setFechaInicio(e.target.value)}
+            style={{ ...styles.inputBusqueda, maxWidth: "160px" }}
+          />
+        </div>
+
+        {/* Filtro Fecha Fin */}
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <label style={{ fontSize: "13px", fontWeight: "bold", color: "#8B1E1E" }}>
+            Hasta:
+          </label>
+          <input
+            type="date"
+            value={fechaFin}
+            onChange={(e) => setFechaFin(e.target.value)}
+            style={{ ...styles.inputBusqueda, maxWidth: "160px" }}
+          />
+        </div>
+
+        {/* Botón para limpiar filtros de fecha si hay algo seleccionado */}
+        {(fechaInicio || fechaFin) && (
+          <button
+            onClick={() => {
+              setFechaInicio("")
+              setFechaFin("")
+            }}
+            style={{
+              backgroundColor: "transparent",
+              color: "#8B1E1E",
+              border: "none",
+              cursor: "pointer",
+              fontSize: "12px",
+              textDecoration: "underline",
+              fontWeight: "bold"
+            }}
+          >
+            Limpiar fechas
+          </button>
+        )}
       </div>
 
       {/* TABLA PRINCIPAL */}
@@ -315,6 +373,20 @@ function ControlVentas() {
               .filter((cliente) =>
                 cliente.cliente.toLowerCase().includes(busqueda.toLowerCase())
               )
+              .filter((cliente) => {
+                if (!fechaInicio && !fechaFin) return true
+                if (!cliente.ultima_entrega) return false
+
+                // Convierte la fecha UTC del cliente al formato 'YYYY-MM-DD'
+                const fechaCliente = new Date(cliente.ultima_entrega)
+                  .toISOString()
+                  .split("T")[0]
+
+                if (fechaInicio && fechaCliente < fechaInicio) return false
+                if (fechaFin && fechaCliente > fechaFin) return false
+
+                return true
+              })
               .map((cliente) => (
                 <tr key={cliente.id_cliente}>
                   <td style={styles.td}>{cliente.cliente}</td>
