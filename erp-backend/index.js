@@ -1561,6 +1561,48 @@ app.get('/pedidos/:id/detalle-nota', async (req, res) => {
   }
 });
 
+// ==========================================
+// CONTROL DE FOLIOS
+// ==========================================
+app.get('/pedidos/folios-control', async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        e.folio,
+        e.id_pedido,
+        e.fecha_salida,
+        CONCAT(c.nombre, ' ', COALESCE(c.apellido1, '')) AS cliente,
+        c.nombre_tienda,
+        p.total
+      FROM entregas e
+      INNER JOIN pedidos p ON e.id_pedido = p.id_pedido
+      INNER JOIN clientes c ON p.id_cliente = c.id_cliente
+      WHERE e.folio IS NOT NULL AND e.folio REGEXP '^[0-9]+$'
+    `
+
+    const rows = await db.query(query)
+
+    if (!rows || rows.length === 0) {
+      return res.json({ min_folio: 0, max_folio: 0, registrados: [] })
+    }
+
+    const foliosNumericos = rows
+      .map((r) => parseInt(r.folio, 10))
+      .filter((n) => !isNaN(n))
+
+    const min_folio = foliosNumericos.length ? Math.min(...foliosNumericos) : 0
+    const max_folio = foliosNumericos.length ? Math.max(...foliosNumericos) : 0
+
+    res.json({
+      min_folio,
+      max_folio,
+      registrados: rows
+    })
+  } catch (error) {
+    console.error("Error al obtener folios:", error)
+    res.status(500).json({ error: error.message })
+  }
+})
 
 // =============================
 // CHOFERES
@@ -1585,6 +1627,7 @@ app.get('/unidades', async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
+
 
 app.get('/control-envios/:id_chofer', async (req, res) => {
   const conn = await db.getConnection()
