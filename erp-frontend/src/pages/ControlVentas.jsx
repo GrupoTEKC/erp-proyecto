@@ -73,7 +73,7 @@ const styles = {
     color: "#2E7D32",
     fontWeight: "bold"
   },
-btnVerAccion: {
+  btnVerAccion: {
     backgroundColor: "transparent",
     color: "#8B1E1E",
     border: "1px solid #8B1E1E",
@@ -83,12 +83,11 @@ btnVerAccion: {
     fontWeight: "bold",
     fontSize: "12px"
   },
-  
   inputBusqueda: {
     padding: "10px 14px",
     fontSize: "14px",
     borderRadius: "6px",
-    border: "1.5px solid #8B1E1E", 
+    border: "1.5px solid #8B1E1E",
     color: "#333",
     width: "100%",
     maxWidth: "320px",
@@ -105,12 +104,13 @@ function ControlVentas() {
   })
 
   const [pendientes, setPendientes] = useState([])
-  // Estado local controlado para almacenar los inputs de saneamiento
   const [cantidadesInput, setCantidadesInput] = useState({})
   const [cargando, setCargando] = useState(true)
   const [busqueda, setBusqueda] = useState("")
   const [fechaInicio, setFechaInicio] = useState("")
   const [fechaFin, setFechaFin] = useState("")
+  const [estatusFiltro, setEstatusFiltro] = useState("todos")
+
   useEffect(() => {
     const inicializar = async () => {
       setCargando(true)
@@ -139,7 +139,6 @@ function ControlVentas() {
       const data = await res.json()
       setPendientes(data)
 
-      // Inicializar el objeto con los valores por defecto del servidor
       const cantidadesIniciales = {}
       data.forEach((item) => {
         cantidadesIniciales[item.id_detalle] = item.cantidad_final ?? 0
@@ -188,9 +187,46 @@ function ControlVentas() {
   }
 
   const irAPagosConCliente = (cliente) => {
-    // Redirige enviando la información del cliente
     navigate("/pagos", { state: { cliente } })
   }
+
+  // 🟢 CLIENTES FILTRADOS POR BUSQUEDA, FECHAS Y ESTATUS
+  const clientesFiltrados = datos.clientes
+    .filter((cliente) => Number(cliente.pedidos) > 0)
+    .filter((cliente) =>
+      cliente.cliente.toLowerCase().includes(busqueda.toLowerCase())
+    )
+    .filter((cliente) => {
+      if (!fechaInicio && !fechaFin) return true
+      if (!cliente.ultima_entrega) return false
+
+      const fechaCliente = new Date(cliente.ultima_entrega)
+        .toISOString()
+        .split("T")[0]
+
+      if (fechaInicio && fechaCliente < fechaInicio) return false
+      if (fechaFin && fechaCliente > fechaFin) return false
+
+      return true
+    })
+    .filter((cliente) => {
+      if (estatusFiltro === "todos") return true
+      return cliente.estatus === estatusFiltro
+    })
+
+  // 🟢 TOTALES CALCULADOS DINÁMICAMENTE PARA LOS CLIENTES VISIBLES
+  const totalVendidoVisibles = clientesFiltrados.reduce(
+    (acc, item) => acc + Number(item.vendido || 0),
+    0
+  )
+  const totalCobradoVisibles = clientesFiltrados.reduce(
+    (acc, item) => acc + Number(item.cobrado || 0),
+    0
+  )
+  const totalDeudaVisibles = clientesFiltrados.reduce(
+    (acc, item) => acc + Number(item.deuda || 0),
+    0
+  )
 
   if (cargando) {
     return (
@@ -284,7 +320,7 @@ function ControlVentas() {
         </div>
       </div>
 
-    {/* 🟢 BARRA DE FILTROS ALINEADOS */}
+      {/* 🟢 BARRA DE FILTROS (IZQUIERDA Y DERECHA) */}
       <div
         style={{
           display: "flex",
@@ -329,7 +365,7 @@ function ControlVentas() {
           />
         </div>
 
-        {/* Botón para limpiar filtros de fecha si hay algo seleccionado */}
+        {/* Botón para limpiar fechas */}
         {(fechaInicio || fechaFin) && (
           <button
             onClick={() => {
@@ -349,6 +385,26 @@ function ControlVentas() {
             Limpiar fechas
           </button>
         )}
+
+        {/* 🟢 FILTRO DE ESTATUS ALINEADO A LA DERECHA */}
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginLeft: "auto" }}>
+          <label style={{ fontSize: "13px", fontWeight: "bold", color: "#8B1E1E" }}>
+            Estatus:
+          </label>
+          <select
+            value={estatusFiltro}
+            onChange={(e) => setEstatusFiltro(e.target.value)}
+            style={{
+              ...styles.inputBusqueda,
+              maxWidth: "150px",
+              cursor: "pointer"
+            }}
+          >
+            <option value="todos">Todos</option>
+            <option value="pendiente">Pendientes</option>
+            <option value="pagado">Pagados</option>
+          </select>
+        </div>
       </div>
 
       {/* TABLA PRINCIPAL */}
@@ -367,78 +423,93 @@ function ControlVentas() {
             </tr>
           </thead>
 
-        <tbody>
-            {datos.clientes
-              .filter((cliente) => Number(cliente.pedidos) > 0)
-              .filter((cliente) =>
-                cliente.cliente.toLowerCase().includes(busqueda.toLowerCase())
-              )
-              .filter((cliente) => {
-                if (!fechaInicio && !fechaFin) return true
-                if (!cliente.ultima_entrega) return false
-
-                // Convierte la fecha UTC del cliente al formato 'YYYY-MM-DD'
-                const fechaCliente = new Date(cliente.ultima_entrega)
-                  .toISOString()
-                  .split("T")[0]
-
-                if (fechaInicio && fechaCliente < fechaInicio) return false
-                if (fechaFin && fechaCliente > fechaFin) return false
-
-                return true
-              })
-              .map((cliente) => (
-                <tr key={cliente.id_cliente}>
-                  <td style={styles.td}>{cliente.cliente}</td>
-                  <td style={styles.td}>
-                    {cliente.ultima_entrega
-                      ? new Date(cliente.ultima_entrega).toLocaleDateString("es-MX", {
-                          timeZone: "UTC"
-                        })
-                      : "-"}
-                  </td>
-                  <td style={styles.td}>{cliente.pedidos}</td>
-                  <td style={styles.td}>
-                    $
-                    {Number(cliente.vendido || 0).toLocaleString("es-MX", {
-                      minimumFractionDigits: 2
-                    })}
-                  </td>
-                  <td style={styles.td}>
-                    $
-                    {Number(cliente.cobrado || 0).toLocaleString("es-MX", {
-                      minimumFractionDigits: 2
-                    })}
-                  </td>
-                  <td style={styles.td}>
-                    $
-                    {Number(cliente.deuda || 0).toLocaleString("es-MX", {
-                      minimumFractionDigits: 2
-                    })}
-                  </td>
-                  <td style={styles.td}>
-                    <button
-                      onClick={() => irAPagosConCliente(cliente)}
-                      style={styles.btnVerAccion}
-                    >
-                      👁️ Ver detalles
-                    </button>
-                  </td>
-                  <td
-                    style={{
-                      ...styles.td,
-                      ...(cliente.estatus === "pagado"
-                        ? styles.pagado
-                        : styles.pendiente)
-                    }}
+          <tbody>
+            {clientesFiltrados.map((cliente) => (
+              <tr key={cliente.id_cliente}>
+                <td style={styles.td}>{cliente.cliente}</td>
+                <td style={styles.td}>
+                  {cliente.ultima_entrega
+                    ? new Date(cliente.ultima_entrega).toLocaleDateString("es-MX", {
+                        timeZone: "UTC"
+                      })
+                    : "-"}
+                </td>
+                <td style={styles.td}>{cliente.pedidos}</td>
+                <td style={styles.td}>
+                  $
+                  {Number(cliente.vendido || 0).toLocaleString("es-MX", {
+                    minimumFractionDigits: 2
+                  })}
+                </td>
+                <td style={styles.td}>
+                  $
+                  {Number(cliente.cobrado || 0).toLocaleString("es-MX", {
+                    minimumFractionDigits: 2
+                  })}
+                </td>
+                <td style={styles.td}>
+                  $
+                  {Number(cliente.deuda || 0).toLocaleString("es-MX", {
+                    minimumFractionDigits: 2
+                  })}
+                </td>
+                <td style={styles.td}>
+                  <button
+                    onClick={() => irAPagosConCliente(cliente)}
+                    style={styles.btnVerAccion}
                   >
-                    {cliente.estatus === "pagado"
-                      ? "🟢 Pagado"
-                      : "🟡 Pendiente"}
-                  </td>
-                </tr>
-              ))}
+                    👁️ Ver detalles
+                  </button>
+                </td>
+                <td
+                  style={{
+                    ...styles.td,
+                    ...(cliente.estatus === "pagado"
+                      ? styles.pagado
+                      : styles.pendiente)
+                  }}
+                >
+                  {cliente.estatus === "pagado"
+                    ? "🟢 Pagado"
+                    : "🟡 Pendiente"}
+                </td>
+              </tr>
+            ))}
           </tbody>
+
+          {/* 🟢 PIE DE TABLA CON SUMAS DE CLIENTES VISIBLES */}
+          <tfoot
+            style={{
+              background: "#f8f9fa",
+              fontWeight: "bold",
+              borderTop: "2px solid #8B1E1E"
+            }}
+          >
+            <tr>
+              <td colSpan={3} style={{ ...styles.td, textAlign: "right" }}>
+                <strong>TOTALES GENERALES:</strong>
+              </td>
+              <td style={{ ...styles.td, color: "#8B1E1E" }}>
+                $
+                {totalVendidoVisibles.toLocaleString("es-MX", {
+                  minimumFractionDigits: 2
+                })}
+              </td>
+              <td style={{ ...styles.td, color: "#0B7A0B" }}>
+                $
+                {totalCobradoVisibles.toLocaleString("es-MX", {
+                  minimumFractionDigits: 2
+                })}
+              </td>
+              <td style={{ ...styles.td, color: "#B00020" }}>
+                $
+                {totalDeudaVisibles.toLocaleString("es-MX", {
+                  minimumFractionDigits: 2
+                })}
+              </td>
+              <td colSpan={2} style={styles.td}></td>
+            </tr>
+          </tfoot>
         </table>
       </div>
 
