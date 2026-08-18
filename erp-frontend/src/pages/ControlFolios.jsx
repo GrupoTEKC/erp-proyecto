@@ -344,4 +344,3 @@ export default function ControlFolios() {
     </div>
   );
 }
-export default ControlFolios
