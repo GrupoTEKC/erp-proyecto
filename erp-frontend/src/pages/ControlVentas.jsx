@@ -73,7 +73,7 @@ const styles = {
     color: "#2E7D32",
     fontWeight: "bold"
   },
-  btnVerAccion: {
+btnVerAccion: {
     backgroundColor: "transparent",
     color: "#8B1E1E",
     border: "1px solid #8B1E1E",
@@ -82,6 +82,16 @@ const styles = {
     cursor: "pointer",
     fontWeight: "bold",
     fontSize: "12px"
+  },
+  
+  inputBusqueda: {
+    padding: "10px 14px",
+    fontSize: "14px",
+    borderRadius: "6px",
+    border: "1px solid #ccc",
+    width: "100%",
+    maxWidth: "320px",
+    outline: "none"
   }
 }
 
@@ -97,6 +107,7 @@ function ControlVentas() {
   // Estado local controlado para almacenar los inputs de saneamiento
   const [cantidadesInput, setCantidadesInput] = useState({})
   const [cargando, setCargando] = useState(true)
+  const [busqueda, setBusqueda] = useState("")
 
   useEffect(() => {
     const inicializar = async () => {
@@ -271,6 +282,17 @@ function ControlVentas() {
         </div>
       </div>
 
+      {/* 🟢 AGREGAR EL BUSCADOR AQUÍ */}
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: -25 }}>
+        <input
+          type="text"
+          placeholder="🔍 Buscar cliente..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          style={styles.inputBusqueda}
+        />
+      </div>
+
       {/* TABLA PRINCIPAL */}
       <div style={styles.tableContainer}>
         <table style={styles.table}>
@@ -287,9 +309,12 @@ function ControlVentas() {
             </tr>
           </thead>
 
-          <tbody>
+        <tbody>
             {datos.clientes
               .filter((cliente) => Number(cliente.pedidos) > 0)
+              .filter((cliente) =>
+                cliente.cliente.toLowerCase().includes(busqueda.toLowerCase())
+              )
               .map((cliente) => (
                 <tr key={cliente.id_cliente}>
                   <td style={styles.td}>{cliente.cliente}</td>
