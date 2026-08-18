@@ -16,9 +16,10 @@ import Produccion from './pages/produccion'
 import ProduccionLogin from './pages/produccionLogin'
 import ClientesLogin from './pages/ClientesLogin'
 
-// 🔥 NUEVO COMPONENTE
+// 🔥 NUEVOS COMPONENTES
 import ClientePrecios from './pages/ClientePrecios'
 import ControlVentas from './pages/ControlVentas'
+import ControlFolios from './pages/ControlFolios'
 
 function App() {
   return (
@@ -53,8 +54,14 @@ function App() {
 
         {/* 📈 CONTROL DE VENTAS */}
         <Route
-        path="/control-ventas"
-        element={<ControlVentas />}
+          path="/control-ventas"
+          element={<ControlVentas />}
+        />
+
+        {/* 📋 CONTROL DE FOLIOS */}
+        <Route
+          path="/control-folios"
+          element={<ControlFolios />}
         />
 
         {/* 🚚 ENVÍOS */}
