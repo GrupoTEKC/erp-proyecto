@@ -81,20 +81,36 @@ export default function ControlFolios() {
     fetch(`${API}/pedidos/folios-control`)
       .then(res => res.json())
       .then(data => {
+        // Soporta respuesta en data.registrados o como array directo
+        const listaRegistrados = Array.isArray(data.registrados)
+          ? data.registrados
+          : (Array.isArray(data) ? data : []);
+
         const mapa = new Map();
-        if (Array.isArray(data.registrados)) {
-          data.registrados.forEach(item => {
+        let min = 0;
+        let max = 0;
+
+        if (listaRegistrados.length > 0) {
+          const numeros = [];
+          listaRegistrados.forEach(item => {
             const numFolio = parseInt(item.folio, 10);
             if (!isNaN(numFolio)) {
               mapa.set(numFolio, item);
+              numeros.push(numFolio);
             }
           });
+
+          min = data.min_folio || Math.min(...numeros);
+          max = data.max_folio || Math.max(...numeros);
         }
+
         setFoliosMap(mapa);
-        setMinFolio(data.min_folio || 0);
-        setMaxFolio(data.max_folio || 0);
-        setRangoInicio(data.min_folio || 0);
-        setRangoFin(data.max_folio || 0);
+        setMinFolio(min);
+        setMaxFolio(max);
+
+        // Carga automática del rango por defecto
+        setRangoInicio(min);
+        setRangoFin(max);
       })
       .catch(err => console.error("Error al cargar folios:", err))
       .finally(() => setLoading(false));
