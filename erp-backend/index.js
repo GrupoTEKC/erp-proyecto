@@ -1562,6 +1562,46 @@ app.get('/pedidos/:id/detalle-nota', async (req, res) => {
 });
 
 
+app.get('/pedidos/folios-control', async (req, res) => {
+  try {
+    // 1. Obtener entregas con folios asignados
+    const [registrados] = await db.query(`
+      SELECT 
+        e.folio,
+        CAST(REGEXP_REPLACE(e.folio, '[^0-9]', '') AS UNSIGNED) AS num_folio,
+        p.id_pedido,
+        p.total,
+        e.fecha_salida,
+        p.estado
+      FROM entregas e
+      INNER JOIN pedidos p ON e.id_pedido = p.id_pedido
+      WHERE e.folio IS NOT NULL 
+        AND e.folio != ''
+        AND e.folio REGEXP '[0-9]'
+      ORDER BY num_folio ASC
+    `);
+
+    // 2. Extraer min y max numérico descartando folios vacíos o ceros
+    const [rangos] = await db.query(`
+      SELECT 
+        MIN(CAST(REGEXP_REPLACE(folio, '[^0-9]', '') AS UNSIGNED)) AS min_folio,
+        MAX(CAST(REGEXP_REPLACE(folio, '[^0-9]', '') AS UNSIGNED)) AS max_folio
+      FROM entregas
+      WHERE folio IS NOT NULL 
+        AND folio != '' 
+        AND folio REGEXP '[0-9]'
+    `);
+
+    res.json({
+      min_folio: rangos[0].min_folio || 0,
+      max_folio: rangos[0].max_folio || 0,
+      registrados
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // =============================
 // CHOFERES
 // =============================
