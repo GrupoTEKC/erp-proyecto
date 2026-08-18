@@ -67,7 +67,7 @@ export default function ControlFolios() {
   const [minFolio, setMinFolio] = useState(0);
   const [maxFolio, setMaxFolio] = useState(0);
 
-  // Rango ajustable opcional por el usuario
+  // Rango ajustable por el usuario
   const [rangoInicio, setRangoInicio] = useState("");
   const [rangoFin, setRangoFin] = useState("");
 
@@ -86,11 +86,9 @@ export default function ControlFolios() {
           : (Array.isArray(data) ? data : []);
 
         const mapa = new Map();
-        let min = 0;
-        let max = 0;
+        const numeros = [];
 
         if (listaRegistrados.length > 0) {
-          const numeros = [];
           listaRegistrados.forEach(item => {
             const numFolio = parseInt(item.folio, 10);
             if (!isNaN(numFolio)) {
@@ -98,24 +96,28 @@ export default function ControlFolios() {
               numeros.push(numFolio);
             }
           });
-
-          min = data.min_folio || Math.min(...numeros);
-          max = data.max_folio || Math.max(...numeros);
         }
 
-        setFoliosMap(mapa);
-        setMinFolio(min);
-        setMaxFolio(max);
+        // Obtener el mínimo y máximo real de los datos
+        const minCalculado = numeros.length > 0 ? Math.min(...numeros) : 0;
+        const maxCalculado = numeros.length > 0 ? Math.max(...numeros) : 0;
 
-        // 🔥 PRECARGA AUTOMÁTICA DEL RANGO DETECTADO
-        setRangoInicio(min);
-        setRangoFin(max);
+        const minFinal = data.min_folio ? parseInt(data.min_folio, 10) : minCalculado;
+        const maxFinal = data.max_folio ? parseInt(data.max_folio, 10) : maxCalculado;
+
+        setFoliosMap(mapa);
+        setMinFolio(minFinal);
+        setMaxFolio(maxFinal);
+
+        // Precargar automáticamente el rango con el folio menor real
+        setRangoInicio(minFinal);
+        setRangoFin(maxFinal);
       })
       .catch(err => console.error("Error al cargar folios:", err))
       .finally(() => setLoading(false));
   }, []);
 
-  // Generación y cálculo automático de folios
+  // Generación y cálculo de folios del rango
   const { listaFolios, totalRegistrados, totalFaltantes } = useMemo(() => {
     const inicio = parseInt(rangoInicio, 10) || 0;
     const fin = parseInt(rangoFin, 10) || 0;
@@ -147,7 +149,7 @@ export default function ControlFolios() {
     };
   }, [rangoInicio, rangoFin, foliosMap]);
 
-  // Filtrado rápido por estado (Todos / Solo faltantes / Solo registrados)
+  // Filtrado de la lista
   const listaFiltrada = useMemo(() => {
     if (filtro === "faltantes") return listaFolios.filter(i => !i.existe);
     if (filtro === "registrados") return listaFolios.filter(i => i.existe);
@@ -194,11 +196,11 @@ export default function ControlFolios() {
             </div>
           </div>
 
-          {/* Filtros de Rango Opcional y Botones de Vista */}
+          {/* Filtros de Rango y Modos de Vista */}
           <div style={{ background: "#f8f9fa", padding: "15px", borderRadius: "8px", border: "1px solid #e9ecef", marginBottom: "20px" }}>
             <div style={{ display: "flex", gap: "15px", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
               
-              {/* Ajuste de Rango con Indicador Guía y Restablecer */}
+              {/* Ajuste de Rango */}
               <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
                 <label style={{ fontSize: "13px", fontWeight: "bold", color: "#444" }}>Folio Inicial:</label>
                 <input
@@ -232,7 +234,7 @@ export default function ControlFolios() {
                     background: "#fff",
                     fontWeight: "bold"
                   }}
-                  title="Restablece al rango mínimo y máximo precargado de la BD"
+                  title="Restablece al rango mínimo y máximo real de la BD"
                 >
                   Restablecer Rango Real
                 </button>
@@ -278,7 +280,7 @@ export default function ControlFolios() {
             </div>
           </div>
 
-          {/* Cuadrícula de Folios Precargados */}
+          {/* Cuadrícula de Folios */}
           <div style={styles.grid}>
             {listaFiltrada.map(item => {
               if (item.existe) {
