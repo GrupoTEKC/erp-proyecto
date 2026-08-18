@@ -88,7 +88,8 @@ btnVerAccion: {
     padding: "10px 14px",
     fontSize: "14px",
     borderRadius: "6px",
-    border: "1px solid #ccc",
+    border: "1.5px solid #8B1E1E", 
+    color: "#333",
     width: "100%",
     maxWidth: "320px",
     outline: "none"
@@ -282,8 +283,7 @@ function ControlVentas() {
         </div>
       </div>
 
-      {/* 🟢 AGREGAR EL BUSCADOR AQUÍ */}
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: -25 }}>
+      <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: -25 }}>
         <input
           type="text"
           placeholder="🔍 Buscar cliente..."
