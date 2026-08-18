@@ -86,30 +86,35 @@ export default function ControlFolios() {
           : (Array.isArray(data) ? data : []);
 
         const mapa = new Map();
-        const numeros = [];
+        const numerosValidos = [];
 
         if (listaRegistrados.length > 0) {
           listaRegistrados.forEach(item => {
             const numFolio = parseInt(item.folio, 10);
-            if (!isNaN(numFolio)) {
+            // Solo tomar en cuenta folios numéricos mayores a 0
+            if (!isNaN(numFolio) && numFolio > 0) {
               mapa.set(numFolio, item);
-              numeros.push(numFolio);
+              numerosValidos.push(numFolio);
             }
           });
         }
 
-        // Obtener el mínimo y máximo real de los datos
-        const minCalculado = numeros.length > 0 ? Math.min(...numeros) : 0;
-        const maxCalculado = numeros.length > 0 ? Math.max(...numeros) : 0;
+        // Calcular min y max descartando ceros
+        const minCalculado = numerosValidos.length > 0 ? Math.min(...numerosValidos) : 0;
+        const maxCalculado = numerosValidos.length > 0 ? Math.max(...numerosValidos) : 0;
 
-        const minFinal = data.min_folio ? parseInt(data.min_folio, 10) : minCalculado;
-        const maxFinal = data.max_folio ? parseInt(data.max_folio, 10) : maxCalculado;
+        // Si el backend envía 0 en min_folio, forzar el uso del mínimo real calculado
+        const minBackend = parseInt(data.min_folio, 10);
+        const maxBackend = parseInt(data.max_folio, 10);
+
+        const minFinal = (minBackend && minBackend > 0) ? minBackend : minCalculado;
+        const maxFinal = (maxBackend && maxBackend > 0) ? maxBackend : maxCalculado;
 
         setFoliosMap(mapa);
         setMinFolio(minFinal);
         setMaxFolio(maxFinal);
 
-        // Precargar automáticamente el rango con el folio menor real
+        // Precargar automáticamente el rango positivo real
         setRangoInicio(minFinal);
         setRangoFin(maxFinal);
       })
