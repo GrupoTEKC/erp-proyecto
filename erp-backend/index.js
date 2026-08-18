@@ -1580,7 +1580,8 @@ app.get('/pedidos/folios-control', async (req, res) => {
       WHERE e.folio IS NOT NULL AND e.folio REGEXP '^[0-9]+$'
     `
 
-    const rows = await db.query(query)
+    // 🔥 AQUÍ ESTABA EL DETALLE: usaremos [rows] en lugar de rows
+    const [rows] = await db.query(query)
 
     if (!rows || rows.length === 0) {
       return res.json({ min_folio: 0, max_folio: 0, registrados: [] })
