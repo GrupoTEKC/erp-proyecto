@@ -1564,7 +1564,7 @@ app.get('/pedidos/:id/detalle-nota', async (req, res) => {
 
 app.get('/pedidos/folios-control', async (req, res) => {
   try {
-    // 1. Obtener entregas con folios asignados
+    // 1. Obtener entregas con folios asignados, uniendo pedidos y clientes
     const [registrados] = await db.query(`
       SELECT 
         e.folio,
@@ -1572,9 +1572,12 @@ app.get('/pedidos/folios-control', async (req, res) => {
         p.id_pedido,
         p.total,
         e.fecha_salida,
-        p.estado
+        p.estado,
+        CONCAT(IFNULL(c.nombre, ''), ' ', IFNULL(c.apellido1, '')) AS cliente,
+        c.nombre_tienda
       FROM entregas e
       INNER JOIN pedidos p ON e.id_pedido = p.id_pedido
+      LEFT JOIN clientes c ON p.id_cliente = c.id_cliente
       WHERE e.folio IS NOT NULL 
         AND e.folio != ''
         AND e.folio REGEXP '[0-9]'
@@ -1601,7 +1604,6 @@ app.get('/pedidos/folios-control', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-
 
 // =============================
 // CHOFERES
