@@ -362,7 +362,12 @@ export default function ControlFolios() {
                 }
               </p>
               <p style={{ margin: "4px 0" }}>
-                <strong>Monto Total:</strong> ${Number(folioSeleccionado.total || 0).toFixed(2)} MXN
+                <strong>Monto Total:</strong> ${
+                  Number(folioSeleccionado.total || 0).toLocaleString("es-MX", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                  })
+                } MXN
               </p>
             </div>
 
