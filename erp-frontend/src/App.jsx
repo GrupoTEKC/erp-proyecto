@@ -1,5 +1,4 @@
 import { Routes, Route } from 'react-router-dom'
-
 import Menu from './pages/Menu'
 import Pedidos from './pages/Pedidos'
 import Clientes from './pages/Clientes'
@@ -20,6 +19,7 @@ import ClientesLogin from './pages/ClientesLogin'
 import ClientePrecios from './pages/ClientePrecios'
 import ControlVentas from './pages/ControlVentas'
 import ControlFolios from './pages/ControlFolios'
+import FlujoCaja from './pages/FlujoCaja'
 
 function App() {
   return (
@@ -41,10 +41,7 @@ function App() {
         <Route path="/clientes/editar/:id_cliente" element={<EditarCliente />} />
 
         {/* 🔥 NUEVA RUTA PRECIOS */}
-        <Route
-          path="/clientes/:id_cliente/precios"
-          element={<ClientePrecios />}
-        />
+        <Route path="/clientes/:id_cliente/precios" element={<ClientePrecios />} />
 
         {/* 🔐 LOGIN PAGOS */}
         <Route path="/pagos-login" element={<PagosLogin />} />
@@ -53,29 +50,24 @@ function App() {
         <Route path="/pagos" element={<Pagos />} />
 
         {/* 📈 CONTROL DE VENTAS */}
-        <Route
-          path="/control-ventas"
-          element={<ControlVentas />}
-        />
+        <Route path="/control-ventas" element={<ControlVentas />} />
 
         {/* 📋 CONTROL DE FOLIOS */}
-        <Route
-          path="/control-folios"
-          element={<ControlFolios />}
-        />
+        <Route path="/control-folios" element={<ControlFolios />} />
 
         {/* 🚚 ENVÍOS */}
         <Route path="/control-envios" element={<ControlEnvios />} />
-        <Route
-          path="/control-envios/:id_chofer"
-          element={<ControlEnviosDetalle />}
-        />
+        <Route path="/control-envios/:id_chofer" element={<ControlEnviosDetalle />} />
 
         {/* 🚛 🔐 LOGIN EMBARQUES */}
         <Route path="/login-embarques" element={<EmbarquesLogin />} />
+
         {/* 🏭 🔐 LOGIN PRODUCCIÓN */}
         <Route path="/produccion-login" element={<ProduccionLogin />} />
         <Route path="/produccion" element={<Produccion />} />
+
+        {/* 💰 FLUJO DE CAJA */}
+        <Route path="/flujo-caja" element={<FlujoCaja />} />
       </Routes>
     </div>
   )
