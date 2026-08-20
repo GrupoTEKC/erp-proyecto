@@ -80,42 +80,29 @@ const styles = {
 function Menu() {
   return (
     <div style={styles.container}>
-      
       <aside style={styles.sidebar}>
-        
         <div style={styles.header}>
           <div style={styles.title}>SCAE</div>
-          <img
-            src={logo}
-            alt="Logo empresa"
-            style={styles.logo}
-          />
-          <div style={styles.subtitle}>
-            Menú principal
-          </div>
+          <img src={logo} alt="Logo empresa" style={styles.logo} />
+          <div style={styles.subtitle}>Menú principal</div>
         </div>
 
         <nav style={styles.menu}>
-          
           <Link to="/login-pedidos" style={styles.link}>
             <button style={styles.button}>
-              <span style={styles.icon}>📄</span>
-              Nuevo pedido
+              <span style={styles.icon}>📄</span> Nuevo pedido
             </button>
           </Link>
 
-          {/* 🔥 CAMBIO: ahora embarques pasa por login */}
           <Link to="/login-embarques" style={styles.link}>
             <button style={styles.button}>
-              <span style={styles.icon}>🔍</span>
-              Embarques
+              <span style={styles.icon}>🔍</span> Embarques
             </button>
           </Link>
 
           <Link to="/control-envios" style={styles.link}>
             <button style={styles.button}>
-              <span style={styles.icon}>🚚</span>
-              Control de envíos
+              <span style={styles.icon}>🚚</span> Control de envíos
             </button>
           </Link>
 
@@ -127,24 +114,28 @@ function Menu() {
 
           <Link to="/pagos-login" style={styles.link}>
             <button style={styles.button}>
-              <span style={styles.icon}>💵</span>
-              Cuentas por cobrar 
+              <span style={styles.icon}>💵</span> Cuentas por cobrar
             </button>
           </Link>
 
-           <Link to="/produccion-login" style={styles.link}>
-           <button style={styles.button}>
-           <span style={styles.icon}>🏭</span>
-           Producción
-           </button>
-         </Link>
+          <Link to="/produccion-login" style={styles.link}>
+            <button style={styles.button}>
+              <span style={styles.icon}>🏭</span> Producción
+            </button>
+          </Link>
+
+          {/* 🔥 NUEVO MÓDULO: Flujo de caja */}
+          <Link to="/flujo-caja" style={styles.link}>
+            <button style={styles.button}>
+              <span style={styles.icon}>💰</span> Flujo de caja
+            </button>
+          </Link>
         </nav>
       </aside>
 
       <main style={styles.content}>
         {/* Dashboard futuro */}
       </main>
-
     </div>
   )
 }
