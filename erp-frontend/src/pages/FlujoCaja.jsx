@@ -64,7 +64,7 @@ function FlujoCaja() {
           <button style={styles.cancel} onClick={() => navigate(-1)}>
             Volver
           </button>
-          <h1 style={styles.mainTitle}>MÓDULO DE FLUJO DE CAJA</h1>
+          <h1 style={styles.mainTitle}>FLUJO DE CAJA</h1>
         </div>
         <img src={logo} alt="Logo" style={styles.logo} />
       </header>
