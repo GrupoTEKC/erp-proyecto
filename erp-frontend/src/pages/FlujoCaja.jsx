@@ -14,8 +14,22 @@ const styles = {
   header: {
     display: 'flex',
     alignItems: 'center',
-    justify: 'space-between',
+    justifyContent: 'space-between',
     marginBottom: 30
+  },
+  leftSection: {
+    flex: '1 1 0%',
+    display: 'flex',
+    justifyContent: 'flex-start'
+  },
+  centerSection: {
+    flex: '2 1 0%',
+    textAlign: 'center'
+  },
+  rightSection: {
+    flex: '1 1 0%',
+    display: 'flex',
+    justifyContent: 'flex-end'
   },
   mainTitle: {
     color: vino,
@@ -60,13 +74,22 @@ function FlujoCaja() {
   return (
     <div style={styles.page}>
       <header style={styles.header}>
-        <div>
+        {/* Lado Izquierdo: Botón Volver */}
+        <div style={styles.leftSection}>
           <button style={styles.cancel} onClick={() => navigate(-1)}>
             Volver
           </button>
+        </div>
+
+        {/* Centro: Título Centrado */}
+        <div style={styles.centerSection}>
           <h1 style={styles.mainTitle}>FLUJO DE CAJA</h1>
         </div>
-        <img src={logo} alt="Logo" style={styles.logo} />
+
+        {/* Lado Derecho: Logo alineado a la derecha */}
+        <div style={styles.rightSection}>
+          <img src={logo} alt="Logo" style={styles.logo} />
+        </div>
       </header>
 
       {/* Contenido en Proceso */}
