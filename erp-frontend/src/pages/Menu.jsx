@@ -127,7 +127,7 @@ function Menu() {
           {/* 🔥 NUEVO MÓDULO: Flujo de caja */}
           <Link to="/flujo-caja" style={styles.link}>
             <button style={styles.button}>
-              <span style={styles.icon}>💰</span> Flujo de caja
+              <span style={styles.icon}>$</span> Flujo de caja
             </button>
           </Link>
         </nav>
