@@ -62,7 +62,7 @@ function ClientesLogin() {
     // 🟢 VALIDACIÓN CLIENTES
     if (usuario === 'AdminClient01' && password === '141125') {
       localStorage.setItem('clientes_auth', 'true')
-      alert('✅ Te amo nunca lo olvides ❤️')
+      alert('✅ REVISAR ANTES DE AGREGAR O REALIZAR CUALQUIER MODIFICACION')
       navigate('/clientes')
       return
     }
