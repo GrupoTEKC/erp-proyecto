@@ -534,7 +534,7 @@ function FlujoCaja() {
                       <label style={styles.label}>Nombre y Apellido del dueño de la cuenta *</label>
                       <input
                         type="text"
-                        placeholder="Ej. Juan Pérez"
+                        placeholder="Ej. Eli Maravillas"
                         style={styles.input}
                         value={nombreDuenioCuenta}
                         onChange={(e) => setNombreDuenioCuenta(e.target.value)}
