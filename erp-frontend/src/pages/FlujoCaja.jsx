@@ -232,17 +232,23 @@ const styles = {
 
 function FlujoCaja() {
   const navigate = useNavigate()
-  const [produccionAbierto, setProduccionAbierto] = useState(true)
+
+  // 1. Inicia en false para mantener la vista limpia hasta dar clic
+  const [produccionAbierto, setProduccionAbierto] = useState(false)
+
   const [apartadoActivo, setApartadoActivo] = useState(null)
   const [productosBD, setProductosBD] = useState([])
   const [subopcionSeleccionada, setSubopcionSeleccionada] = useState('')
   const [productoSeleccionado, setProductoSeleccionado] = useState('')
   const [origenPago, setOrigenPago] = useState('EFECTIVO')
   const [cuentaBancaria, setCuentaBancaria] = useState('')
+  
+  // Estado para capturar Nombre y Apellido si selecciona "Otro"
+  const [nombreDuenioCuenta, setNombreDuenioCuenta] = useState('')
+
   const [monto, setMonto] = useState('')
   const [concepto, setConcepto] = useState('')
   const [comprobante, setComprobante] = useState('')
-
 
   useEffect(() => {
     fetch('/productos')
@@ -253,7 +259,6 @@ function FlujoCaja() {
       .catch((err) => console.error('Error al cargar productos:', err))
   }, [])
 
-
   const handleSelectApartado = (idCat) => {
     setApartadoActivo(idCat)
     setSubopcionSeleccionada('')
@@ -261,6 +266,8 @@ function FlujoCaja() {
     setMonto('')
     setConcepto('')
     setComprobante('')
+    setCuentaBancaria('')
+    setNombreDuenioCuenta('')
   }
 
   // Guardar Egreso
@@ -274,11 +281,19 @@ function FlujoCaja() {
       detalleFinal = `[EPP: ${subopcionSeleccionada}] - ${concepto}`
     }
 
+    // Definición de la cuenta de salida a registrar
+    let cuentaFinal = null
+    if (origenPago === 'TRANSFERENCIA') {
+      cuentaFinal = cuentaBancaria === 'OTRO' 
+        ? `OTRO (${nombreDuenioCuenta.trim()})` 
+        : cuentaBancaria
+    }
+
     const payload = {
       id_categoria: apartadoActivo,
       monto: parseFloat(monto),
       origen_pago: origenPago,
-      cuenta_bancaria: origenPago === 'TRANSFERENCIA' ? cuentaBancaria : null,
+      cuenta_bancaria: cuentaFinal,
       id_producto_relacionado: apartadoActivo === 3 ? parseInt(productoSeleccionado) : null,
       concepto: detalleFinal,
       num_comprobante: comprobante
@@ -321,15 +336,7 @@ function FlujoCaja() {
         </div>
       </header>
 
-      {/* SUBTÍTULO Y TEXTO INFORMATIVO */}
-      <div style={styles.subHeaderCard}>
-        <h2 style={styles.subtitle}>Gastos Operativos</h2>
-        <p style={styles.descriptionText}>
-        Captura aquí los gastos operativos/insumos en producción.
-        </p>
-      </div>
-
-    
+      {/* TARJETA PRINCIPAL (SOLO MOSTRARÁ CONTENIDO AL DAR CLIC) */}
       <div style={styles.parentCard}>
         <div
           style={styles.parentHeader}
@@ -349,7 +356,7 @@ function FlujoCaja() {
           </span>
         </div>
 
-        {/* CONTENIDO INTERNO: LAS 3 SUB-TARJETAS */}
+        {/* CONTENIDO INTERNO: LAS 3 SUB-TARJETAS (SE MUESTRAN SÓLO SI ESTÁ DESPLEGADO) */}
         {produccionAbierto && (
           <div>
             <div style={styles.cardsContainer}>
@@ -362,7 +369,7 @@ function FlujoCaja() {
                 onClick={() => handleSelectApartado(1)}
               >
                 <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Materias Primas</span>
+                  <span style={styles.cardName}>Materias primas</span>
                   <span style={styles.cardIcon}>📦</span>
                 </div>
                 <p style={styles.cardDesc}>
@@ -379,7 +386,7 @@ function FlujoCaja() {
                 onClick={() => handleSelectApartado(2)}
               >
                 <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Protección Personal (EPP)</span>
+                  <span style={styles.cardName}>Protección personal (EPP)</span>
                   <span style={styles.cardIcon}>🥽</span>
                 </div>
                 <p style={styles.cardDesc}>
@@ -410,10 +417,10 @@ function FlujoCaja() {
               <div style={styles.formContainer}>
                 <div style={styles.formTitle}>
                   <span>
-                    Capturando gasto en:{' '}
-                    {apartadoActivo === 1 && '📦 Materias Primas'}
-                    {apartadoActivo === 2 && '🥽 Equipo de Protección Personal (EPP)'}
-                    {apartadoActivo === 3 && '🛍️ Insumos de Empaque y Bolsas'}
+                   Estás capturando gasto en:{' '}
+                    {apartadoActivo === 1 && '📦 Materias primas'}
+                    {apartadoActivo === 2 && '🥽 Equipo de protección personal (EPP)'}
+                    {apartadoActivo === 3 && '🛍️ Insumos de bolsa'}
                   </span>
                   <button
                     type="button"
@@ -435,9 +442,9 @@ function FlujoCaja() {
                         onChange={(e) => setSubopcionSeleccionada(e.target.value)}
                         required
                       >
-                        <option value="">-- Seleccionar Insumo --</option>
-                        <option value="Cemento Blanco">Cemento Blanco</option>
-                        <option value="Cemento Gris">Cemento Gris</option>
+                        <option value="">-- Seleccionar insumo --</option>
+                        <option value="Cemento Blanco">Cemento blanco</option>
+                        <option value="Cemento Gris">Cemento gris</option>
                         <option value="Cal">Cal</option>
                         <option value="Impalpable">Impalpable</option>
                         <option value="Aditivos">Aditivos</option>
@@ -484,11 +491,17 @@ function FlujoCaja() {
 
                   {/* ORIGEN DE PAGO */}
                   <div style={styles.fieldGroup}>
-                    <label style={styles.label}>Origen de Pago *</label>
+                    <label style={styles.label}>Origen de pago *</label>
                     <select
                       style={styles.select}
                       value={origenPago}
-                      onChange={(e) => setOrigenPago(e.target.value)}
+                      onChange={(e) => {
+                        setOrigenPago(e.target.value)
+                        if (e.target.value !== 'TRANSFERENCIA') {
+                          setCuentaBancaria('')
+                          setNombreDuenioCuenta('')
+                        }
+                      }}
                     >
                       <option value="EFECTIVO">Efectivo</option>
                       <option value="TRANSFERENCIA">Transferencia</option>
@@ -502,13 +515,31 @@ function FlujoCaja() {
                       <select
                         style={styles.select}
                         value={cuentaBancaria}
-                        onChange={(e) => setCuentaBancaria(e.target.value)}
+                        onChange={(e) => {
+                          setCuentaBancaria(e.target.value)
+                          if (e.target.value !== 'OTRO') setNombreDuenioCuenta('')
+                        }}
                         required
                       >
                         <option value="">-- Seleccionar Cuenta --</option>
                         <option value="Cuenta Fiscal">Cuenta fiscal</option>
-                        <option value="Cuenta Eli">Otro</option>
+                        <option value="OTRO">Otro</option>
                       </select>
+                    </div>
+                  )}
+
+                  {/* CAMPO DINÁMICO SI SE SELECCIONA "OTRO" EN CUENTA BANCARIA */}
+                  {origenPago === 'TRANSFERENCIA' && cuentaBancaria === 'OTRO' && (
+                    <div style={styles.fieldGroup}>
+                      <label style={styles.label}>Nombre y Apellido del dueño de la cuenta *</label>
+                      <input
+                        type="text"
+                        placeholder="Ej. Juan Pérez"
+                        style={styles.input}
+                        value={nombreDuenioCuenta}
+                        onChange={(e) => setNombreDuenioCuenta(e.target.value)}
+                        required
+                      />
                     </div>
                   )}
 
@@ -526,9 +557,7 @@ function FlujoCaja() {
                     />
                   </div>
 
-        
-
-                  {/* CONCEPTO */}
+                  {/* CONCEPTO / COMENTARIOS */}
                   <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
                     <label style={styles.label}>Comentarios *</label>
                     <textarea
