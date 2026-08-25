@@ -590,6 +590,96 @@ app.get('/productos', async (req, res) => {
 })
 
 // =============================
+// 💰 CONTROL DE GASTOS / EGRESOS
+// =============================
+
+app.get('/egresos/categorias', async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT id_categoria, bloque_flujo, categoria_principal, subcategoria, 
+             requiere_producto, requiere_empleado, requiere_unidad 
+      FROM categorias_egresos 
+      ORDER BY id_categoria ASC
+    `)
+    res.json(rows)
+  } catch (err) {
+    console.error("❌ ERROR AL OBTENER CATEGORÍAS DE EGRESOS:", err)
+    res.status(500).json({ error: err.message })
+  }
+})
+
+
+app.post('/egresos', async (req, res) => {
+  try {
+    const {
+      id_categoria,
+      monto,
+      origen_pago,
+      cuenta_bancaria,
+      id_producto_relacionado,
+      empleado_relacionado,
+      unidad_relacionada,
+      concepto,
+      num_comprobante
+    } = req.body
+
+    // Validaciones de campos obligatorios
+    if (!id_categoria) {
+      return res.status(400).json({ error: 'La categoría del gasto es obligatoria' })
+    }
+    if (!monto || Number(monto) <= 0) {
+      return res.status(400).json({ error: 'El monto debe ser un número mayor a 0' })
+    }
+    if (!origen_pago) {
+      return res.status(400).json({ error: 'El origen de pago es obligatorio' })
+    }
+    if (origen_pago === 'TRANSFERENCIA' && !cuenta_bancaria) {
+      return res.status(400).json({ error: 'Debe especificar la cuenta bancaria de origen' })
+    }
+    if (!concepto || !concepto.trim()) {
+      return res.status(400).json({ error: 'El concepto o detalle del gasto es obligatorio' })
+    }
+
+    // Insertar en la tabla flujo_egresos
+    const [result] = await db.query(`
+      INSERT INTO flujo_egresos (
+        id_categoria, 
+        monto, 
+        origen_pago, 
+        cuenta_bancaria, 
+        id_producto_relacionado, 
+        empleado_relacionado, 
+        unidad_relacionada, 
+        concepto, 
+        num_comprobante,
+        fecha_hora
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+    `, [
+      id_categoria,
+      monto,
+      origen_pago,
+      origen_pago === 'TRANSFERENCIA' ? cuenta_bancaria : null,
+      id_producto_relacionado || null,
+      empleado_relacionado || null,
+      unidad_relacionada || null,
+      concepto.trim().toUpperCase(), // Se guarda estandarizado en mayúsculas
+      num_comprobante ? num_comprobante.trim().toUpperCase() : null
+    ])
+
+    res.json({
+      success: true,
+      message: 'Gastos registrados con éxito',
+      id_egreso: result.insertId
+    })
+
+  } catch (err) {
+    console.error("❌ ERROR AL REGISTRAR EGRESO:", err)
+    res.status(500).json({ error: err.message })
+  }
+})
+
+
+// =============================
 // PEDIDO COMPLETO (PRO)
 // =============================
 app.post('/pedidos-completo', async (req, res) => {
