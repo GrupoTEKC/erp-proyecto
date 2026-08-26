@@ -276,17 +276,23 @@ function FlujoCaja() {
     setNombreDuenioCuenta('')
   }
 
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
     e.preventDefault()
 
-    // El concepto ya no es obligatorio, si no hay valor escribe S/C
     const baseConcepto = concepto.trim() ? concepto.trim() : 'S/C'
     let detalleFinal = baseConcepto
+
+    // Buscar el producto en la lista para obtener su nombre (Bolsa)
+    const prodEncontrado = productosBD.find(
+      (p) => String(p.id_producto) === String(productoSeleccionado)
+    )
 
     if (apartadoActivo === 1 && subopcionSeleccionada) {
       detalleFinal = `[MATERIA PRIMA: ${subopcionSeleccionada}] - ${baseConcepto}`
     } else if (apartadoActivo === 2 && subopcionSeleccionada) {
       detalleFinal = `[EPP: ${subopcionSeleccionada}] - ${baseConcepto}`
+    } else if (apartadoActivo === 3 && prodEncontrado) {
+      detalleFinal = `[BOLSA: ${prodEncontrado.nombre}] - ${baseConcepto}`
     }
 
     let cuentaFinal = null
@@ -306,7 +312,7 @@ function FlujoCaja() {
       num_comprobante: comprobante ? comprobante.trim() : null
     }
 
-    try {
+       try {
       const res = await fetch(`${API_URL}/egresos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
