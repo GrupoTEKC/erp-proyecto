@@ -36,7 +36,7 @@ app.get('/clientes', async (req, res) => {
 
 
 /* =============================
-   🔍 BUSCAR CLIENTE O FOLIO
+   🔍 BUSCAR CLIENTE O FOLIO (INCLUYE REZAGADOS)
 ============================= */
 app.get('/clientes/busqueda', async (req, res) => {
   try {
@@ -56,6 +56,8 @@ app.get('/clientes/busqueda', async (req, res) => {
         ON p.id_cliente = c.id_cliente
       LEFT JOIN entregas te
         ON te.id_pedido = p.id_pedido
+      LEFT JOIN pedidos_rezagados pr
+        ON pr.id_cliente = c.id_cliente
       WHERE
         c.activo = 1
         AND (
@@ -65,6 +67,7 @@ app.get('/clientes/busqueda', async (req, res) => {
           OR c.nombre_tienda LIKE ?
           OR c.apodo LIKE ?
           OR te.folio LIKE ?
+          OR pr.folio LIKE ?
         )
       ORDER BY
         c.nombre_tienda,
@@ -75,7 +78,8 @@ app.get('/clientes/busqueda', async (req, res) => {
       texto,
       texto,
       texto,
-      texto
+      texto,
+      texto // Séptimo parámetro para pr.folio
     ])
 
     res.json(rows)
@@ -87,6 +91,7 @@ app.get('/clientes/busqueda', async (req, res) => {
     })
   }
 })
+
 
 app.get('/clientes/:id_cliente', async (req, res) => {
   try {
