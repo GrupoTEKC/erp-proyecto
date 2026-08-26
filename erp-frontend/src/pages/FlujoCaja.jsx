@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import logo from '../assets/TRANSPARENTE.png'
 
+// Toma la URL base dinámica del entorno o el origen actual si están en el mismo hosting
+const API_URL = import.meta.env.VITE_API_URL || window.location.origin
+
 const vino = '#8B1E1E'
 
 const styles = {
@@ -205,14 +208,18 @@ const styles = {
     borderRadius: '6px',
     border: '1px solid #cbd5e1',
     fontSize: '14px',
-    outline: 'none'
+    outline: 'none',
+    width: '100%',
+    boxSizing: 'border-box'
   },
   select: {
     padding: '10px 12px',
     borderRadius: '6px',
     border: '1px solid #cbd5e1',
     fontSize: '14px',
-    backgroundColor: '#fff'
+    backgroundColor: '#fff',
+    width: '100%',
+    boxSizing: 'border-box'
   },
   fullRow: {
     gridColumn: '1 / -1'
@@ -233,17 +240,13 @@ const styles = {
 function FlujoCaja() {
   const navigate = useNavigate()
 
-  // 1. Inicia en false para mantener la vista limpia hasta dar clic
   const [produccionAbierto, setProduccionAbierto] = useState(false)
-
   const [apartadoActivo, setApartadoActivo] = useState(null)
   const [productosBD, setProductosBD] = useState([])
   const [subopcionSeleccionada, setSubopcionSeleccionada] = useState('')
   const [productoSeleccionado, setProductoSeleccionado] = useState('')
   const [origenPago, setOrigenPago] = useState('EFECTIVO')
   const [cuentaBancaria, setCuentaBancaria] = useState('')
-  
-  // Estado para capturar Nombre y Apellido si selecciona "Otro"
   const [nombreDuenioCuenta, setNombreDuenioCuenta] = useState('')
 
   const [monto, setMonto] = useState('')
@@ -251,8 +254,11 @@ function FlujoCaja() {
   const [comprobante, setComprobante] = useState('')
 
   useEffect(() => {
-    fetch('/productos')
-      .then((res) => res.json())
+    fetch(`${API_URL}/productos`)
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        return res.json()
+      })
       .then((data) => {
         if (Array.isArray(data)) setProductosBD(data)
       })
@@ -270,18 +276,19 @@ function FlujoCaja() {
     setNombreDuenioCuenta('')
   }
 
-  // Guardar Egreso
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    let detalleFinal = concepto
+    // El concepto ya no es obligatorio, si no hay valor escribe S/C
+    const baseConcepto = concepto.trim() ? concepto.trim() : 'S/C'
+    let detalleFinal = baseConcepto
+
     if (apartadoActivo === 1 && subopcionSeleccionada) {
-      detalleFinal = `[MATERIA PRIMA: ${subopcionSeleccionada}] - ${concepto}`
+      detalleFinal = `[MATERIA PRIMA: ${subopcionSeleccionada}] - ${baseConcepto}`
     } else if (apartadoActivo === 2 && subopcionSeleccionada) {
-      detalleFinal = `[EPP: ${subopcionSeleccionada}] - ${concepto}`
+      detalleFinal = `[EPP: ${subopcionSeleccionada}] - ${baseConcepto}`
     }
 
-    // Definición de la cuenta de salida a registrar
     let cuentaFinal = null
     if (origenPago === 'TRANSFERENCIA') {
       cuentaFinal = cuentaBancaria === 'OTRO' 
@@ -296,18 +303,29 @@ function FlujoCaja() {
       cuenta_bancaria: cuentaFinal,
       id_producto_relacionado: apartadoActivo === 3 ? parseInt(productoSeleccionado) : null,
       concepto: detalleFinal,
-      num_comprobante: comprobante
+      num_comprobante: comprobante ? comprobante.trim() : null
     }
 
     try {
-      const res = await fetch('/egresos', {
+      const res = await fetch(`${API_URL}/egresos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       })
 
+      if (!res.ok) {
+        const errorText = await res.text()
+        try {
+          const errorJson = JSON.parse(errorText)
+          alert(`Error (${res.status}): ${errorJson.error || 'No se pudo registrar el gasto'}`)
+        } catch {
+          alert(`Error del servidor (${res.status}): El endpoint no aceptó la petición.`)
+        }
+        return
+      }
+
       const data = await res.json()
-      if (res.ok && data.success) {
+      if (data.success) {
         alert('¡Gasto registrado con éxito!')
         setApartadoActivo(null)
       } else {
@@ -336,7 +354,7 @@ function FlujoCaja() {
         </div>
       </header>
 
-      {/* TARJETA PRINCIPAL (SOLO MOSTRARÁ CONTENIDO AL DAR CLIC) */}
+      {/* TARJETA PRINCIPAL */}
       <div style={styles.parentCard}>
         <div
           style={styles.parentHeader}
@@ -356,7 +374,7 @@ function FlujoCaja() {
           </span>
         </div>
 
-        {/* CONTENIDO INTERNO: LAS 3 SUB-TARJETAS (SE MUESTRAN SÓLO SI ESTÁ DESPLEGADO) */}
+        {/* SUB-TARJETAS */}
         {produccionAbierto && (
           <div>
             <div style={styles.cardsContainer}>
@@ -412,12 +430,12 @@ function FlujoCaja() {
               </div>
             </div>
 
-            {/* FORMULARIO INTERNO DE LA SUB-TARJETA SELECCIONADA */}
+            {/* FORMULARIO */}
             {apartadoActivo && (
               <div style={styles.formContainer}>
                 <div style={styles.formTitle}>
                   <span>
-                   Estás capturando gasto en:{' '}
+                    Estás capturando gasto en:{' '}
                     {apartadoActivo === 1 && '📦 Materias primas'}
                     {apartadoActivo === 2 && '🥽 Equipo de protección personal (EPP)'}
                     {apartadoActivo === 3 && '🛍️ Insumos de bolsa'}
@@ -528,7 +546,7 @@ function FlujoCaja() {
                     </div>
                   )}
 
-                  {/* CAMPO DINÁMICO SI SE SELECCIONA "OTRO" EN CUENTA BANCARIA */}
+                  {/* CAMPO DINÁMICO OTRO EN CUENTA BANCARIA */}
                   {origenPago === 'TRANSFERENCIA' && cuentaBancaria === 'OTRO' && (
                     <div style={styles.fieldGroup}>
                       <label style={styles.label}>Nombre y Apellido del dueño de la cuenta *</label>
@@ -548,7 +566,8 @@ function FlujoCaja() {
                     <label style={styles.label}>Monto pagado ($) *</label>
                     <input
                       type="number"
-                      step="0.01"
+                      step="any"
+                      min="0.01"
                       placeholder="0.00"
                       style={styles.input}
                       value={monto}
@@ -557,16 +576,15 @@ function FlujoCaja() {
                     />
                   </div>
 
-                  {/* CONCEPTO / COMENTARIOS */}
+                  {/* CONCEPTO / COMENTARIOS (OPCIONAL) */}
                   <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
-                    <label style={styles.label}>Comentarios *</label>
+                    <label style={styles.label}>Comentarios (Opcional)</label>
                     <textarea
                       rows="2"
                       placeholder="Escribe un comentario si se requiere..."
                       style={{ ...styles.input, resize: 'vertical' }}
                       value={concepto}
                       onChange={(e) => setConcepto(e.target.value)}
-                      required
                     />
                   </div>
 
