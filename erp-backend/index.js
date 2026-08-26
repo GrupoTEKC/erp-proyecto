@@ -594,6 +594,122 @@ app.get('/productos', async (req, res) => {
   }
 })
 
+/* =============================
+   👥 EMPLEADOS & GASTOS DE PERSONAL
+============================= */
+
+// 1. Obtener la lista de empleados activos por puesto
+app.get('/empleados', async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT 
+        id_empleado,
+        nombre,
+        apellido1,
+        apellido2,
+        CONCAT(nombre, ' ', apellido1, IFNULL(CONCAT(' ', apellido2), '')) AS nombre_completo,
+        puesto,
+        estatus
+      FROM empleados
+      WHERE estatus = 1
+      ORDER BY puesto ASC, nombre ASC
+    `)
+    res.json(rows)
+  } catch (err) {
+    console.error('Error al consultar empleados:', err)
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// 2. Obtener el estatus de pagos de nómina en una semana/periodo específico
+// Ejemplo de consulta: GET /empleados/pagos-semana?fecha_inicio=2026-08-24&fecha_fin=2026-08-30
+app.get('/empleados/pagos-semana', async (req, res) => {
+  try {
+    const { fecha_inicio, fecha_fin } = req.query
+
+    if (!fecha_inicio || !fecha_fin) {
+      return res.status(400).json({ error: 'Debes proporcionar fecha_inicio y fecha_fin' })
+    }
+
+    const [rows] = await db.query(`
+      SELECT DISTINCT 
+        id_empleado
+      FROM flujo_egresos
+      WHERE id_empleado IS NOT NULL
+        AND DATE(fecha_hora) BETWEEN ? AND ?
+    `, [fecha_inicio, fecha_fin])
+
+    // Devolvemos un array simple con los IDs de los empleados que ya tienen pago en ese periodo
+    const empleadosPagados = rows.map(r => r.id_empleado)
+    res.json(empleadosPagados)
+  } catch (err) {
+    console.error('Error al verificar pagos de nómina:', err)
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// 3. Registrar un egreso de personal (Nómina, IMSS, ISR, Comedor, Viáticos)
+app.post('/egresos/personal', async (req, res) => {
+  try {
+    const {
+      id_categoria,
+      monto,
+      origen_pago,
+      cuenta_bancaria,
+      id_empleado,
+      empleado_relacionado,
+      concepto,
+      num_comprobante,
+      fecha_hora
+    } = req.body
+
+    // Validaciones principales
+    if (!id_categoria || !monto || Number(monto) <= 0) {
+      return res.status(400).json({ error: 'Categoría y un monto válido son obligatorios' })
+    }
+
+    if (!origen_pago) {
+      return res.status(400).json({ error: 'El origen de pago es obligatorio' })
+    }
+
+    const fechaRegistro = fecha_hora || new Date()
+
+    const [result] = await db.query(`
+      INSERT INTO flujo_egresos (
+        id_categoria,
+        monto,
+        origen_pago,
+        cuenta_bancaria,
+        id_empleado,
+        empleado_relacionado,
+        concepto,
+        num_comprobante,
+        fecha_hora
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      id_categoria,
+      Number(monto),
+      origen_pago,
+      origen_pago === 'TRANSFERENCIA' ? (cuenta_bancaria || 'FISCAL') : null,
+      id_empleado || null,
+      empleado_relacionado || null,
+      concepto || 'Pago de gasto de personal',
+      num_comprobante || null,
+      fechaRegistro
+    ])
+
+    res.json({
+      success: true,
+      message: 'Gasto de personal registrado correctamente',
+      id_egreso: result.insertId
+    })
+
+  } catch (err) {
+    console.error('Error al registrar egreso de personal:', err)
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // =============================
 // 💰 CONTROL DE GASTOS / EGRESOS
 // =============================
