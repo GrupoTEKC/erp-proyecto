@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import logo from '../assets/TRANSPARENTE.png'
 
-// Toma la URL base dinámica del entorno o el origen actual si están en el mismo hosting
-const API_URL = import.meta.env.VITE_API_URL || window.location.origin
+const API = 'https://erp-proyecto-production.up.railway.app'
 
 const vino = '#8B1E1E'
 
@@ -54,27 +53,6 @@ const styles = {
     cursor: 'pointer',
     fontWeight: 'bold'
   },
-  subHeaderCard: {
-    backgroundColor: '#f8f9fa',
-    borderLeft: `5px solid ${vino}`,
-    padding: '16px 20px',
-    borderRadius: '4px',
-    marginBottom: '25px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
-  },
-  subtitle: {
-    margin: 0,
-    fontSize: '20px',
-    color: '#2c3e50',
-    fontWeight: 'bold'
-  },
-  descriptionText: {
-    margin: '6px 0 0 0',
-    fontSize: '14px',
-    color: '#555',
-    lineHeight: '1.4'
-  },
-
   /* TARJETA PRINCIPAL (BLOQUE PADRE) */
   parentCard: {
     backgroundColor: '#ffffff',
@@ -117,11 +95,10 @@ const styles = {
     fontSize: '13px',
     fontWeight: 'bold'
   },
-
   /* SUB-TARJETAS (HIJAS) */
   cardsContainer: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
     gap: '20px',
     marginTop: '20px'
   },
@@ -159,7 +136,6 @@ const styles = {
     margin: 0,
     lineHeight: '1.3'
   },
-
   /* FORMULARIO DE CAPTURA */
   formContainer: {
     backgroundColor: '#ffffff',
@@ -234,12 +210,73 @@ const styles = {
     borderRadius: '6px',
     cursor: 'pointer',
     width: '100%'
+  },
+  /* ESTILOS ESPECÍFICOS PARA GASTOS DE PERSONAL */
+  puestoTabs: {
+    display: 'flex',
+    gap: '8px',
+    flexWrap: 'wrap',
+    marginBottom: '15px',
+    borderBottom: '1px solid #e2e8f0',
+    paddingBottom: '10px'
+  },
+  puestoTabBtn: {
+    padding: '8px 14px',
+    borderRadius: '20px',
+    border: '1px solid #cbd5e1',
+    backgroundColor: '#f8fafc',
+    color: '#475569',
+    fontSize: '13px',
+    fontWeight: 'bold',
+    cursor: 'pointer'
+  },
+  puestoTabActive: {
+    backgroundColor: vino,
+    color: '#ffffff',
+    borderColor: vino
+  },
+  empleadosGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+    gap: '12px',
+    marginBottom: '20px'
+  },
+  empleadoCard: {
+    padding: '12px',
+    borderRadius: '8px',
+    border: '1.5px solid #e2e8f0',
+    backgroundColor: '#ffffff',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    transition: 'all 0.15s ease'
+  },
+  empleadoCardSelected: {
+    borderColor: vino,
+    backgroundColor: '#fff5f5',
+    boxShadow: '0 2px 8px rgba(139,30,30,0.15)'
+  },
+  statusBadge: {
+    fontSize: '12px',
+    fontWeight: 'bold',
+    padding: '2px 8px',
+    borderRadius: '12px'
+  },
+  badgePagado: {
+    backgroundColor: '#dcfce7',
+    color: '#15803d'
+  },
+  badgePendiente: {
+    backgroundColor: '#fee2e2',
+    color: '#b91c1c'
   }
 }
 
 function FlujoCaja() {
   const navigate = useNavigate()
 
+  // ESTADOS - GASTOS OPERATIVOS (PRODUCCIÓN)
   const [produccionAbierto, setProduccionAbierto] = useState(false)
   const [apartadoActivo, setApartadoActivo] = useState(null)
   const [productosBD, setProductosBD] = useState([])
@@ -248,13 +285,24 @@ function FlujoCaja() {
   const [origenPago, setOrigenPago] = useState('EFECTIVO')
   const [cuentaBancaria, setCuentaBancaria] = useState('')
   const [nombreDuenioCuenta, setNombreDuenioCuenta] = useState('')
-
   const [monto, setMonto] = useState('')
   const [concepto, setConcepto] = useState('')
   const [comprobante, setComprobante] = useState('')
 
+  // ESTADOS - GASTOS DE PERSONAL
+  const [personalAbierto, setPersonalAbierto] = useState(false)
+  const [subPersonalActivo, setSubPersonalActivo] = useState(null) // 4=Nómina, 5=IMSS/ISR, 6=Comedor, 7=Viáticos
+  const [empleados, setEmpleados] = useState([])
+  const [empleadosPagados, setEmpleadosPagados] = useState([])
+  const [puestoTab, setPuestoTab] = useState('ADMINISTRATIVO')
+  const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState('')
+  const [subTipoImpuesto, setSubTipoImpuesto] = useState('IMSS') // 'IMSS' o 'ISR'
+  const [fechaInicioSemana, setFechaInicioSemana] = useState('')
+  const [fechaFinSemana, setFechaFinSemana] = useState('')
+
+  // Cargar productos de la base de datos
   useEffect(() => {
-    fetch(`${API_URL}/productos`)
+    fetch(`${API}/productos`)
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         return res.json()
@@ -264,6 +312,31 @@ function FlujoCaja() {
       })
       .catch((err) => console.error('Error al cargar productos:', err))
   }, [])
+
+  // Cargar empleados de la base de datos
+  useEffect(() => {
+    fetch(`${API}/empleados`)
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        return res.json()
+      })
+      .then((data) => {
+        if (Array.isArray(data)) setEmpleados(data)
+      })
+      .catch((err) => console.error('Error al cargar empleados:', err))
+  }, [])
+
+  // Verificar status de pagos de nómina por fechas
+  useEffect(() => {
+    if (fechaInicioSemana && fechaFinSemana) {
+      fetch(`${API}/empleados/pagos-semana?fecha_inicio=${fechaInicioSemana}&fecha_fin=${fechaFinSemana}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data)) setEmpleadosPagados(data)
+        })
+        .catch((err) => console.error('Error al verificar pagos de semana:', err))
+    }
+  }, [fechaInicioSemana, fechaFinSemana])
 
   const handleSelectApartado = (idCat) => {
     setApartadoActivo(idCat)
@@ -276,13 +349,24 @@ function FlujoCaja() {
     setNombreDuenioCuenta('')
   }
 
-const handleSubmit = async (e) => {
+  const handleSelectSubPersonal = (idSub) => {
+    setSubPersonalActivo(idSub)
+    setEmpleadoSeleccionado('')
+    setMonto('')
+    setConcepto('')
+    setComprobante('')
+    setOrigenPago('EFECTIVO')
+    setCuentaBancaria('')
+    setNombreDuenioCuenta('')
+  }
+
+  // SUBMIT - GASTOS OPERATIVOS
+  const handleSubmitOperativos = async (e) => {
     e.preventDefault()
 
     const baseConcepto = concepto.trim() ? concepto.trim() : 'S/C'
     let detalleFinal = baseConcepto
 
-    // Buscar el producto en la lista para obtener su nombre (Bolsa)
     const prodEncontrado = productosBD.find(
       (p) => String(p.id_producto) === String(productoSeleccionado)
     )
@@ -312,8 +396,8 @@ const handleSubmit = async (e) => {
       num_comprobante: comprobante ? comprobante.trim() : null
     }
 
-       try {
-      const res = await fetch(`${API_URL}/egresos`, {
+    try {
+      const res = await fetch(`${API}/egresos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -343,6 +427,83 @@ const handleSubmit = async (e) => {
     }
   }
 
+  // SUBMIT - GASTOS DE PERSONAL
+  const handleSubmitPersonal = async (e) => {
+    e.preventDefault()
+
+    const empObj = empleados.find(emp => String(emp.id_empleado) === String(empleadoSeleccionado))
+    const nombreEmpleado = empObj ? empObj.nombre_completo : null
+
+    let idCategoriaFinal = 4 // Por defecto Nómina Base
+    let baseConcepto = concepto.trim() ? concepto.trim() : 'Pago de gasto de personal'
+
+    if (subPersonalActivo === 5) {
+      idCategoriaFinal = subTipoImpuesto === 'IMSS' ? 5 : 6 // IMSS o ISR
+      baseConcepto = `[${subTipoImpuesto}] - ${baseConcepto}`
+    } else if (subPersonalActivo === 6) {
+      idCategoriaFinal = 7 // Comedor
+      baseConcepto = `[COMEDOR] - ${baseConcepto}`
+    } else if (subPersonalActivo === 7) {
+      idCategoriaFinal = 8 // Viáticos
+      baseConcepto = `[VIÁTICOS] - ${baseConcepto}`
+    } else if (subPersonalActivo === 4 && empObj) {
+      baseConcepto = `[NÓMINA BASE - ${empObj.puesto}] - ${baseConcepto}`
+    }
+
+    let cuentaFinal = null
+    if (origenPago === 'TRANSFERENCIA') {
+      cuentaFinal = cuentaBancaria === 'OTRO'
+        ? `OTRO (${nombreDuenioCuenta.trim()})`
+        : cuentaBancaria
+    }
+
+    const payload = {
+      id_categoria: idCategoriaFinal,
+      monto: parseFloat(monto),
+      origen_pago: origenPago,
+      cuenta_bancaria: cuentaFinal,
+      id_empleado: empleadoSeleccionado ? parseInt(empleadoSeleccionado) : null,
+      empleado_relacionado: nombreEmpleado,
+      concepto: baseConcepto,
+      num_comprobante: comprobante ? comprobante.trim() : null
+    }
+
+    try {
+      const res = await fetch(`${API}/egresos/personal`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+
+      if (!res.ok) {
+        const errorText = await res.text()
+        alert(`Error (${res.status}): ${errorText}`)
+        return
+      }
+
+      const data = await res.json()
+      if (data.success) {
+        alert('¡Gasto de personal registrado con éxito!')
+        
+        // Refrescar status si es nómina
+        if (subPersonalActivo === 4 && empleadoSeleccionado) {
+          setEmpleadosPagados(prev => [...prev, parseInt(empleadoSeleccionado)])
+        }
+
+        setSubPersonalActivo(null)
+        setEmpleadoSeleccionado('')
+      } else {
+        alert(`Error: ${data.error || 'No se pudo registrar el gasto'}`)
+      }
+    } catch (error) {
+      console.error('Error al registrar gasto de personal:', error)
+      alert('Error de conexión con el servidor.')
+    }
+  }
+
+  // Filtrar empleados por el puesto seleccionado en las pestañas
+  const empleadosFiltrados = empleados.filter(e => e.puesto === puestoTab)
+
   return (
     <div style={styles.page}>
       {/* ENCABEZADO CORPORATIVO */}
@@ -360,7 +521,7 @@ const handleSubmit = async (e) => {
         </div>
       </header>
 
-      {/* TARJETA PRINCIPAL */}
+      {/* 🏭 TARJETA PRINCIPAL 1: GASTOS OPERATIVOS (PRODUCCIÓN) */}
       <div style={styles.parentCard}>
         <div
           style={styles.parentHeader}
@@ -380,7 +541,7 @@ const handleSubmit = async (e) => {
           </span>
         </div>
 
-        {/* SUB-TARJETAS */}
+        {/* SUB-TARJETAS PRODUCCIÓN */}
         {produccionAbierto && (
           <div>
             <div style={styles.cardsContainer}>
@@ -436,7 +597,7 @@ const handleSubmit = async (e) => {
               </div>
             </div>
 
-            {/* FORMULARIO */}
+            {/* FORMULARIO GASTOS OPERATIVOS */}
             {apartadoActivo && (
               <div style={styles.formContainer}>
                 <div style={styles.formTitle}>
@@ -455,7 +616,7 @@ const handleSubmit = async (e) => {
                   </button>
                 </div>
 
-                <form onSubmit={handleSubmit} style={styles.grid}>
+                <form onSubmit={handleSubmitOperativos} style={styles.grid}>
                   {/* OPCIÓN MATERIAS PRIMAS */}
                   {apartadoActivo === 1 && (
                     <div style={styles.fieldGroup}>
@@ -598,6 +759,358 @@ const handleSubmit = async (e) => {
                   <div style={styles.fullRow}>
                     <button type="submit" style={styles.submitButton}>
                       Guardar registro de gasto
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* 👥 TARJETA PRINCIPAL 2: GASTOS DE PERSONAL */}
+      <div style={styles.parentCard}>
+        <div
+          style={styles.parentHeader}
+          onClick={() => setPersonalAbierto(!personalAbierto)}
+        >
+          <div style={styles.parentTitleGroup}>
+            <span style={{ fontSize: '28px' }}>👥</span>
+            <div>
+              <h3 style={styles.parentTitle}>GASTOS DE PERSONAL</h3>
+              <p style={styles.parentSubtitle}>
+                Pago de nómina base, seguridad social (IMSS), retenciones (ISR), comedor y viáticos.
+              </p>
+            </div>
+          </div>
+          <span style={styles.toggleBadge}>
+            {personalAbierto ? '▼ Ocultar' : '▶ Desplegar'}
+          </span>
+        </div>
+
+        {/* SUB-TARJETAS PERSONAL */}
+        {personalAbierto && (
+          <div>
+            <div style={styles.cardsContainer}>
+              {/* SUB-TARJETA 1: NÓMINA BASE */}
+              <div
+                style={{
+                  ...styles.card,
+                  ...(subPersonalActivo === 4 ? styles.cardActive : {})
+                }}
+                onClick={() => handleSelectSubPersonal(4)}
+              >
+                <div style={styles.cardHeader}>
+                  <span style={styles.cardName}>Nómina Base</span>
+                  <span style={styles.cardIcon}>💵</span>
+                </div>
+                <p style={styles.cardDesc}>
+                  Sueldos de Administrativos, Operadores, Choferes, Vendedores y Chalanes.
+                </p>
+              </div>
+
+              {/* SUB-TARJETA 2: IMSS E ISR */}
+              <div
+                style={{
+                  ...styles.card,
+                  ...(subPersonalActivo === 5 ? styles.cardActive : {})
+                }}
+                onClick={() => handleSelectSubPersonal(5)}
+              >
+                <div style={styles.cardHeader}>
+                  <span style={styles.cardName}>IMSS e ISR</span>
+                  <span style={styles.cardIcon}>🏥</span>
+                </div>
+                <p style={styles.cardDesc}>
+                  Aportaciones de seguridad social e impuestos aplicados al personal.
+                </p>
+              </div>
+
+              {/* SUB-TARJETA 3: COMEDOR */}
+              <div
+                style={{
+                  ...styles.card,
+                  ...(subPersonalActivo === 6 ? styles.cardActive : {})
+                }}
+                onClick={() => handleSelectSubPersonal(6)}
+              >
+                <div style={styles.cardHeader}>
+                  <span style={styles.cardName}>Comedor</span>
+                  <span style={styles.cardIcon}>🍽️</span>
+                </div>
+                <p style={styles.cardDesc}>
+                  Gasto general acumulado de consumo de alimentos del personal.
+                </p>
+              </div>
+
+              {/* SUB-TARJETA 4: VIÁTICOS */}
+              <div
+                style={{
+                  ...styles.card,
+                  ...(subPersonalActivo === 7 ? styles.cardActive : {})
+                }}
+                onClick={() => handleSelectSubPersonal(7)}
+              >
+                <div style={styles.cardHeader}>
+                  <span style={styles.cardName}>Viáticos</span>
+                  <span style={styles.cardIcon}>✈️</span>
+                </div>
+                <p style={styles.cardDesc}>
+                  Asignaciones para gastos de viaje y movilidad de choferes y personal.
+                </p>
+              </div>
+            </div>
+
+            {/* FORMULARIO GASTOS DE PERSONAL */}
+            {subPersonalActivo && (
+              <div style={styles.formContainer}>
+                <div style={styles.formTitle}>
+                  <span>
+                    Estás capturando:{' '}
+                    {subPersonalActivo === 4 && '💵 Nómina Base'}
+                    {subPersonalActivo === 5 && '🏥 IMSS / ISR'}
+                    {subPersonalActivo === 6 && '🍽️ Comedor'}
+                    {subPersonalActivo === 7 && '✈️ Viáticos'}
+                  </span>
+                  <button
+                    type="button"
+                    style={styles.closeBtn}
+                    onClick={() => setSubPersonalActivo(null)}
+                  >
+                    ✕ Cerrar
+                  </button>
+                </div>
+
+                <form onSubmit={handleSubmitPersonal} style={styles.grid}>
+                  
+                  {/* CASO 1: NÓMINA BASE */}
+                  {subPersonalActivo === 4 && (
+                    <div style={{ ...styles.fullRow, marginBottom: '10px' }}>
+                      <label style={styles.label}>1. Seleccionar Semana a consultar/evaluar</label>
+                      <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
+                        <input
+                          type="date"
+                          style={styles.input}
+                          value={fechaInicioSemana}
+                          onChange={(e) => setFechaInicioSemana(e.target.value)}
+                        />
+                        <span style={{ alignSelf: 'center', fontWeight: 'bold' }}>a</span>
+                        <input
+                          type="date"
+                          style={styles.input}
+                          value={fechaFinSemana}
+                          onChange={(e) => setFechaFinSemana(e.target.value)}
+                        />
+                      </div>
+
+                      <label style={{ ...styles.label, marginTop: '18px', display: 'block' }}>
+                        2. Puesto del personal
+                      </label>
+                      <div style={styles.puestoTabs}>
+                        {['ADMINISTRATIVO', 'OPERADOR', 'CHOFER', 'VENDEDOR', 'CHALAN'].map((puesto) => (
+                          <button
+                            key={puesto}
+                            type="button"
+                            style={{
+                              ...styles.puestoTabBtn,
+                              ...(puestoTab === puesto ? styles.puestoTabActive : {})
+                            }}
+                            onClick={() => {
+                              setPuestoTab(puesto)
+                              setEmpleadoSeleccionado('')
+                            }}
+                          >
+                            {puesto}
+                          </button>
+                        ))}
+                      </div>
+
+                      <label style={{ ...styles.label, marginBottom: '8px', display: 'block' }}>
+                        3. Seleccionar Trabajador ({puestoTab}) *
+                      </label>
+                      <div style={styles.empleadosGrid}>
+                        {empleadosFiltrados.map((emp) => {
+                          const pagado = empleadosPagados.includes(emp.id_empleado)
+                          const estaSeleccionado = String(empleadoSeleccionado) === String(emp.id_empleado)
+
+                          return (
+                            <div
+                              key={emp.id_empleado}
+                              style={{
+                                ...styles.empleadoCard,
+                                ...(estaSeleccionado ? styles.empleadoCardSelected : {})
+                              }}
+                              onClick={() => setEmpleadoSeleccionado(emp.id_empleado)}
+                            >
+                              <span style={{ fontWeight: 'bold', fontSize: '13.5px' }}>
+                                {emp.nombre_completo}
+                              </span>
+                              <span
+                                style={{
+                                  ...styles.statusBadge,
+                                  ...(pagado ? styles.badgePagado : styles.badgePendiente)
+                                }}
+                              >
+                                {pagado ? '🟢 Pagado' : '🔴 Pendiente'}
+                              </span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* CASO 2: IMSS / ISR */}
+                  {subPersonalActivo === 5 && (
+                    <>
+                      <div style={styles.fieldGroup}>
+                        <label style={styles.label}>Tipo de Obligación *</label>
+                        <select
+                          style={styles.select}
+                          value={subTipoImpuesto}
+                          onChange={(e) => setSubTipoImpuesto(e.target.value)}
+                        >
+                          <option value="IMSS">IMSS (100% Cuota)</option>
+                          <option value="ISR">ISR Retenido</option>
+                        </select>
+                      </div>
+
+                      <div style={styles.fieldGroup}>
+                        <label style={styles.label}>Empleado Asociado *</label>
+                        <select
+                          style={styles.select}
+                          value={empleadoSeleccionado}
+                          onChange={(e) => setEmpleadoSeleccionado(e.target.value)}
+                          required
+                        >
+                          <option value="">-- Seleccionar empleado --</option>
+                          {empleados.map((emp) => (
+                            <option key={emp.id_empleado} value={emp.id_empleado}>
+                              {emp.nombre_completo} ({emp.puesto})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </>
+                  )}
+
+                  {/* CASO 4: VIÁTICOS */}
+                  {subPersonalActivo === 7 && (
+                    <div style={styles.fieldGroup}>
+                      <label style={styles.label}>Empleado que recibe viáticos *</label>
+                      <select
+                        style={styles.select}
+                        value={empleadoSeleccionado}
+                        onChange={(e) => setEmpleadoSeleccionado(e.target.value)}
+                        required
+                      >
+                        <option value="">-- Seleccionar empleado --</option>
+                        {empleados.map((emp) => (
+                          <option key={emp.id_empleado} value={emp.id_empleado}>
+                            {emp.nombre_completo} ({emp.puesto})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* ORIGEN DE PAGO */}
+                  <div style={styles.fieldGroup}>
+                    <label style={styles.label}>Origen de pago *</label>
+                    <select
+                      style={styles.select}
+                      value={origenPago}
+                      onChange={(e) => {
+                        setOrigenPago(e.target.value)
+                        if (e.target.value !== 'TRANSFERENCIA') {
+                          setCuentaBancaria('')
+                          setNombreDuenioCuenta('')
+                        }
+                      }}
+                    >
+                      <option value="EFECTIVO">Efectivo</option>
+                      <option value="TRANSFERENCIA">Transferencia</option>
+                    </select>
+                  </div>
+
+                  {/* CUENTA BANCARIA */}
+                  {origenPago === 'TRANSFERENCIA' && (
+                    <div style={styles.fieldGroup}>
+                      <label style={styles.label}>Cuenta Bancaria de Salida *</label>
+                      <select
+                        style={styles.select}
+                        value={cuentaBancaria}
+                        onChange={(e) => {
+                          setCuentaBancaria(e.target.value)
+                          if (e.target.value !== 'OTRO') setNombreDuenioCuenta('')
+                        }}
+                        required
+                      >
+                        <option value="">-- Seleccionar Cuenta --</option>
+                        <option value="Cuenta Fiscal">Cuenta fiscal</option>
+                        <option value="OTRO">Otro</option>
+                      </select>
+                    </div>
+                  )}
+
+                  {/* CAMPO DINÁMICO OTRO EN CUENTA BANCARIA */}
+                  {origenPago === 'TRANSFERENCIA' && cuentaBancaria === 'OTRO' && (
+                    <div style={styles.fieldGroup}>
+                      <label style={styles.label}>Nombre y Apellido del dueño de la cuenta *</label>
+                      <input
+                        type="text"
+                        placeholder="Ej. Eli Maravillas"
+                        style={styles.input}
+                        value={nombreDuenioCuenta}
+                        onChange={(e) => setNombreDuenioCuenta(e.target.value)}
+                        required
+                      />
+                    </div>
+                  )}
+
+                  {/* MONTO */}
+                  <div style={styles.fieldGroup}>
+                    <label style={styles.label}>Monto ($) *</label>
+                    <input
+                      type="number"
+                      step="any"
+                      min="0.01"
+                      placeholder="0.00"
+                      style={styles.input}
+                      value={monto}
+                      onChange={(e) => setMonto(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  {/* NÚMERO DE COMPROBANTE / FOLIO (OPCIONAL) */}
+                  <div style={styles.fieldGroup}>
+                    <label style={styles.label}>Comprobante / Folio (Opcional)</label>
+                    <input
+                      type="text"
+                      placeholder="Ej. RET-10492"
+                      style={styles.input}
+                      value={comprobante}
+                      onChange={(e) => setComprobante(e.target.value)}
+                    />
+                  </div>
+
+                  {/* CONCEPTO / DETALLES */}
+                  <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
+                    <label style={styles.label}>Observaciones / Destino / Motivo</label>
+                    <textarea
+                      rows="2"
+                      placeholder="Escribe detalles adicionales sobre este egreso..."
+                      style={{ ...styles.input, resize: 'vertical' }}
+                      value={concepto}
+                      onChange={(e) => setConcepto(e.target.value)}
+                    />
+                  </div>
+
+                  {/* BOTÓN SUBMIT */}
+                  <div style={styles.fullRow}>
+                    <button type="submit" style={styles.submitButton}>
+                      Guardar registro de gasto de personal
                     </button>
                   </div>
                 </form>
