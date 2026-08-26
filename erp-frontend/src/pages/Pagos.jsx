@@ -382,16 +382,17 @@ function Pagos() {
     }
   }
   
+ // ✅ AHORA (incluye p.id_rezagado para que filtre correctamente pedidos rezagados)
   const pedidosFiltrados = pedidos
     .filter(p =>
-      `${p.folio || p.id_pedido}`.toString().includes(busquedaFolio)
+      `${p.folio || p.id_pedido || p.id_rezagado}`.toLowerCase().includes(busquedaFolio.toLowerCase())
     )
     .sort((a, b) => {
       const pagadoA = (a.total_pagado || 0) >= a.total
       const pagadoB = (b.total_pagado || 0) >= b.total
       return pagadoA === pagadoB ? 0 : pagadoA ? 1 : -1
     })
-
+  
   const buscarProducto = (texto) => {
     if (!texto) {
       setResultadosBusqueda([])
