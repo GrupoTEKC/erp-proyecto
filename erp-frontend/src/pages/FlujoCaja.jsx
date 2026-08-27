@@ -485,13 +485,17 @@ function FlujoCaja() {
       if (data.success) {
         alert('¡Gasto de personal registrado con éxito!')
         
-        // Refrescar status si es nómina
+        // Actualizar array de empleados pagados en tiempo real
         if (subPersonalActivo === 4 && empleadoSeleccionado) {
           setEmpleadosPagados(prev => [...prev, parseInt(empleadoSeleccionado)])
         }
 
-        setSubPersonalActivo(null)
+        // LIMPIAR SOLO LOS CAMPOS DE CAPTURA PARA PERMITIR SEGUIR CAPTURANDO
         setEmpleadoSeleccionado('')
+        setMonto('')
+        setConcepto('')
+        setComprobante('')
+        setNombreDuenioCuenta('')
       } else {
         alert(`Error: ${data.error || 'No se pudo registrar el gasto'}`)
       }
@@ -501,8 +505,20 @@ function FlujoCaja() {
     }
   }
 
-  // Filtrar empleados por el puesto seleccionado en las pestañas
-  const empleadosFiltrados = empleados.filter(e => e.puesto === puestoTab)
+  // Filtrar empleados reactivamente por el puesto de la pestaña activa (ignora diferencias de plúrales/singular y mayúsculas)
+  const empleadosFiltrados = empleados.filter(e => {
+    if (!e.puesto) return false
+    const puestoEmp = e.puesto.toUpperCase().trim()
+    const tabActual = puestoTab.toUpperCase().trim()
+
+    if (tabActual === 'ADMINISTRATIVOS' && (puestoEmp === 'ADMINISTRATIVO' || puestoEmp === 'ADMINISTRATIVOS')) return true
+    if (tabActual === 'OPERADORES' && (puestoEmp === 'OPERADOR' || puestoEmp === 'OPERADORES')) return true
+    if (tabActual === 'CHOFERES' && (puestoEmp === 'CHOFER' || puestoEmp === 'CHOFERES')) return true
+    if (tabActual === 'VENDEDORES' && (puestoEmp === 'VENDEDOR' || puestoEmp === 'VENDEDORES')) return true
+    if (tabActual === 'CHALANES' && (puestoEmp === 'CHALAN' || puestoEmp === 'CHALANES')) return true
+
+    return puestoEmp === tabActual
+  })
 
   return (
     <div style={styles.page}>
@@ -929,33 +945,39 @@ function FlujoCaja() {
                         3. Seleccionar trabajador ({puestoTab}) *
                       </label>
                       <div style={styles.empleadosGrid}>
-                        {empleadosFiltrados.map((emp) => {
-                          const pagado = empleadosPagados.includes(emp.id_empleado)
-                          const estaSeleccionado = String(empleadoSeleccionado) === String(emp.id_empleado)
+                        {empleadosFiltrados.length === 0 ? (
+                          <p style={{ color: '#64748b', fontSize: '13.5px', gridColumn: '1 / -1' }}>
+                            No hay empleados registrados en este puesto.
+                          </p>
+                        ) : (
+                          empleadosFiltrados.map((emp) => {
+                            const pagado = empleadosPagados.includes(emp.id_empleado)
+                            const estaSeleccionado = String(empleadoSeleccionado) === String(emp.id_empleado)
 
-                          return (
-                            <div
-                              key={emp.id_empleado}
-                              style={{
-                                ...styles.empleadoCard,
-                                ...(estaSeleccionado ? styles.empleadoCardSelected : {})
-                              }}
-                              onClick={() => setEmpleadoSeleccionado(emp.id_empleado)}
-                            >
-                              <span style={{ fontWeight: 'bold', fontSize: '13.5px' }}>
-                                {emp.nombre_completo}
-                              </span>
-                              <span
+                            return (
+                              <div
+                                key={emp.id_empleado}
                                 style={{
-                                  ...styles.statusBadge,
-                                  ...(pagado ? styles.badgePagado : styles.badgePendiente)
+                                  ...styles.empleadoCard,
+                                  ...(estaSeleccionado ? styles.empleadoCardSelected : {})
                                 }}
+                                onClick={() => setEmpleadoSeleccionado(emp.id_empleado)}
                               >
-                                {pagado ? '🟢 Pagado' : '🔴 Pendiente'}
-                              </span>
-                            </div>
-                          )
-                        })}
+                                <span style={{ fontWeight: 'bold', fontSize: '13.5px' }}>
+                                  {emp.nombre_completo}
+                                </span>
+                                <span
+                                  style={{
+                                    ...styles.statusBadge,
+                                    ...(pagado ? styles.badgePagado : styles.badgePendiente)
+                                  }}
+                                >
+                                  {pagado ? '🟢 Pagado' : '🔴 Pendiente'}
+                                </span>
+                              </div>
+                            )
+                          })
+                        )}
                       </div>
                     </div>
                   )}
