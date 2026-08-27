@@ -779,7 +779,7 @@ function FlujoCaja() {
             <div>
               <h3 style={styles.parentTitle}>GASTOS DE PERSONAL</h3>
               <p style={styles.parentSubtitle}>
-                Pago de nómina base, seguridad social (IMSS), retenciones (ISR), comedor y viáticos.
+                Pago de nómina base, IMSS , ISR , comedor y viáticos.
               </p>
             </div>
           </div>
@@ -822,7 +822,7 @@ function FlujoCaja() {
                   <span style={styles.cardIcon}>🏥</span>
                 </div>
                 <p style={styles.cardDesc}>
-                  Aportaciones de seguridad social e impuestos aplicados al personal.
+                Gastos de IMSS y ISR en los trabajadores.
                 </p>
               </div>
 
@@ -839,7 +839,7 @@ function FlujoCaja() {
                   <span style={styles.cardIcon}>🍽️</span>
                 </div>
                 <p style={styles.cardDesc}>
-                  Gasto general acumulado de consumo de alimentos del personal.
+                  Gasto semanal del consumo del personal de la empresa.
                 </p>
               </div>
 
@@ -856,7 +856,7 @@ function FlujoCaja() {
                   <span style={styles.cardIcon}>✈️</span>
                 </div>
                 <p style={styles.cardDesc}>
-                  Asignaciones para gastos de viaje y movilidad de choferes y personal.
+                  Asignaciones para gastos de transporte, comidas y despensa del personal.
                 </p>
               </div>
             </div>
@@ -886,7 +886,7 @@ function FlujoCaja() {
                   {/* CASO 1: NÓMINA BASE */}
                   {subPersonalActivo === 4 && (
                     <div style={{ ...styles.fullRow, marginBottom: '10px' }}>
-                      <label style={styles.label}>1. Seleccionar Semana a consultar/evaluar</label>
+                      <label style={styles.label}>1. Seleccionar semana a pagar</label>
                       <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
                         <input
                           type="date"
@@ -907,7 +907,7 @@ function FlujoCaja() {
                         2. Puesto del personal
                       </label>
                       <div style={styles.puestoTabs}>
-                        {['ADMINISTRATIVO', 'OPERADOR', 'CHOFER', 'VENDEDOR', 'CHALAN'].map((puesto) => (
+                        {['ADMINISTRATIVOS', 'OPERADORES', 'CHOFERES', 'VENDEDORES', 'CHALANES'].map((puesto) => (
                           <button
                             key={puesto}
                             type="button"
@@ -926,7 +926,7 @@ function FlujoCaja() {
                       </div>
 
                       <label style={{ ...styles.label, marginBottom: '8px', display: 'block' }}>
-                        3. Seleccionar Trabajador ({puestoTab}) *
+                        3. Seleccionar trabajador ({puestoTab}) *
                       </label>
                       <div style={styles.empleadosGrid}>
                         {empleadosFiltrados.map((emp) => {
@@ -964,19 +964,19 @@ function FlujoCaja() {
                   {subPersonalActivo === 5 && (
                     <>
                       <div style={styles.fieldGroup}>
-                        <label style={styles.label}>Tipo de Obligación *</label>
+                        <label style={styles.label}>Tipo de gasto*</label>
                         <select
                           style={styles.select}
                           value={subTipoImpuesto}
                           onChange={(e) => setSubTipoImpuesto(e.target.value)}
                         >
-                          <option value="IMSS">IMSS (100% Cuota)</option>
-                          <option value="ISR">ISR Retenido</option>
+                          <option value="IMSS">IMSS</option>
+                          <option value="ISR">ISR</option>
                         </select>
                       </div>
 
                       <div style={styles.fieldGroup}>
-                        <label style={styles.label}>Empleado Asociado *</label>
+                        <label style={styles.label}>Empleado beneficiado*</label>
                         <select
                           style={styles.select}
                           value={empleadoSeleccionado}
@@ -1036,7 +1036,7 @@ function FlujoCaja() {
                   {/* CUENTA BANCARIA */}
                   {origenPago === 'TRANSFERENCIA' && (
                     <div style={styles.fieldGroup}>
-                      <label style={styles.label}>Cuenta Bancaria de Salida *</label>
+                      <label style={styles.label}>Cuenta de banco*</label>
                       <select
                         style={styles.select}
                         value={cuentaBancaria}
@@ -1046,7 +1046,7 @@ function FlujoCaja() {
                         }}
                         required
                       >
-                        <option value="">-- Seleccionar Cuenta --</option>
+                        <option value="">-- Seleccionar cuenta --</option>
                         <option value="Cuenta Fiscal">Cuenta fiscal</option>
                         <option value="OTRO">Otro</option>
                       </select>
@@ -1083,18 +1083,6 @@ function FlujoCaja() {
                     />
                   </div>
 
-                  {/* NÚMERO DE COMPROBANTE / FOLIO (OPCIONAL) */}
-                  <div style={styles.fieldGroup}>
-                    <label style={styles.label}>Comprobante / Folio (Opcional)</label>
-                    <input
-                      type="text"
-                      placeholder="Ej. RET-10492"
-                      style={styles.input}
-                      value={comprobante}
-                      onChange={(e) => setComprobante(e.target.value)}
-                    />
-                  </div>
-
                   {/* CONCEPTO / DETALLES */}
                   <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
                     <label style={styles.label}>Observaciones / Destino / Motivo</label>
@@ -1110,7 +1098,7 @@ function FlujoCaja() {
                   {/* BOTÓN SUBMIT */}
                   <div style={styles.fullRow}>
                     <button type="submit" style={styles.submitButton}>
-                      Guardar registro de gasto de personal
+                      Guardar gasto
                     </button>
                   </div>
                 </form>
