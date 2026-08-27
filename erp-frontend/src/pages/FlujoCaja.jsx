@@ -839,7 +839,7 @@ function FlujoCaja() {
                   <span style={styles.cardIcon}>🍽️</span>
                 </div>
                 <p style={styles.cardDesc}>
-                  Gasto semanal del consumo del personal de la empresa.
+                 Gasto semanal en desayunos (PAGO A DOÑA LUCI)
                 </p>
               </div>
 
