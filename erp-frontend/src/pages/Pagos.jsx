@@ -579,24 +579,37 @@ function Pagos() {
             style={styles.field}
           />
 
-          {clientes.map(c => (
-            <div key={c.id_cliente}>
-              <b>{c.nombre} {c.apellido1}</b>
-              <br />
-              {c.nombre_tienda}
-              <br />
-              <button onClick={() => cargarPedidos(c)} style={styles.botonAccion}>
-                Estado de cuenta
-              </button>
-            </div>
-          ))}
+        {clientes.map(c => {
+            const etiquetaCliente = [
+              `${c.nombre || ''} ${c.apellido1 || ''}`.trim(),
+              c.nombre_tienda,
+              c.municipio
+            ].filter(Boolean).join(' - ')
+
+            return (
+              <div key={c.id_cliente} style={{ marginBottom: '12px' }}>
+                <b>{etiquetaCliente}</b>
+                <br />
+                <button onClick={() => cargarPedidos(c)} style={styles.botonAccion}>
+                  Estado de cuenta
+                </button>
+              </div>
+            )
+          })}
         </>
       )}
 
       {clienteSeleccionado && (
         <>
-          <h3>{clienteSeleccionado.nombre}</h3>
+          <h3>
+            {[
+              `${clienteSeleccionado.nombre || ''} ${clienteSeleccionado.apellido1 || ''}`.trim(),
+              clienteSeleccionado.nombre_tienda,
+              clienteSeleccionado.municipio
+            ].filter(Boolean).join(' - ')}
+          </h3>
 
+          
           <input
             placeholder="Buscar folio..."
             value={busquedaFolio}
