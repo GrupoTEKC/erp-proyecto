@@ -361,8 +361,11 @@ function FlujoCaja() {
   }
 
   // SUBMIT - GASTOS OPERATIVOS
-  const handleSubmitOperativos = async (e) => {
-    e.preventDefault()
+  const handleGuardarOperativos = async () => {
+    if (!monto || parseFloat(monto) <= 0) {
+      alert('Por favor ingresa un monto válido.')
+      return
+    }
 
     const baseConcepto = concepto.trim() ? concepto.trim() : 'S/C'
     let detalleFinal = baseConcepto
@@ -428,8 +431,15 @@ function FlujoCaja() {
   }
 
   // SUBMIT - GASTOS DE PERSONAL
-  const handleSubmitPersonal = async (e) => {
-    e.preventDefault()
+  const handleGuardarPersonal = async () => {
+    if (!empleadoSeleccionado && (subPersonalActivo === 4 || subPersonalActivo === 5 || subPersonalActivo === 7)) {
+      alert('Por favor selecciona un trabajador.')
+      return
+    }
+    if (!monto || parseFloat(monto) <= 0) {
+      alert('Por favor ingresa un monto válido.')
+      return
+    }
 
     const empObj = empleados.find(emp => String(emp.id_empleado) === String(empleadoSeleccionado))
     const nombreEmpleado = empObj ? empObj.nombre_completo : null
@@ -490,7 +500,7 @@ function FlujoCaja() {
           setEmpleadosPagados(prev => [...prev, parseInt(empleadoSeleccionado)])
         }
 
-        // LIMPIAR SOLO LOS CAMPOS DE CAPTURA PARA PERMITIR SEGUIR CAPTURANDO
+        // LIMPIAR SOLO LOS CAMPOS DE CAPTURA
         setEmpleadoSeleccionado('')
         setMonto('')
         setConcepto('')
@@ -632,7 +642,7 @@ function FlujoCaja() {
                   </button>
                 </div>
 
-                <form onSubmit={handleSubmitOperativos} style={styles.grid}>
+                <form onSubmit={(e) => e.preventDefault()} style={styles.grid}>
                   {/* OPCIÓN MATERIAS PRIMAS */}
                   {apartadoActivo === 1 && (
                     <div style={styles.fieldGroup}>
@@ -773,7 +783,11 @@ function FlujoCaja() {
 
                   {/* BOTÓN REGISTRAR */}
                   <div style={styles.fullRow}>
-                    <button type="submit" style={styles.submitButton}>
+                    <button 
+                      type="button" 
+                      onClick={handleGuardarOperativos} 
+                      style={styles.submitButton}
+                    >
                       Guardar registro de gasto
                     </button>
                   </div>
@@ -897,7 +911,7 @@ function FlujoCaja() {
                   </button>
                 </div>
 
-                <form onSubmit={handleSubmitPersonal} style={styles.grid}>
+                <form onSubmit={(e) => e.preventDefault()} style={styles.grid}>
                   
                   {/* CASO 1: NÓMINA BASE */}
                   {subPersonalActivo === 4 && (
@@ -1119,7 +1133,11 @@ function FlujoCaja() {
 
                   {/* BOTÓN SUBMIT */}
                   <div style={styles.fullRow}>
-                    <button type="submit" style={styles.submitButton}>
+                    <button 
+                      type="button" 
+                      onClick={handleGuardarPersonal} 
+                      style={styles.submitButton}
+                    >
                       Guardar gasto
                     </button>
                   </div>
