@@ -4273,8 +4273,6 @@ app.get('/mermas', async (req, res) => {
   }
 })
 
-
-// =============================
 // CONSULTA DE STOCK DE PRODUCTOS
 app.get('/stock', async (req, res) => {
   try {
@@ -4283,12 +4281,19 @@ app.get('/stock', async (req, res) => {
     const mes = String(hoy.getMonth() + 1).padStart(2, '0')
     const periodo = `${anio}-${mes}`
 
+    // 1. Calcular el período del mes anterior (YYYY-MM)
+    const fechaMesAnterior = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1)
+    const anioAnt = fechaMesAnterior.getFullYear()
+    const mesAnt = String(fechaMesAnterior.getMonth() + 1).padStart(2, '0')
+    const periodoAnterior = `${anioAnt}-${mesAnt}`
+
     const [rows] = await db.query(
       `
       SELECT
         p.id_producto,
         p.nombre,
 
+        /* Si no hay inventario inicial registrado para este mes, usa el saldo final del mes anterior */
         COALESCE(ii.inicial, 0) AS inicial,
         COALESCE(pd.producido, 0) AS producido,
         COALESCE(ed.salidas, 0) AS salidas,
@@ -4297,7 +4302,7 @@ app.get('/stock', async (req, res) => {
         COALESCE(m.merma_almacen, 0) AS merma_almacen,
         COALESCE(m.total_mermas, 0) AS total_mermas,
 
-        /* ✅ Fórmula igual a la del frontend: solo resta merma de almacén */
+        /* Stock actual = Inventario Inicial + Producido - Salidas - Merma Almacén */
         (
           COALESCE(ii.inicial, 0)
           + COALESCE(pd.producido, 0)
@@ -4307,17 +4312,57 @@ app.get('/stock', async (req, res) => {
 
       FROM productos p
 
-      /* Inventario inicial del período */
+      /* Inventario inicial: Prioriza el del mes actual; si no existe, calcula el Stock Final del mes anterior */
       LEFT JOIN (
-        SELECT
-          id_producto,
-          cantidad AS inicial
-        FROM inventario_inicial
-        WHERE periodo = ?
+        SELECT 
+          p_sub.id_producto,
+          COALESCE(
+            inv_actual.cantidad, 
+            (
+              COALESCE(inv_ant.cantidad, 0) 
+              + COALESCE(prod_ant.total_producido, 0) 
+              - COALESCE(emb_ant.total_embarcado, 0) 
+              - COALESCE(mer_ant.total_mermas, 0)
+            )
+          ) AS inicial
+        FROM productos p_sub
+
+        /* 1. Registro manual del mes actual */
+        LEFT JOIN inventario_inicial inv_actual 
+          ON p_sub.id_producto = inv_actual.id_producto AND inv_actual.periodo = ?
+
+        /* 2. Registro del mes anterior */
+        LEFT JOIN inventario_inicial inv_ant 
+          ON p_sub.id_producto = inv_ant.id_producto AND inv_ant.periodo = ?
+
+        /* 3. Producción del mes anterior */
+        LEFT JOIN (
+          SELECT id_producto, SUM(cantidad) AS total_producido
+          FROM produccion_diaria
+          WHERE DATE_FORMAT(fecha, '%Y-%m') = ?
+          GROUP BY id_producto
+        ) prod_ant ON p_sub.id_producto = prod_ant.id_producto
+
+        /* 4. Embarques/Salidas del mes anterior */
+        LEFT JOIN (
+          SELECT ed_sub.id_producto, SUM(ed_sub.cantidad_entregada) AS total_embarcado
+          FROM entrega_detalle ed_sub
+          INNER JOIN entregas e_sub ON e_sub.id_entrega = ed_sub.id_entrega
+          WHERE DATE_FORMAT(e_sub.fecha_salida, '%Y-%m') = ?
+          GROUP BY ed_sub.id_producto
+        ) emb_ant ON p_sub.id_producto = emb_ant.id_producto
+
+        /* 5. Mermas del mes anterior */
+        LEFT JOIN (
+          SELECT id_producto, SUM(cantidad) AS total_mermas
+          FROM mermas
+          WHERE DATE_FORMAT(fecha_registro, '%Y-%m') = ?
+          GROUP BY id_producto
+        ) mer_ant ON p_sub.id_producto = mer_ant.id_producto
       ) ii
       ON ii.id_producto = p.id_producto
 
-      /* Producción del período */
+      /* Producción del período actual */
       LEFT JOIN (
         SELECT
           id_producto,
@@ -4328,7 +4373,7 @@ app.get('/stock', async (req, res) => {
       ) pd
       ON pd.id_producto = p.id_producto
 
-      /* Salidas del período */
+      /* Salidas del período actual */
       LEFT JOIN (
         SELECT
           ed.id_producto,
@@ -4341,7 +4386,7 @@ app.get('/stock', async (req, res) => {
       ) ed
       ON ed.id_producto = p.id_producto
 
-      /* Mermas del período desglosadas por tipo */
+      /* Mermas del período actual */
       LEFT JOIN (
         SELECT
           id_producto,
@@ -4357,7 +4402,16 @@ app.get('/stock', async (req, res) => {
       WHERE p.activo = 1
       ORDER BY p.nombre
       `,
-      [periodo, periodo, periodo, periodo]
+      [
+        periodo,         // inv_actual
+        periodoAnterior, // inv_ant
+        periodoAnterior, // prod_ant
+        periodoAnterior, // emb_ant
+        periodoAnterior, // mer_ant
+        periodo,         // pd (actual)
+        periodo,         // ed (actual)
+        periodo          // m (actual)
+      ]
     )
 
     res.json(rows)
