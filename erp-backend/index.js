@@ -729,7 +729,6 @@ app.get('/egresos/categorias', async (req, res) => {
   }
 })
 
-
 app.post('/egresos', async (req, res) => {
   try {
     const {
@@ -738,8 +737,11 @@ app.post('/egresos', async (req, res) => {
       origen_pago,
       cuenta_bancaria,
       id_producto_relacionado,
+      id_empleado,
       empleado_relacionado,
       unidad_relacionada,
+      id_unidad_relacionada,
+      id_ruta_relacionada,
       concepto,
       num_comprobante
     } = req.body
@@ -757,11 +759,14 @@ app.post('/egresos', async (req, res) => {
     if (origen_pago === 'TRANSFERENCIA' && !cuenta_bancaria) {
       return res.status(400).json({ error: 'Debe especificar la cuenta bancaria de origen' })
     }
-    if (!concepto || !concepto.trim()) {
+    if (!concepto) {
       return res.status(400).json({ error: 'El concepto o detalle del gasto es obligatorio' })
     }
 
-    // Insertar en la tabla flujo_egresos
+    // Convertir concepto a JSON string si viene como objeto desde el frontend
+    const conceptoString = typeof concepto === 'object' ? JSON.stringify(concepto) : String(concepto).trim()
+
+    // Insertar en la tabla flujo_egresos incluyendo las llaves foráneas
     const [result] = await db.query(`
       INSERT INTO flujo_egresos (
         id_categoria, 
@@ -769,21 +774,27 @@ app.post('/egresos', async (req, res) => {
         origen_pago, 
         cuenta_bancaria, 
         id_producto_relacionado, 
+        id_empleado,
         empleado_relacionado, 
         unidad_relacionada, 
+        id_unidad_relacionada,
+        id_ruta_relacionada,
         concepto, 
         num_comprobante,
         fecha_hora
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
     `, [
       id_categoria,
       monto,
       origen_pago,
       origen_pago === 'TRANSFERENCIA' ? cuenta_bancaria : null,
       id_producto_relacionado || null,
+      id_empleado || null,
       empleado_relacionado || null,
       unidad_relacionada || null,
-      concepto.trim().toUpperCase(), // Se guarda estandarizado en mayúsculas
+      id_unidad_relacionada || null,
+      id_ruta_relacionada || null,
+      conceptoString,
       num_comprobante ? num_comprobante.trim().toUpperCase() : null
     ])
 
