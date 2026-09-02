@@ -270,6 +270,54 @@ const styles = {
   badgePendiente: {
     backgroundColor: '#fee2e2',
     color: '#b91c1c'
+  },
+  /* ESTILOS SECCIONES DINÁMICAS (VIÁTICOS) */
+  dynamicBlock: {
+    border: '1px solid #e2e8f0',
+    backgroundColor: '#f8fafc',
+    padding: '12px',
+    borderRadius: '8px',
+    marginBottom: '10px'
+  },
+  dynamicHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '8px',
+    fontWeight: 'bold',
+    fontSize: '13.5px',
+    color: '#334155'
+  },
+  addBtn: {
+    backgroundColor: vino,
+    color: '#fff',
+    border: 'none',
+    borderRadius: '4px',
+    width: '28px',
+    height: '28px',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  removeBtn: {
+    backgroundColor: '#ef4444',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '4px',
+    width: '28px',
+    height: '38px',
+    fontWeight: 'bold',
+    cursor: 'pointer'
+  },
+  totalSummaryBox: {
+    backgroundColor: '#f1f5f9',
+    border: `2px solid ${vino}`,
+    padding: '15px',
+    borderRadius: '8px',
+    textAlign: 'right',
+    marginTop: '10px'
   }
 }
 
@@ -294,11 +342,24 @@ function FlujoCaja() {
   const [subPersonalActivo, setSubPersonalActivo] = useState(null) // 4=Nómina, 5=IMSS/ISR, 6=Comedor, 7=Viáticos
   const [empleados, setEmpleados] = useState([])
   const [empleadosPagados, setEmpleadosPagados] = useState([])
-  const [puestoTab, setPuestoTab] = useState('ADMINISTRATIVO')
+  const [puestoTab, setPuestoTab] = useState('ADMINISTRATIVOS')
   const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState('')
   const [subTipoImpuesto, setSubTipoImpuesto] = useState('IMSS') // 'IMSS' o 'ISR'
   const [fechaInicioSemana, setFechaInicioSemana] = useState('')
   const [fechaFinSemana, setFechaFinSemana] = useState('')
+
+  // ESTADOS COMPLEMENTARIOS - CATALOGOS VIÁTICOS
+  const [rutas, setRutas] = useState([])
+  const [unidades, setUnidades] = useState([])
+  const [idRutaSeleccionada, setIdRutaSeleccionada] = useState('')
+  const [idUnidadSeleccionada, setIdUnidadSeleccionada] = useState('')
+  const [esChofer, setEsChofer] = useState(false)
+
+  // ESTADOS DESGLOSE DINÁMICO VIÁTICOS
+  const [casetas, setCasetas] = useState([''])
+  const [gasolina, setGasolina] = useState([''])
+  const [comidas, setComidas] = useState([''])
+  const [folios, setFolios] = useState([''])
 
   // Cargar productos de la base de datos
   useEffect(() => {
@@ -324,6 +385,26 @@ function FlujoCaja() {
         if (Array.isArray(data)) setEmpleados(data)
       })
       .catch((err) => console.error('Error al cargar empleados:', err))
+  }, [])
+
+  // Cargar rutas de la base de datos
+  useEffect(() => {
+    fetch(`${API}/rutas`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setRutas(data)
+      })
+      .catch((err) => console.error('Error al cargar rutas:', err))
+  }, [])
+
+  // Cargar unidades de la base de datos
+  useEffect(() => {
+    fetch(`${API}/unidades`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setUnidades(data)
+      })
+      .catch((err) => console.error('Error al cargar unidades:', err))
   }, [])
 
   // Verificar status de pagos de nómina por fechas
@@ -358,7 +439,48 @@ function FlujoCaja() {
     setOrigenPago('EFECTIVO')
     setCuentaBancaria('')
     setNombreDuenioCuenta('')
+
+    // Reset especifico para Viáticos
+    setIdRutaSeleccionada('')
+    setIdUnidadSeleccionada('')
+    setEsChofer(false)
+    setCasetas([''])
+    setGasolina([''])
+    setComidas([''])
+    setFolios([''])
   }
+
+  // Detectar cambio de empleado en Viáticos
+  const handleEmpleadoViaticosChange = (idEmp) => {
+    setEmpleadoSeleccionado(idEmp)
+    const emp = empleados.find((e) => String(e.id_empleado) === String(idEmp))
+    if (emp && emp.puesto) {
+      const puestoUpper = emp.puesto.toUpperCase().trim()
+      setEsChofer(puestoUpper === 'CHOFER' || puestoUpper === 'CHOFERES')
+    } else {
+      setEsChofer(false)
+    }
+  }
+
+  // Auxiliares para manipular arreglos dinámicos de viáticos
+  const handleAgregarCampo = (setter, lista) => setter([...lista, ''])
+  
+  const handleCambioCampo = (setter, lista, index, valor) => {
+    const nueva = [...lista]
+    nueva[index] = valor
+    setter(nueva)
+  }
+
+  const handleEliminarCampo = (setter, lista, index) => {
+    if (lista.length === 1) return
+    setter(lista.filter((_, i) => i !== index))
+  }
+
+  // Totales en tiempo real para viáticos
+  const totalCasetas = casetas.reduce((acc, v) => acc + (parseFloat(v) || 0), 0)
+  const totalGasolina = gasolina.reduce((acc, v) => acc + (parseFloat(v) || 0), 0)
+  const totalComidas = comidas.reduce((acc, v) => acc + (parseFloat(v) || 0), 0)
+  const totalViaticosGeneral = totalCasetas + totalGasolina + totalComidas
 
   // SUBMIT - GASTOS OPERATIVOS
   const handleGuardarOperativos = async () => {
@@ -430,35 +552,11 @@ function FlujoCaja() {
     }
   }
 
-  // SUBMIT - GASTOS DE PERSONAL
+  // SUBMIT - GASTOS DE PERSONAL Y VIÁTICOS
   const handleGuardarPersonal = async () => {
-    if (!empleadoSeleccionado && (subPersonalActivo === 4 || subPersonalActivo === 5 || subPersonalActivo === 7)) {
-      alert('Por favor selecciona un trabajador.')
-      return
-    }
-    if (!monto || parseFloat(monto) <= 0) {
-      alert('Por favor ingresa un monto válido.')
-      return
-    }
-
-    const empObj = empleados.find(emp => String(emp.id_empleado) === String(empleadoSeleccionado))
-    const nombreEmpleado = empObj ? empObj.nombre_completo : null
-
-    let idCategoriaFinal = 4 // Por defecto Nómina Base
-    let baseConcepto = concepto.trim() ? concepto.trim() : 'Pago de gasto de personal'
-
-    if (subPersonalActivo === 5) {
-      idCategoriaFinal = subTipoImpuesto === 'IMSS' ? 5 : 6 // IMSS o ISR
-      baseConcepto = `[${subTipoImpuesto}] - ${baseConcepto}`
-    } else if (subPersonalActivo === 6) {
-      idCategoriaFinal = 7 // Comedor
-      baseConcepto = `[COMEDOR] - ${baseConcepto}`
-    } else if (subPersonalActivo === 7) {
-      idCategoriaFinal = 8 // Viáticos
-      baseConcepto = `[VIÁTICOS] - ${baseConcepto}`
-    } else if (subPersonalActivo === 4 && empObj) {
-      baseConcepto = `[NÓMINA BASE - ${empObj.puesto}] - ${baseConcepto}`
-    }
+    let idCategoriaFinal = 4
+    let baseConcepto = ''
+    let payload = {}
 
     let cuentaFinal = null
     if (origenPago === 'TRANSFERENCIA') {
@@ -467,19 +565,105 @@ function FlujoCaja() {
         : cuentaBancaria
     }
 
-    const payload = {
-      id_categoria: idCategoriaFinal,
-      monto: parseFloat(monto),
-      origen_pago: origenPago,
-      cuenta_bancaria: cuentaFinal,
-      id_empleado: empleadoSeleccionado ? parseInt(empleadoSeleccionado) : null,
-      empleado_relacionado: nombreEmpleado,
-      concepto: baseConcepto,
-      num_comprobante: comprobante ? comprobante.trim() : null
+    // CASO ESPECÍFICO: SUB-TARJETA 7 (VIÁTICOS)
+    if (subPersonalActivo === 7) {
+      if (!empleadoSeleccionado) {
+        alert('⚠️ Por favor selecciona el empleado que recibe los viáticos.')
+        return
+      }
+
+      if (totalViaticosGeneral <= 0) {
+        alert('⚠️ Debe ingresar al menos un monto de gasto (Caseta, Gasolina o Comida).')
+        return
+      }
+
+      const foliosLimpios = folios.map(f => f.trim()).filter(Boolean)
+
+      if (esChofer && foliosLimpios.length === 0) {
+        alert('⚠️ Para los choferes es obligatorio capturar al menos un folio.')
+        return
+      }
+
+      if (!esChofer && foliosLimpios.length === 0) {
+        const confirma = window.confirm('¿Estás seguro que no deseas capturar los folios?')
+        if (!confirma) return
+      }
+
+      const empObj = empleados.find(emp => String(emp.id_empleado) === String(empleadoSeleccionado))
+      const nombreEmpleado = empObj ? (empObj.nombre_completo || `${empObj.nombre || ''} ${empObj.apellido1 || ''}`) : null
+
+      const uniObj = unidades.find(u => String(u.id_unidad) === String(idUnidadSeleccionada))
+      const nombreUnidad = uniObj ? (uniObj.nombre || uniObj.placas) : null
+
+      const casetasArr = casetas.map(Number).filter(n => n > 0)
+      const gasolinaArr = gasolina.map(Number).filter(n => n > 0)
+      const comidasArr = comidas.map(Number).filter(n => n > 0)
+
+      const conceptoPayload = JSON.stringify({
+        resumen: `VIÁTICOS: Casetas $${totalCasetas} | Gasolina $${totalGasolina} | Comidas $${totalComidas}`,
+        desglose: {
+          casetas: casetasArr,
+          gasolina: gasolinaArr,
+          comidas: comidasArr
+        },
+        comentario: concepto.trim() || null
+      })
+
+      payload = {
+        id_categoria: 8, // Viáticos
+        monto: totalViaticosGeneral,
+        origen_pago: origenPago,
+        cuenta_bancaria: cuentaFinal,
+        id_empleado: parseInt(empleadoSeleccionado),
+        empleado_relacionado: nombreEmpleado,
+        id_unidad_relacionada: idUnidadSeleccionada ? parseInt(idUnidadSeleccionada) : null,
+        unidad_relacionada: nombreUnidad,
+        id_ruta_relacionada: idRutaSeleccionada ? parseInt(idRutaSeleccionada) : null,
+        concepto: conceptoPayload,
+        num_comprobante: foliosLimpios.length > 0 ? foliosLimpios.join(', ') : null
+      }
+
+    } else {
+      // CASOS 4 (NÓMINA), 5 (IMSS/ISR), 6 (COMEDOR)
+      if (!empleadoSeleccionado && (subPersonalActivo === 4 || subPersonalActivo === 5)) {
+        alert('Por favor selecciona un trabajador.')
+        return
+      }
+      if (!monto || parseFloat(monto) <= 0) {
+        alert('Por favor ingresa un monto válido.')
+        return
+      }
+
+      const empObj = empleados.find(emp => String(emp.id_empleado) === String(empleadoSeleccionado))
+      const nombreEmpleado = empObj ? empObj.nombre_completo : null
+
+      baseConcepto = concepto.trim() ? concepto.trim() : 'Pago de gasto de personal'
+
+      if (subPersonalActivo === 5) {
+        idCategoriaFinal = subTipoImpuesto === 'IMSS' ? 5 : 6
+        baseConcepto = `[${subTipoImpuesto}] - ${baseConcepto}`
+      } else if (subPersonalActivo === 6) {
+        idCategoriaFinal = 7
+        baseConcepto = `[COMEDOR] - ${baseConcepto}`
+      } else if (subPersonalActivo === 4 && empObj) {
+        baseConcepto = `[NÓMINA BASE - ${empObj.puesto}] - ${baseConcepto}`
+      }
+
+      payload = {
+        id_categoria: idCategoriaFinal,
+        monto: parseFloat(monto),
+        origen_pago: origenPago,
+        cuenta_bancaria: cuentaFinal,
+        id_empleado: empleadoSeleccionado ? parseInt(empleadoSeleccionado) : null,
+        empleado_relacionado: nombreEmpleado,
+        concepto: baseConcepto,
+        num_comprobante: comprobante ? comprobante.trim() : null
+      }
     }
 
     try {
-      const res = await fetch(`${API}/egresos/personal`, {
+      const endpoint = `${API}/egresos`
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -493,29 +677,36 @@ function FlujoCaja() {
 
       const data = await res.json()
       if (data.success) {
-        alert('¡Gasto de personal registrado con éxito!')
+        alert('¡Gasto registrado con éxito!')
         
-        // Actualizar array de empleados pagados en tiempo real
+        // Actualizar array de empleados pagados en tiempo real si es nómina
         if (subPersonalActivo === 4 && empleadoSeleccionado) {
           setEmpleadosPagados(prev => [...prev, parseInt(empleadoSeleccionado)])
         }
 
-        // LIMPIAR SOLO LOS CAMPOS DE CAPTURA
+        // Limpieza de campos
         setEmpleadoSeleccionado('')
         setMonto('')
         setConcepto('')
         setComprobante('')
         setNombreDuenioCuenta('')
+        setIdRutaSeleccionada('')
+        setIdUnidadSeleccionada('')
+        setEsChofer(false)
+        setCasetas([''])
+        setGasolina([''])
+        setComidas([''])
+        setFolios([''])
       } else {
         alert(`Error: ${data.error || 'No se pudo registrar el gasto'}`)
       }
     } catch (error) {
-      console.error('Error al registrar gasto de personal:', error)
+      console.error('Error al registrar gasto:', error)
       alert('Error de conexión con el servidor.')
     }
   }
 
-  // Filtrar empleados reactivamente por el puesto de la pestaña activa (ignora diferencias de plúrales/singular y mayúsculas)
+  // Filtrar empleados reactivamente por el puesto de la pestaña activa
   const empleadosFiltrados = empleados.filter(e => {
     if (!e.puesto) return false
     const puestoEmp = e.puesto.toUpperCase().trim()
@@ -852,7 +1043,7 @@ function FlujoCaja() {
                   <span style={styles.cardIcon}>🏥</span>
                 </div>
                 <p style={styles.cardDesc}>
-                Gastos de IMSS y ISR en los trabajadores.
+                  Gastos de IMSS y ISR en los trabajadores.
                 </p>
               </div>
 
@@ -869,7 +1060,7 @@ function FlujoCaja() {
                   <span style={styles.cardIcon}>🍽️</span>
                 </div>
                 <p style={styles.cardDesc}>
-                 Gasto semanal en desayunos (PAGO A DOÑA LUCI)
+                  Gasto semanal en desayunos (PAGO A DOÑA LUCI)
                 </p>
               </div>
 
@@ -978,7 +1169,7 @@ function FlujoCaja() {
                                 onClick={() => setEmpleadoSeleccionado(emp.id_empleado)}
                               >
                                 <span style={{ fontWeight: 'bold', fontSize: '13.5px' }}>
-                                  {emp.nombre_completo}
+                                  {emp.nombre_completo || `${emp.nombre || ''} ${emp.apellido1 || ''}`}
                                 </span>
                                 <span
                                   style={{
@@ -1022,7 +1213,7 @@ function FlujoCaja() {
                           <option value="">-- Seleccionar empleado --</option>
                           {empleados.map((emp) => (
                             <option key={emp.id_empleado} value={emp.id_empleado}>
-                              {emp.nombre_completo} ({emp.puesto})
+                              {emp.nombre_completo || `${emp.nombre || ''} ${emp.apellido1 || ''}`} ({emp.puesto})
                             </option>
                           ))}
                         </select>
@@ -1030,27 +1221,211 @@ function FlujoCaja() {
                     </>
                   )}
 
-                  {/* CASO 4: VIÁTICOS */}
+                  {/* CASO 4: VIÁTICOS (FORMULARIO DINÁMICO COMPLETO) */}
                   {subPersonalActivo === 7 && (
-                    <div style={styles.fieldGroup}>
-                      <label style={styles.label}>Empleado que recibe viáticos *</label>
-                      <select
-                        style={styles.select}
-                        value={empleadoSeleccionado}
-                        onChange={(e) => setEmpleadoSeleccionado(e.target.value)}
-                        required
-                      >
-                        <option value="">-- Seleccionar empleado --</option>
-                        {empleados.map((emp) => (
-                          <option key={emp.id_empleado} value={emp.id_empleado}>
-                            {emp.nombre_completo} ({emp.puesto})
-                          </option>
+                    <>
+                      {/* EMPLEADO Y RUTA / UNIDAD */}
+                      <div style={styles.fieldGroup}>
+                        <label style={styles.label}>Empleado que recibe viáticos *</label>
+                        <select
+                          style={styles.select}
+                          value={empleadoSeleccionado}
+                          onChange={(e) => handleEmpleadoViaticosChange(e.target.value)}
+                          required
+                        >
+                          <option value="">-- Seleccionar empleado --</option>
+                          {empleados.map((emp) => (
+                            <option key={emp.id_empleado} value={emp.id_empleado}>
+                              {emp.nombre_completo || `${emp.nombre || ''} ${emp.apellido1 || ''}`} ({emp.puesto})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div style={styles.fieldGroup}>
+                        <label style={styles.label}>Ruta (Opcional)</label>
+                        <select
+                          style={styles.select}
+                          value={idRutaSeleccionada}
+                          onChange={(e) => setIdRutaSeleccionada(e.target.value)}
+                        >
+                          <option value="">-- Seleccionar Ruta --</option>
+                          {rutas.map((r) => (
+                            <option key={r.id_ruta} value={r.id_ruta}>
+                              {r.nombre}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
+                        <label style={styles.label}>Unidad relacionada (Opcional)</label>
+                        <select
+                          style={styles.select}
+                          value={idUnidadSeleccionada}
+                          onChange={(e) => setIdUnidadSeleccionada(e.target.value)}
+                        >
+                          <option value="">-- Seleccionar Unidad --</option>
+                          {unidades.map((u) => (
+                            <option key={u.id_unidad} value={u.id_unidad}>
+                              {u.nombre || u.placas} {u.placas ? `(${u.placas})` : ''}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* CASETAS DINÁMICAS */}
+                      <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
+                        <div style={styles.dynamicHeader}>
+                          <span>🚗 Casetas — Total: ${totalCasetas.toFixed(2)}</span>
+                          <button
+                            type="button"
+                            style={styles.addBtn}
+                            onClick={() => handleAgregarCampo(setCasetas, casetas)}
+                          >
+                            +
+                          </button>
+                        </div>
+                        {casetas.map((val, idx) => (
+                          <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
+                            <input
+                              type="number"
+                              step="any"
+                              placeholder="Monto caseta"
+                              style={styles.input}
+                              value={val}
+                              onChange={(e) => handleCambioCampo(setCasetas, casetas, idx, e.target.value)}
+                            />
+                            {casetas.length > 1 && (
+                              <button
+                                type="button"
+                                style={styles.removeBtn}
+                                onClick={() => handleEliminarCampo(setCasetas, casetas, idx)}
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
                         ))}
-                      </select>
-                    </div>
+                      </div>
+
+                      {/* GASOLINA DINÁMICA */}
+                      <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
+                        <div style={styles.dynamicHeader}>
+                          <span>⛽ Gasolina / Diesel — Total: ${totalGasolina.toFixed(2)}</span>
+                          <button
+                            type="button"
+                            style={styles.addBtn}
+                            onClick={() => handleAgregarCampo(setGasolina, gasolina)}
+                          >
+                            +
+                          </button>
+                        </div>
+                        {gasolina.map((val, idx) => (
+                          <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
+                            <input
+                              type="number"
+                              step="any"
+                              placeholder="Monto gasolina"
+                              style={styles.input}
+                              value={val}
+                              onChange={(e) => handleCambioCampo(setGasolina, gasolina, idx, e.target.value)}
+                            />
+                            {gasolina.length > 1 && (
+                              <button
+                                type="button"
+                                style={styles.removeBtn}
+                                onClick={() => handleEliminarCampo(setGasolina, gasolina, idx)}
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* COMIDAS DINÁMICAS */}
+                      <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
+                        <div style={styles.dynamicHeader}>
+                          <span>🍽️ Comidas — Total: ${totalComidas.toFixed(2)}</span>
+                          <button
+                            type="button"
+                            style={styles.addBtn}
+                            onClick={() => handleAgregarCampo(setComidas, comidas)}
+                          >
+                            +
+                          </button>
+                        </div>
+                        {comidas.map((val, idx) => (
+                          <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
+                            <input
+                              type="number"
+                              step="any"
+                              placeholder="Monto comida"
+                              style={styles.input}
+                              value={val}
+                              onChange={(e) => handleCambioCampo(setComidas, comidas, idx, e.target.value)}
+                            />
+                            {comidas.length > 1 && (
+                              <button
+                                type="button"
+                                style={styles.removeBtn}
+                                onClick={() => handleEliminarCampo(setComidas, comidas, idx)}
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* FOLIOS DINÁMICOS */}
+                      <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
+                        <div style={styles.dynamicHeader}>
+                          <span>
+                            📄 Folios / Comprobantes{' '}
+                            {esChofer && <span style={{ color: '#dc2626', fontSize: '12px' }}>* (Obligatorio Chofer)</span>}
+                          </span>
+                          <button
+                            type="button"
+                            style={styles.addBtn}
+                            onClick={() => handleAgregarCampo(setFolios, folios)}
+                          >
+                            +
+                          </button>
+                        </div>
+                        {folios.map((val, idx) => (
+                          <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
+                            <input
+                              type="text"
+                              placeholder="Número de folio"
+                              style={styles.input}
+                              value={val}
+                              onChange={(e) => handleCambioCampo(setFolios, folios, idx, e.target.value)}
+                            />
+                            {folios.length > 1 && (
+                              <button
+                                type="button"
+                                style={styles.removeBtn}
+                                onClick={() => handleEliminarCampo(setFolios, folios, idx)}
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* MONTO TOTAL DE VIÁTICOS */}
+                      <div style={{ ...styles.fullRow, ...styles.totalSummaryBox }}>
+                        <span style={{ fontSize: '20px', fontWeight: '900', color: vino }}>
+                          MONTO TOTAL VIÁTICOS: ${totalViaticosGeneral.toFixed(2)}
+                        </span>
+                      </div>
+                    </>
                   )}
 
-                  {/* ORIGEN DE PAGO */}
+                  {/* ORIGEN DE PAGO (PARA CASOS 4, 5, 6 Y 7) */}
                   <div style={styles.fieldGroup}>
                     <label style={styles.label}>Origen de pago *</label>
                     <select
@@ -1072,7 +1447,7 @@ function FlujoCaja() {
                   {/* CUENTA BANCARIA */}
                   {origenPago === 'TRANSFERENCIA' && (
                     <div style={styles.fieldGroup}>
-                      <label style={styles.label}>Cuenta de banco*</label>
+                      <label style={styles.label}>Cuenta de banco *</label>
                       <select
                         style={styles.select}
                         value={cuentaBancaria}
@@ -1104,20 +1479,22 @@ function FlujoCaja() {
                     </div>
                   )}
 
-                  {/* MONTO */}
-                  <div style={styles.fieldGroup}>
-                    <label style={styles.label}>Monto ($) *</label>
-                    <input
-                      type="number"
-                      step="any"
-                      min="0.01"
-                      placeholder="0.00"
-                      style={styles.input}
-                      value={monto}
-                      onChange={(e) => setMonto(e.target.value)}
-                      required
-                    />
-                  </div>
+                  {/* MONTO PARA NÓMINA, IMSS/ISR Y COMEDOR */}
+                  {subPersonalActivo !== 7 && (
+                    <div style={styles.fieldGroup}>
+                      <label style={styles.label}>Monto ($) *</label>
+                      <input
+                        type="number"
+                        step="any"
+                        min="0.01"
+                        placeholder="0.00"
+                        style={styles.input}
+                        value={monto}
+                        onChange={(e) => setMonto(e.target.value)}
+                        required
+                      />
+                    </div>
+                  )}
 
                   {/* CONCEPTO / DETALLES */}
                   <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
@@ -1138,7 +1515,7 @@ function FlujoCaja() {
                       onClick={handleGuardarPersonal} 
                       style={styles.submitButton}
                     >
-                      Guardar gasto
+                      {subPersonalActivo === 7 ? 'Guardar Viáticos' : 'Guardar gasto'}
                     </button>
                   </div>
                 </form>
