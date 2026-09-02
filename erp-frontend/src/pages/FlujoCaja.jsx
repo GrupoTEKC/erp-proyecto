@@ -579,14 +579,31 @@ function FlujoCaja() {
 
       const foliosLimpios = folios.map(f => f.trim()).filter(Boolean)
 
-      if (esChofer && foliosLimpios.length === 0) {
-        alert('⚠️ Para los choferes es obligatorio capturar al menos un folio.')
-        return
-      }
+      // Validaciones para Chofer (Obligatorios: Ruta, Unidad y Folios)
+      if (esChofer) {
+        if (!idRutaSeleccionada) {
+          alert('⚠️ Para los choferes es obligatorio seleccionar una Ruta.')
+          return
+        }
+        if (!idUnidadSeleccionada) {
+          alert('⚠️ Para los choferes es obligatorio seleccionar una Unidad.')
+          return
+        }
+        if (foliosLimpios.length === 0) {
+          alert('⚠️ Para los choferes es obligatorio capturar al menos un folio.')
+          return
+        }
+      } else {
+        // Validaciones para otros puestos (Opcionales con confirmación)
+        if (!idRutaSeleccionada || !idUnidadSeleccionada) {
+          const confirma = window.confirm('¿Estás seguro que deseas continuar sin seleccionar Ruta / Unidad?')
+          if (!confirma) return
+        }
 
-      if (!esChofer && foliosLimpios.length === 0) {
-        const confirma = window.confirm('¿Estás seguro que no deseas capturar los folios?')
-        if (!confirma) return
+        if (foliosLimpios.length === 0) {
+          const confirma = window.confirm('¿Estás seguro que no deseas capturar los folios?')
+          if (!confirma) return
+        }
       }
 
       const empObj = empleados.find(emp => String(emp.id_empleado) === String(empleadoSeleccionado))
@@ -1243,7 +1260,9 @@ function FlujoCaja() {
                       </div>
 
                       <div style={styles.fieldGroup}>
-                        <label style={styles.label}>Ruta (Opcional)</label>
+                        <label style={styles.label}>
+                          Ruta {esChofer ? <span style={{ color: '#dc2626' }}>* (Obligatorio Chofer)</span> : '(Opcional)'}
+                        </label>
                         <select
                           style={styles.select}
                           value={idRutaSeleccionada}
@@ -1259,7 +1278,9 @@ function FlujoCaja() {
                       </div>
 
                       <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
-                        <label style={styles.label}>Unidad relacionada (Opcional)</label>
+                        <label style={styles.label}>
+                          Unidad relacionada {esChofer ? <span style={{ color: '#dc2626' }}>* (Obligatorio Chofer)</span> : '(Opcional)'}
+                        </label>
                         <select
                           style={styles.select}
                           value={idUnidadSeleccionada}
