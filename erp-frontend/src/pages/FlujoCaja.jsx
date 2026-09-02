@@ -748,7 +748,7 @@ function FlujoCaja() {
           </button>
         </div>
         <div style={styles.centerSection}>
-          <h1 style={styles.mainTitle}>FLUJO DE CAJA</h1>
+          <h1 style={styles.mainTitle}>DESGLOSE DE CAJA</h1>
         </div>
         <div style={styles.rightSection}>
           <img src={logo} alt="Logo SCAE" style={styles.logo} />
