@@ -729,6 +729,7 @@ app.get('/egresos/categorias', async (req, res) => {
   }
 })
 
+
 app.post('/egresos', async (req, res) => {
   try {
     const {
@@ -743,10 +744,11 @@ app.post('/egresos', async (req, res) => {
       id_unidad_relacionada,
       id_ruta_relacionada,
       concepto,
-      num_comprobante
+      num_comprobante,
+      fecha_pago // 👈 Novedad: Fecha que reporta el usuario en el frontend
     } = req.body
 
-    // Validaciones de campos obligatorios
+    // Validaciones de campos obligatorios (sin cambios)
     if (!id_categoria) {
       return res.status(400).json({ error: 'La categoría del gasto es obligatoria' })
     }
@@ -763,10 +765,17 @@ app.post('/egresos', async (req, res) => {
       return res.status(400).json({ error: 'El concepto o detalle del gasto es obligatorio' })
     }
 
-    // Convertir concepto a JSON string si viene como objeto desde el frontend
+    // Convertir concepto a JSON string si viene como objeto desde el frontend (sin cambios)
     const conceptoString = typeof concepto === 'object' ? JSON.stringify(concepto) : String(concepto).trim()
 
+    // Manejo de la fecha reportada por el usuario (fecha_hora)
+    const horaActual = new Date().toTimeString().split(' ')[0]
+    const fechaReportada = fecha_pago 
+      ? (fecha_pago.includes(':') ? fecha_pago : `${fecha_pago} ${horaActual}`)
+      : new Date()
+
     // Insertar en la tabla flujo_egresos incluyendo las llaves foráneas
+    // NOTA: fecha_hora guarda la fecha del usuario. fecha_captura se llena sola vía MySQL (DEFAULT CURRENT_TIMESTAMP).
     const [result] = await db.query(`
       INSERT INTO flujo_egresos (
         id_categoria, 
@@ -782,7 +791,7 @@ app.post('/egresos', async (req, res) => {
         concepto, 
         num_comprobante,
         fecha_hora
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       id_categoria,
       monto,
@@ -795,7 +804,8 @@ app.post('/egresos', async (req, res) => {
       id_unidad_relacionada || null,
       id_ruta_relacionada || null,
       conceptoString,
-      num_comprobante ? num_comprobante.trim().toUpperCase() : null
+      num_comprobante ? num_comprobante.trim().toUpperCase() : null,
+      fechaReportada // 👈 Pasa a la columna fecha_hora
     ])
 
     res.json({
@@ -809,7 +819,6 @@ app.post('/egresos', async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
-
 
 // =============================
 // PEDIDO COMPLETO (PRO)
@@ -1850,6 +1859,16 @@ app.get('/unidades', async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
+
+// GET Montacargas activos
+app.get('/montacargas', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT id_montacargas, nombre FROM montacargas WHERE activo = 1');
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 app.get('/control-envios/:id_chofer', async (req, res) => {
   const conn = await db.getConnection()
