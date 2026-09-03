@@ -1988,13 +1988,16 @@ function FlujoCaja() {
                           <option value="Afinación">Afinación</option>
                           <option value="Hojalatería y pintura">Hojalatería y pintura</option>
                           <option value="Tenencias y verificaciones">Tenencias y verificaciones</option>
+                          <option value="Otro">Otro</option>
                         </select>
                       </div>
 
                       {/* LÍNEAS DINÁMICAS MANTENIMIENTO */}
                       <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
                         <div style={styles.dynamicHeader}>
-                          <span>Detalle de la reparación / mantenimiento</span>
+                          <span>
+                            Detalle de la reparación / mantenimiento {tipoServicioMantenimiento === 'Otro' && '*'}
+                          </span>
                           <button
                             type="button"
                             style={styles.addBtn}
@@ -2011,6 +2014,7 @@ function FlujoCaja() {
                               style={{ ...styles.input, flex: 2 }}
                               value={item.concepto}
                               onChange={(e) => handleCambioObjeto(setLineasMantenimiento, lineasMantenimiento, idx, 'concepto', e.target.value)}
+                              required={tipoServicioMantenimiento === 'Otro'}
                             />
                             <input
                               type="number"
@@ -2019,6 +2023,7 @@ function FlujoCaja() {
                               style={{ ...styles.input, flex: 1 }}
                               value={item.monto}
                               onChange={(e) => handleCambioObjeto(setLineasMantenimiento, lineasMantenimiento, idx, 'monto', e.target.value)}
+                              required={tipoServicioMantenimiento === 'Otro'}
                             />
                             {lineasMantenimiento.length > 1 && (
                               <button
