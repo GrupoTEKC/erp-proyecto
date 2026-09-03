@@ -1930,7 +1930,7 @@ function FlujoCaja() {
                     </>
                   )}
 
-                  {/* 2️⃣ SUB-TARJETA 2: OPERACIONES Y MANTENIMIENTO */}
+         {/* 2️⃣ SUB-TARJETA 2: OPERACIONES Y MANTENIMIENTO */}
                   {subPlantaActivo === 9 && (
                     <>
                       <div style={styles.fieldGroup}>
@@ -1996,7 +1996,7 @@ function FlujoCaja() {
                       <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
                         <div style={styles.dynamicHeader}>
                           <span>
-                            Detalle de la reparación / mantenimiento {tipoServicioMantenimiento === 'Otro' && '*'}
+                            Detalle de la reparación / mantenimiento *
                           </span>
                           <button
                             type="button"
@@ -2014,7 +2014,7 @@ function FlujoCaja() {
                               style={{ ...styles.input, flex: 2 }}
                               value={item.concepto}
                               onChange={(e) => handleCambioObjeto(setLineasMantenimiento, lineasMantenimiento, idx, 'concepto', e.target.value)}
-                              required={tipoServicioMantenimiento === 'Otro'}
+                              required
                             />
                             <input
                               type="number"
@@ -2023,7 +2023,7 @@ function FlujoCaja() {
                               style={{ ...styles.input, flex: 1 }}
                               value={item.monto}
                               onChange={(e) => handleCambioObjeto(setLineasMantenimiento, lineasMantenimiento, idx, 'monto', e.target.value)}
-                              required={tipoServicioMantenimiento === 'Otro'}
+                              required
                             />
                             {lineasMantenimiento.length > 1 && (
                               <button
@@ -2045,7 +2045,8 @@ function FlujoCaja() {
                       </div>
                     </>
                   )}
-
+                  
+                  
                   {/* 3️⃣ SUB-TARJETA 3: COMPRA DE HERRAMIENTAS Y CONSUMIBLES */}
                   {subPlantaActivo === 10 && (
                     <>
