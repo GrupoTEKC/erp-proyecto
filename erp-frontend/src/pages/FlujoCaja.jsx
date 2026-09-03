@@ -271,7 +271,7 @@ const styles = {
     backgroundColor: '#fee2e2',
     color: '#b91c1c'
   },
-  /* ESTILOS SECCIONES DINÁMICAS (VIÁTICOS) */
+  /* ESTILOS SECCIONES DINÁMICAS */
   dynamicBlock: {
     border: '1px solid #e2e8f0',
     backgroundColor: '#f8fafc',
@@ -361,6 +361,23 @@ function FlujoCaja() {
   const [comidas, setComidas] = useState([''])
   const [folios, setFolios] = useState([''])
 
+  // ESTADOS - GASTOS DE PLANTA Y MANTENIMIENTO (TARJETA 3)
+  const [plantaAbierto, setPlantaAbierto] = useState(false)
+  const [subPlantaActivo, setSubPlantaActivo] = useState(null) // 8=Servicios Públicos, 9=Operaciones y Mantenimiento, 10=Herramientas y Consumibles
+  const [fechaPago, setFechaPago] = useState('')
+  const [tipoServicioPublico, setTipoServicioPublico] = useState('')
+  const [lineasServicios, setLineasServicios] = useState([{ concepto: '', monto: '' }])
+  
+  // Sub-tarjeta 2 Planta
+  const [tipoEquipo, setTipoEquipo] = useState('Unidad') // 'Unidad' o 'Montacargas'
+  const [montacargas, setMontacargas] = useState([])
+  const [equipoSeleccionado, setEquipoSeleccionado] = useState('')
+  const [tipoServicioMantenimiento, setTipoServicioMantenimiento] = useState('')
+  const [lineasMantenimiento, setLineasMantenimiento] = useState([{ concepto: '', monto: '' }])
+
+  // Sub-tarjeta 3 Planta
+  const [lineasHerramientas, setLineasHerramientas] = useState([{ cantidad: '1', concepto: '', precio: '' }])
+
   // Cargar productos de la base de datos
   useEffect(() => {
     fetch(`${API}/productos`)
@@ -407,6 +424,16 @@ function FlujoCaja() {
       .catch((err) => console.error('Error al cargar unidades:', err))
   }, [])
 
+  // Cargar montacargas de la base de datos
+  useEffect(() => {
+    fetch(`${API}/montacargas`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setMontacargas(data)
+      })
+      .catch((err) => console.error('Error al cargar montacargas:', err))
+  }, [])
+
   // Verificar status de pagos de nómina por fechas
   useEffect(() => {
     if (fechaInicioSemana && fechaFinSemana) {
@@ -450,6 +477,27 @@ function FlujoCaja() {
     setFolios([''])
   }
 
+  const handleSelectSubPlanta = (idSub) => {
+    setSubPlantaActivo(idSub)
+    setFechaPago('')
+    setOrigenPago('EFECTIVO')
+    setCuentaBancaria('')
+    setNombreDuenioCuenta('')
+
+    // Reset Sub 1
+    setTipoServicioPublico('')
+    setLineasServicios([{ concepto: '', monto: '' }])
+
+    // Reset Sub 2
+    setTipoEquipo('Unidad')
+    setEquipoSeleccionado('')
+    setTipoServicioMantenimiento('')
+    setLineasMantenimiento([{ concepto: '', monto: '' }])
+
+    // Reset Sub 3
+    setLineasHerramientas([{ cantidad: '1', concepto: '', precio: '' }])
+  }
+
   // Detectar cambio de empleado en Viáticos
   const handleEmpleadoViaticosChange = (idEmp) => {
     setEmpleadoSeleccionado(idEmp)
@@ -476,11 +524,34 @@ function FlujoCaja() {
     setter(lista.filter((_, i) => i !== index))
   }
 
+  // Auxiliares dinámicos para Planta y Mantenimiento
+  const handleAgregarObjeto = (setter, lista, objetoInicial) => setter([...lista, { ...objetoInicial }])
+
+  const handleCambioObjeto = (setter, lista, index, campo, valor) => {
+    const nueva = [...lista]
+    nueva[index][campo] = valor
+    setter(nueva)
+  }
+
+  const handleEliminarObjeto = (setter, lista, index) => {
+    if (lista.length === 1) return
+    setter(lista.filter((_, i) => i !== index))
+  }
+
   // Totales en tiempo real para viáticos
   const totalCasetas = casetas.reduce((acc, v) => acc + (parseFloat(v) || 0), 0)
   const totalGasolina = gasolina.reduce((acc, v) => acc + (parseFloat(v) || 0), 0)
   const totalComidas = comidas.reduce((acc, v) => acc + (parseFloat(v) || 0), 0)
   const totalViaticosGeneral = totalCasetas + totalGasolina + totalComidas
+
+  // Totales en tiempo real Planta
+  const totalServiciosPublicos = lineasServicios.reduce((acc, item) => acc + (parseFloat(item.monto) || 0), 0)
+  const totalMantenimiento = lineasMantenimiento.reduce((acc, item) => acc + (parseFloat(item.monto) || 0), 0)
+  const totalHerramientas = lineasHerramientas.reduce((acc, item) => {
+    const cant = parseFloat(item.cantidad) || 0
+    const prec = parseFloat(item.precio) || 0
+    return acc + (cant * prec)
+  }, 0)
 
   // SUBMIT - GASTOS OPERATIVOS
   const handleGuardarOperativos = async () => {
@@ -720,6 +791,141 @@ function FlujoCaja() {
     } catch (error) {
       console.error('Error al registrar gasto:', error)
       alert('Error de conexión con el servidor.')
+    }
+  }
+
+  // SUBMIT - GASTOS DE PLANTA Y MANTENIMIENTO (TARJETA 3)
+  const handleGuardarPlanta = async () => {
+    if (!fechaPago) {
+      alert('⚠️ Por favor selecciona la fecha de pago.')
+      return
+    }
+
+    let cuentaFinal = null
+    if (origenPago === 'TRANSFERENCIA') {
+      if (!cuentaBancaria) {
+        alert('⚠️ Por favor selecciona la cuenta bancaria.')
+        return
+      }
+      cuentaFinal = cuentaBancaria === 'OTRO'
+        ? `OTRO (${nombreDuenioCuenta.trim()})`
+        : cuentaBancaria
+    }
+
+    let payload = {}
+
+    // 1️⃣ SUB-TARJETA 1: SERVICIOS PÚBLICOS
+    if (subPlantaActivo === 8) {
+      if (!tipoServicioPublico) {
+        alert('⚠️ Selecciona el tipo de servicio público.')
+        return
+      }
+      if (totalServiciosPublicos <= 0) {
+        alert('⚠️ Ingresa al menos un concepto y monto válido.')
+        return
+      }
+
+      const lineasFiltradas = lineasServicios.filter(l => parseFloat(l.monto) > 0)
+
+      payload = {
+        id_categoria: 9, // Servicios Públicos
+        fecha_pago: fechaPago,
+        tipo_servicio: tipoServicioPublico,
+        monto: totalServiciosPublicos,
+        origen_pago: origenPago,
+        cuenta_bancaria: cuentaFinal,
+        concepto: JSON.stringify({
+          tipo_servicio: tipoServicioPublico,
+          desglose: lineasFiltradas
+        })
+      }
+    }
+
+    // 2️⃣ SUB-TARJETA 2: OPERACIONES Y MANTENIMIENTO
+    else if (subPlantaActivo === 9) {
+      if (!equipoSeleccionado) {
+        alert(`⚠️ Selecciona un(a) ${tipoEquipo.toLowerCase()}.`)
+        return
+      }
+      if (!tipoServicioMantenimiento) {
+        alert('⚠️ Selecciona el tipo de servicio de mantenimiento.')
+        return
+      }
+      if (totalMantenimiento <= 0) {
+        alert('⚠️ Ingresa al menos un concepto y monto válido de reparación.')
+        return
+      }
+
+      const lineasFiltradas = lineasMantenimiento.filter(l => parseFloat(l.monto) > 0)
+      const equipoObj = tipoEquipo === 'Unidad'
+        ? unidades.find(u => String(u.id_unidad) === String(equipoSeleccionado))
+        : montacargas.find(m => String(m.id_montacargas) === String(equipoSeleccionado))
+
+      const nombreEquipo = equipoObj ? (equipoObj.nombre || equipoObj.placas || equipoObj.num_serie) : null
+
+      payload = {
+        id_categoria: 10, // Operaciones y Mantenimiento
+        fecha_pago: fechaPago,
+        tipo_equipo: tipoEquipo,
+        id_equipo_relacionado: parseInt(equipoSeleccionado),
+        equipo_relacionado: nombreEquipo,
+        tipo_servicio: tipoServicioMantenimiento,
+        monto: totalMantenimiento,
+        origen_pago: origenPago,
+        cuenta_bancaria: cuentaFinal,
+        concepto: JSON.stringify({
+          tipo_equipo: tipoEquipo,
+          equipo: nombreEquipo,
+          tipo_servicio: tipoServicioMantenimiento,
+          desglose: lineasFiltradas
+        })
+      }
+    }
+
+    // 3️⃣ SUB-TARJETA 3: HERRAMIENTAS Y CONSUMIBLES
+    else if (subPlantaActivo === 10) {
+      if (totalHerramientas <= 0) {
+        alert('⚠️ Ingresa al menos una herramienta con cantidad y precio válido.')
+        return
+      }
+
+      const lineasFiltradas = lineasHerramientas.filter(l => (parseFloat(l.cantidad) * parseFloat(l.precio)) > 0)
+
+      payload = {
+        id_categoria: 11, // Herramientas y Consumibles
+        fecha_pago: fechaPago,
+        monto: totalHerramientas,
+        origen_pago: origenPago,
+        cuenta_bancaria: cuentaFinal,
+        concepto: JSON.stringify({
+          desglose: lineasFiltradas
+        })
+      }
+    }
+
+    try {
+      const res = await fetch(`${API}/egresos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+
+      if (!res.ok) {
+        const errorText = await res.text()
+        alert(`Error (${res.status}): ${errorText}`)
+        return
+      }
+
+      const data = await res.json()
+      if (data.success) {
+        alert('¡Gasto de Planta y Mantenimiento registrado exitosamente!')
+        setSubPlantaActivo(null)
+      } else {
+        alert(`Error: ${data.error || 'No se pudo guardar el gasto'}`)
+      }
+    } catch (error) {
+      console.error('Error al enviar registro de planta:', error)
+      alert('Ocurrió un error de conexión con el servidor.')
     }
   }
 
@@ -1537,6 +1743,427 @@ function FlujoCaja() {
                       style={styles.submitButton}
                     >
                       {subPersonalActivo === 7 ? 'Guardar Viáticos' : 'Guardar gasto'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* 🏛️ TARJETA PRINCIPAL 3: GASTOS DE PLANTA Y MANTENIMIENTO */}
+      <div style={styles.parentCard}>
+        <div
+          style={styles.parentHeader}
+          onClick={() => setPlantaAbierto(!plantaAbierto)}
+        >
+          <div style={styles.parentTitleGroup}>
+            <span style={{ fontSize: '28px' }}>🏛️</span>
+            <div>
+              <h3 style={styles.parentTitle}>GASTOS DE PLANTA Y MANTENIMIENTO</h3>
+              <p style={styles.parentSubtitle}>
+                Servicios públicos, mantenimiento de vehículos/montacargas, herramientas y consumibles.
+              </p>
+            </div>
+          </div>
+          <span style={styles.toggleBadge}>
+            {plantaAbierto ? '▼ Ocultar' : '▶ Desplegar'}
+          </span>
+        </div>
+
+        {/* SUB-TARJETAS PLANTA */}
+        {plantaAbierto && (
+          <div>
+            <div style={styles.cardsContainer}>
+              {/* SUB-TARJETA 1: SERVICIOS PÚBLICOS */}
+              <div
+                style={{
+                  ...styles.card,
+                  ...(subPlantaActivo === 8 ? styles.cardActive : {})
+                }}
+                onClick={() => handleSelectSubPlanta(8)}
+              >
+                <div style={styles.cardHeader}>
+                  <span style={styles.cardName}>Servicios Públicos</span>
+                  <span style={styles.cardIcon}>⚡</span>
+                </div>
+                <p style={styles.cardDesc}>
+                  Pago de Luz (CFE), Agua, Gas LP e Internet/Telefonía.
+                </p>
+              </div>
+
+              {/* SUB-TARJETA 2: OPERACIONES Y MANTENIMIENTO */}
+              <div
+                style={{
+                  ...styles.card,
+                  ...(subPlantaActivo === 9 ? styles.cardActive : {})
+                }}
+                onClick={() => handleSelectSubPlanta(9)}
+              >
+                <div style={styles.cardHeader}>
+                  <span style={styles.cardName}>Operaciones y Mantenimiento</span>
+                  <span style={styles.cardIcon}>🛠️</span>
+                </div>
+                <p style={styles.cardDesc}>
+                  Mantenimiento y reparaciones de vehículos y montacargas.
+                </p>
+              </div>
+
+              {/* SUB-TARJETA 3: HERRAMIENTAS Y CONSUMIBLES */}
+              <div
+                style={{
+                  ...styles.card,
+                  ...(subPlantaActivo === 10 ? styles.cardActive : {})
+                }}
+                onClick={() => handleSelectSubPlanta(10)}
+              >
+                <div style={styles.cardHeader}>
+                  <span style={styles.cardName}>Herramientas y Consumibles</span>
+                  <span style={styles.cardIcon}>🧰</span>
+                </div>
+                <p style={styles.cardDesc}>
+                  Compra de herramientas y consumibles de planta.
+                </p>
+              </div>
+            </div>
+
+            {/* FORMULARIO GASTOS DE PLANTA */}
+            {subPlantaActivo && (
+              <div style={styles.formContainer}>
+                <div style={styles.formTitle}>
+                  <span>
+                    Estás capturando:{' '}
+                    {subPlantaActivo === 8 && '⚡ Servicios Públicos'}
+                    {subPlantaActivo === 9 && '🛠️ Operaciones y Mantenimiento'}
+                    {subPlantaActivo === 10 && '🧰 Compra de Herramientas y Consumibles'}
+                  </span>
+                  <button
+                    type="button"
+                    style={styles.closeBtn}
+                    onClick={() => setSubPlantaActivo(null)}
+                  >
+                    ✕ Cerrar
+                  </button>
+                </div>
+
+                <form onSubmit={(e) => e.preventDefault()} style={styles.grid}>
+                  
+                  {/* FECHA DE PAGO (GLOBAL PARA LAS 3 SUB-TARJETAS DE PLANTA) */}
+                  <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
+                    <label style={styles.label}>Fecha de pago (Seleccionable) *</label>
+                    <input
+                      type="date"
+                      style={styles.input}
+                      value={fechaPago}
+                      onChange={(e) => setFechaPago(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  {/* 1️⃣ SUB-TARJETA 1: SERVICIOS PÚBLICOS */}
+                  {subPlantaActivo === 8 && (
+                    <>
+                      <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
+                        <label style={styles.label}>Tipo de Servicio *</label>
+                        <select
+                          style={styles.select}
+                          value={tipoServicioPublico}
+                          onChange={(e) => setTipoServicioPublico(e.target.value)}
+                          required
+                        >
+                          <option value="">-- Seleccionar Servicio --</option>
+                          <option value="Luz / Energía Eléctrica (CFE)">⚡ Luz / Energía Eléctrica (CFE)</option>
+                          <option value="Agua (Suministro municipal / Pipas)">💧 Agua (Suministro municipal / Pipas)</option>
+                          <option value="Gas LP">⛽ Gas LP</option>
+                          <option value="Internet / Telefonía">📶 Internet / Telefonía</option>
+                        </select>
+                      </div>
+
+                      {/* LÍNEAS DINÁMICAS SERVICIOS */}
+                      <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
+                        <div style={styles.dynamicHeader}>
+                          <span>Conceptos de Servicios</span>
+                          <button
+                            type="button"
+                            style={styles.addBtn}
+                            onClick={() => handleAgregarObjeto(setLineasServicios, lineasServicios, { concepto: '', monto: '' })}
+                          >
+                            +
+                          </button>
+                        </div>
+                        {lineasServicios.map((item, idx) => (
+                          <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                            <input
+                              type="text"
+                              placeholder="Ej. Pago bimestre oficina / Pipa agua 10k L"
+                              style={{ ...styles.input, flex: 2 }}
+                              value={item.concepto}
+                              onChange={(e) => handleCambioObjeto(setLineasServicios, lineasServicios, idx, 'concepto', e.target.value)}
+                            />
+                            <input
+                              type="number"
+                              step="any"
+                              placeholder="Monto ($)"
+                              style={{ ...styles.input, flex: 1 }}
+                              value={item.monto}
+                              onChange={(e) => handleCambioObjeto(setLineasServicios, lineasServicios, idx, 'monto', e.target.value)}
+                            />
+                            {lineasServicios.length > 1 && (
+                              <button
+                                type="button"
+                                style={styles.removeBtn}
+                                onClick={() => handleEliminarObjeto(setLineasServicios, lineasServicios, idx)}
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      <div style={{ ...styles.fullRow, ...styles.totalSummaryBox }}>
+                        <span style={{ fontSize: '18px', fontWeight: 'bold', color: vino }}>
+                          TOTAL SERVICIOS: ${totalServiciosPublicos.toFixed(2)}
+                        </span>
+                      </div>
+                    </>
+                  )}
+
+                  {/* 2️⃣ SUB-TARJETA 2: OPERACIONES Y MANTENIMIENTO */}
+                  {subPlantaActivo === 9 && (
+                    <>
+                      <div style={styles.fieldGroup}>
+                        <label style={styles.label}>Tipo de Equipo *</label>
+                        <select
+                          style={styles.select}
+                          value={tipoEquipo}
+                          onChange={(e) => {
+                            setTipoEquipo(e.target.value)
+                            setEquipoSeleccionado('')
+                          }}
+                        >
+                          <option value="Unidad">Unidad / Vehículo</option>
+                          <option value="Montacargas">Montacargas</option>
+                        </select>
+                      </div>
+
+                      <div style={styles.fieldGroup}>
+                        <label style={styles.label}>
+                          {tipoEquipo === 'Unidad' ? 'Seleccionar Unidad (Placas) *' : 'Seleccionar Montacargas *'}
+                        </label>
+                        <select
+                          style={styles.select}
+                          value={equipoSeleccionado}
+                          onChange={(e) => setEquipoSeleccionado(e.target.value)}
+                          required
+                        >
+                          <option value="">-- Seleccionar del catálogo --</option>
+                          {tipoEquipo === 'Unidad'
+                            ? unidades.map((u) => (
+                                <option key={u.id_unidad} value={u.id_unidad}>
+                                  {u.nombre || u.placas} {u.placas ? `(${u.placas})` : ''}
+                                </option>
+                              ))
+                            : montacargas.map((m) => (
+                                <option key={m.id_montacargas} value={m.id_montacargas}>
+                                  {m.nombre || m.num_serie || `Montacargas #${m.id_montacargas}`}
+                                </option>
+                              ))}
+                        </select>
+                      </div>
+
+                      <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
+                        <label style={styles.label}>Tipo de Servicio *</label>
+                        <select
+                          style={styles.select}
+                          value={tipoServicioMantenimiento}
+                          onChange={(e) => setTipoServicioMantenimiento(e.target.value)}
+                          required
+                        >
+                          <option value="">-- Seleccionar tipo de servicio --</option>
+                          <option value="Servicio mecánico / Taller">Servicio mecánico / Taller</option>
+                          <option value="Refacciones (balatas, filtros, aceites, etc.)">Refacciones (balatas, filtros, aceites, etc.)</option>
+                          <option value="Llantas">Llantas</option>
+                          <option value="Afinación">Afinación</option>
+                          <option value="Hojalatería y pintura">Hojalatería y pintura</option>
+                          <option value="Otro">Otro</option>
+                        </select>
+                      </div>
+
+                      {/* LÍNEAS DINÁMICAS MANTENIMIENTO */}
+                      <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
+                        <div style={styles.dynamicHeader}>
+                          <span>Detalle de la reparación / mantenimiento</span>
+                          <button
+                            type="button"
+                            style={styles.addBtn}
+                            onClick={() => handleAgregarObjeto(setLineasMantenimiento, lineasMantenimiento, { concepto: '', monto: '' })}
+                          >
+                            +
+                          </button>
+                        </div>
+                        {lineasMantenimiento.map((item, idx) => (
+                          <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                            <input
+                              type="text"
+                              placeholder="Ej. Cambio de aceite 15w40 y filtro"
+                              style={{ ...styles.input, flex: 2 }}
+                              value={item.concepto}
+                              onChange={(e) => handleCambioObjeto(setLineasMantenimiento, lineasMantenimiento, idx, 'concepto', e.target.value)}
+                            />
+                            <input
+                              type="number"
+                              step="any"
+                              placeholder="Monto ($)"
+                              style={{ ...styles.input, flex: 1 }}
+                              value={item.monto}
+                              onChange={(e) => handleCambioObjeto(setLineasMantenimiento, lineasMantenimiento, idx, 'monto', e.target.value)}
+                            />
+                            {lineasMantenimiento.length > 1 && (
+                              <button
+                                type="button"
+                                style={styles.removeBtn}
+                                onClick={() => handleEliminarObjeto(setLineasMantenimiento, lineasMantenimiento, idx)}
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      <div style={{ ...styles.fullRow, ...styles.totalSummaryBox }}>
+                        <span style={{ fontSize: '18px', fontWeight: 'bold', color: vino }}>
+                          TOTAL MANTENIMIENTO: ${totalMantenimiento.toFixed(2)}
+                        </span>
+                      </div>
+                    </>
+                  )}
+
+                  {/* 3️⃣ SUB-TARJETA 3: COMPRA DE HERRAMIENTAS Y CONSUMIBLES */}
+                  {subPlantaActivo === 10 && (
+                    <>
+                      {/* LÍNEAS DINÁMICAS HERRAMIENTAS */}
+                      <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
+                        <div style={styles.dynamicHeader}>
+                          <span>Herramientas y Consumibles</span>
+                          <button
+                            type="button"
+                            style={styles.addBtn}
+                            onClick={() => handleAgregarObjeto(setLineasHerramientas, lineasHerramientas, { cantidad: '1', concepto: '', precio: '' })}
+                          >
+                            +
+                          </button>
+                        </div>
+                        {lineasHerramientas.map((item, idx) => (
+                          <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                            <input
+                              type="number"
+                              min="1"
+                              placeholder="Cant."
+                              style={{ ...styles.input, flex: '0.5 1 0%' }}
+                              value={item.cantidad}
+                              onChange={(e) => handleCambioObjeto(setLineasHerramientas, lineasHerramientas, idx, 'cantidad', e.target.value)}
+                            />
+                            <input
+                              type="text"
+                              placeholder="Concepto (Ej. Escalera de aluminio 6 peldaños)"
+                              style={{ ...styles.input, flex: 2 }}
+                              value={item.concepto}
+                              onChange={(e) => handleCambioObjeto(setLineasHerramientas, lineasHerramientas, idx, 'concepto', e.target.value)}
+                            />
+                            <input
+                              type="number"
+                              step="any"
+                              placeholder="Precio Unitario ($)"
+                              style={{ ...styles.input, flex: 1 }}
+                              value={item.precio}
+                              onChange={(e) => handleCambioObjeto(setLineasHerramientas, lineasHerramientas, idx, 'precio', e.target.value)}
+                            />
+                            {lineasHerramientas.length > 1 && (
+                              <button
+                                type="button"
+                                style={styles.removeBtn}
+                                onClick={() => handleEliminarObjeto(setLineasHerramientas, lineasHerramientas, idx)}
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      <div style={{ ...styles.fullRow, ...styles.totalSummaryBox }}>
+                        <span style={{ fontSize: '18px', fontWeight: 'bold', color: vino }}>
+                          TOTAL HERRAMIENTAS Y CONSUMIBLES: ${totalHerramientas.toFixed(2)}
+                        </span>
+                      </div>
+                    </>
+                  )}
+
+                  {/* ORIGEN DE PAGO (COMÚN PARA LAS 3 SUB-TARJETAS DE PLANTA) */}
+                  <div style={styles.fieldGroup}>
+                    <label style={styles.label}>Origen de pago *</label>
+                    <select
+                      style={styles.select}
+                      value={origenPago}
+                      onChange={(e) => {
+                        setOrigenPago(e.target.value)
+                        if (e.target.value !== 'TRANSFERENCIA') {
+                          setCuentaBancaria('')
+                          setNombreDuenioCuenta('')
+                        }
+                      }}
+                    >
+                      <option value="EFECTIVO">Efectivo</option>
+                      <option value="TRANSFERENCIA">Transferencia</option>
+                    </select>
+                  </div>
+
+                  {/* CUENTA BANCARIA */}
+                  {origenPago === 'TRANSFERENCIA' && (
+                    <div style={styles.fieldGroup}>
+                      <label style={styles.label}>Cuenta bancaria de salida *</label>
+                      <select
+                        style={styles.select}
+                        value={cuentaBancaria}
+                        onChange={(e) => {
+                          setCuentaBancaria(e.target.value)
+                          if (e.target.value !== 'OTRO') setNombreDuenioCuenta('')
+                        }}
+                        required
+                      >
+                        <option value="">-- Seleccionar cuenta --</option>
+                        <option value="Cuenta Fiscal">Cuenta fiscal</option>
+                        <option value="OTRO">Otro</option>
+                      </select>
+                    </div>
+                  )}
+
+                  {/* CAMPO OTRO EN CUENTA BANCARIA */}
+                  {origenPago === 'TRANSFERENCIA' && cuentaBancaria === 'OTRO' && (
+                    <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
+                      <label style={styles.label}>Nombre y Apellido del dueño de la cuenta *</label>
+                      <input
+                        type="text"
+                        placeholder="Ej. Eli Maravillas"
+                        style={styles.input}
+                        value={nombreDuenioCuenta}
+                        onChange={(e) => setNombreDuenioCuenta(e.target.value)}
+                        required
+                      />
+                    </div>
+                  )}
+
+                  {/* BOTÓN SUBMIT PLANTA */}
+                  <div style={styles.fullRow}>
+                    <button 
+                      type="button" 
+                      onClick={handleGuardarPlanta} 
+                      style={styles.submitButton}
+                    >
+                      Guardar Registro de Planta
                     </button>
                   </div>
                 </form>
