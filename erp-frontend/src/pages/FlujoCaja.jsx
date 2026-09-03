@@ -1989,7 +1989,6 @@ function FlujoCaja() {
                           <option value="Afinación">Afinación</option>
                           <option value="Hojalatería y pintura">Hojalatería y pintura</option>
                           <option value="Tenencias y verificaciones">Tenencias y verificaciones</option>
-                          <option value="Otro">Otro</option>
                         </select>
                       </div>
 
@@ -2056,15 +2055,13 @@ function FlujoCaja() {
                     </>
                   )}
                   
-                  
-         
-                  {/* 3️⃣ SUB-TARJETA 3: COMPRA DE HERRAMIENTAS Y CONSUMIBLES */}
+         {/* 3️⃣ SUB-TARJETA 3: COMPRA DE HERRAMIENTAS Y CONSUMIBLES */}
                   {subPlantaActivo === 10 && (
                     <>
                       {/* LÍNEAS DINÁMICAS HERRAMIENTAS */}
                       <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
                         <div style={styles.dynamicHeader}>
-                          <span>Compra de herramientas</span>
+                          <span>Compra de herramientas *</span>
                           <button
                             type="button"
                             style={styles.addBtn}
@@ -2082,6 +2079,7 @@ function FlujoCaja() {
                               style={{ ...styles.input, flex: '0.5 1 0%' }}
                               value={item.cantidad}
                               onChange={(e) => handleCambioObjeto(setLineasHerramientas, lineasHerramientas, idx, 'cantidad', e.target.value)}
+                              required
                             />
                             <input
                               type="text"
@@ -2089,6 +2087,7 @@ function FlujoCaja() {
                               style={{ ...styles.input, flex: 2 }}
                               value={item.concepto}
                               onChange={(e) => handleCambioObjeto(setLineasHerramientas, lineasHerramientas, idx, 'concepto', e.target.value)}
+                              required
                             />
                             <input
                               type="number"
@@ -2097,6 +2096,7 @@ function FlujoCaja() {
                               style={{ ...styles.input, flex: 1 }}
                               value={item.precio}
                               onChange={(e) => handleCambioObjeto(setLineasHerramientas, lineasHerramientas, idx, 'precio', e.target.value)}
+                              required
                             />
                             {lineasHerramientas.length > 1 && (
                               <button
@@ -2118,7 +2118,8 @@ function FlujoCaja() {
                       </div>
                     </>
                   )}
-
+                  
+                  
                   {/* ORIGEN DE PAGO (COMÚN PARA LAS 3 SUB-TARJETAS DE PLANTA) */}
                   <div style={styles.fieldGroup}>
                     <label style={styles.label}>Origen de pago *</label>
