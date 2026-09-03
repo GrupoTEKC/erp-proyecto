@@ -796,6 +796,35 @@ function FlujoCaja() {
 
   // SUBMIT - GASTOS DE PLANTA Y MANTENIMIENTO (TARJETA 3)
   const handleGuardarPlanta = async () => {
+    // Validación para Sub-Tarjeta Operaciones y Mantenimiento (ID: 9)
+    if (subPlantaActivo === 9) {
+      if (tipoServicioMantenimiento === 'Otro') {
+        const faltaDetalle = lineasMantenimiento.some((item) => !item.concepto || item.concepto.trim() === '');
+        if (faltaDetalle) {
+          alert('Es necesario definir ese otro gasto en el detalle de la reparación.');
+          return;
+        }
+      }
+
+      const faltaMonto = lineasMantenimiento.some((item) => !item.monto || Number(item.monto) <= 0);
+      if (faltaMonto) {
+        alert('Por favor ingresa un monto válido para todas las líneas de mantenimiento.');
+        return;
+      }
+    }
+
+    // Validación para Sub-Tarjeta Herramientas (ID: 10)
+    if (subPlantaActivo === 10) {
+      const camposIncompletos = lineasHerramientas.some(
+        (item) => !item.concepto || item.concepto.trim() === '' || !item.precio || Number(item.precio) <= 0
+      );
+
+      if (camposIncompletos) {
+        alert('Es obligatorio especificar qué compraste y ingresar un precio válido.');
+        return;
+      }
+    }
+
     if (!fechaPago) {
       alert('⚠️ Por favor selecciona la fecha de pago.')
       return
@@ -1930,7 +1959,7 @@ function FlujoCaja() {
                     </>
                   )}
 
-{/* 2️⃣ SUB-TARJETA 2: OPERACIONES Y MANTENIMIENTO */}
+                  {/* 2️⃣ SUB-TARJETA 2: OPERACIONES Y MANTENIMIENTO */}
                   {subPlantaActivo === 9 && (
                     <>
                       <div style={styles.fieldGroup}>
@@ -2109,7 +2138,6 @@ function FlujoCaja() {
                       </div>
                     </>
                   )}
-                  
                   
                   {/* ORIGEN DE PAGO (COMÚN PARA LAS 3 SUB-TARJETAS DE PLANTA) */}
                   <div style={styles.fieldGroup}>
