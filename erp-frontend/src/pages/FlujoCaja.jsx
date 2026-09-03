@@ -1873,10 +1873,10 @@ function FlujoCaja() {
                           required
                         >
                           <option value="">-- Seleccionar Servicio --</option>
-                          <option value="Luz / Energía Eléctrica (CFE)">⚡ Luz / Energía Eléctrica (CFE)</option>
-                          <option value="Agua (Suministro municipal / Pipas)">💧 Agua </option>
-                          <option value="Gas LP">⛽ Gas </option>
-                          <option value="Internet / Telefonía">📶 Internet / Telefonía</option>
+                          <option value="Luz">⚡ Luz / Energía Eléctrica (CFE)</option>
+                          <option value="Agua">💧 Agua </option>
+                          <option value="Gas">⛽ Gas </option>
+                          <option value="Internet">📶 Internet / Telefonía</option>
                         </select>
                       </div>
 
