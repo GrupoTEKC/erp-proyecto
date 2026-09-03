@@ -1763,7 +1763,7 @@ function FlujoCaja() {
             <div>
               <h3 style={styles.parentTitle}>GASTOS DE PLANTA Y MANTENIMIENTO</h3>
               <p style={styles.parentSubtitle}>
-                Servicios públicos, mantenimiento de vehículos/montacargas, herramientas y consumibles.
+                Servicios públicos, mantenimiento de vehículos/montacargas y herramientas.
               </p>
             </div>
           </div>
@@ -1785,11 +1785,11 @@ function FlujoCaja() {
                 onClick={() => handleSelectSubPlanta(8)}
               >
                 <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Servicios Públicos</span>
+                  <span style={styles.cardName}>Servicios públicos</span>
                   <span style={styles.cardIcon}>⚡</span>
                 </div>
                 <p style={styles.cardDesc}>
-                  Pago de Luz (CFE), Agua, Gas LP e Internet/Telefonía.
+                  Pago de luz (CFE), Agua, Gas e Internet/Telefonía.
                 </p>
               </div>
 
@@ -1802,7 +1802,7 @@ function FlujoCaja() {
                 onClick={() => handleSelectSubPlanta(9)}
               >
                 <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Operaciones y Mantenimiento</span>
+                  <span style={styles.cardName}>Servicios vehiculares</span>
                   <span style={styles.cardIcon}>🛠️</span>
                 </div>
                 <p style={styles.cardDesc}>
@@ -1819,11 +1819,11 @@ function FlujoCaja() {
                 onClick={() => handleSelectSubPlanta(10)}
               >
                 <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Herramientas y Consumibles</span>
+                  <span style={styles.cardName}>Compra de herramientas</span>
                   <span style={styles.cardIcon}>🧰</span>
                 </div>
                 <p style={styles.cardDesc}>
-                  Compra de herramientas y consumibles de planta.
+                  Compra de herramientas generales desde el pastero hasta Liz etc.
                 </p>
               </div>
             </div>
@@ -1874,8 +1874,8 @@ function FlujoCaja() {
                         >
                           <option value="">-- Seleccionar Servicio --</option>
                           <option value="Luz / Energía Eléctrica (CFE)">⚡ Luz / Energía Eléctrica (CFE)</option>
-                          <option value="Agua (Suministro municipal / Pipas)">💧 Agua (Suministro municipal / Pipas)</option>
-                          <option value="Gas LP">⛽ Gas LP</option>
+                          <option value="Agua (Suministro municipal / Pipas)">💧 Agua </option>
+                          <option value="Gas LP">⛽ Gas </option>
                           <option value="Internet / Telefonía">📶 Internet / Telefonía</option>
                         </select>
                       </div>
@@ -1883,7 +1883,7 @@ function FlujoCaja() {
                       {/* LÍNEAS DINÁMICAS SERVICIOS */}
                       <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
                         <div style={styles.dynamicHeader}>
-                          <span>Conceptos de Servicios</span>
+                          <span>Escribe que compraste..</span>
                           <button
                             type="button"
                             style={styles.addBtn}
@@ -1896,7 +1896,7 @@ function FlujoCaja() {
                           <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
                             <input
                               type="text"
-                              placeholder="Ej. Pago bimestre oficina / Pipa agua 10k L"
+                              placeholder="Comentarios..."
                               style={{ ...styles.input, flex: 2 }}
                               value={item.concepto}
                               onChange={(e) => handleCambioObjeto(setLineasServicios, lineasServicios, idx, 'concepto', e.target.value)}
@@ -1943,14 +1943,14 @@ function FlujoCaja() {
                             setEquipoSeleccionado('')
                           }}
                         >
-                          <option value="Unidad">Unidad / Vehículo</option>
+                          <option value="Unidad">Unidades / Vehículos</option>
                           <option value="Montacargas">Montacargas</option>
                         </select>
                       </div>
 
                       <div style={styles.fieldGroup}>
                         <label style={styles.label}>
-                          {tipoEquipo === 'Unidad' ? 'Seleccionar Unidad (Placas) *' : 'Seleccionar Montacargas *'}
+                          {tipoEquipo === 'Unidad' ? 'Seleccionar Unidad *' : 'Seleccionar Montacargas *'}
                         </label>
                         <select
                           style={styles.select}
@@ -1987,7 +1987,7 @@ function FlujoCaja() {
                           <option value="Llantas">Llantas</option>
                           <option value="Afinación">Afinación</option>
                           <option value="Hojalatería y pintura">Hojalatería y pintura</option>
-                          <option value="Otro">Otro</option>
+                          <option value="Tenencias y verificaciones">Tenencias y verificaciones</option>
                         </select>
                       </div>
 
@@ -2007,7 +2007,7 @@ function FlujoCaja() {
                           <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
                             <input
                               type="text"
-                              placeholder="Ej. Cambio de aceite 15w40 y filtro"
+                              placeholder="Ej. Cambio de llantas debido a que se poncho"
                               style={{ ...styles.input, flex: 2 }}
                               value={item.concepto}
                               onChange={(e) => handleCambioObjeto(setLineasMantenimiento, lineasMantenimiento, idx, 'concepto', e.target.value)}
@@ -2047,7 +2047,7 @@ function FlujoCaja() {
                       {/* LÍNEAS DINÁMICAS HERRAMIENTAS */}
                       <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
                         <div style={styles.dynamicHeader}>
-                          <span>Herramientas y Consumibles</span>
+                          <span>Compra de herramientas</span>
                           <button
                             type="button"
                             style={styles.addBtn}
@@ -2068,7 +2068,7 @@ function FlujoCaja() {
                             />
                             <input
                               type="text"
-                              placeholder="Concepto (Ej. Escalera de aluminio 6 peldaños)"
+                              placeholder="¿Cual fue tu compra?"
                               style={{ ...styles.input, flex: 2 }}
                               value={item.concepto}
                               onChange={(e) => handleCambioObjeto(setLineasHerramientas, lineasHerramientas, idx, 'concepto', e.target.value)}
@@ -2076,7 +2076,7 @@ function FlujoCaja() {
                             <input
                               type="number"
                               step="any"
-                              placeholder="Precio Unitario ($)"
+                              placeholder="Precio ($)"
                               style={{ ...styles.input, flex: 1 }}
                               value={item.precio}
                               onChange={(e) => handleCambioObjeto(setLineasHerramientas, lineasHerramientas, idx, 'precio', e.target.value)}
@@ -2096,7 +2096,7 @@ function FlujoCaja() {
 
                       <div style={{ ...styles.fullRow, ...styles.totalSummaryBox }}>
                         <span style={{ fontSize: '18px', fontWeight: 'bold', color: vino }}>
-                          TOTAL HERRAMIENTAS Y CONSUMIBLES: ${totalHerramientas.toFixed(2)}
+                          MONTO TOTAL: ${totalHerramientas.toFixed(2)}
                         </span>
                       </div>
                     </>
@@ -2163,7 +2163,7 @@ function FlujoCaja() {
                       onClick={handleGuardarPlanta} 
                       style={styles.submitButton}
                     >
-                      Guardar Registro de Planta
+                      Guardar gasto
                     </button>
                   </div>
                 </form>
