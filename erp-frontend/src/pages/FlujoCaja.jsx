@@ -1930,8 +1930,7 @@ function FlujoCaja() {
                     </>
                   )}
 
-
-                  {/* 2️⃣ SUB-TARJETA 2: OPERACIONES Y MANTENIMIENTO */}
+{/* 2️⃣ SUB-TARJETA 2: OPERACIONES Y MANTENIMIENTO */}
                   {subPlantaActivo === 9 && (
                     <>
                       <div style={styles.fieldGroup}>
@@ -1989,6 +1988,7 @@ function FlujoCaja() {
                           <option value="Afinación">Afinación</option>
                           <option value="Hojalatería y pintura">Hojalatería y pintura</option>
                           <option value="Tenencias y verificaciones">Tenencias y verificaciones</option>
+                          <option value="Otro">Otro</option>
                         </select>
                       </div>
 
@@ -2013,16 +2013,7 @@ function FlujoCaja() {
                               placeholder="Ej. Cambio de llantas debido a que se poncho"
                               style={{ ...styles.input, flex: 2 }}
                               value={item.concepto}
-                              onChange={(e) => {
-                                e.target.setCustomValidity('')
-                                handleCambioObjeto(setLineasMantenimiento, lineasMantenimiento, idx, 'concepto', e.target.value)
-                              }}
-                              onInvalid={(e) => {
-                                if (tipoServicioMantenimiento === 'Otro') {
-                                  e.target.setCustomValidity('Es necesario definir ese otro gasto')
-                                }
-                              }}
-                              onInput={(e) => e.target.setCustomValidity('')}
+                              onChange={(e) => handleCambioObjeto(setLineasMantenimiento, lineasMantenimiento, idx, 'concepto', e.target.value)}
                               required={tipoServicioMantenimiento === 'Otro'}
                             />
                             <input
@@ -2032,7 +2023,7 @@ function FlujoCaja() {
                               style={{ ...styles.input, flex: 1 }}
                               value={item.monto}
                               onChange={(e) => handleCambioObjeto(setLineasMantenimiento, lineasMantenimiento, idx, 'monto', e.target.value)}
-                              required={tipoServicioMantenimiento === 'Otro'}
+                              required
                             />
                             {lineasMantenimiento.length > 1 && (
                               <button
@@ -2054,8 +2045,8 @@ function FlujoCaja() {
                       </div>
                     </>
                   )}
-                  
-         {/* 3️⃣ SUB-TARJETA 3: COMPRA DE HERRAMIENTAS Y CONSUMIBLES */}
+
+                  {/* 3️⃣ SUB-TARJETA 3: COMPRA DE HERRAMIENTAS Y CONSUMIBLES */}
                   {subPlantaActivo === 10 && (
                     <>
                       {/* LÍNEAS DINÁMICAS HERRAMIENTAS */}
@@ -2083,7 +2074,7 @@ function FlujoCaja() {
                             />
                             <input
                               type="text"
-                              placeholder="¿Cual fue tu compra?"
+                              placeholder="¿Cuál fue tu compra?"
                               style={{ ...styles.input, flex: 2 }}
                               value={item.concepto}
                               onChange={(e) => handleCambioObjeto(setLineasHerramientas, lineasHerramientas, idx, 'concepto', e.target.value)}
