@@ -745,10 +745,10 @@ app.post('/egresos', async (req, res) => {
       id_ruta_relacionada,
       concepto,
       num_comprobante,
-      fecha_pago // 👈 Novedad: Fecha que reporta el usuario en el frontend
+      fecha_pago // Fecha reportada por el usuario desde el frontend
     } = req.body
 
-    // Validaciones de campos obligatorios (sin cambios)
+    // 1. Validaciones básicas de campos obligatorios
     if (!id_categoria) {
       return res.status(400).json({ error: 'La categoría del gasto es obligatoria' })
     }
@@ -765,17 +765,30 @@ app.post('/egresos', async (req, res) => {
       return res.status(400).json({ error: 'El concepto o detalle del gasto es obligatorio' })
     }
 
-    // Convertir concepto a JSON string si viene como objeto desde el frontend (sin cambios)
+    // 2. Validación de regla de negocio según la categoría (ej. Servicios Profesionales)
+    const [catRows] = await db.query(
+      'SELECT requiere_empleado FROM categorias_egresos WHERE id_categoria = ?',
+      [id_categoria]
+    )
+
+    if (catRows.length > 0 && catRows[0].requiere_empleado === 1) {
+      if (!id_empleado && !empleado_relacionado) {
+        return res.status(400).json({ 
+          error: 'Esta categoría requiere seleccionar o especificar obligatoriamente un empleado' 
+        })
+      }
+    }
+
+    // 3. Normalizar el concepto si viene como objeto
     const conceptoString = typeof concepto === 'object' ? JSON.stringify(concepto) : String(concepto).trim()
 
-    // Manejo de la fecha reportada por el usuario (fecha_hora)
+    // 4. Manejo de la fecha reportada por el usuario (fecha_hora)
     const horaActual = new Date().toTimeString().split(' ')[0]
     const fechaReportada = fecha_pago 
       ? (fecha_pago.includes(':') ? fecha_pago : `${fecha_pago} ${horaActual}`)
       : new Date()
 
-    // Insertar en la tabla flujo_egresos incluyendo las llaves foráneas
-    // NOTA: fecha_hora guarda la fecha del usuario. fecha_captura se llena sola vía MySQL (DEFAULT CURRENT_TIMESTAMP).
+    // 5. Inserción en la tabla flujo_egresos
     const [result] = await db.query(`
       INSERT INTO flujo_egresos (
         id_categoria, 
@@ -805,7 +818,7 @@ app.post('/egresos', async (req, res) => {
       id_ruta_relacionada || null,
       conceptoString,
       num_comprobante ? num_comprobante.trim().toUpperCase() : null,
-      fechaReportada // 👈 Pasa a la columna fecha_hora
+      fechaReportada
     ])
 
     res.json({
@@ -819,6 +832,7 @@ app.post('/egresos', async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
+
 
 // =============================
 // PEDIDO COMPLETO (PRO)
