@@ -378,6 +378,11 @@ function FlujoCaja() {
   // Sub-tarjeta 3 Planta
   const [lineasHerramientas, setLineasHerramientas] = useState([{ cantidad: '1', concepto: '', precio: '' }])
 
+  // ESTADOS - GASTOS ADMINISTRATIVOS Y DIVERSOS (TARJETA 4)
+  const [adminAbierto, setAdminAbierto] = useState(false)
+  const [subAdminActivo, setSubAdminActivo] = useState(null) // 11=Papelería, 12=Honorarios, 13=Tramites/Permisos, 14=Otros
+  const [tipoGastoAdmin, setTipoGastoAdmin] = useState('')
+
   // Cargar productos de la base de datos
   useEffect(() => {
     fetch(`${API}/productos`)
@@ -496,6 +501,17 @@ function FlujoCaja() {
 
     // Reset Sub 3
     setLineasHerramientas([{ cantidad: '1', concepto: '', precio: '' }])
+  }
+
+  const handleSelectSubAdmin = (idSub) => {
+    setSubAdminActivo(idSub)
+    setMonto('')
+    setConcepto('')
+    setComprobante('')
+    setOrigenPago('EFECTIVO')
+    setCuentaBancaria('')
+    setNombreDuenioCuenta('')
+    setTipoGastoAdmin('')
   }
 
   // Detectar cambio de empleado en Viáticos
@@ -954,6 +970,73 @@ function FlujoCaja() {
       }
     } catch (error) {
       console.error('Error al enviar registro de planta:', error)
+      alert('Ocurrió un error de conexión con el servidor.')
+    }
+  }
+
+  // SUBMIT - GASTOS ADMINISTRATIVOS Y DIVERSOS (TARJETA 4)
+  const handleGuardarAdmin = async () => {
+    if (!monto || parseFloat(monto) <= 0) {
+      alert('Por favor ingresa un monto válido.')
+      return
+    }
+
+    let cuentaFinal = null
+    if (origenPago === 'TRANSFERENCIA') {
+      if (!cuentaBancaria) {
+        alert('Por favor selecciona la cuenta bancaria.')
+        return
+      }
+      cuentaFinal = cuentaBancaria === 'OTRO'
+        ? `OTRO (${nombreDuenioCuenta.trim()})`
+        : cuentaBancaria
+    }
+
+    const baseConcepto = concepto.trim() ? concepto.trim() : 'Gasto Administrativo'
+    let etiquetaSub = ''
+    if (subAdminActivo === 11) etiquetaSub = 'PAPELERÍA Y OFICINA'
+    else if (subAdminActivo === 12) etiquetaSub = 'HONORARIOS Y SERVICIOS'
+    else if (subAdminActivo === 13) etiquetaSub = 'TRÁMITES Y PERMISOS'
+    else if (subAdminActivo === 14) etiquetaSub = 'GASTOS DIVERSOS'
+
+    const detalleFinal = `[${etiquetaSub}] - ${baseConcepto}`
+
+    const payload = {
+      id_categoria: 12, // Categoría Gastos Administrativos
+      monto: parseFloat(monto),
+      origen_pago: origenPago,
+      cuenta_bancaria: cuentaFinal,
+      concepto: detalleFinal,
+      num_comprobante: comprobante ? comprobante.trim() : null
+    }
+
+    try {
+      const res = await fetch(`${API}/egresos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+
+      if (!res.ok) {
+        const errorText = await res.text()
+        alert(`Error (${res.status}): ${errorText}`)
+        return
+      }
+
+      const data = await res.json()
+      if (data.success) {
+        alert('¡Gasto administrativo registrado exitosamente!')
+        setSubAdminActivo(null)
+        setMonto('')
+        setConcepto('')
+        setComprobante('')
+        setCuentaBancaria('')
+        setNombreDuenioCuenta('')
+      } else {
+        alert(`Error: ${data.error || 'No se pudo guardar el gasto'}`)
+      }
+    } catch (error) {
+      console.error('Error al enviar registro administrativo:', error)
       alert('Ocurrió un error de conexión con el servidor.')
     }
   }
@@ -2201,6 +2284,231 @@ function FlujoCaja() {
                       style={styles.submitButton}
                     >
                       Guardar gasto
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* 📁 TARJETA PRINCIPAL 4: GASTOS ADMINISTRATIVOS Y DIVERSOS */}
+      <div style={styles.parentCard}>
+        <div
+          style={styles.parentHeader}
+          onClick={() => setAdminAbierto(!adminAbierto)}
+        >
+          <div style={styles.parentTitleGroup}>
+            <span style={{ fontSize: '28px' }}>📁</span>
+            <div>
+              <h3 style={styles.parentTitle}>GASTOS ADMINISTRATIVOS Y DIVERSOS</h3>
+              <p style={styles.parentSubtitle}>
+                Papelería, honorarios profesionales, licencias, trámites gubernamentales y gastos varios.
+              </p>
+            </div>
+          </div>
+          <span style={styles.toggleBadge}>
+            {adminAbierto ? '▼ Ocultar' : '▶ Desplegar'}
+          </span>
+        </div>
+
+        {/* SUB-TARJETAS ADMINISTRATIVAS */}
+        {adminAbierto && (
+          <div>
+            <div style={styles.cardsContainer}>
+              {/* SUB-TARJETA 1: PAPELERÍA Y OFICINA */}
+              <div
+                style={{
+                  ...styles.card,
+                  ...(subAdminActivo === 11 ? styles.cardActive : {})
+                }}
+                onClick={() => handleSelectSubAdmin(11)}
+              >
+                <div style={styles.cardHeader}>
+                  <span style={styles.cardName}>Papelería e Insumos</span>
+                  <span style={styles.cardIcon}>📄</span>
+                </div>
+                <p style={styles.cardDesc}>
+                  Hojas, tintas, carpetas y artículos de oficina en general.
+                </p>
+              </div>
+
+              {/* SUB-TARJETA 2: HONORARIOS Y SERVICIOS */}
+              <div
+                style={{
+                  ...styles.card,
+                  ...(subAdminActivo === 12 ? styles.cardActive : {})
+                }}
+                onClick={() => handleSelectSubAdmin(12)}
+              >
+                <div style={styles.cardHeader}>
+                  <span style={styles.cardName}>Honorarios y Asesorías</span>
+                  <span style={styles.cardIcon}>💼</span>
+                </div>
+                <p style={styles.cardDesc}>
+                  Contadores, abogados, licencias de software y consultoría externa.
+                </p>
+              </div>
+
+              {/* SUB-TARJETA 3: TRÁMITES Y PERMISOS */}
+              <div
+                style={{
+                  ...styles.card,
+                  ...(subAdminActivo === 13 ? styles.cardActive : {})
+                }}
+                onClick={() => handleSelectSubAdmin(13)}
+              >
+                <div style={styles.cardHeader}>
+                  <span style={styles.cardName}>Trámites y Permisos</span>
+                  <span style={styles.cardIcon}>🏛️</span>
+                </div>
+                <p style={styles.cardDesc}>
+                  Licencias de funcionamiento, derechos municipies/estatales y notaría.
+                </p>
+              </div>
+
+              {/* SUB-TARJETA 4: GASTOS DIVERSOS */}
+              <div
+                style={{
+                  ...styles.card,
+                  ...(subAdminActivo === 14 ? styles.cardActive : {})
+                }}
+                onClick={() => handleSelectSubAdmin(14)}
+              >
+                <div style={styles.cardHeader}>
+                  <span style={styles.cardName}>Gastos Diversos</span>
+                  <span style={styles.cardIcon}>📌</span>
+                </div>
+                <p style={styles.cardDesc}>
+                  Cualquier otro gasto operativo no catalogado anteriormente.
+                </p>
+              </div>
+            </div>
+
+            {/* FORMULARIO GASTOS ADMINISTRATIVOS */}
+            {subAdminActivo && (
+              <div style={styles.formContainer}>
+                <div style={styles.formTitle}>
+                  <span>
+                    Estás capturando:{' '}
+                    {subAdminActivo === 11 && '📄 Papelería e Insumos de Oficina'}
+                    {subAdminActivo === 12 && '💼 Honorarios y Asesorías'}
+                    {subAdminActivo === 13 && '🏛️ Trámites, Licencias y Permisos'}
+                    {subAdminActivo === 14 && '📌 Gastos Diversos'}
+                  </span>
+                  <button
+                    type="button"
+                    style={styles.closeBtn}
+                    onClick={() => setSubAdminActivo(null)}
+                  >
+                    ✕ Cerrar
+                  </button>
+                </div>
+
+                <form onSubmit={(e) => e.preventDefault()} style={styles.grid}>
+                  {/* ORIGEN DE PAGO */}
+                  <div style={styles.fieldGroup}>
+                    <label style={styles.label}>Origen de pago *</label>
+                    <select
+                      style={styles.select}
+                      value={origenPago}
+                      onChange={(e) => {
+                        setOrigenPago(e.target.value)
+                        if (e.target.value !== 'TRANSFERENCIA') {
+                          setCuentaBancaria('')
+                          setNombreDuenioCuenta('')
+                        }
+                      }}
+                    >
+                      <option value="EFECTIVO">Efectivo</option>
+                      <option value="TRANSFERENCIA">Transferencia</option>
+                    </select>
+                  </div>
+
+                  {/* CUENTA BANCARIA */}
+                  {origenPago === 'TRANSFERENCIA' && (
+                    <div style={styles.fieldGroup}>
+                      <label style={styles.label}>Cuenta Bancaria de Salida *</label>
+                      <select
+                        style={styles.select}
+                        value={cuentaBancaria}
+                        onChange={(e) => {
+                          setCuentaBancaria(e.target.value)
+                          if (e.target.value !== 'OTRO') setNombreDuenioCuenta('')
+                        }}
+                        required
+                      >
+                        <option value="">-- Seleccionar Cuenta --</option>
+                        <option value="Cuenta Fiscal">Cuenta fiscal</option>
+                        <option value="OTRO">Otro</option>
+                      </select>
+                    </div>
+                  )}
+
+                  {/* CAMPO OTRO EN CUENTA BANCARIA */}
+                  {origenPago === 'TRANSFERENCIA' && cuentaBancaria === 'OTRO' && (
+                    <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
+                      <label style={styles.label}>Nombre y Apellido del dueño de la cuenta *</label>
+                      <input
+                        type="text"
+                        placeholder="Ej. Eli Maravillas"
+                        style={styles.input}
+                        value={nombreDuenioCuenta}
+                        onChange={(e) => setNombreDuenioCuenta(e.target.value)}
+                        required
+                      />
+                    </div>
+                  )}
+
+                  {/* MONTO */}
+                  <div style={styles.fieldGroup}>
+                    <label style={styles.label}>Monto pagado ($) *</label>
+                    <input
+                      type="number"
+                      step="any"
+                      min="0.01"
+                      placeholder="0.00"
+                      style={styles.input}
+                      value={monto}
+                      onChange={(e) => setMonto(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  {/* FOLIO O NÚMERO DE COMPROBANTE */}
+                  <div style={styles.fieldGroup}>
+                    <label style={styles.label}>Número de Folio / Comprobante (Opcional)</label>
+                    <input
+                      type="text"
+                      placeholder="Ej. Factura F-102"
+                      style={styles.input}
+                      value={comprobante}
+                      onChange={(e) => setComprobante(e.target.value)}
+                    />
+                  </div>
+
+                  {/* CONCEPTO O OBSERVACIONES */}
+                  <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
+                    <label style={styles.label}>Concepto / Detalle del Gasto *</label>
+                    <textarea
+                      rows="2"
+                      placeholder="Describe el gasto realizado..."
+                      style={{ ...styles.input, resize: 'vertical' }}
+                      value={concepto}
+                      onChange={(e) => setConcepto(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  {/* BOTÓN REGISTRAR */}
+                  <div style={styles.fullRow}>
+                    <button 
+                      type="button" 
+                      onClick={handleGuardarAdmin} 
+                      style={styles.submitButton}
+                    >
+                      Guardar gasto administrativo
                     </button>
                   </div>
                 </form>
