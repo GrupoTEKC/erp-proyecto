@@ -2613,10 +2613,10 @@ function FlujoCaja() {
                   {subDeptoActivo === 13 && (
                     <>
                       <div style={styles.fieldGroup}>
-                        <label style={styles.label}>Cantidad (opcional)</label>
+                        <label style={styles.label}>Cantidad de productos</label>
                         <input
                           type="text"
-                          placeholder="Ingresa la cantidad"
+                          placeholder="Ingresa la cantidad de productos..."
                           style={styles.input}
                           value={cantidadCajaChica}
                           onChange={(e) => setCantidadCajaChica(e.target.value)}
