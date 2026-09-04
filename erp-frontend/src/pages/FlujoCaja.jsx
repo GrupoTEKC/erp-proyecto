@@ -2411,7 +2411,7 @@ function FlujoCaja() {
                 onClick={() => handleSelectSubDepto(12)}
               >
                 <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Marketing</span>
+                  <span style={styles.cardName}>Departamente de marketing</span>
                   <span style={styles.cardIcon}>📢</span>
                 </div>
                 <p style={styles.cardDesc}>
@@ -2428,11 +2428,11 @@ function FlujoCaja() {
                 onClick={() => handleSelectSubDepto(13)}
               >
                 <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Caja chica (Administrativos)</span>
+                  <span style={styles.cardName}>Caja chica</span>
                   <span style={styles.cardIcon}>📦</span>
                 </div>
                 <p style={styles.cardDesc}>
-                  Gastos menores de oficina, insumos de limpieza o papelería.
+                  Gastos menores de oficina, insumos de planta no clasificados.
                 </p>
               </div>
 
@@ -2445,11 +2445,11 @@ function FlujoCaja() {
                 onClick={() => handleSelectSubDepto(14)}
               >
                 <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Servicios profesionales</span>
+                  <span style={styles.cardName}>Honorarios contables</span>
                   <span style={styles.cardIcon}>📑</span>
                 </div>
                 <p style={styles.cardDesc}>
-                  Honorarios contables y asesoría externa (Alma Nely Hernández Minor).
+                 Servicios profecionales y asesoría externa (Alma Nely Hernández Minor).
                 </p>
               </div>
             </div>
@@ -2539,12 +2539,12 @@ function FlujoCaja() {
                             >
                               <option value="">-- Seleccionar tipo --</option>
                               <option value="Botellas personalizadas">Botellas personalizadas</option>
-                              <option value="Folleto/Trípticos">Folleto / Trípticos</option>
+                              <option value="Folleto/Trípticos">Folleto</option>
                               <option value="Playeras">Playeras</option>
                               <option value="Mochilas">Mochilas</option>
                               <option value="Lonas/Banners">Lonas / Banners</option>
-                              <option value="Plumas/Lapiceros">Plumas / Lapiceros</option>
-                              <option value="Gasolina/Diésel">Gasolina / Diésel</option>
+                              <option value="Plumas/Lapiceros">Lapiceros</option>
+                              <option value="Gasolina/Diésel">Gasolina</option>
                               <option value="Hospedaje en hoteles">Hospedaje en hoteles</option>
                               <option value="Comidas">Comidas</option>
                               <option value="Publicidad digital">Publicidad digital</option>
@@ -2616,7 +2616,7 @@ function FlujoCaja() {
                         <label style={styles.label}>Cantidad (opcional)</label>
                         <input
                           type="text"
-                          placeholder="Ej. 5 trapos, 1 caja"
+                          placeholder="Ingresa la cantidad"
                           style={styles.input}
                           value={cantidadCajaChica}
                           onChange={(e) => setCantidadCajaChica(e.target.value)}
@@ -2641,7 +2641,7 @@ function FlujoCaja() {
                         <label style={styles.label}>Especificar gasto *</label>
                         <textarea
                           rows="3"
-                          placeholder="Detallar cualquier artículo comprado (ej. Lápices, trapos de limpieza, hojas, etc.)"
+                          placeholder="Especifica tu compra"
                           style={{ ...styles.input, resize: 'vertical' }}
                           value={detalleCajaChica}
                           onChange={(e) => setDetalleCajaChica(e.target.value)}
