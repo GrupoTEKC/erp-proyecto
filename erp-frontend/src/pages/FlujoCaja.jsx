@@ -378,10 +378,22 @@ function FlujoCaja() {
   // Sub-tarjeta 3 Planta
   const [lineasHerramientas, setLineasHerramientas] = useState([{ cantidad: '1', concepto: '', precio: '' }])
 
-  // ESTADOS - GASTOS ADMINISTRATIVOS Y DIVERSOS (TARJETA 4)
-  const [adminAbierto, setAdminAbierto] = useState(false)
-  const [subAdminActivo, setSubAdminActivo] = useState(null) // 11=Papelería, 12=Honorarios, 13=Tramites/Permisos, 14=Otros
-  const [tipoGastoAdmin, setTipoGastoAdmin] = useState('')
+  // ESTADOS - GASTOS DEPARTAMENTALES (TARJETA 4)
+  const [deptosAbierto, setDeptosAbierto] = useState(false)
+  const [subDeptoActivo, setSubDeptoActivo] = useState(null) // 12=Marketing, 13=Caja Chica, 14=Servicios Profesionales
+  const [fechaPagoDepto, setFechaPagoDepto] = useState('')
+  
+  // Sub 1 Marketing
+  const [lineasMarketing, setLineasMarketing] = useState([{ tipoGasto: '', monto: '', comentario: '' }])
+  
+  // Sub 2 Caja Chica
+  const [cantidadCajaChica, setCantidadCajaChica] = useState('')
+  const [detalleCajaChica, setDetalleCajaChica] = useState('')
+  const [montoCajaChica, setMontoCajaChica] = useState('')
+
+  // Sub 3 Servicios Profesionales
+  const [empleadoServicios, setEmpleadoServicios] = useState('')
+  const [montoServicios, setMontoServicios] = useState('')
 
   // Cargar productos de la base de datos
   useEffect(() => {
@@ -503,15 +515,27 @@ function FlujoCaja() {
     setLineasHerramientas([{ cantidad: '1', concepto: '', precio: '' }])
   }
 
-  const handleSelectSubAdmin = (idSub) => {
-    setSubAdminActivo(idSub)
-    setMonto('')
-    setConcepto('')
-    setComprobante('')
+  const handleSelectSubDepto = (idSub) => {
+    setSubDeptoActivo(idSub)
+    setFechaPagoDepto('')
     setOrigenPago('EFECTIVO')
     setCuentaBancaria('')
     setNombreDuenioCuenta('')
-    setTipoGastoAdmin('')
+
+    // Reset Sub 1 Marketing
+    setLineasMarketing([{ tipoGasto: '', monto: '', comentario: '' }])
+
+    // Reset Sub 2 Caja Chica
+    setCantidadCajaChica('')
+    setDetalleCajaChica('')
+    setMontoCajaChica('')
+
+    // Reset Sub 3 Servicios Profesionales
+    const almaEmp = empleados.find((e) =>
+      (e.nombre_completo || `${e.nombre} ${e.apellido1}`).toLowerCase().includes('alma nely')
+    )
+    setEmpleadoServicios(almaEmp ? String(almaEmp.id_empleado) : '')
+    setMontoServicios('')
   }
 
   // Detectar cambio de empleado en Viáticos
@@ -540,7 +564,7 @@ function FlujoCaja() {
     setter(lista.filter((_, i) => i !== index))
   }
 
-  // Auxiliares dinámicos para Planta y Mantenimiento
+  // Auxiliares dinámicos para Planta y Marketing
   const handleAgregarObjeto = (setter, lista, objetoInicial) => setter([...lista, { ...objetoInicial }])
 
   const handleCambioObjeto = (setter, lista, index, campo, valor) => {
@@ -568,6 +592,9 @@ function FlujoCaja() {
     const prec = parseFloat(item.precio) || 0
     return acc + (cant * prec)
   }, 0)
+
+  // Totales en tiempo real Marketing
+  const totalMarketing = lineasMarketing.reduce((acc, item) => acc + (parseFloat(item.monto) || 0), 0)
 
   // SUBMIT - GASTOS OPERATIVOS
   const handleGuardarOperativos = async () => {
@@ -974,17 +1001,12 @@ function FlujoCaja() {
     }
   }
 
-  // SUBMIT - GASTOS ADMINISTRATIVOS Y DIVERSOS (TARJETA 4)
-  const handleGuardarAdmin = async () => {
-    if (!monto || parseFloat(monto) <= 0) {
-      alert('Por favor ingresa un monto válido.')
-      return
-    }
-
+  // SUBMIT - GASTOS DEPARTAMENTALES (TARJETA 4)
+  const handleGuardarDeptos = async () => {
     let cuentaFinal = null
     if (origenPago === 'TRANSFERENCIA') {
       if (!cuentaBancaria) {
-        alert('Por favor selecciona la cuenta bancaria.')
+        alert('⚠️ Por favor selecciona la cuenta bancaria de salida.')
         return
       }
       cuentaFinal = cuentaBancaria === 'OTRO'
@@ -992,22 +1014,90 @@ function FlujoCaja() {
         : cuentaBancaria
     }
 
-    const baseConcepto = concepto.trim() ? concepto.trim() : 'Gasto Administrativo'
-    let etiquetaSub = ''
-    if (subAdminActivo === 11) etiquetaSub = 'PAPELERÍA Y OFICINA'
-    else if (subAdminActivo === 12) etiquetaSub = 'HONORARIOS Y SERVICIOS'
-    else if (subAdminActivo === 13) etiquetaSub = 'TRÁMITES Y PERMISOS'
-    else if (subAdminActivo === 14) etiquetaSub = 'GASTOS DIVERSOS'
+    let payload = {}
 
-    const detalleFinal = `[${etiquetaSub}] - ${baseConcepto}`
+    // 1️⃣ SUB-TARJETA 12: MARKETING Y PUBLICIDAD
+    if (subDeptoActivo === 12) {
+      if (!fechaPagoDepto) {
+        alert('⚠️ Por favor selecciona la fecha del evento/gasto.')
+        return
+      }
 
-    const payload = {
-      id_categoria: 12, // Categoría Gastos Administrativos
-      monto: parseFloat(monto),
-      origen_pago: origenPago,
-      cuenta_bancaria: cuentaFinal,
-      concepto: detalleFinal,
-      num_comprobante: comprobante ? comprobante.trim() : null
+      const lineasValidas = lineasMarketing.filter(
+        (item) => item.tipoGasto && parseFloat(item.monto) > 0
+      )
+
+      if (lineasValidas.length === 0) {
+        alert('⚠️ Selecciona al menos un tipo de gasto con un monto válido.')
+        return
+      }
+
+      payload = {
+        id_categoria: 12,
+        fecha_pago: fechaPagoDepto,
+        monto: totalMarketing,
+        origen_pago: origenPago,
+        cuenta_bancaria: cuentaFinal,
+        concepto: JSON.stringify({
+          departamento: 'Marketing',
+          fecha_evento: fechaPagoDepto,
+          desglose: lineasValidas
+        })
+      }
+    }
+
+    // 2️⃣ SUB-TARJETA 13: CAJA CHICA ADMINISTRATIVA
+    else if (subDeptoActivo === 13) {
+      if (!detalleCajaChica.trim()) {
+        alert('⚠️ Por favor especifica el gasto realizado.')
+        return
+      }
+      if (!montoCajaChica || parseFloat(montoCajaChica) <= 0) {
+        alert('⚠️ Ingresa un monto válido.')
+        return
+      }
+
+      const cant = cantidadCajaChica ? `[Cantidad: ${cantidadCajaChica}] ` : ''
+
+      payload = {
+        id_categoria: 13,
+        monto: parseFloat(montoCajaChica),
+        origen_pago: origenPago,
+        cuenta_bancaria: cuentaFinal,
+        concepto: `${cant}${detalleCajaChica.trim()}`
+      }
+    }
+
+    // 3️⃣ SUB-TARJETA 14: SERVICIOS PROFESIONALES EXTERNOS
+    else if (subDeptoActivo === 14) {
+      if (!fechaPagoDepto) {
+        alert('⚠️ Por favor selecciona la fecha de pago.')
+        return
+      }
+      if (!empleadoServicios) {
+        alert('⚠️ Por favor selecciona el profesional externo.')
+        return
+      }
+      if (!montoServicios || parseFloat(montoServicios) <= 0) {
+        alert('⚠️ Ingresa un monto válido.')
+        return
+      }
+
+      const empObj = empleados.find((e) => String(e.id_empleado) === String(empleadoServicios))
+      const nombreEmpleado = empObj
+        ? (empObj.nombre_completo || `${empObj.nombre || ''} ${empObj.apellido1 || ''}`).trim()
+        : 'Alma Nely Hernández Minor'
+
+      payload = {
+        id_categoria: 14,
+        fecha_pago: fechaPagoDepto,
+        monto: parseFloat(montoServicios),
+        origen_pago: origenPago,
+        cuenta_bancaria: cuentaFinal,
+        id_empleado: parseInt(empleadoServicios),
+        empleado_relacionado: nombreEmpleado,
+        concepto: `[SERVICIOS PROFESIONALES] - Honorarios pagados a ${nombreEmpleado}`
+      }
     }
 
     try {
@@ -1025,18 +1115,13 @@ function FlujoCaja() {
 
       const data = await res.json()
       if (data.success) {
-        alert('¡Gasto administrativo registrado exitosamente!')
-        setSubAdminActivo(null)
-        setMonto('')
-        setConcepto('')
-        setComprobante('')
-        setCuentaBancaria('')
-        setNombreDuenioCuenta('')
+        alert('¡Gasto departamental registrado con éxito!')
+        setSubDeptoActivo(null)
       } else {
         alert(`Error: ${data.error || 'No se pudo guardar el gasto'}`)
       }
     } catch (error) {
-      console.error('Error al enviar registro administrativo:', error)
+      console.error('Error al registrar gasto departamental:', error)
       alert('Ocurrió un error de conexión con el servidor.')
     }
   }
@@ -2293,121 +2378,316 @@ function FlujoCaja() {
         )}
       </div>
 
-      {/* 📁 TARJETA PRINCIPAL 4: GASTOS ADMINISTRATIVOS Y DIVERSOS */}
+      {/* 🏢 TARJETA PRINCIPAL 4: GASTOS DEPARTAMENTALES */}
       <div style={styles.parentCard}>
         <div
           style={styles.parentHeader}
-          onClick={() => setAdminAbierto(!adminAbierto)}
+          onClick={() => setDeptosAbierto(!deptosAbierto)}
         >
           <div style={styles.parentTitleGroup}>
-            <span style={{ fontSize: '28px' }}>📁</span>
+            <span style={{ fontSize: '28px' }}>🏢</span>
             <div>
-              <h3 style={styles.parentTitle}>GASTOS ADMINISTRATIVOS Y DIVERSOS</h3>
+              <h3 style={styles.parentTitle}>GASTOS DEPARTAMENTALES</h3>
               <p style={styles.parentSubtitle}>
-                Papelería, honorarios profesionales, licencias, trámites gubernamentales y gastos varios.
+                Marketing, caja chica administrativa y servicios profesionales externos.
               </p>
             </div>
           </div>
           <span style={styles.toggleBadge}>
-            {adminAbierto ? '▼ Ocultar' : '▶ Desplegar'}
+            {deptosAbierto ? '▼ Ocultar' : '▶ Desplegar'}
           </span>
         </div>
 
-        {/* SUB-TARJETAS ADMINISTRATIVAS */}
-        {adminAbierto && (
+        {/* SUB-TARJETAS DEPARTAMENTALES */}
+        {deptosAbierto && (
           <div>
             <div style={styles.cardsContainer}>
-              {/* SUB-TARJETA 1: PAPELERÍA Y OFICINA */}
+              {/* SUB-TARJETA 1: MARKETING Y PUBLICIDAD */}
               <div
                 style={{
                   ...styles.card,
-                  ...(subAdminActivo === 11 ? styles.cardActive : {})
+                  ...(subDeptoActivo === 12 ? styles.cardActive : {})
                 }}
-                onClick={() => handleSelectSubAdmin(11)}
+                onClick={() => handleSelectSubDepto(12)}
               >
                 <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Papelería e Insumos</span>
-                  <span style={styles.cardIcon}>📄</span>
+                  <span style={styles.cardName}>Marketing</span>
+                  <span style={styles.cardIcon}>📢</span>
                 </div>
                 <p style={styles.cardDesc}>
-                  Hojas, tintas, carpetas y artículos de oficina en general.
+                  Botellas, folletos, playeras, mochilas, lonas, publicidad digital, etc.
                 </p>
               </div>
 
-              {/* SUB-TARJETA 2: HONORARIOS Y SERVICIOS */}
+              {/* SUB-TARJETA 2: CAJA CHICA ADMINISTRATIVA */}
               <div
                 style={{
                   ...styles.card,
-                  ...(subAdminActivo === 12 ? styles.cardActive : {})
+                  ...(subDeptoActivo === 13 ? styles.cardActive : {})
                 }}
-                onClick={() => handleSelectSubAdmin(12)}
+                onClick={() => handleSelectSubDepto(13)}
               >
                 <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Honorarios y Asesorías</span>
-                  <span style={styles.cardIcon}>💼</span>
+                  <span style={styles.cardName}>Caja chica (Administrativos)</span>
+                  <span style={styles.cardIcon}>📦</span>
                 </div>
                 <p style={styles.cardDesc}>
-                  Contadores, abogados, licencias de software y consultoría externa.
+                  Gastos menores de oficina, insumos de limpieza o papelería.
                 </p>
               </div>
 
-              {/* SUB-TARJETA 3: TRÁMITES Y PERMISOS */}
+              {/* SUB-TARJETA 3: SERVICIOS PROFESIONALES EXTERNOS */}
               <div
                 style={{
                   ...styles.card,
-                  ...(subAdminActivo === 13 ? styles.cardActive : {})
+                  ...(subDeptoActivo === 14 ? styles.cardActive : {})
                 }}
-                onClick={() => handleSelectSubAdmin(13)}
+                onClick={() => handleSelectSubDepto(14)}
               >
                 <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Trámites y Permisos</span>
-                  <span style={styles.cardIcon}>🏛️</span>
+                  <span style={styles.cardName}>Servicios profesionales</span>
+                  <span style={styles.cardIcon}>📑</span>
                 </div>
                 <p style={styles.cardDesc}>
-                  Licencias de funcionamiento, derechos municipies/estatales y notaría.
-                </p>
-              </div>
-
-              {/* SUB-TARJETA 4: GASTOS DIVERSOS */}
-              <div
-                style={{
-                  ...styles.card,
-                  ...(subAdminActivo === 14 ? styles.cardActive : {})
-                }}
-                onClick={() => handleSelectSubAdmin(14)}
-              >
-                <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Gastos Diversos</span>
-                  <span style={styles.cardIcon}>📌</span>
-                </div>
-                <p style={styles.cardDesc}>
-                  Cualquier otro gasto operativo no catalogado anteriormente.
+                  Honorarios contables y asesoría externa (Alma Nely Hernández Minor).
                 </p>
               </div>
             </div>
 
-            {/* FORMULARIO GASTOS ADMINISTRATIVOS */}
-            {subAdminActivo && (
+            {/* FORMULARIO GASTOS DEPARTAMENTALES */}
+            {subDeptoActivo && (
               <div style={styles.formContainer}>
                 <div style={styles.formTitle}>
                   <span>
                     Estás capturando:{' '}
-                    {subAdminActivo === 11 && '📄 Papelería e Insumos de Oficina'}
-                    {subAdminActivo === 12 && '💼 Honorarios y Asesorías'}
-                    {subAdminActivo === 13 && '🏛️ Trámites, Licencias y Permisos'}
-                    {subAdminActivo === 14 && '📌 Gastos Diversos'}
+                    {subDeptoActivo === 12 && '📢 Departamento de Marketing'}
+                    {subDeptoActivo === 13 && '📦 Caja Chica (Administrativos)'}
+                    {subDeptoActivo === 14 && '📑 Servicios Profesionales Externos'}
                   </span>
                   <button
                     type="button"
                     style={styles.closeBtn}
-                    onClick={() => setSubAdminActivo(null)}
+                    onClick={() => setSubDeptoActivo(null)}
                   >
                     ✕ Cerrar
                   </button>
                 </div>
 
                 <form onSubmit={(e) => e.preventDefault()} style={styles.grid}>
-                  {/* ORIGEN DE PAGO */}
+
+                  {/* FECHA DE EVENTO / PAGO (PARA MARKETING Y SERVICIOS PROFESIONALES) */}
+                  {(subDeptoActivo === 12 || subDeptoActivo === 14) && (
+                    <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
+                      <label style={styles.label}>
+                        {subDeptoActivo === 12 ? 'Fecha del evento *' : 'Fecha en que se pagó *'}
+                      </label>
+                      <input
+                        type="date"
+                        style={styles.input}
+                        value={fechaPagoDepto}
+                        onChange={(e) => setFechaPagoDepto(e.target.value)}
+                        required
+                      />
+                    </div>
+                  )}
+
+                  {/* 1️⃣ SUB-TARJETA 1: MARKETING */}
+                  {subDeptoActivo === 12 && (
+                    <>
+                      <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
+                        <div style={styles.dynamicHeader}>
+                          <span>Desglose de gastos de Marketing *</span>
+                          <button
+                            type="button"
+                            style={styles.addBtn}
+                            onClick={() =>
+                              handleAgregarObjeto(setLineasMarketing, lineasMarketing, {
+                                tipoGasto: '',
+                                monto: '',
+                                comentario: ''
+                              })
+                            }
+                          >
+                            +
+                          </button>
+                        </div>
+
+                        {lineasMarketing.map((item, idx) => (
+                          <div
+                            key={idx}
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: '2fr 1fr 2fr auto',
+                              gap: '8px',
+                              marginBottom: '8px',
+                              alignItems: 'center'
+                            }}
+                          >
+                            <select
+                              style={styles.select}
+                              value={item.tipoGasto}
+                              onChange={(e) =>
+                                handleCambioObjeto(
+                                  setLineasMarketing,
+                                  lineasMarketing,
+                                  idx,
+                                  'tipoGasto',
+                                  e.target.value
+                                )
+                              }
+                              required
+                            >
+                              <option value="">-- Seleccionar tipo --</option>
+                              <option value="Botellas personalizadas">Botellas personalizadas</option>
+                              <option value="Folleto/Trípticos">Folleto / Trípticos</option>
+                              <option value="Playeras">Playeras</option>
+                              <option value="Mochilas">Mochilas</option>
+                              <option value="Lonas/Banners">Lonas / Banners</option>
+                              <option value="Plumas/Lapiceros">Plumas / Lapiceros</option>
+                              <option value="Gasolina/Diésel">Gasolina / Diésel</option>
+                              <option value="Hospedaje en hoteles">Hospedaje en hoteles</option>
+                              <option value="Comidas">Comidas</option>
+                              <option value="Publicidad digital">Publicidad digital</option>
+                              <option value="Edecanes">Edecanes</option>
+                              <option value="Materiales/Herramientas">Materiales / Herramientas</option>
+                            </select>
+
+                            <input
+                              type="number"
+                              step="any"
+                              placeholder="Monto ($)"
+                              style={styles.input}
+                              value={item.monto}
+                              onChange={(e) =>
+                                handleCambioObjeto(
+                                  setLineasMarketing,
+                                  lineasMarketing,
+                                  idx,
+                                  'monto',
+                                  e.target.value
+                                )
+                              }
+                              required
+                            />
+
+                            <input
+                              type="text"
+                              placeholder="Comentario (opcional)"
+                              style={styles.input}
+                              value={item.comentario}
+                              onChange={(e) =>
+                                handleCambioObjeto(
+                                  setLineasMarketing,
+                                  lineasMarketing,
+                                  idx,
+                                  'comentario',
+                                  e.target.value
+                                )
+                              }
+                            />
+
+                            {lineasMarketing.length > 1 && (
+                              <button
+                                type="button"
+                                style={styles.removeBtn}
+                                onClick={() =>
+                                  handleEliminarObjeto(setLineasMarketing, lineasMarketing, idx)
+                                }
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      <div style={{ ...styles.fullRow, ...styles.totalSummaryBox }}>
+                        <span style={{ fontSize: '18px', fontWeight: 'bold', color: vino }}>
+                          MONTO TOTAL SUMADO: ${totalMarketing.toFixed(2)}
+                        </span>
+                      </div>
+                    </>
+                  )}
+
+                  {/* 2️⃣ SUB-TARJETA 2: CAJA CHICA */}
+                  {subDeptoActivo === 13 && (
+                    <>
+                      <div style={styles.fieldGroup}>
+                        <label style={styles.label}>Cantidad (opcional)</label>
+                        <input
+                          type="text"
+                          placeholder="Ej. 5 trapos, 1 caja"
+                          style={styles.input}
+                          value={cantidadCajaChica}
+                          onChange={(e) => setCantidadCajaChica(e.target.value)}
+                        />
+                      </div>
+
+                      <div style={styles.fieldGroup}>
+                        <label style={styles.label}>Monto ($) *</label>
+                        <input
+                          type="number"
+                          step="any"
+                          min="0.01"
+                          placeholder="0.00"
+                          style={styles.input}
+                          value={montoCajaChica}
+                          onChange={(e) => setMontoCajaChica(e.target.value)}
+                          required
+                        />
+                      </div>
+
+                      <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
+                        <label style={styles.label}>Especificar gasto *</label>
+                        <textarea
+                          rows="3"
+                          placeholder="Detallar cualquier artículo comprado (ej. Lápices, trapos de limpieza, hojas, etc.)"
+                          style={{ ...styles.input, resize: 'vertical' }}
+                          value={detalleCajaChica}
+                          onChange={(e) => setDetalleCajaChica(e.target.value)}
+                          required
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {/* 3️⃣ SUB-TARJETA 3: SERVICIOS PROFESIONALES */}
+                  {subDeptoActivo === 14 && (
+                    <>
+                      <div style={styles.fieldGroup}>
+                        <label style={styles.label}>Empleado / Profesional *</label>
+                        <select
+                          style={styles.select}
+                          value={empleadoServicios}
+                          onChange={(e) => setEmpleadoServicios(e.target.value)}
+                          required
+                        >
+                          <option value="">-- Seleccionar profesional --</option>
+                          {empleados.map((emp) => (
+                            <option key={emp.id_empleado} value={emp.id_empleado}>
+                              {emp.nombre_completo || `${emp.nombre || ''} ${emp.apellido1 || ''}`} ({emp.puesto})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div style={styles.fieldGroup}>
+                        <label style={styles.label}>Monto a pagar ($) *</label>
+                        <input
+                          type="number"
+                          step="any"
+                          min="0.01"
+                          placeholder="0.00"
+                          style={styles.input}
+                          value={montoServicios}
+                          onChange={(e) => setMontoServicios(e.target.value)}
+                          required
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {/* ORIGEN DE PAGO (GLOBAL PARA LAS 3 SUB-TARJETAS DEPARTAMENTALES) */}
                   <div style={styles.fieldGroup}>
                     <label style={styles.label}>Origen de pago *</label>
                     <select
@@ -2429,7 +2709,7 @@ function FlujoCaja() {
                   {/* CUENTA BANCARIA */}
                   {origenPago === 'TRANSFERENCIA' && (
                     <div style={styles.fieldGroup}>
-                      <label style={styles.label}>Cuenta Bancaria de Salida *</label>
+                      <label style={styles.label}>Cuenta bancaria de salida *</label>
                       <select
                         style={styles.select}
                         value={cuentaBancaria}
@@ -2439,7 +2719,7 @@ function FlujoCaja() {
                         }}
                         required
                       >
-                        <option value="">-- Seleccionar Cuenta --</option>
+                        <option value="">-- Seleccionar cuenta --</option>
                         <option value="Cuenta Fiscal">Cuenta fiscal</option>
                         <option value="OTRO">Otro</option>
                       </select>
@@ -2461,54 +2741,14 @@ function FlujoCaja() {
                     </div>
                   )}
 
-                  {/* MONTO */}
-                  <div style={styles.fieldGroup}>
-                    <label style={styles.label}>Monto pagado ($) *</label>
-                    <input
-                      type="number"
-                      step="any"
-                      min="0.01"
-                      placeholder="0.00"
-                      style={styles.input}
-                      value={monto}
-                      onChange={(e) => setMonto(e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  {/* FOLIO O NÚMERO DE COMPROBANTE */}
-                  <div style={styles.fieldGroup}>
-                    <label style={styles.label}>Número de Folio / Comprobante (Opcional)</label>
-                    <input
-                      type="text"
-                      placeholder="Ej. Factura F-102"
-                      style={styles.input}
-                      value={comprobante}
-                      onChange={(e) => setComprobante(e.target.value)}
-                    />
-                  </div>
-
-                  {/* CONCEPTO O OBSERVACIONES */}
-                  <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
-                    <label style={styles.label}>Concepto / Detalle del Gasto *</label>
-                    <textarea
-                      rows="2"
-                      placeholder="Describe el gasto realizado..."
-                      style={{ ...styles.input, resize: 'vertical' }}
-                      value={concepto}
-                      onChange={(e) => setConcepto(e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  {/* BOTÓN REGISTRAR */}
+                  {/* BOTÓN SUBMIT DEPARTAMENTALES */}
                   <div style={styles.fullRow}>
-                    <button 
-                      type="button" 
-                      onClick={handleGuardarAdmin} 
+                    <button
+                      type="button"
+                      onClick={handleGuardarDeptos}
                       style={styles.submitButton}
                     >
-                      Guardar gasto administrativo
+                      Guardar gasto departamental
                     </button>
                   </div>
                 </form>
