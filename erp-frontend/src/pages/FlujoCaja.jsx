@@ -53,6 +53,80 @@ const styles = {
     cursor: 'pointer',
     fontWeight: 'bold'
   },
+  /* BOTÓN Y SECCIÓN MOVIMIENTOS DE CAJA */
+  movimientosBar: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '20px'
+  },
+  btnVerMovimientos: {
+    backgroundColor: '#1e293b',
+    color: '#ffffff',
+    border: 'none',
+    padding: '12px 20px',
+    borderRadius: '8px',
+    fontWeight: 'bold',
+    fontSize: '14px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+  },
+  movimientosCard: {
+    backgroundColor: '#ffffff',
+    border: '2px solid #cbd5e1',
+    borderRadius: '12px',
+    padding: '20px',
+    marginBottom: '30px',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+  },
+  table: {
+    width: '100%',
+    borderCollapse: 'collapse',
+    marginTop: '15px',
+    fontSize: '14px'
+  },
+  th: {
+    backgroundColor: '#f1f5f9',
+    color: '#334155',
+    textAlign: 'left',
+    padding: '12px',
+    borderBottom: '2px solid #cbd5e1',
+    fontWeight: 'bold'
+  },
+  td: {
+    padding: '12px',
+    borderBottom: '1px solid #e2e8f0',
+    color: '#1e293b'
+  },
+  badgeIngreso: {
+    backgroundColor: '#dcfce7',
+    color: '#15803d',
+    padding: '4px 10px',
+    borderRadius: '12px',
+    fontWeight: 'bold',
+    fontSize: '12px',
+    display: 'inline-block'
+  },
+  badgeEgreso: {
+    backgroundColor: '#fee2e2',
+    color: '#b91c1c',
+    padding: '4px 10px',
+    borderRadius: '12px',
+    fontWeight: 'bold',
+    fontSize: '12px',
+    display: 'inline-block'
+  },
+  montoIngreso: {
+    color: '#16a34a',
+    fontWeight: 'bold'
+  },
+  montoEgreso: {
+    color: '#dc2626',
+    fontWeight: 'bold'
+  },
   /* TARJETA PRINCIPAL (BLOQUE PADRE) */
   parentCard: {
     backgroundColor: '#ffffff',
@@ -324,6 +398,11 @@ const styles = {
 function FlujoCaja() {
   const navigate = useNavigate()
 
+  // ESTADO - MOVIMIENTOS DE CAJA
+  const [movimientosAbierto, setMovimientosAbierto] = useState(false)
+  const [movimientos, setMovimientos] = useState([])
+  const [cargandoMovimientos, setCargandoMovimientos] = useState(false)
+
   // ESTADOS - GASTOS OPERATIVOS (PRODUCCIÓN)
   const [produccionAbierto, setProduccionAbierto] = useState(false)
   const [apartadoActivo, setApartadoActivo] = useState(null)
@@ -339,12 +418,12 @@ function FlujoCaja() {
 
   // ESTADOS - GASTOS DE PERSONAL
   const [personalAbierto, setPersonalAbierto] = useState(false)
-  const [subPersonalActivo, setSubPersonalActivo] = useState(null) // 4=Nómina, 5=IMSS/ISR, 6=Comedor, 7=Viáticos
+  const [subPersonalActivo, setSubPersonalActivo] = useState(null)
   const [empleados, setEmpleados] = useState([])
   const [empleadosPagados, setEmpleadosPagados] = useState([])
   const [puestoTab, setPuestoTab] = useState('ADMINISTRATIVOS')
   const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState('')
-  const [subTipoImpuesto, setSubTipoImpuesto] = useState('IMSS') // 'IMSS' o 'ISR'
+  const [subTipoImpuesto, setSubTipoImpuesto] = useState('IMSS')
   const [fechaInicioSemana, setFechaInicioSemana] = useState('')
   const [fechaFinSemana, setFechaFinSemana] = useState('')
 
@@ -361,15 +440,15 @@ function FlujoCaja() {
   const [comidas, setComidas] = useState([''])
   const [folios, setFolios] = useState([''])
 
-  // ESTADOS - GASTOS DE PLANTA Y MANTENIMIENTO (TARJETA 3)
+  // ESTADOS - GASTOS DE PLANTA Y MANTENIMIENTO
   const [plantaAbierto, setPlantaAbierto] = useState(false)
-  const [subPlantaActivo, setSubPlantaActivo] = useState(null) // 8=Servicios Públicos, 9=Operaciones y Mantenimiento, 10=Herramientas y Consumibles
+  const [subPlantaActivo, setSubPlantaActivo] = useState(null)
   const [fechaPago, setFechaPago] = useState('')
   const [tipoServicioPublico, setTipoServicioPublico] = useState('')
   const [lineasServicios, setLineasServicios] = useState([{ concepto: '', monto: '' }])
   
   // Sub-tarjeta 2 Planta
-  const [tipoEquipo, setTipoEquipo] = useState('Unidad') // 'Unidad' o 'Montacargas'
+  const [tipoEquipo, setTipoEquipo] = useState('Unidad')
   const [montacargas, setMontacargas] = useState([])
   const [equipoSeleccionado, setEquipoSeleccionado] = useState('')
   const [tipoServicioMantenimiento, setTipoServicioMantenimiento] = useState('')
@@ -378,9 +457,9 @@ function FlujoCaja() {
   // Sub-tarjeta 3 Planta
   const [lineasHerramientas, setLineasHerramientas] = useState([{ cantidad: '1', concepto: '', precio: '' }])
 
-  // ESTADOS - GASTOS DEPARTAMENTALES (TARJETA 4)
+  // ESTADOS - GASTOS DEPARTAMENTALES
   const [deptosAbierto, setDeptosAbierto] = useState(false)
-  const [subDeptoActivo, setSubDeptoActivo] = useState(null) // 12=Marketing, 13=Caja Chica, 14=Servicios Profesionales
+  const [subDeptoActivo, setSubDeptoActivo] = useState(null)
   const [fechaPagoDepto, setFechaPagoDepto] = useState('')
   
   // Sub 1 Marketing
@@ -395,60 +474,13 @@ function FlujoCaja() {
   const [empleadoServicios, setEmpleadoServicios] = useState('')
   const [montoServicios, setMontoServicios] = useState('')
 
-  // Cargar productos de la base de datos
+  // Cargar catálogo de datos
   useEffect(() => {
-    fetch(`${API}/productos`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        return res.json()
-      })
-      .then((data) => {
-        if (Array.isArray(data)) setProductosBD(data)
-      })
-      .catch((err) => console.error('Error al cargar productos:', err))
-  }, [])
-
-  // Cargar empleados de la base de datos
-  useEffect(() => {
-    fetch(`${API}/empleados`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        return res.json()
-      })
-      .then((data) => {
-        if (Array.isArray(data)) setEmpleados(data)
-      })
-      .catch((err) => console.error('Error al cargar empleados:', err))
-  }, [])
-
-  // Cargar rutas de la base de datos
-  useEffect(() => {
-    fetch(`${API}/rutas`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) setRutas(data)
-      })
-      .catch((err) => console.error('Error al cargar rutas:', err))
-  }, [])
-
-  // Cargar unidades de la base de datos
-  useEffect(() => {
-    fetch(`${API}/unidades`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) setUnidades(data)
-      })
-      .catch((err) => console.error('Error al cargar unidades:', err))
-  }, [])
-
-  // Cargar montacargas de la base de datos
-  useEffect(() => {
-    fetch(`${API}/montacargas`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) setMontacargas(data)
-      })
-      .catch((err) => console.error('Error al cargar montacargas:', err))
+    fetch(`${API}/productos`).then(r => r.json()).then(d => Array.isArray(d) && setProductosBD(d)).catch(console.error)
+    fetch(`${API}/empleados`).then(r => r.json()).then(d => Array.isArray(d) && setEmpleados(d)).catch(console.error)
+    fetch(`${API}/rutas`).then(r => r.json()).then(d => Array.isArray(d) && setRutas(d)).catch(console.error)
+    fetch(`${API}/unidades`).then(r => r.json()).then(d => Array.isArray(d) && setUnidades(d)).catch(console.error)
+    fetch(`${API}/montacargas`).then(r => r.json()).then(d => Array.isArray(d) && setMontacargas(d)).catch(console.error)
   }, [])
 
   // Verificar status de pagos de nómina por fechas
@@ -463,6 +495,28 @@ function FlujoCaja() {
     }
   }, [fechaInicioSemana, fechaFinSemana])
 
+  // OBTENER MOVIMIENTOS DESDE EL ENDPOINT /api/caja/resumen
+  const cargarMovimientosCaja = async () => {
+    if (!movimientosAbierto) {
+      setCargandoMovimientos(true)
+      try {
+        const res = await fetch(`${API}/api/caja/resumen`)
+        if (res.ok) {
+          const data = await res.json()
+          if (data && Array.isArray(data.movimientos)) {
+            setMovimientos(data.movimientos)
+          }
+        }
+      } catch (err) {
+        console.error('Error al obtener movimientos de caja:', err)
+      } finally {
+        setCargandoMovimientos(false)
+      }
+    }
+    setMovimientosAbierto(!movimientosAbierto)
+  }
+
+  // Handlers para la selección de categorías
   const handleSelectApartado = (idCat) => {
     setApartadoActivo(idCat)
     setSubopcionSeleccionada('')
@@ -483,8 +537,6 @@ function FlujoCaja() {
     setOrigenPago('EFECTIVO')
     setCuentaBancaria('')
     setNombreDuenioCuenta('')
-
-    // Reset especifico para Viáticos
     setIdRutaSeleccionada('')
     setIdUnidadSeleccionada('')
     setEsChofer(false)
@@ -500,18 +552,12 @@ function FlujoCaja() {
     setOrigenPago('EFECTIVO')
     setCuentaBancaria('')
     setNombreDuenioCuenta('')
-
-    // Reset Sub 1
     setTipoServicioPublico('')
     setLineasServicios([{ concepto: '', monto: '' }])
-
-    // Reset Sub 2
     setTipoEquipo('Unidad')
     setEquipoSeleccionado('')
     setTipoServicioMantenimiento('')
     setLineasMantenimiento([{ concepto: '', monto: '' }])
-
-    // Reset Sub 3
     setLineasHerramientas([{ cantidad: '1', concepto: '', precio: '' }])
   }
 
@@ -521,16 +567,10 @@ function FlujoCaja() {
     setOrigenPago('EFECTIVO')
     setCuentaBancaria('')
     setNombreDuenioCuenta('')
-
-    // Reset Sub 1 Marketing
     setLineasMarketing([{ tipoGasto: '', monto: '', comentario: '' }])
-
-    // Reset Sub 2 Caja Chica
     setCantidadCajaChica('')
     setDetalleCajaChica('')
     setMontoCajaChica('')
-
-    // Reset Sub 3 Servicios Profesionales
     const almaEmp = empleados.find((e) =>
       (e.nombre_completo || `${e.nombre} ${e.apellido1}`).toLowerCase().includes('alma nely')
     )
@@ -550,41 +590,35 @@ function FlujoCaja() {
     }
   }
 
-  // Auxiliares para manipular arreglos dinámicos de viáticos
+  // Auxiliares dinámicos
   const handleAgregarCampo = (setter, lista) => setter([...lista, ''])
-  
   const handleCambioCampo = (setter, lista, index, valor) => {
     const nueva = [...lista]
     nueva[index] = valor
     setter(nueva)
   }
-
   const handleEliminarCampo = (setter, lista, index) => {
     if (lista.length === 1) return
     setter(lista.filter((_, i) => i !== index))
   }
 
-  // Auxiliares dinámicos para Planta y Marketing
   const handleAgregarObjeto = (setter, lista, objetoInicial) => setter([...lista, { ...objetoInicial }])
-
   const handleCambioObjeto = (setter, lista, index, campo, valor) => {
     const nueva = [...lista]
     nueva[index][campo] = valor
     setter(nueva)
   }
-
   const handleEliminarObjeto = (setter, lista, index) => {
     if (lista.length === 1) return
     setter(lista.filter((_, i) => i !== index))
   }
 
-  // Totales en tiempo real para viáticos
+  // Totales
   const totalCasetas = casetas.reduce((acc, v) => acc + (parseFloat(v) || 0), 0)
   const totalGasolina = gasolina.reduce((acc, v) => acc + (parseFloat(v) || 0), 0)
   const totalComidas = comidas.reduce((acc, v) => acc + (parseFloat(v) || 0), 0)
   const totalViaticosGeneral = totalCasetas + totalGasolina + totalComidas
 
-  // Totales en tiempo real Planta
   const totalServiciosPublicos = lineasServicios.reduce((acc, item) => acc + (parseFloat(item.monto) || 0), 0)
   const totalMantenimiento = lineasMantenimiento.reduce((acc, item) => acc + (parseFloat(item.monto) || 0), 0)
   const totalHerramientas = lineasHerramientas.reduce((acc, item) => {
@@ -593,10 +627,9 @@ function FlujoCaja() {
     return acc + (cant * prec)
   }, 0)
 
-  // Totales en tiempo real Marketing
   const totalMarketing = lineasMarketing.reduce((acc, item) => acc + (parseFloat(item.monto) || 0), 0)
 
-  // SUBMIT - GASTOS OPERATIVOS
+  // SUBMIT HANDLERS
   const handleGuardarOperativos = async () => {
     if (!monto || parseFloat(monto) <= 0) {
       alert('Por favor ingresa un monto válido.')
@@ -643,13 +676,7 @@ function FlujoCaja() {
       })
 
       if (!res.ok) {
-        const errorText = await res.text()
-        try {
-          const errorJson = JSON.parse(errorText)
-          alert(`Error (${res.status}): ${errorJson.error || 'No se pudo registrar el gasto'}`)
-        } catch {
-          alert(`Error del servidor (${res.status}): El endpoint no aceptó la petición.`)
-        }
+        alert('Error al registrar el gasto de producción.')
         return
       }
 
@@ -666,7 +693,6 @@ function FlujoCaja() {
     }
   }
 
-  // SUBMIT - GASTOS DE PERSONAL Y VIÁTICOS
   const handleGuardarPersonal = async () => {
     let idCategoriaFinal = 4
     let baseConcepto = ''
@@ -679,7 +705,6 @@ function FlujoCaja() {
         : cuentaBancaria
     }
 
-    // CASO ESPECÍFICO: SUB-TARJETA 7 (VIÁTICOS)
     if (subPersonalActivo === 7) {
       if (!empleadoSeleccionado) {
         alert('⚠️ Por favor selecciona el empleado que recibe los viáticos.')
@@ -693,30 +718,10 @@ function FlujoCaja() {
 
       const foliosLimpios = folios.map(f => f.trim()).filter(Boolean)
 
-      // Validaciones para Chofer (Obligatorios: Ruta, Unidad y Folios)
       if (esChofer) {
-        if (!idRutaSeleccionada) {
-          alert('⚠️ Para los choferes es obligatorio seleccionar una Ruta.')
+        if (!idRutaSeleccionada || !idUnidadSeleccionada || foliosLimpios.length === 0) {
+          alert('⚠️ Para los choferes es obligatorio seleccionar Ruta, Unidad y capturar folios.')
           return
-        }
-        if (!idUnidadSeleccionada) {
-          alert('⚠️ Para los choferes es obligatorio seleccionar una Unidad.')
-          return
-        }
-        if (foliosLimpios.length === 0) {
-          alert('⚠️ Para los choferes es obligatorio capturar al menos un folio.')
-          return
-        }
-      } else {
-        // Validaciones para otros puestos (Opcionales con confirmación)
-        if (!idRutaSeleccionada || !idUnidadSeleccionada) {
-          const confirma = window.confirm('¿Estás seguro que deseas continuar sin seleccionar Ruta / Unidad?')
-          if (!confirma) return
-        }
-
-        if (foliosLimpios.length === 0) {
-          const confirma = window.confirm('¿Estás seguro que no deseas capturar los folios?')
-          if (!confirma) return
         }
       }
 
@@ -726,22 +731,18 @@ function FlujoCaja() {
       const uniObj = unidades.find(u => String(u.id_unidad) === String(idUnidadSeleccionada))
       const nombreUnidad = uniObj ? (uniObj.nombre || uniObj.placas) : null
 
-      const casetasArr = casetas.map(Number).filter(n => n > 0)
-      const gasolinaArr = gasolina.map(Number).filter(n => n > 0)
-      const comidasArr = comidas.map(Number).filter(n => n > 0)
-
       const conceptoPayload = JSON.stringify({
         resumen: `VIÁTICOS: Casetas $${totalCasetas} | Gasolina $${totalGasolina} | Comidas $${totalComidas}`,
         desglose: {
-          casetas: casetasArr,
-          gasolina: gasolinaArr,
-          comidas: comidasArr
+          casetas: casetas.map(Number).filter(n => n > 0),
+          gasolina: gasolina.map(Number).filter(n => n > 0),
+          comidas: comidas.map(Number).filter(n => n > 0)
         },
         comentario: concepto.trim() || null
       })
 
       payload = {
-        id_categoria: 8, // Viáticos
+        id_categoria: 8,
         monto: totalViaticosGeneral,
         origen_pago: origenPago,
         cuenta_bancaria: cuentaFinal,
@@ -755,7 +756,6 @@ function FlujoCaja() {
       }
 
     } else {
-      // CASOS 4 (NÓMINA), 5 (IMSS/ISR), 6 (COMEDOR)
       if (!empleadoSeleccionado && (subPersonalActivo === 4 || subPersonalActivo === 5)) {
         alert('Por favor selecciona un trabajador.')
         return
@@ -793,41 +793,24 @@ function FlujoCaja() {
     }
 
     try {
-      const endpoint = `${API}/egresos`
-      const res = await fetch(endpoint, {
+      const res = await fetch(`${API}/egresos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       })
 
       if (!res.ok) {
-        const errorText = await res.text()
-        alert(`Error (${res.status}): ${errorText}`)
+        alert('Error al registrar el gasto de personal.')
         return
       }
 
       const data = await res.json()
       if (data.success) {
         alert('¡Gasto registrado con éxito!')
-        
-        // Actualizar array de empleados pagados en tiempo real si es nómina
         if (subPersonalActivo === 4 && empleadoSeleccionado) {
           setEmpleadosPagados(prev => [...prev, parseInt(empleadoSeleccionado)])
         }
-
-        // Limpieza de campos
-        setEmpleadoSeleccionado('')
-        setMonto('')
-        setConcepto('')
-        setComprobante('')
-        setNombreDuenioCuenta('')
-        setIdRutaSeleccionada('')
-        setIdUnidadSeleccionada('')
-        setEsChofer(false)
-        setCasetas([''])
-        setGasolina([''])
-        setComidas([''])
-        setFolios([''])
+        setSubPersonalActivo(null)
       } else {
         alert(`Error: ${data.error || 'No se pudo registrar el gasto'}`)
       }
@@ -837,37 +820,7 @@ function FlujoCaja() {
     }
   }
 
-  // SUBMIT - GASTOS DE PLANTA Y MANTENIMIENTO (TARJETA 3)
   const handleGuardarPlanta = async () => {
-    // Validación para Sub-Tarjeta Operaciones y Mantenimiento (ID: 9)
-    if (subPlantaActivo === 9) {
-      if (tipoServicioMantenimiento === 'Otro') {
-        const faltaDetalle = lineasMantenimiento.some((item) => !item.concepto || item.concepto.trim() === '');
-        if (faltaDetalle) {
-          alert('Es necesario definir ese otro gasto en el detalle de la reparación.');
-          return;
-        }
-      }
-
-      const faltaMonto = lineasMantenimiento.some((item) => !item.monto || Number(item.monto) <= 0);
-      if (faltaMonto) {
-        alert('Por favor ingresa un monto válido para todas las líneas de mantenimiento.');
-        return;
-      }
-    }
-
-    // Validación para Sub-Tarjeta Herramientas (ID: 10)
-    if (subPlantaActivo === 10) {
-      const camposIncompletos = lineasHerramientas.some(
-        (item) => !item.concepto || item.concepto.trim() === '' || !item.precio || Number(item.precio) <= 0
-      );
-
-      if (camposIncompletos) {
-        alert('Es obligatorio especificar qué compraste y ingresar un precio válido.');
-        return;
-      }
-    }
-
     if (!fechaPago) {
       alert('⚠️ Por favor selecciona la fecha de pago.')
       return
@@ -879,28 +832,19 @@ function FlujoCaja() {
         alert('⚠️ Por favor selecciona la cuenta bancaria.')
         return
       }
-      cuentaFinal = cuentaBancaria === 'OTRO'
-        ? `OTRO (${nombreDuenioCuenta.trim()})`
-        : cuentaBancaria
+      cuentaFinal = cuentaBancaria === 'OTRO' ? `OTRO (${nombreDuenioCuenta.trim()})` : cuentaBancaria
     }
 
     let payload = {}
 
-    // 1️⃣ SUB-TARJETA 1: SERVICIOS PÚBLICOS
     if (subPlantaActivo === 8) {
-      if (!tipoServicioPublico) {
-        alert('⚠️ Selecciona el tipo de servicio público.')
+      if (!tipoServicioPublico || totalServiciosPublicos <= 0) {
+        alert('⚠️ Ingresa un servicio y un monto válido.')
         return
       }
-      if (totalServiciosPublicos <= 0) {
-        alert('⚠️ Ingresa al menos un concepto y monto válido.')
-        return
-      }
-
-      const lineasFiltradas = lineasServicios.filter(l => parseFloat(l.monto) > 0)
 
       payload = {
-        id_categoria: 9, // Servicios Públicos
+        id_categoria: 9,
         fecha_pago: fechaPago,
         tipo_servicio: tipoServicioPublico,
         monto: totalServiciosPublicos,
@@ -908,27 +852,15 @@ function FlujoCaja() {
         cuenta_bancaria: cuentaFinal,
         concepto: JSON.stringify({
           tipo_servicio: tipoServicioPublico,
-          desglose: lineasFiltradas
+          desglose: lineasServicios.filter(l => parseFloat(l.monto) > 0)
         })
       }
-    }
-
-    // 2️⃣ SUB-TARJETA 2: OPERACIONES Y MANTENIMIENTO
-    else if (subPlantaActivo === 9) {
-      if (!equipoSeleccionado) {
-        alert(`⚠️ Selecciona un(a) ${tipoEquipo.toLowerCase()}.`)
-        return
-      }
-      if (!tipoServicioMantenimiento) {
-        alert('⚠️ Selecciona el tipo de servicio de mantenimiento.')
-        return
-      }
-      if (totalMantenimiento <= 0) {
-        alert('⚠️ Ingresa al menos un concepto y monto válido de reparación.')
+    } else if (subPlantaActivo === 9) {
+      if (!equipoSeleccionado || !tipoServicioMantenimiento || totalMantenimiento <= 0) {
+        alert('⚠️ Ingresa los datos completos del mantenimiento.')
         return
       }
 
-      const lineasFiltradas = lineasMantenimiento.filter(l => parseFloat(l.monto) > 0)
       const equipoObj = tipoEquipo === 'Unidad'
         ? unidades.find(u => String(u.id_unidad) === String(equipoSeleccionado))
         : montacargas.find(m => String(m.id_montacargas) === String(equipoSeleccionado))
@@ -936,7 +868,7 @@ function FlujoCaja() {
       const nombreEquipo = equipoObj ? (equipoObj.nombre || equipoObj.placas || equipoObj.num_serie) : null
 
       payload = {
-        id_categoria: 10, // Operaciones y Mantenimiento
+        id_categoria: 10,
         fecha_pago: fechaPago,
         tipo_equipo: tipoEquipo,
         id_equipo_relacionado: parseInt(equipoSeleccionado),
@@ -949,28 +881,23 @@ function FlujoCaja() {
           tipo_equipo: tipoEquipo,
           equipo: nombreEquipo,
           tipo_servicio: tipoServicioMantenimiento,
-          desglose: lineasFiltradas
+          desglose: lineasMantenimiento.filter(l => parseFloat(l.monto) > 0)
         })
       }
-    }
-
-    // 3️⃣ SUB-TARJETA 3: HERRAMIENTAS Y CONSUMIBLES
-    else if (subPlantaActivo === 10) {
+    } else if (subPlantaActivo === 10) {
       if (totalHerramientas <= 0) {
-        alert('⚠️ Ingresa al menos una herramienta con cantidad y precio válido.')
+        alert('⚠️ Ingresa herramientas válidas.')
         return
       }
 
-      const lineasFiltradas = lineasHerramientas.filter(l => (parseFloat(l.cantidad) * parseFloat(l.precio)) > 0)
-
       payload = {
-        id_categoria: 11, // Herramientas y Consumibles
+        id_categoria: 11,
         fecha_pago: fechaPago,
         monto: totalHerramientas,
         origen_pago: origenPago,
         cuenta_bancaria: cuentaFinal,
         concepto: JSON.stringify({
-          desglose: lineasFiltradas
+          desglose: lineasHerramientas.filter(l => (parseFloat(l.cantidad) * parseFloat(l.precio)) > 0)
         })
       }
     }
@@ -983,14 +910,13 @@ function FlujoCaja() {
       })
 
       if (!res.ok) {
-        const errorText = await res.text()
-        alert(`Error (${res.status}): ${errorText}`)
+        alert('Error al registrar el gasto de planta.')
         return
       }
 
       const data = await res.json()
       if (data.success) {
-        alert('¡Gasto de Planta y Mantenimiento registrado exitosamente!')
+        alert('¡Gasto registrado exitosamente!')
         setSubPlantaActivo(null)
       } else {
         alert(`Error: ${data.error || 'No se pudo guardar el gasto'}`)
@@ -1001,7 +927,6 @@ function FlujoCaja() {
     }
   }
 
-  // SUBMIT - GASTOS DEPARTAMENTALES (TARJETA 4)
   const handleGuardarDeptos = async () => {
     let cuentaFinal = null
     if (origenPago === 'TRANSFERENCIA') {
@@ -1009,26 +934,14 @@ function FlujoCaja() {
         alert('⚠️ Por favor selecciona la cuenta bancaria de salida.')
         return
       }
-      cuentaFinal = cuentaBancaria === 'OTRO'
-        ? `OTRO (${nombreDuenioCuenta.trim()})`
-        : cuentaBancaria
+      cuentaFinal = cuentaBancaria === 'OTRO' ? `OTRO (${nombreDuenioCuenta.trim()})` : cuentaBancaria
     }
 
     let payload = {}
 
-    // 1️⃣ SUB-TARJETA 12: MARKETING Y PUBLICIDAD
     if (subDeptoActivo === 12) {
-      if (!fechaPagoDepto) {
-        alert('⚠️ Por favor selecciona la fecha del evento/gasto.')
-        return
-      }
-
-      const lineasValidas = lineasMarketing.filter(
-        (item) => item.tipoGasto && parseFloat(item.monto) > 0
-      )
-
-      if (lineasValidas.length === 0) {
-        alert('⚠️ Selecciona al menos un tipo de gasto con un monto válido.')
+      if (!fechaPagoDepto || totalMarketing <= 0) {
+        alert('⚠️ Completa la fecha y montos de Marketing.')
         return
       }
 
@@ -1041,19 +954,12 @@ function FlujoCaja() {
         concepto: JSON.stringify({
           departamento: 'Marketing',
           fecha_evento: fechaPagoDepto,
-          desglose: lineasValidas
+          desglose: lineasMarketing.filter((item) => item.tipoGasto && parseFloat(item.monto) > 0)
         })
       }
-    }
-
-    // 2️⃣ SUB-TARJETA 13: CAJA CHICA ADMINISTRATIVA
-    else if (subDeptoActivo === 13) {
-      if (!detalleCajaChica.trim()) {
-        alert('⚠️ Por favor especifica el gasto realizado.')
-        return
-      }
-      if (!montoCajaChica || parseFloat(montoCajaChica) <= 0) {
-        alert('⚠️ Ingresa un monto válido.')
+    } else if (subDeptoActivo === 13) {
+      if (!detalleCajaChica.trim() || !montoCajaChica || parseFloat(montoCajaChica) <= 0) {
+        alert('⚠️ Ingresa los detalles completos de la Caja Chica.')
         return
       }
 
@@ -1066,20 +972,9 @@ function FlujoCaja() {
         cuenta_bancaria: cuentaFinal,
         concepto: `${cant}${detalleCajaChica.trim()}`
       }
-    }
-
-    // 3️⃣ SUB-TARJETA 14: SERVICIOS PROFESIONALES EXTERNOS
-    else if (subDeptoActivo === 14) {
-      if (!fechaPagoDepto) {
-        alert('⚠️ Por favor selecciona la fecha de pago.')
-        return
-      }
-      if (!empleadoServicios) {
-        alert('⚠️ Por favor selecciona el profesional externo.')
-        return
-      }
-      if (!montoServicios || parseFloat(montoServicios) <= 0) {
-        alert('⚠️ Ingresa un monto válido.')
+    } else if (subDeptoActivo === 14) {
+      if (!fechaPagoDepto || !empleadoServicios || !montoServicios || parseFloat(montoServicios) <= 0) {
+        alert('⚠️ Ingresa todos los datos requeridos.')
         return
       }
 
@@ -1108,8 +1003,7 @@ function FlujoCaja() {
       })
 
       if (!res.ok) {
-        const errorText = await res.text()
-        alert(`Error (${res.status}): ${errorText}`)
+        alert('Error al registrar el gasto departamental.')
         return
       }
 
@@ -1158,6 +1052,66 @@ function FlujoCaja() {
         </div>
       </header>
 
+      {/* BOTÓN Y TABLA DESPLEGABLE DE MOVIMIENTOS */}
+      <div style={styles.movimientosBar}>
+        <button style={styles.btnVerMovimientos} onClick={cargarMovimientosCaja}>
+          📊 {movimientosAbierto ? 'Ocultar Movimientos' : 'Ver Movimientos'}
+        </button>
+      </div>
+
+      {movimientosAbierto && (
+        <div style={styles.movimientosCard}>
+          <h3 style={{ color: vino, marginTop: 0, marginBottom: '10px' }}>
+            📜 Historial de Movimientos de Caja
+          </h3>
+          {cargandoMovimientos ? (
+            <p style={{ color: '#64748b' }}>Cargando movimientos...</p>
+          ) : movimientos.length === 0 ? (
+            <p style={{ color: '#64748b' }}>No hay movimientos registrados en la caja actual.</p>
+          ) : (
+            <table style={styles.table}>
+              <thead>
+                <tr>
+                  <th style={styles.th}>Tipo</th>
+                  <th style={styles.th}>Concepto / Detalle</th>
+                  <th style={styles.th}>Forma de Pago</th>
+                  <th style={styles.th}>Monto</th>
+                  <th style={styles.th}>Fecha y Hora</th>
+                </tr>
+              </thead>
+              <tbody>
+                {movimientos.map((m, idx) => {
+                  const esIngreso = m.tipo?.toUpperCase() === 'INGRESO'
+                  return (
+                    <tr key={idx}>
+                      <td style={styles.td}>
+                        <span style={esIngreso ? styles.badgeIngreso : styles.badgeEgreso}>
+                          {esIngreso ? 'INGRESO' : 'EGRESO'}
+                        </span>
+                      </td>
+                      <td style={styles.td}>
+                        {esIngreso
+                          ? `Abono - ${m.cliente || m.concepto || 'Cliente'}`
+                          : `Gasto - ${m.concepto || 'Egreso general'}`}
+                      </td>
+                      <td style={styles.td}>
+                        {m.forma_pago || m.origen_pago || 'Efectivo'}
+                      </td>
+                      <td style={{ ...styles.td, ...(esIngreso ? styles.montoIngreso : styles.montoEgreso) }}>
+                        {esIngreso ? `+$${parseFloat(m.monto).toFixed(2)}` : `-$${parseFloat(m.monto).toFixed(2)}`}
+                      </td>
+                      <td style={styles.td}>
+                        {m.fecha ? new Date(m.fecha).toLocaleString() : 'N/A'}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
       {/* 🏭 TARJETA PRINCIPAL 1: GASTOS OPERATIVOS (PRODUCCIÓN) */}
       <div style={styles.parentCard}>
         <div
@@ -1178,63 +1132,43 @@ function FlujoCaja() {
           </span>
         </div>
 
-        {/* SUB-TARJETAS PRODUCCIÓN */}
         {produccionAbierto && (
           <div>
             <div style={styles.cardsContainer}>
-              {/* SUB-TARJETA 1: MATERIAS PRIMAS */}
               <div
-                style={{
-                  ...styles.card,
-                  ...(apartadoActivo === 1 ? styles.cardActive : {})
-                }}
+                style={{ ...styles.card, ...(apartadoActivo === 1 ? styles.cardActive : {}) }}
                 onClick={() => handleSelectApartado(1)}
               >
                 <div style={styles.cardHeader}>
                   <span style={styles.cardName}>Materias primas</span>
                   <span style={styles.cardIcon}>📦</span>
                 </div>
-                <p style={styles.cardDesc}>
-                  Cemento blanco, cemento gris, cal, impalpable, aditivos, malla.
-                </p>
+                <p style={styles.cardDesc}>Cemento blanco, cemento gris, cal, impalpable, aditivos, malla.</p>
               </div>
 
-              {/* SUB-TARJETA 2: EPP */}
               <div
-                style={{
-                  ...styles.card,
-                  ...(apartadoActivo === 2 ? styles.cardActive : {})
-                }}
+                style={{ ...styles.card, ...(apartadoActivo === 2 ? styles.cardActive : {}) }}
                 onClick={() => handleSelectApartado(2)}
               >
                 <div style={styles.cardHeader}>
                   <span style={styles.cardName}>Protección personal (EPP)</span>
                   <span style={styles.cardIcon}>🥽</span>
                 </div>
-                <p style={styles.cardDesc}>
-                  Mascarillas y equipo de protección para operadores.
-                </p>
+                <p style={styles.cardDesc}>Mascarillas y equipo de protección para operadores.</p>
               </div>
 
-              {/* SUB-TARJETA 3: EMPAQUE Y BOLSAS */}
               <div
-                style={{
-                  ...styles.card,
-                  ...(apartadoActivo === 3 ? styles.cardActive : {})
-                }}
+                style={{ ...styles.card, ...(apartadoActivo === 3 ? styles.cardActive : {}) }}
                 onClick={() => handleSelectApartado(3)}
               >
                 <div style={styles.cardHeader}>
                   <span style={styles.cardName}>Bolsa</span>
                   <span style={styles.cardIcon}>🛍️</span>
                 </div>
-                <p style={styles.cardDesc}>
-                  Bolsa de cada uno de nuestros productos.
-                </p>
+                <p style={styles.cardDesc}>Bolsa de cada uno de nuestros productos.</p>
               </div>
             </div>
 
-            {/* FORMULARIO GASTOS OPERATIVOS */}
             {apartadoActivo && (
               <div style={styles.formContainer}>
                 <div style={styles.formTitle}>
@@ -1244,17 +1178,12 @@ function FlujoCaja() {
                     {apartadoActivo === 2 && '🥽 Equipo de protección personal (EPP)'}
                     {apartadoActivo === 3 && '🛍️ Insumos de bolsa'}
                   </span>
-                  <button
-                    type="button"
-                    style={styles.closeBtn}
-                    onClick={() => setApartadoActivo(null)}
-                  >
+                  <button type="button" style={styles.closeBtn} onClick={() => setApartadoActivo(null)}>
                     ✕ Cerrar
                   </button>
                 </div>
 
                 <form onSubmit={(e) => e.preventDefault()} style={styles.grid}>
-                  {/* OPCIÓN MATERIAS PRIMAS */}
                   {apartadoActivo === 1 && (
                     <div style={styles.fieldGroup}>
                       <label style={styles.label}>Insumo de materia prima *</label>
@@ -1275,7 +1204,6 @@ function FlujoCaja() {
                     </div>
                   )}
 
-                  {/* OPCIÓN EPP */}
                   {apartadoActivo === 2 && (
                     <div style={styles.fieldGroup}>
                       <label style={styles.label}>Tipo de equipo de protección *</label>
@@ -1291,7 +1219,6 @@ function FlujoCaja() {
                     </div>
                   )}
 
-                  {/* OPCIÓN EMPAQUE Y BOLSAS */}
                   {apartadoActivo === 3 && (
                     <div style={styles.fieldGroup}>
                       <label style={styles.label}>Bolsa *</label>
@@ -1311,7 +1238,6 @@ function FlujoCaja() {
                     </div>
                   )}
 
-                  {/* ORIGEN DE PAGO */}
                   <div style={styles.fieldGroup}>
                     <label style={styles.label}>Origen de pago *</label>
                     <select
@@ -1330,7 +1256,6 @@ function FlujoCaja() {
                     </select>
                   </div>
 
-                  {/* CUENTA BANCARIA */}
                   {origenPago === 'TRANSFERENCIA' && (
                     <div style={styles.fieldGroup}>
                       <label style={styles.label}>Cuenta Bancaria de Salida *</label>
@@ -1350,7 +1275,6 @@ function FlujoCaja() {
                     </div>
                   )}
 
-                  {/* CAMPO DINÁMICO OTRO EN CUENTA BANCARIA */}
                   {origenPago === 'TRANSFERENCIA' && cuentaBancaria === 'OTRO' && (
                     <div style={styles.fieldGroup}>
                       <label style={styles.label}>Nombre y Apellido del dueño de la cuenta *</label>
@@ -1365,7 +1289,6 @@ function FlujoCaja() {
                     </div>
                   )}
 
-                  {/* MONTO */}
                   <div style={styles.fieldGroup}>
                     <label style={styles.label}>Monto pagado ($) *</label>
                     <input
@@ -1380,7 +1303,6 @@ function FlujoCaja() {
                     />
                   </div>
 
-                  {/* CONCEPTO / COMENTARIOS (OPCIONAL) */}
                   <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
                     <label style={styles.label}>Comentarios (Opcional)</label>
                     <textarea
@@ -1392,13 +1314,8 @@ function FlujoCaja() {
                     />
                   </div>
 
-                  {/* BOTÓN REGISTRAR */}
                   <div style={styles.fullRow}>
-                    <button 
-                      type="button" 
-                      onClick={handleGuardarOperativos} 
-                      style={styles.submitButton}
-                    >
+                    <button type="button" onClick={handleGuardarOperativos} style={styles.submitButton}>
                       Guardar registro de gasto
                     </button>
                   </div>
@@ -1429,16 +1346,11 @@ function FlujoCaja() {
           </span>
         </div>
 
-        {/* SUB-TARJETAS PERSONAL */}
         {personalAbierto && (
           <div>
             <div style={styles.cardsContainer}>
-              {/* SUB-TARJETA 1: NÓMINA BASE */}
               <div
-                style={{
-                  ...styles.card,
-                  ...(subPersonalActivo === 4 ? styles.cardActive : {})
-                }}
+                style={{ ...styles.card, ...(subPersonalActivo === 4 ? styles.cardActive : {}) }}
                 onClick={() => handleSelectSubPersonal(4)}
               >
                 <div style={styles.cardHeader}>
@@ -1450,46 +1362,30 @@ function FlujoCaja() {
                 </p>
               </div>
 
-              {/* SUB-TARJETA 2: IMSS E ISR */}
               <div
-                style={{
-                  ...styles.card,
-                  ...(subPersonalActivo === 5 ? styles.cardActive : {})
-                }}
+                style={{ ...styles.card, ...(subPersonalActivo === 5 ? styles.cardActive : {}) }}
                 onClick={() => handleSelectSubPersonal(5)}
               >
                 <div style={styles.cardHeader}>
                   <span style={styles.cardName}>IMSS e ISR</span>
                   <span style={styles.cardIcon}>🏥</span>
                 </div>
-                <p style={styles.cardDesc}>
-                  Gastos de IMSS y ISR en los trabajadores.
-                </p>
+                <p style={styles.cardDesc}>Gastos de IMSS y ISR en los trabajadores.</p>
               </div>
 
-              {/* SUB-TARJETA 3: COMEDOR */}
               <div
-                style={{
-                  ...styles.card,
-                  ...(subPersonalActivo === 6 ? styles.cardActive : {})
-                }}
+                style={{ ...styles.card, ...(subPersonalActivo === 6 ? styles.cardActive : {}) }}
                 onClick={() => handleSelectSubPersonal(6)}
               >
                 <div style={styles.cardHeader}>
                   <span style={styles.cardName}>Comedor</span>
                   <span style={styles.cardIcon}>🍽️</span>
                 </div>
-                <p style={styles.cardDesc}>
-                  Gasto semanal en desayunos (PAGO A DOÑA LUCI)
-                </p>
+                <p style={styles.cardDesc}>Gasto semanal en desayunos (PAGO A DOÑA LUCI)</p>
               </div>
 
-              {/* SUB-TARJETA 4: VIÁTICOS */}
               <div
-                style={{
-                  ...styles.card,
-                  ...(subPersonalActivo === 7 ? styles.cardActive : {})
-                }}
+                style={{ ...styles.card, ...(subPersonalActivo === 7 ? styles.cardActive : {}) }}
                 onClick={() => handleSelectSubPersonal(7)}
               >
                 <div style={styles.cardHeader}>
@@ -1502,7 +1398,6 @@ function FlujoCaja() {
               </div>
             </div>
 
-            {/* FORMULARIO GASTOS DE PERSONAL */}
             {subPersonalActivo && (
               <div style={styles.formContainer}>
                 <div style={styles.formTitle}>
@@ -1513,18 +1408,12 @@ function FlujoCaja() {
                     {subPersonalActivo === 6 && '🍽️ Comedor'}
                     {subPersonalActivo === 7 && '✈️ Viáticos'}
                   </span>
-                  <button
-                    type="button"
-                    style={styles.closeBtn}
-                    onClick={() => setSubPersonalActivo(null)}
-                  >
+                  <button type="button" style={styles.closeBtn} onClick={() => setSubPersonalActivo(null)}>
                     ✕ Cerrar
                   </button>
                 </div>
 
                 <form onSubmit={(e) => e.preventDefault()} style={styles.grid}>
-                  
-                  {/* CASO 1: NÓMINA BASE */}
                   {subPersonalActivo === 4 && (
                     <div style={{ ...styles.fullRow, marginBottom: '10px' }}>
                       <label style={styles.label}>1. Seleccionar semana a pagar</label>
@@ -1607,7 +1496,6 @@ function FlujoCaja() {
                     </div>
                   )}
 
-                  {/* CASO 2: IMSS / ISR */}
                   {subPersonalActivo === 5 && (
                     <>
                       <div style={styles.fieldGroup}>
@@ -1641,10 +1529,8 @@ function FlujoCaja() {
                     </>
                   )}
 
-                  {/* CASO 4: VIÁTICOS (FORMULARIO DINÁMICO COMPLETO) */}
                   {subPersonalActivo === 7 && (
                     <>
-                      {/* EMPLEADO Y RUTA / UNIDAD */}
                       <div style={styles.fieldGroup}>
                         <label style={styles.label}>Empleado que recibe viáticos *</label>
                         <select
@@ -1698,17 +1584,10 @@ function FlujoCaja() {
                         </select>
                       </div>
 
-                      {/* CASETAS DINÁMICAS */}
                       <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
                         <div style={styles.dynamicHeader}>
                           <span>🚗 Casetas — Total: ${totalCasetas.toFixed(2)}</span>
-                          <button
-                            type="button"
-                            style={styles.addBtn}
-                            onClick={() => handleAgregarCampo(setCasetas, casetas)}
-                          >
-                            +
-                          </button>
+                          <button type="button" style={styles.addBtn} onClick={() => handleAgregarCampo(setCasetas, casetas)}>+</button>
                         </div>
                         {casetas.map((val, idx) => (
                           <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
@@ -1721,29 +1600,16 @@ function FlujoCaja() {
                               onChange={(e) => handleCambioCampo(setCasetas, casetas, idx, e.target.value)}
                             />
                             {casetas.length > 1 && (
-                              <button
-                                type="button"
-                                style={styles.removeBtn}
-                                onClick={() => handleEliminarCampo(setCasetas, casetas, idx)}
-                              >
-                                ✕
-                              </button>
+                              <button type="button" style={styles.removeBtn} onClick={() => handleEliminarCampo(setCasetas, casetas, idx)}>✕</button>
                             )}
                           </div>
                         ))}
                       </div>
 
-                      {/* GASOLINA DINÁMICA */}
                       <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
                         <div style={styles.dynamicHeader}>
                           <span>⛽ Gasolina / Diesel — Total: ${totalGasolina.toFixed(2)}</span>
-                          <button
-                            type="button"
-                            style={styles.addBtn}
-                            onClick={() => handleAgregarCampo(setGasolina, gasolina)}
-                          >
-                            +
-                          </button>
+                          <button type="button" style={styles.addBtn} onClick={() => handleAgregarCampo(setGasolina, gasolina)}>+</button>
                         </div>
                         {gasolina.map((val, idx) => (
                           <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
@@ -1756,29 +1622,16 @@ function FlujoCaja() {
                               onChange={(e) => handleCambioCampo(setGasolina, gasolina, idx, e.target.value)}
                             />
                             {gasolina.length > 1 && (
-                              <button
-                                type="button"
-                                style={styles.removeBtn}
-                                onClick={() => handleEliminarCampo(setGasolina, gasolina, idx)}
-                              >
-                                ✕
-                              </button>
+                              <button type="button" style={styles.removeBtn} onClick={() => handleEliminarCampo(setGasolina, gasolina, idx)}>✕</button>
                             )}
                           </div>
                         ))}
                       </div>
 
-                      {/* COMIDAS DINÁMICAS */}
                       <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
                         <div style={styles.dynamicHeader}>
                           <span>🍽️ Comidas — Total: ${totalComidas.toFixed(2)}</span>
-                          <button
-                            type="button"
-                            style={styles.addBtn}
-                            onClick={() => handleAgregarCampo(setComidas, comidas)}
-                          >
-                            +
-                          </button>
+                          <button type="button" style={styles.addBtn} onClick={() => handleAgregarCampo(setComidas, comidas)}>+</button>
                         </div>
                         {comidas.map((val, idx) => (
                           <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
@@ -1791,32 +1644,19 @@ function FlujoCaja() {
                               onChange={(e) => handleCambioCampo(setComidas, comidas, idx, e.target.value)}
                             />
                             {comidas.length > 1 && (
-                              <button
-                                type="button"
-                                style={styles.removeBtn}
-                                onClick={() => handleEliminarCampo(setComidas, comidas, idx)}
-                              >
-                                ✕
-                              </button>
+                              <button type="button" style={styles.removeBtn} onClick={() => handleEliminarCampo(setComidas, comidas, idx)}>✕</button>
                             )}
                           </div>
                         ))}
                       </div>
 
-                      {/* FOLIOS DINÁMICOS */}
                       <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
                         <div style={styles.dynamicHeader}>
                           <span>
                             📄 Folios / Comprobantes{' '}
                             {esChofer && <span style={{ color: '#dc2626', fontSize: '12px' }}>* (Obligatorio Chofer)</span>}
                           </span>
-                          <button
-                            type="button"
-                            style={styles.addBtn}
-                            onClick={() => handleAgregarCampo(setFolios, folios)}
-                          >
-                            +
-                          </button>
+                          <button type="button" style={styles.addBtn} onClick={() => handleAgregarCampo(setFolios, folios)}>+</button>
                         </div>
                         {folios.map((val, idx) => (
                           <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
@@ -1828,19 +1668,12 @@ function FlujoCaja() {
                               onChange={(e) => handleCambioCampo(setFolios, folios, idx, e.target.value)}
                             />
                             {folios.length > 1 && (
-                              <button
-                                type="button"
-                                style={styles.removeBtn}
-                                onClick={() => handleEliminarCampo(setFolios, folios, idx)}
-                              >
-                                ✕
-                              </button>
+                              <button type="button" style={styles.removeBtn} onClick={() => handleEliminarCampo(setFolios, folios, idx)}>✕</button>
                             )}
                           </div>
                         ))}
                       </div>
 
-                      {/* MONTO TOTAL DE VIÁTICOS */}
                       <div style={{ ...styles.fullRow, ...styles.totalSummaryBox }}>
                         <span style={{ fontSize: '20px', fontWeight: '900', color: vino }}>
                           MONTO TOTAL VIÁTICOS: ${totalViaticosGeneral.toFixed(2)}
@@ -1849,7 +1682,6 @@ function FlujoCaja() {
                     </>
                   )}
 
-                  {/* ORIGEN DE PAGO (PARA CASOS 4, 5, 6 Y 7) */}
                   <div style={styles.fieldGroup}>
                     <label style={styles.label}>Origen de pago *</label>
                     <select
@@ -1868,7 +1700,6 @@ function FlujoCaja() {
                     </select>
                   </div>
 
-                  {/* CUENTA BANCARIA */}
                   {origenPago === 'TRANSFERENCIA' && (
                     <div style={styles.fieldGroup}>
                       <label style={styles.label}>Cuenta de banco *</label>
@@ -1888,7 +1719,6 @@ function FlujoCaja() {
                     </div>
                   )}
 
-                  {/* CAMPO DINÁMICO OTRO EN CUENTA BANCARIA */}
                   {origenPago === 'TRANSFERENCIA' && cuentaBancaria === 'OTRO' && (
                     <div style={styles.fieldGroup}>
                       <label style={styles.label}>Nombre y Apellido del dueño de la cuenta *</label>
@@ -1903,7 +1733,6 @@ function FlujoCaja() {
                     </div>
                   )}
 
-                  {/* MONTO PARA NÓMINA, IMSS/ISR Y COMEDOR */}
                   {subPersonalActivo !== 7 && (
                     <div style={styles.fieldGroup}>
                       <label style={styles.label}>Monto ($) *</label>
@@ -1920,7 +1749,6 @@ function FlujoCaja() {
                     </div>
                   )}
 
-                  {/* CONCEPTO / DETALLES */}
                   <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
                     <label style={styles.label}>Observaciones / Destino / Motivo</label>
                     <textarea
@@ -1932,13 +1760,8 @@ function FlujoCaja() {
                     />
                   </div>
 
-                  {/* BOTÓN SUBMIT */}
                   <div style={styles.fullRow}>
-                    <button 
-                      type="button" 
-                      onClick={handleGuardarPersonal} 
-                      style={styles.submitButton}
-                    >
+                    <button type="button" onClick={handleGuardarPersonal} style={styles.submitButton}>
                       {subPersonalActivo === 7 ? 'Guardar Viáticos' : 'Guardar gasto'}
                     </button>
                   </div>
@@ -1951,10 +1774,7 @@ function FlujoCaja() {
 
       {/* 🏛️ TARJETA PRINCIPAL 3: GASTOS DE PLANTA Y MANTENIMIENTO */}
       <div style={styles.parentCard}>
-        <div
-          style={styles.parentHeader}
-          onClick={() => setPlantaAbierto(!plantaAbierto)}
-        >
+        <div style={styles.parentHeader} onClick={() => setPlantaAbierto(!plantaAbierto)}>
           <div style={styles.parentTitleGroup}>
             <span style={{ fontSize: '28px' }}>🏛️</span>
             <div>
@@ -1964,68 +1784,46 @@ function FlujoCaja() {
               </p>
             </div>
           </div>
-          <span style={styles.toggleBadge}>
-            {plantaAbierto ? '▼ Ocultar' : '▶ Desplegar'}
-          </span>
+          <span style={styles.toggleBadge}>{plantaAbierto ? '▼ Ocultar' : '▶ Desplegar'}</span>
         </div>
 
-        {/* SUB-TARJETAS PLANTA */}
         {plantaAbierto && (
           <div>
             <div style={styles.cardsContainer}>
-              {/* SUB-TARJETA 1: SERVICIOS PÚBLICOS */}
               <div
-                style={{
-                  ...styles.card,
-                  ...(subPlantaActivo === 8 ? styles.cardActive : {})
-                }}
+                style={{ ...styles.card, ...(subPlantaActivo === 8 ? styles.cardActive : {}) }}
                 onClick={() => handleSelectSubPlanta(8)}
               >
                 <div style={styles.cardHeader}>
                   <span style={styles.cardName}>Servicios públicos</span>
                   <span style={styles.cardIcon}>⚡</span>
                 </div>
-                <p style={styles.cardDesc}>
-                  Pago de luz (CFE), Agua, Gas e Internet/Telefonía.
-                </p>
+                <p style={styles.cardDesc}>Pago de luz (CFE), Agua, Gas e Internet/Telefonía.</p>
               </div>
 
-              {/* SUB-TARJETA 2: OPERACIONES Y MANTENIMIENTO */}
               <div
-                style={{
-                  ...styles.card,
-                  ...(subPlantaActivo === 9 ? styles.cardActive : {})
-                }}
+                style={{ ...styles.card, ...(subPlantaActivo === 9 ? styles.cardActive : {}) }}
                 onClick={() => handleSelectSubPlanta(9)}
               >
                 <div style={styles.cardHeader}>
                   <span style={styles.cardName}>Servicios vehiculares</span>
                   <span style={styles.cardIcon}>🛠️</span>
                 </div>
-                <p style={styles.cardDesc}>
-                  Mantenimiento y reparaciones de vehículos y montacargas.
-                </p>
+                <p style={styles.cardDesc}>Mantenimiento y reparaciones de vehículos y montacargas.</p>
               </div>
 
-              {/* SUB-TARJETA 3: HERRAMIENTAS Y CONSUMIBLES */}
               <div
-                style={{
-                  ...styles.card,
-                  ...(subPlantaActivo === 10 ? styles.cardActive : {})
-                }}
+                style={{ ...styles.card, ...(subPlantaActivo === 10 ? styles.cardActive : {}) }}
                 onClick={() => handleSelectSubPlanta(10)}
               >
                 <div style={styles.cardHeader}>
                   <span style={styles.cardName}>Compra de herramientas</span>
                   <span style={styles.cardIcon}>🧰</span>
                 </div>
-                <p style={styles.cardDesc}>
-                  Compra de herramientas generales desde el pastero hasta Liz etc.
-                </p>
+                <p style={styles.cardDesc}>Compra de herramientas generales desde el pastero hasta Liz etc.</p>
               </div>
             </div>
 
-            {/* FORMULARIO GASTOS DE PLANTA */}
             {subPlantaActivo && (
               <div style={styles.formContainer}>
                 <div style={styles.formTitle}>
@@ -2035,18 +1833,12 @@ function FlujoCaja() {
                     {subPlantaActivo === 9 && '🛠️ Operaciones y Mantenimiento'}
                     {subPlantaActivo === 10 && '🧰 Compra de Herramientas y Consumibles'}
                   </span>
-                  <button
-                    type="button"
-                    style={styles.closeBtn}
-                    onClick={() => setSubPlantaActivo(null)}
-                  >
+                  <button type="button" style={styles.closeBtn} onClick={() => setSubPlantaActivo(null)}>
                     ✕ Cerrar
                   </button>
                 </div>
 
                 <form onSubmit={(e) => e.preventDefault()} style={styles.grid}>
-                  
-                  {/* FECHA DE PAGO (GLOBAL PARA LAS 3 SUB-TARJETAS DE PLANTA) */}
                   <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
                     <label style={styles.label}>Fecha de pago (Seleccionable) *</label>
                     <input
@@ -2058,7 +1850,6 @@ function FlujoCaja() {
                     />
                   </div>
 
-                  {/* 1️⃣ SUB-TARJETA 1: SERVICIOS PÚBLICOS */}
                   {subPlantaActivo === 8 && (
                     <>
                       <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
@@ -2077,7 +1868,6 @@ function FlujoCaja() {
                         </select>
                       </div>
 
-                      {/* LÍNEAS DINÁMICAS SERVICIOS */}
                       <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
                         <div style={styles.dynamicHeader}>
                           <span>Escribe que compraste..</span>
@@ -2127,7 +1917,6 @@ function FlujoCaja() {
                     </>
                   )}
 
-                  {/* 2️⃣ SUB-TARJETA 2: OPERACIONES Y MANTENIMIENTO */}
                   {subPlantaActivo === 9 && (
                     <>
                       <div style={styles.fieldGroup}>
@@ -2189,7 +1978,6 @@ function FlujoCaja() {
                         </select>
                       </div>
 
-                      {/* LÍNEAS DINÁMICAS MANTENIMIENTO */}
                       <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
                         <div style={styles.dynamicHeader}>
                           <span>
@@ -2220,7 +2008,6 @@ function FlujoCaja() {
                               style={{ ...styles.input, flex: 1 }}
                               value={item.monto}
                               onChange={(e) => handleCambioObjeto(setLineasMantenimiento, lineasMantenimiento, idx, 'monto', e.target.value)}
-                              required
                             />
                             {lineasMantenimiento.length > 1 && (
                               <button
@@ -2243,13 +2030,11 @@ function FlujoCaja() {
                     </>
                   )}
 
-                  {/* 3️⃣ SUB-TARJETA 3: COMPRA DE HERRAMIENTAS Y CONSUMIBLES */}
                   {subPlantaActivo === 10 && (
                     <>
-                      {/* LÍNEAS DINÁMICAS HERRAMIENTAS */}
                       <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
                         <div style={styles.dynamicHeader}>
-                          <span>Compra de herramientas *</span>
+                          <span>¿Qué compraste? *</span>
                           <button
                             type="button"
                             style={styles.addBtn}
@@ -2263,15 +2048,14 @@ function FlujoCaja() {
                             <input
                               type="number"
                               min="1"
-                              placeholder="Cant."
-                              style={{ ...styles.input, width: '80px' }}
+                              placeholder="Cant"
+                              style={{ ...styles.input, flex: '0.5' }}
                               value={item.cantidad}
                               onChange={(e) => handleCambioObjeto(setLineasHerramientas, lineasHerramientas, idx, 'cantidad', e.target.value)}
-                              required
                             />
                             <input
                               type="text"
-                              placeholder="¿Qué compraste? (Ej. Palas, Pastero, Brochas)"
+                              placeholder="Ej. Pastero, Brocas, Llaves..."
                               style={{ ...styles.input, flex: 2 }}
                               value={item.concepto}
                               onChange={(e) => handleCambioObjeto(setLineasHerramientas, lineasHerramientas, idx, 'concepto', e.target.value)}
@@ -2280,7 +2064,7 @@ function FlujoCaja() {
                             <input
                               type="number"
                               step="any"
-                              placeholder="Precio unitario ($)"
+                              placeholder="Precio ($)"
                               style={{ ...styles.input, flex: 1 }}
                               value={item.precio}
                               onChange={(e) => handleCambioObjeto(setLineasHerramientas, lineasHerramientas, idx, 'precio', e.target.value)}
@@ -2307,7 +2091,6 @@ function FlujoCaja() {
                     </>
                   )}
 
-                  {/* ORIGEN DE PAGO Y CUENTA BANCARIA */}
                   <div style={styles.fieldGroup}>
                     <label style={styles.label}>Origen de pago *</label>
                     <select
@@ -2346,7 +2129,7 @@ function FlujoCaja() {
                   )}
 
                   {origenPago === 'TRANSFERENCIA' && cuentaBancaria === 'OTRO' && (
-                    <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
+                    <div style={styles.fieldGroup}>
                       <label style={styles.label}>Nombre y Apellido del dueño de la cuenta *</label>
                       <input
                         type="text"
@@ -2359,14 +2142,9 @@ function FlujoCaja() {
                     </div>
                   )}
 
-                  {/* BOTÓN REGISTRAR PLANTA */}
                   <div style={styles.fullRow}>
-                    <button
-                      type="button"
-                      onClick={handleGuardarPlanta}
-                      style={styles.submitButton}
-                    >
-                      Guardar registro de planta
+                    <button type="button" onClick={handleGuardarPlanta} style={styles.submitButton}>
+                      Guardar gasto de planta
                     </button>
                   </div>
                 </form>
@@ -2376,14 +2154,11 @@ function FlujoCaja() {
         )}
       </div>
 
-      {/* 🏬 TARJETA PRINCIPAL 4: GASTOS DEPARTAMENTALES */}
+      {/* 🏙️ TARJETA PRINCIPAL 4: GASTOS DEPARTAMENTALES */}
       <div style={styles.parentCard}>
-        <div
-          style={styles.parentHeader}
-          onClick={() => setDeptosAbierto(!deptosAbierto)}
-        >
+        <div style={styles.parentHeader} onClick={() => setDeptosAbierto(!deptosAbierto)}>
           <div style={styles.parentTitleGroup}>
-            <span style={{ fontSize: '28px' }}>🏬</span>
+            <span style={{ fontSize: '28px' }}>🏙️</span>
             <div>
               <h3 style={styles.parentTitle}>GASTOS DEPARTAMENTALES</h3>
               <p style={styles.parentSubtitle}>
@@ -2391,68 +2166,46 @@ function FlujoCaja() {
               </p>
             </div>
           </div>
-          <span style={styles.toggleBadge}>
-            {deptosAbierto ? '▼ Ocultar' : '▶ Desplegar'}
-          </span>
+          <span style={styles.toggleBadge}>{deptosAbierto ? '▼ Ocultar' : '▶ Desplegar'}</span>
         </div>
 
-        {/* SUB-TARJETAS DEPARTAMENTALES */}
         {deptosAbierto && (
           <div>
             <div style={styles.cardsContainer}>
-              {/* SUB-TARJETA 1: MARKETING Y PUBLICIDAD */}
               <div
-                style={{
-                  ...styles.card,
-                  ...(subDeptoActivo === 12 ? styles.cardActive : {})
-                }}
+                style={{ ...styles.card, ...(subDeptoActivo === 12 ? styles.cardActive : {}) }}
                 onClick={() => handleSelectSubDepto(12)}
               >
                 <div style={styles.cardHeader}>
                   <span style={styles.cardName}>Marketing y publicidad</span>
                   <span style={styles.cardIcon}>📢</span>
                 </div>
-                <p style={styles.cardDesc}>
-                  Comidas de eventos, camisas, eventos especiales y lona publicitaria.
-                </p>
+                <p style={styles.cardDesc}>Comidas de eventos, camisas, eventos especiales y lona publicitaria.</p>
               </div>
 
-              {/* SUB-TARJETA 2: CAJA CHICA ADMINISTRATIVA */}
               <div
-                style={{
-                  ...styles.card,
-                  ...(subDeptoActivo === 13 ? styles.cardActive : {})
-                }}
+                style={{ ...styles.card, ...(subDeptoActivo === 13 ? styles.cardActive : {}) }}
                 onClick={() => handleSelectSubDepto(13)}
               >
                 <div style={styles.cardHeader}>
                   <span style={styles.cardName}>Caja chica administrativa</span>
                   <span style={styles.cardIcon}>☕</span>
                 </div>
-                <p style={styles.cardDesc}>
-                  Agua, azúcar, café, galletas, servilletas y papelería básica.
-                </p>
+                <p style={styles.cardDesc}>Agua, azúcar, café, galletas, servilletas y papelería básica.</p>
               </div>
 
-              {/* SUB-TARJETA 3: SERVICIOS PROFESIONALES EXTERNOS */}
               <div
-                style={{
-                  ...styles.card,
-                  ...(subDeptoActivo === 14 ? styles.cardActive : {})
-                }}
+                style={{ ...styles.card, ...(subDeptoActivo === 14 ? styles.cardActive : {}) }}
                 onClick={() => handleSelectSubDepto(14)}
               >
                 <div style={styles.cardHeader}>
                   <span style={styles.cardName}>Servicios profesionales externos</span>
                   <span style={styles.cardIcon}>⚖️</span>
                 </div>
-                <p style={styles.cardDesc}>
-                  Honorarios contables, asesoría legal y consultoría externa.
-                </p>
+                <p style={styles.cardDesc}>Honorarios contables, asesoría legal y consultoría externa.</p>
               </div>
             </div>
 
-            {/* FORMULARIO GASTOS DEPARTAMENTALES */}
             {subDeptoActivo && (
               <div style={styles.formContainer}>
                 <div style={styles.formTitle}>
@@ -2462,21 +2215,16 @@ function FlujoCaja() {
                     {subDeptoActivo === 13 && '☕ Caja Chica Administrativa'}
                     {subDeptoActivo === 14 && '⚖️ Servicios Profesionales Externos'}
                   </span>
-                  <button
-                    type="button"
-                    style={styles.closeBtn}
-                    onClick={() => setSubDeptoActivo(null)}
-                  >
+                  <button type="button" style={styles.closeBtn} onClick={() => setSubDeptoActivo(null)}>
                     ✕ Cerrar
                   </button>
                 </div>
 
                 <form onSubmit={(e) => e.preventDefault()} style={styles.grid}>
-                  {/* 1️⃣ SUB-TARJETA 12: MARKETING Y PUBLICIDAD */}
                   {subDeptoActivo === 12 && (
                     <>
                       <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
-                        <label style={styles.label}>Fecha del gasto / evento *</label>
+                        <label style={styles.label}>Fecha del evento/gasto *</label>
                         <input
                           type="date"
                           style={styles.input}
@@ -2486,20 +2234,13 @@ function FlujoCaja() {
                         />
                       </div>
 
-                      {/* LÍNEAS DINÁMICAS MARKETING */}
                       <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
                         <div style={styles.dynamicHeader}>
-                          <span>Desglose de gastos de Marketing *</span>
+                          <span>Desglose de Marketing *</span>
                           <button
                             type="button"
                             style={styles.addBtn}
-                            onClick={() =>
-                              handleAgregarObjeto(setLineasMarketing, lineasMarketing, {
-                                tipoGasto: '',
-                                monto: '',
-                                comentario: ''
-                              })
-                            }
+                            onClick={() => handleAgregarObjeto(setLineasMarketing, lineasMarketing, { tipoGasto: '', monto: '', comentario: '' })}
                           >
                             +
                           </button>
@@ -2507,19 +2248,16 @@ function FlujoCaja() {
                         {lineasMarketing.map((item, idx) => (
                           <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
                             <select
-                              style={{ ...styles.select, flex: 1.5 }}
+                              style={{ ...styles.select, flex: 1 }}
                               value={item.tipoGasto}
-                              onChange={(e) =>
-                                handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'tipoGasto', e.target.value)
-                              }
+                              onChange={(e) => handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'tipoGasto', e.target.value)}
                               required
                             >
-                              <option value="">-- Seleccionar tipo --</option>
+                              <option value="">-- Tipo de gasto --</option>
                               <option value="Comidas de eventos">Comidas de eventos</option>
-                              <option value="Camisas corporativas">Camisas corporativas</option>
+                              <option value="Camisas">Camisas</option>
                               <option value="Eventos especiales">Eventos especiales</option>
                               <option value="Lona publicitaria">Lona publicitaria</option>
-                              <option value="Otro">Otro</option>
                             </select>
                             <input
                               type="number"
@@ -2527,19 +2265,15 @@ function FlujoCaja() {
                               placeholder="Monto ($)"
                               style={{ ...styles.input, flex: 1 }}
                               value={item.monto}
-                              onChange={(e) =>
-                                handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'monto', e.target.value)
-                              }
+                              onChange={(e) => handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'monto', e.target.value)}
                               required
                             />
                             <input
                               type="text"
-                              placeholder="Comentarios (opcional)"
+                              placeholder="Comentarios opcionales..."
                               style={{ ...styles.input, flex: 2 }}
                               value={item.comentario}
-                              onChange={(e) =>
-                                handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'comentario', e.target.value)
-                              }
+                              onChange={(e) => handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'comentario', e.target.value)}
                             />
                             {lineasMarketing.length > 1 && (
                               <button
@@ -2562,14 +2296,13 @@ function FlujoCaja() {
                     </>
                   )}
 
-                  {/* 2️⃣ SUB-TARJETA 13: CAJA CHICA ADMINISTRATIVA */}
                   {subDeptoActivo === 13 && (
                     <>
                       <div style={styles.fieldGroup}>
                         <label style={styles.label}>Cantidad (Opcional)</label>
                         <input
                           type="text"
-                          placeholder="Ej. 2 cajas, 5 bolsas, 1 paquete"
+                          placeholder="Ej. 2 kg, 1 caja..."
                           style={styles.input}
                           value={cantidadCajaChica}
                           onChange={(e) => setCantidadCajaChica(e.target.value)}
@@ -2577,7 +2310,7 @@ function FlujoCaja() {
                       </div>
 
                       <div style={styles.fieldGroup}>
-                        <label style={styles.label}>Monto total ($) *</label>
+                        <label style={styles.label}>Monto pagado ($) *</label>
                         <input
                           type="number"
                           step="any"
@@ -2591,11 +2324,11 @@ function FlujoCaja() {
                       </div>
 
                       <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
-                        <label style={styles.label}>Escribe qué compraste *</label>
-                        <textarea
-                          rows="2"
-                          placeholder="Ej. Café en grano, garrafones de agua, azúcar, galletas..."
-                          style={{ ...styles.input, resize: 'vertical' }}
+                        <label style={styles.label}>¿Qué compraste? *</label>
+                        <input
+                          type="text"
+                          placeholder="Ej. Café, azúcar, galletas..."
+                          style={styles.input}
                           value={detalleCajaChica}
                           onChange={(e) => setDetalleCajaChica(e.target.value)}
                           required
@@ -2604,10 +2337,9 @@ function FlujoCaja() {
                     </>
                   )}
 
-                  {/* 3️⃣ SUB-TARJETA 14: SERVICIOS PROFESIONALES EXTERNOS */}
                   {subDeptoActivo === 14 && (
                     <>
-                      <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
+                      <div style={styles.fieldGroup}>
                         <label style={styles.label}>Fecha de pago *</label>
                         <input
                           type="date"
@@ -2619,7 +2351,7 @@ function FlujoCaja() {
                       </div>
 
                       <div style={styles.fieldGroup}>
-                        <label style={styles.label}>Profesional externo *</label>
+                        <label style={styles.label}>Profesional Externo *</label>
                         <select
                           style={styles.select}
                           value={empleadoServicios}
@@ -2635,7 +2367,7 @@ function FlujoCaja() {
                         </select>
                       </div>
 
-                      <div style={styles.fieldGroup}>
+                      <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
                         <label style={styles.label}>Monto pagado ($) *</label>
                         <input
                           type="number"
@@ -2651,7 +2383,6 @@ function FlujoCaja() {
                     </>
                   )}
 
-                  {/* ORIGEN DE PAGO Y CUENTA BANCARIA */}
                   <div style={styles.fieldGroup}>
                     <label style={styles.label}>Origen de pago *</label>
                     <select
@@ -2690,7 +2421,7 @@ function FlujoCaja() {
                   )}
 
                   {origenPago === 'TRANSFERENCIA' && cuentaBancaria === 'OTRO' && (
-                    <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
+                    <div style={styles.fieldGroup}>
                       <label style={styles.label}>Nombre y Apellido del dueño de la cuenta *</label>
                       <input
                         type="text"
@@ -2703,13 +2434,8 @@ function FlujoCaja() {
                     </div>
                   )}
 
-                  {/* BOTÓN REGISTRAR DEPARTAMENTAL */}
                   <div style={styles.fullRow}>
-                    <button
-                      type="button"
-                      onClick={handleGuardarDeptos}
-                      style={styles.submitButton}
-                    >
+                    <button type="button" onClick={handleGuardarDeptos} style={styles.submitButton}>
                       Guardar gasto departamental
                     </button>
                   </div>
