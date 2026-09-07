@@ -2769,6 +2769,170 @@ app.get('/pagos/:id_pedido', async (req, res) => {
 
 
 // =============================
+// 📊 CAJA Y FLUJO DE CAJA (EN TIEMPO REAL)
+// =============================
+
+// 1. OBTENER SALDOS Y HISTORIAL EN TIEMPO REAL
+app.get('/api/caja/resumen', async (req, res) => {
+  try {
+    // A) Traer la caja abierta actual
+    const [cajas] = await db.query(
+      `SELECT * FROM caja_apertura_cierre WHERE estatus = 'ABIERTA' ORDER BY id_caja DESC LIMIT 1`
+    )
+
+    if (!cajas.length) {
+      return res.status(404).json({
+        ok: false,
+        error: 'No hay ninguna caja abierta actualmente'
+      })
+    }
+
+    const cajaActiva = cajas[0]
+    const fechaInicio = cajaActiva.fecha_inicio
+
+    // B) Sumar INGRESOS (Pagos) desde la fecha de apertura de la caja
+    const [ingresos] = await db.query(
+      `SELECT 
+        SUM(CASE WHEN LOWER(metodo) = 'efectivo' THEN monto ELSE 0 END) AS total_ingreso_efectivo,
+        SUM(CASE WHEN LOWER(metodo) = 'transferencia' AND LOWER(cuenta_destino) = 'fiscal' THEN monto ELSE 0 END) AS total_ingreso_banco
+       FROM pagos
+       WHERE fecha_pago >= ?`,
+      [fechaInicio]
+    )
+
+    // C) Sumar EGRESOS (Gastos) desde la fecha de apertura de la caja
+    const [egresos] = await db.query(
+      `SELECT 
+        SUM(CASE WHEN UPPER(origen_pago) = 'EFECTIVO' THEN monto ELSE 0 END) AS total_egreso_efectivo,
+        SUM(CASE WHEN UPPER(origen_pago) = 'TRANSFERENCIA' THEN monto ELSE 0 END) AS total_egreso_banco
+       FROM flujo_egresos
+       WHERE fecha_captura >= ?`,
+      [fechaInicio]
+    )
+
+    // D) Operación de Saldos en Tiempo Real
+    const ingEfectivo = Number(ingresos[0]?.total_ingreso_efectivo || 0)
+    const ingBanco = Number(ingresos[0]?.total_ingreso_banco || 0)
+
+    const egrEfectivo = Number(egresos[0]?.total_egreso_efectivo || 0)
+    const egrBanco = Number(egresos[0]?.total_egreso_banco || 0)
+
+    const saldoEfectivo = Number(cajaActiva.monto_inicial_efectivo) + ingEfectivo - egrEfectivo
+    const saldoBanco = Number(cajaActiva.monto_inicial_banco) + ingBanco - egrBanco
+    const saldoTotal = saldoEfectivo + saldoBanco
+
+    // E) Traer lista detallada de movimientos (Abonos + Gastos)
+    const [movimientos] = await db.query(
+      `(SELECT 
+          p.id_pago AS id,
+          'INGRESO' AS tipo,
+          CONCAT('Abono - ', COALESCE(c.nombre, p.nombre_usuario, 'Cliente')) AS concepto,
+          p.monto,
+          p.metodo AS forma_pago,
+          p.fecha_registro AS fecha
+        FROM pagos p
+        LEFT JOIN pedidos ped ON p.id_pedido = ped.id_pedido
+        LEFT JOIN clientes c ON ped.id_cliente = c.id_cliente
+        WHERE p.fecha_pago >= ?)
+       UNION ALL
+       (SELECT 
+          e.id_egreso AS id,
+          'EGRESO' AS tipo,
+          CONCAT('Gasto - ', e.concepto) AS concepto,
+          e.monto,
+          e.origen_pago AS forma_pago,
+          e.fecha_captura AS fecha
+        FROM flujo_egresos e
+        WHERE e.fecha_captura >= ?)
+       ORDER BY fecha DESC
+       LIMIT 50`,
+      [fechaInicio, fechaInicio]
+    )
+
+    res.json({
+      ok: true,
+      caja_info: {
+        id_caja: cajaActiva.id_caja,
+        fecha_inicio: cajaActiva.fecha_inicio,
+        monto_inicial_efectivo: cajaActiva.monto_inicial_efectivo,
+        monto_inicial_banco: cajaActiva.monto_inicial_banco
+      },
+      saldos: {
+        total: saldoTotal,
+        efectivo: saldoEfectivo,
+        banco: saldoBanco
+      },
+      movimientos
+    })
+
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message })
+  }
+})
+
+// 2. CERRAR PERÍODO Y ABRIR NUEVO CON MONTO CONFIRMADO O AJUSTADO
+app.post('/api/caja/cerrar-y-abrir', async (req, res) => {
+  const { 
+    monto_cierre_efectivo, 
+    monto_cierre_banco, 
+    observaciones, 
+    id_usuario 
+  } = req.body
+
+  try {
+    const [cajas] = await db.query(
+      `SELECT * FROM caja_apertura_cierre WHERE estatus = 'ABIERTA' ORDER BY id_caja DESC LIMIT 1`
+    )
+
+    if (!cajas.length) {
+      return res.status(404).json({ ok: false, error: 'No hay ninguna caja abierta actualmente' })
+    }
+
+    const cajaActual = cajas[0]
+    const hoy = new Date().toISOString().split('T')[0]
+
+    // Cierre de caja previa
+    await db.query(
+      `UPDATE caja_apertura_cierre 
+       SET fecha_fin = ?, 
+           monto_cierre_efectivo = ?, 
+           monto_cierre_banco = ?, 
+           estatus = 'CERRADA', 
+           observaciones = ?, 
+           id_usuario_cierre = ? 
+       WHERE id_caja = ?`,
+      [
+        hoy, 
+        monto_cierre_efectivo, 
+        monto_cierre_banco, 
+        observaciones || null, 
+        id_usuario || null, 
+        cajaActual.id_caja
+      ]
+    )
+
+    // Apertura automática del siguiente periodo
+    const [nuevoRegistro] = await db.query(
+      `INSERT INTO caja_apertura_cierre 
+       (fecha_inicio, monto_inicial_efectivo, monto_inicial_banco, estatus, id_usuario_apertura) 
+       VALUES (?, ?, ?, 'ABIERTA', ?)`,
+      [hoy, monto_cierre_efectivo, monto_cierre_banco, id_usuario || null]
+    )
+
+    res.json({
+      success: true,
+      message: 'Período cerrado y nueva caja iniciada con éxito',
+      nueva_caja_id: nuevoRegistro.insertId
+    })
+
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message })
+  }
+})
+
+
+
+// =============================
 // CONTROL DE VENTAS
 // =============================
 app.get('/control-ventas', async (req, res) => {
