@@ -2821,7 +2821,7 @@ app.get('/api/caja/resumen', async (req, res) => {
     const saldoBanco = Number(cajaActiva.monto_inicial_banco) + ingBanco - egrBanco
     const saldoTotal = saldoEfectivo + saldoBanco
 
-    // E) Lista de movimientos unificada con COLLATE y FORMAT para comas en monto
+    // E) Lista de movimientos unificada con COLLATE y FORMAT para comas en los montos
     const [movimientos] = await db.query(
       `(SELECT 
           p.id_pago AS id,
