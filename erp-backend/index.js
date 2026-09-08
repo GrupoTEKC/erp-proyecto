@@ -2860,8 +2860,7 @@ app.get('/api/caja/resumen', async (req, res) => {
           e.fecha_captura AS fecha
         FROM flujo_egresos e
         WHERE e.fecha_captura >= ?)
-       ORDER BY fecha DESC
-       LIMIT 50`,
+       ORDER BY fecha DESC`,
       [fechaInicio, fechaInicio]
     )
 
@@ -2887,6 +2886,7 @@ app.get('/api/caja/resumen', async (req, res) => {
     res.status(500).json({ ok: false, error: err.message })
   }
 })
+
 
 
 
