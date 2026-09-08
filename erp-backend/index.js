@@ -2822,7 +2822,7 @@ app.get('/api/caja/resumen', async (req, res) => {
     const saldoTotal = saldoEfectivo + saldoBanco
 
     // E) Lista de movimientos unificada con COLLATE
-    const [movimientosRaw] = await db.query(
+    const [movimientos] = await db.query(
       `(SELECT 
           p.id_pago AS id,
           'INGRESO' COLLATE utf8mb4_unicode_ci AS tipo,
@@ -2857,12 +2857,6 @@ app.get('/api/caja/resumen', async (req, res) => {
       [fechaInicio, fechaInicio]
     )
 
-    // Formatear montos con comas de miles sin alterar el tipo numérico
-    const movimientos = movimientosRaw.map(m => ({
-      ...m,
-      monto: Number(m.monto).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    }))
-
     res.json({
       ok: true,
       caja_info: {
@@ -2883,7 +2877,6 @@ app.get('/api/caja/resumen', async (req, res) => {
     res.status(500).json({ ok: false, error: err.message })
   }
 })
-
 
 
 // 2. CERRAR PERÍODO Y ABRIR NUEVO CON MONTO CONFIRMADO O AJUSTADO
