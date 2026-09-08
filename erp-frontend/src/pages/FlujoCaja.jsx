@@ -41,6 +41,14 @@ const styles = {
     letterSpacing: 2,
     margin: 0
   },
+  subTitle: {
+    color: vino,
+    fontSize: 32,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+    margin: '30px 0 15px 0',
+    textAlign: 'center'
+  },
   logo: {
     height: 160
   },
@@ -53,27 +61,35 @@ const styles = {
     cursor: 'pointer',
     fontWeight: 'bold'
   },
-  /* BOTÓN Y SECCIÓN MOVIMIENTOS DE CAJA */
-  movimientosBar: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '20px'
+  /* TARJETAS DE SALDO (KPIs) */
+  kpiGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+    gap: '15px',
+    marginBottom: '25px'
   },
-  btnVerMovimientos: {
-    backgroundColor: '#1e293b',
-    color: '#ffffff',
-    border: 'none',
-    padding: '12px 20px',
-    borderRadius: '8px',
+  kpiCard: {
+    backgroundColor: '#ffffff',
+    border: `2px solid ${vino}`,
+    borderRadius: '10px',
+    padding: '16px',
+    textAlign: 'center',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+  },
+  kpiTitle: {
+    fontSize: '13px',
     fontWeight: 'bold',
-    fontSize: '14px',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+    color: '#64748b',
+    margin: '0 0 6px 0',
+    textTransform: 'uppercase'
   },
+  kpiValue: {
+    fontSize: '22px',
+    fontWeight: '900',
+    color: vino,
+    margin: 0
+  },
+  /* SECCIÓN HISTORIAL MOVIMIENTOS DE CAJA */
   movimientosCard: {
     backgroundColor: '#ffffff',
     border: '2px solid #cbd5e1',
@@ -398,10 +414,10 @@ const styles = {
 function FlujoCaja() {
   const navigate = useNavigate()
 
-  // ESTADO - MOVIMIENTOS DE CAJA
-  const [movimientosAbierto, setMovimientosAbierto] = useState(false)
+  // ESTADO - RESUMEN DE CAJA Y MOVIMIENTOS
+  const [saldos, setSaldos] = useState({ efectivo: 0, banco: 0, total: 0, saldo_tekc: 0 })
   const [movimientos, setMovimientos] = useState([])
-  const [cargandoMovimientos, setCargandoMovimientos] = useState(false)
+  const [cargandoResumen, setCargandoResumen] = useState(true)
 
   // ESTADOS - GASTOS OPERATIVOS (PRODUCCIÓN)
   const [produccionAbierto, setProduccionAbierto] = useState(false)
@@ -474,8 +490,37 @@ function FlujoCaja() {
   const [empleadoServicios, setEmpleadoServicios] = useState('')
   const [montoServicios, setMontoServicios] = useState('')
 
-  // Cargar catálogo de datos
+  // OBTENER RESUMEN Y MOVIMIENTOS AL CARGAR EL COMPONENTE
+  const cargarResumenCaja = async () => {
+    setCargandoResumen(true)
+    try {
+      const res = await fetch(`${API}/api/caja/resumen`)
+      if (res.ok) {
+        const data = await res.json()
+        if (data) {
+          if (data.saldos) {
+            setSaldos({
+              efectivo: data.saldos.efectivo || 0,
+              banco: data.saldos.banco || 0,
+              total: data.saldos.total || 0,
+              saldo_tekc: data.saldos.saldo_tekc || 0
+            })
+          }
+          if (Array.isArray(data.movimientos)) {
+            setMovimientos(data.movimientos)
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error al obtener el resumen de caja:', err)
+    } finally {
+      setCargandoResumen(false)
+    }
+  }
+
+  // Cargar catálogo de datos y resumen
   useEffect(() => {
+    cargarResumenCaja()
     fetch(`${API}/productos`).then(r => r.json()).then(d => Array.isArray(d) && setProductosBD(d)).catch(console.error)
     fetch(`${API}/empleados`).then(r => r.json()).then(d => Array.isArray(d) && setEmpleados(d)).catch(console.error)
     fetch(`${API}/rutas`).then(r => r.json()).then(d => Array.isArray(d) && setRutas(d)).catch(console.error)
@@ -494,27 +539,6 @@ function FlujoCaja() {
         .catch((err) => console.error('Error al verificar pagos de semana:', err))
     }
   }, [fechaInicioSemana, fechaFinSemana])
-
-  // OBTENER MOVIMIENTOS DESDE EL ENDPOINT /api/caja/resumen
-  const cargarMovimientosCaja = async () => {
-    if (!movimientosAbierto) {
-      setCargandoMovimientos(true)
-      try {
-        const res = await fetch(`${API}/api/caja/resumen`)
-        if (res.ok) {
-          const data = await res.json()
-          if (data && Array.isArray(data.movimientos)) {
-            setMovimientos(data.movimientos)
-          }
-        }
-      } catch (err) {
-        console.error('Error al obtener movimientos de caja:', err)
-      } finally {
-        setCargandoMovimientos(false)
-      }
-    }
-    setMovimientosAbierto(!movimientosAbierto)
-  }
 
   // Handlers para la selección de categorías
   const handleSelectApartado = (idCat) => {
@@ -684,6 +708,7 @@ function FlujoCaja() {
       if (data.success) {
         alert('¡Gasto registrado con éxito!')
         setApartadoActivo(null)
+        cargarResumenCaja()
       } else {
         alert(`Error: ${data.error || 'No se pudo registrar el gasto'}`)
       }
@@ -811,6 +836,7 @@ function FlujoCaja() {
           setEmpleadosPagados(prev => [...prev, parseInt(empleadoSeleccionado)])
         }
         setSubPersonalActivo(null)
+        cargarResumenCaja()
       } else {
         alert(`Error: ${data.error || 'No se pudo registrar el gasto'}`)
       }
@@ -918,6 +944,7 @@ function FlujoCaja() {
       if (data.success) {
         alert('¡Gasto registrado exitosamente!')
         setSubPlantaActivo(null)
+        cargarResumenCaja()
       } else {
         alert(`Error: ${data.error || 'No se pudo guardar el gasto'}`)
       }
@@ -1011,6 +1038,7 @@ function FlujoCaja() {
       if (data.success) {
         alert('¡Gasto departamental registrado con éxito!')
         setSubDeptoActivo(null)
+        cargarResumenCaja()
       } else {
         alert(`Error: ${data.error || 'No se pudo guardar el gasto'}`)
       }
@@ -1045,72 +1073,87 @@ function FlujoCaja() {
           </button>
         </div>
         <div style={styles.centerSection}>
-          <h1 style={styles.mainTitle}>DESGLOSE DE CAJA</h1>
+          <h1 style={styles.mainTitle}>SALDO TEKC</h1>
         </div>
         <div style={styles.rightSection}>
           <img src={logo} alt="Logo SCAE" style={styles.logo} />
         </div>
       </header>
 
-      {/* BOTÓN Y TABLA DESPLEGABLE DE MOVIMIENTOS */}
-      <div style={styles.movimientosBar}>
-        <button style={styles.btnVerMovimientos} onClick={cargarMovimientosCaja}>
-          📊 {movimientosAbierto ? 'Ocultar Movimientos' : 'Ver Movimientos'}
-        </button>
+      {/* TARJETAS DE SALDOS (KPIs) */}
+      <div style={styles.kpiGrid}>
+        <div style={styles.kpiCard}>
+          <p style={styles.kpiTitle}>Saldo TEKC</p>
+          <p style={styles.kpiValue}>${saldos.saldo_tekc.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+        </div>
+        <div style={styles.kpiCard}>
+          <p style={styles.kpiTitle}>Efectivo</p>
+          <p style={styles.kpiValue}>${saldos.efectivo.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+        </div>
+        <div style={styles.kpiCard}>
+          <p style={styles.kpiTitle}>Banco</p>
+          <p style={styles.kpiValue}>${saldos.banco.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+        </div>
+        <div style={styles.kpiCard}>
+          <p style={styles.kpiTitle}>Total</p>
+          <p style={styles.kpiValue}>${saldos.total.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+        </div>
       </div>
 
-      {movimientosAbierto && (
-        <div style={styles.movimientosCard}>
-          <h3 style={{ color: vino, marginTop: 0, marginBottom: '10px' }}>
-            📜 Historial de Movimientos de Caja
-          </h3>
-          {cargandoMovimientos ? (
-            <p style={{ color: '#64748b' }}>Cargando movimientos...</p>
-          ) : movimientos.length === 0 ? (
-            <p style={{ color: '#64748b' }}>No hay movimientos registrados en la caja actual.</p>
-          ) : (
-            <table style={styles.table}>
-              <thead>
-                <tr>
-                  <th style={styles.th}>Tipo</th>
-                  <th style={styles.th}>Concepto / Detalle</th>
-                  <th style={styles.th}>Forma de Pago</th>
-                  <th style={styles.th}>Monto</th>
-                  <th style={styles.th}>Fecha y Hora</th>
-                </tr>
-              </thead>
-              <tbody>
-                {movimientos.map((m, idx) => {
-                  const esIngreso = m.tipo?.toUpperCase() === 'INGRESO'
-                  return (
-                    <tr key={idx}>
-                      <td style={styles.td}>
-                        <span style={esIngreso ? styles.badgeIngreso : styles.badgeEgreso}>
-                          {esIngreso ? 'INGRESO' : 'EGRESO'}
-                        </span>
-                      </td>
-                      <td style={styles.td}>
-                        {esIngreso
-                          ? `Abono - ${m.cliente || m.concepto || 'Cliente'}`
-                          : `Gasto - ${m.concepto || 'Egreso general'}`}
-                      </td>
-                      <td style={styles.td}>
-                        {m.forma_pago || m.origen_pago || 'Efectivo'}
-                      </td>
-                      <td style={{ ...styles.td, ...(esIngreso ? styles.montoIngreso : styles.montoEgreso) }}>
-                        {esIngreso ? `+$${parseFloat(m.monto).toFixed(2)}` : `-$${parseFloat(m.monto).toFixed(2)}`}
-                      </td>
-                      <td style={styles.td}>
-                        {m.fecha ? new Date(m.fecha).toLocaleString() : 'N/A'}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          )}
-        </div>
-      )}
+      {/* TABLA DE HISTORIAL DE MOVIMIENTOS DE CAJA */}
+      <div style={styles.movimientosCard}>
+        <h3 style={{ color: vino, marginTop: 0, marginBottom: '10px' }}>
+          📜 Historial de Movimientos de Caja
+        </h3>
+        {cargandoResumen ? (
+          <p style={{ color: '#64748b' }}>Cargando movimientos...</p>
+        ) : movimientos.length === 0 ? (
+          <p style={{ color: '#64748b' }}>No hay movimientos registrados en la caja actual.</p>
+        ) : (
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.th}>Tipo</th>
+                <th style={styles.th}>Concepto / Detalle</th>
+                <th style={styles.th}>Forma de Pago</th>
+                <th style={styles.th}>Monto</th>
+                <th style={styles.th}>Fecha y Hora</th>
+              </tr>
+            </thead>
+            <tbody>
+              {movimientos.map((m, idx) => {
+                const esIngreso = m.tipo?.toUpperCase() === 'INGRESO'
+                return (
+                  <tr key={idx}>
+                    <td style={styles.td}>
+                      <span style={esIngreso ? styles.badgeIngreso : styles.badgeEgreso}>
+                        {esIngreso ? 'INGRESO' : 'EGRESO'}
+                      </span>
+                    </td>
+                    <td style={styles.td}>
+                      {esIngreso
+                        ? `Abono - ${m.cliente || m.concepto || 'Cliente'}`
+                        : `Gasto - ${m.concepto || 'Egreso general'}`}
+                    </td>
+                    <td style={styles.td}>
+                      {m.forma_pago || m.origen_pago || 'Efectivo'}
+                    </td>
+                    <td style={{ ...styles.td, ...(esIngreso ? styles.montoIngreso : styles.montoEgreso) }}>
+                      {esIngreso ? `+$${parseFloat(m.monto).toFixed(2)}` : `-$${parseFloat(m.monto).toFixed(2)}`}
+                    </td>
+                    <td style={styles.td}>
+                      {m.fecha ? new Date(m.fecha).toLocaleString() : 'N/A'}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* SUBTÍTULO DESGLOSE DE CAJA */}
+      <h2 style={styles.subTitle}>DESGLOSE DE CAJA</h2>
 
       {/* 🏭 TARJETA PRINCIPAL 1: GASTOS OPERATIVOS (PRODUCCIÓN) */}
       <div style={styles.parentCard}>
