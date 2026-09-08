@@ -2768,6 +2768,7 @@ app.get('/pagos/:id_pedido', async (req, res) => {
 })
 
 
+
 // =============================
 // 📊 CAJA Y FLUJO DE CAJA (EN TIEMPO REAL)
 // =============================
@@ -2790,7 +2791,7 @@ app.get('/api/caja/resumen', async (req, res) => {
     const cajaActiva = cajas[0]
     const fechaInicio = cajaActiva.fecha_inicio
 
-    // B) Sumar INGRESOS (Pagos) desde la fecha de apertura
+    // B) Sumar INGRESOS (Pagos) desde la fecha de apertura (INTACTO)
     const [ingresos] = await db.query(
       `SELECT 
         SUM(CASE WHEN LOWER(metodo) = 'efectivo' THEN monto ELSE 0 END) AS total_ingreso_efectivo,
@@ -2800,7 +2801,7 @@ app.get('/api/caja/resumen', async (req, res) => {
       [fechaInicio]
     )
 
-    // C) Sumar EGRESOS (Gastos) desde la fecha de apertura
+    // C) Sumar EGRESOS (Gastos) desde la fecha de apertura (INTACTO)
     const [egresos] = await db.query(
       `SELECT 
         SUM(CASE WHEN UPPER(origen_pago) = 'EFECTIVO' THEN monto ELSE 0 END) AS total_egreso_efectivo,
@@ -2810,7 +2811,7 @@ app.get('/api/caja/resumen', async (req, res) => {
       [fechaInicio]
     )
 
-    // D) Cálculo de Saldos
+    // D) Cálculo de Saldos (TUS MISMAS VARIABLES)
     const ingEfectivo = Number(ingresos[0]?.total_ingreso_efectivo || 0)
     const ingBanco = Number(ingresos[0]?.total_ingreso_banco || 0)
 
@@ -2821,7 +2822,14 @@ app.get('/api/caja/resumen', async (req, res) => {
     const saldoBanco = Number(cajaActiva.monto_inicial_banco) + ingBanco - egrBanco
     const saldoTotal = saldoEfectivo + saldoBanco
 
-    // E) Lista de movimientos unificada con COLLATE
+    // 🔴 NUEVA FÓRMA SALDO TEKC (Suma de montos iniciales + ingresos - egresos)
+    const montoInicialTotal = Number(cajaActiva.monto_inicial_efectivo) + Number(cajaActiva.monto_inicial_banco)
+    const totalIngresos = ingEfectivo + ingBanco
+    const totalEgresos = egrEfectivo + egrBanco
+    
+    const saldoTEKC = montoInicialTotal + totalIngresos - totalEgresos
+
+    // E) Lista de movimientos unificada con COLLATE (INTACTO)
     const [movimientos] = await db.query(
       `(SELECT 
           p.id_pago AS id,
@@ -2857,6 +2865,7 @@ app.get('/api/caja/resumen', async (req, res) => {
       [fechaInicio, fechaInicio]
     )
 
+    // RESPUESTA JSON (Preserva todo lo anterior + agrega saldo_tekc)
     res.json({
       ok: true,
       caja_info: {
@@ -2867,6 +2876,7 @@ app.get('/api/caja/resumen', async (req, res) => {
       },
       saldos: {
         total: saldoTotal,
+        saldo_tekc: saldoTEKC, // 👈 AQUÍ TIENES TU NUEVA PROPIEDAD
         efectivo: saldoEfectivo,
         banco: saldoBanco
       },
@@ -2877,6 +2887,9 @@ app.get('/api/caja/resumen', async (req, res) => {
     res.status(500).json({ ok: false, error: err.message })
   }
 })
+
+
+
 
 app.post('/api/caja/cerrar-y-abrir', async (req, res) => {
   const { 
