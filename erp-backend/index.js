@@ -2791,16 +2791,18 @@ app.get('/api/caja/resumen', async (req, res) => {
     const cajaActiva = cajas[0]
     const fechaInicio = cajaActiva.fecha_inicio
 
-    // B) Sumar INGRESOS (Pagos) desde la fecha de apertura (INTACTO)
-    const [ingresos] = await db.query(
-      `SELECT 
-        SUM(CASE WHEN LOWER(metodo) = 'efectivo' THEN monto ELSE 0 END) AS total_ingreso_efectivo,
-        SUM(CASE WHEN LOWER(metodo) = 'transferencia' AND LOWER(cuenta_destino) = 'fiscal' THEN monto ELSE 0 END) AS total_ingreso_banco
-       FROM pagos
-       WHERE fecha_pago >= ?`,
-      [fechaInicio]
-    )
+   // B) Sumar INGRESOS (Pagos) del mes actual por fecha_pago (efectivo y transferencia)
+const [ingresos] = await db.query(
+  `SELECT 
+    SUM(CASE WHEN LOWER(metodo) = 'efectivo' THEN monto ELSE 0 END) AS total_ingreso_efectivo,
+    SUM(CASE WHEN LOWER(metodo) = 'transferencia' THEN monto ELSE 0 END) AS total_ingreso_banco,
+    SUM(CASE WHEN LOWER(metodo) IN ('efectivo', 'transferencia') THEN monto ELSE 0 END) AS total_ingresos
+   FROM pagos
+   WHERE fecha_pago >= DATE_FORMAT(CURRENT_DATE(), '%Y-%m-01')
+     AND fecha_pago <= LAST_DAY(CURRENT_DATE())`
+);
 
+  
     // C) Sumar EGRESOS (Gastos) desde la fecha de apertura (INTACTO)
     const [egresos] = await db.query(
       `SELECT 
