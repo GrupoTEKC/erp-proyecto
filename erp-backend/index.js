@@ -2790,7 +2790,7 @@ app.get('/api/caja/resumen', async (req, res) => {
     const cajaActiva = cajas[0]
     const fechaInicio = cajaActiva.fecha_inicio
 
-    // B) Sumar INGRESOS (Pagos) desde la fecha de apertura de la caja
+    // B) Sumar INGRESOS (Pagos) desde la fecha de apertura
     const [ingresos] = await db.query(
       `SELECT 
         SUM(CASE WHEN LOWER(metodo) = 'efectivo' THEN monto ELSE 0 END) AS total_ingreso_efectivo,
@@ -2800,7 +2800,7 @@ app.get('/api/caja/resumen', async (req, res) => {
       [fechaInicio]
     )
 
-    // C) Sumar EGRESOS (Gastos) desde la fecha de apertura de la caja
+    // C) Sumar EGRESOS (Gastos) desde la fecha de apertura
     const [egresos] = await db.query(
       `SELECT 
         SUM(CASE WHEN UPPER(origen_pago) = 'EFECTIVO' THEN monto ELSE 0 END) AS total_egreso_efectivo,
@@ -2810,7 +2810,7 @@ app.get('/api/caja/resumen', async (req, res) => {
       [fechaInicio]
     )
 
-    // D) Operación de Saldos en Tiempo Real
+    // D) Cálculo de Saldos
     const ingEfectivo = Number(ingresos[0]?.total_ingreso_efectivo || 0)
     const ingBanco = Number(ingresos[0]?.total_ingreso_banco || 0)
 
@@ -2821,14 +2821,14 @@ app.get('/api/caja/resumen', async (req, res) => {
     const saldoBanco = Number(cajaActiva.monto_inicial_banco) + ingBanco - egrBanco
     const saldoTotal = saldoEfectivo + saldoBanco
 
-    // E) Traer lista detallada de movimientos (Abonos + Gastos)
+    // E) Lista de movimientos unificada con COLLATE
     const [movimientos] = await db.query(
       `(SELECT 
           p.id_pago AS id,
-          'INGRESO' AS tipo,
-          CONCAT('Abono - ', COALESCE(c.nombre, p.nombre_usuario, 'Cliente')) AS concepto,
+          'INGRESO' COLLATE utf8mb4_unicode_ci AS tipo,
+          CONCAT('Abono - ', COALESCE(c.nombre, p.nombre_usuario, 'Cliente')) COLLATE utf8mb4_unicode_ci AS concepto,
           p.monto,
-          p.metodo AS forma_pago,
+          p.metodo COLLATE utf8mb4_unicode_ci AS forma_pago,
           p.fecha_registro AS fecha
         FROM pagos p
         LEFT JOIN pedidos ped ON p.id_pedido = ped.id_pedido
@@ -2837,10 +2837,10 @@ app.get('/api/caja/resumen', async (req, res) => {
        UNION ALL
        (SELECT 
           e.id_egreso AS id,
-          'EGRESO' AS tipo,
-          CONCAT('Gasto - ', e.concepto) AS concepto,
+          'EGRESO' COLLATE utf8mb4_unicode_ci AS tipo,
+          CONCAT('Gasto - ', e.concepto) COLLATE utf8mb4_unicode_ci AS concepto,
           e.monto,
-          e.origen_pago AS forma_pago,
+          e.origen_pago COLLATE utf8mb4_unicode_ci AS forma_pago,
           e.fecha_captura AS fecha
         FROM flujo_egresos e
         WHERE e.fecha_captura >= ?)
@@ -2869,6 +2869,7 @@ app.get('/api/caja/resumen', async (req, res) => {
     res.status(500).json({ ok: false, error: err.message })
   }
 })
+
 
 // 2. CERRAR PERÍODO Y ABRIR NUEVO CON MONTO CONFIRMADO O AJUSTADO
 app.post('/api/caja/cerrar-y-abrir', async (req, res) => {
