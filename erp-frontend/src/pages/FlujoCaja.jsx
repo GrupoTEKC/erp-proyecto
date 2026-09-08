@@ -415,7 +415,7 @@ function FlujoCaja() {
   const navigate = useNavigate()
 
   // ESTADO - RESUMEN DE CAJA Y MOVIMIENTOS
-  const [saldos, setSaldos] = useState({ efectivo: 0, banco: 0, total: 0, saldo_tekc: 0 })
+  const [saldos, setSaldos] = useState({ efectivo: 0, banco: 0, total_ingresos: 0, total_egresos: 0, saldo_tekc: 0 })
   const [movimientos, setMovimientos] = useState([])
   const [cargandoResumen, setCargandoResumen] = useState(true)
 
@@ -502,7 +502,8 @@ function FlujoCaja() {
             setSaldos({
               efectivo: data.saldos.efectivo || 0,
               banco: data.saldos.banco || 0,
-              total: data.saldos.total || 0,
+              total_ingresos: data.saldos.total_ingresos || data.saldos.ingresos || 0,
+              total_egresos: data.saldos.total_egresos || data.saldos.egresos || 0,
               saldo_tekc: data.saldos.saldo_tekc || 0
             })
           }
@@ -1095,8 +1096,12 @@ function FlujoCaja() {
           <p style={styles.kpiValue}>${saldos.banco.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
         </div>
         <div style={styles.kpiCard}>
-          <p style={styles.kpiTitle}>Total</p>
-          <p style={styles.kpiValue}>${saldos.total.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+          <p style={styles.kpiTitle}>Total Ingresos</p>
+          <p style={styles.kpiValue}>${saldos.total_ingresos.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+        </div>
+        <div style={styles.kpiCard}>
+          <p style={styles.kpiTitle}>Total Egresos</p>
+          <p style={styles.kpiValue}>${saldos.total_egresos.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
         </div>
       </div>
 
@@ -2135,7 +2140,7 @@ function FlujoCaja() {
                   )}
 
                   <div style={styles.fieldGroup}>
-                    <label style={styles.label}>Origen de pago *</label>
+                    <label style={styles.label}>Origen de Pago *</label>
                     <select
                       style={styles.select}
                       value={origenPago}
@@ -2154,7 +2159,7 @@ function FlujoCaja() {
 
                   {origenPago === 'TRANSFERENCIA' && (
                     <div style={styles.fieldGroup}>
-                      <label style={styles.label}>Cuenta de banco *</label>
+                      <label style={styles.label}>Cuenta Bancaria de Salida *</label>
                       <select
                         style={styles.select}
                         value={cuentaBancaria}
@@ -2164,7 +2169,7 @@ function FlujoCaja() {
                         }}
                         required
                       >
-                        <option value="">-- Seleccionar cuenta --</option>
+                        <option value="">-- Seleccionar Cuenta --</option>
                         <option value="Cuenta Fiscal">Cuenta fiscal</option>
                         <option value="OTRO">Otro</option>
                       </select>
@@ -2172,7 +2177,7 @@ function FlujoCaja() {
                   )}
 
                   {origenPago === 'TRANSFERENCIA' && cuentaBancaria === 'OTRO' && (
-                    <div style={styles.fieldGroup}>
+                    <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
                       <label style={styles.label}>Nombre y Apellido del dueño de la cuenta *</label>
                       <input
                         type="text"
@@ -2187,7 +2192,7 @@ function FlujoCaja() {
 
                   <div style={styles.fullRow}>
                     <button type="button" onClick={handleGuardarPlanta} style={styles.submitButton}>
-                      Guardar gasto de planta
+                      Guardar registro de planta
                     </button>
                   </div>
                 </form>
@@ -2197,15 +2202,15 @@ function FlujoCaja() {
         )}
       </div>
 
-      {/* 🏙️ TARJETA PRINCIPAL 4: GASTOS DEPARTAMENTALES */}
+      {/* 🏢 TARJETA PRINCIPAL 4: GASTOS DEPARTAMENTALES */}
       <div style={styles.parentCard}>
         <div style={styles.parentHeader} onClick={() => setDeptosAbierto(!deptosAbierto)}>
           <div style={styles.parentTitleGroup}>
-            <span style={{ fontSize: '28px' }}>🏙️</span>
+            <span style={{ fontSize: '28px' }}>🏢</span>
             <div>
               <h3 style={styles.parentTitle}>GASTOS DEPARTAMENTALES</h3>
               <p style={styles.parentSubtitle}>
-                Marketing y publicidad, caja chica administrativa y servicios profesionales externos.
+                Gastos asociados a Marketing, Caja Chica y Servicios Profesionales.
               </p>
             </div>
           </div>
@@ -2220,10 +2225,10 @@ function FlujoCaja() {
                 onClick={() => handleSelectSubDepto(12)}
               >
                 <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Marketing y publicidad</span>
+                  <span style={styles.cardName}>Marketing</span>
                   <span style={styles.cardIcon}>📢</span>
                 </div>
-                <p style={styles.cardDesc}>Comidas de eventos, camisas, eventos especiales y lona publicitaria.</p>
+                <p style={styles.cardDesc}>Eventos, capacitaciones, ferias, souvenirs, perifoneo, lonas.</p>
               </div>
 
               <div
@@ -2231,10 +2236,10 @@ function FlujoCaja() {
                 onClick={() => handleSelectSubDepto(13)}
               >
                 <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Caja chica administrativa</span>
-                  <span style={styles.cardIcon}>☕</span>
+                  <span style={styles.cardName}>Caja Chica</span>
+                  <span style={styles.cardIcon}>🪙</span>
                 </div>
-                <p style={styles.cardDesc}>Agua, azúcar, café, galletas, servilletas y papelería básica.</p>
+                <p style={styles.cardDesc}>Papelería, consumibles de oficina, insumos de limpieza y imprevistos.</p>
               </div>
 
               <div
@@ -2242,10 +2247,10 @@ function FlujoCaja() {
                 onClick={() => handleSelectSubDepto(14)}
               >
                 <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Servicios profesionales externos</span>
-                  <span style={styles.cardIcon}>⚖️</span>
+                  <span style={styles.cardName}>Servicios Profesionales</span>
+                  <span style={styles.cardIcon}>📋</span>
                 </div>
-                <p style={styles.cardDesc}>Honorarios contables, asesoría legal y consultoría externa.</p>
+                <p style={styles.cardDesc}>Honorarios de Contaduría / Contadora Alma Nely Hernández Minor.</p>
               </div>
             </div>
 
@@ -2254,9 +2259,9 @@ function FlujoCaja() {
                 <div style={styles.formTitle}>
                   <span>
                     Estás capturando:{' '}
-                    {subDeptoActivo === 12 && '📢 Marketing y Publicidad'}
-                    {subDeptoActivo === 13 && '☕ Caja Chica Administrativa'}
-                    {subDeptoActivo === 14 && '⚖️ Servicios Profesionales Externos'}
+                    {subDeptoActivo === 12 && '📢 Marketing'}
+                    {subDeptoActivo === 13 && '🪙 Caja Chica'}
+                    {subDeptoActivo === 14 && '📋 Servicios Profesionales (Contaduría)'}
                   </span>
                   <button type="button" style={styles.closeBtn} onClick={() => setSubDeptoActivo(null)}>
                     ✕ Cerrar
@@ -2267,7 +2272,7 @@ function FlujoCaja() {
                   {subDeptoActivo === 12 && (
                     <>
                       <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
-                        <label style={styles.label}>Fecha del evento/gasto *</label>
+                        <label style={styles.label}>Fecha del Evento / Campaña *</label>
                         <input
                           type="date"
                           style={styles.input}
@@ -2279,7 +2284,7 @@ function FlujoCaja() {
 
                       <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
                         <div style={styles.dynamicHeader}>
-                          <span>Desglose de Marketing *</span>
+                          <span>Gastos de Marketing *</span>
                           <button
                             type="button"
                             style={styles.addBtn}
@@ -2289,18 +2294,20 @@ function FlujoCaja() {
                           </button>
                         </div>
                         {lineasMarketing.map((item, idx) => (
-                          <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
+                          <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
                             <select
-                              style={{ ...styles.select, flex: 1 }}
+                              style={{ ...styles.select, flex: 1.5 }}
                               value={item.tipoGasto}
                               onChange={(e) => handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'tipoGasto', e.target.value)}
                               required
                             >
-                              <option value="">-- Tipo de gasto --</option>
-                              <option value="Comidas de eventos">Comidas de eventos</option>
-                              <option value="Camisas">Camisas</option>
-                              <option value="Eventos especiales">Eventos especiales</option>
-                              <option value="Lona publicitaria">Lona publicitaria</option>
+                              <option value="">-- Seleccionar Tipo --</option>
+                              <option value="Feria / Evento">Feria / Evento</option>
+                              <option value="Capacitaciones">Capacitaciones</option>
+                              <option value="Souvenirs / Regalos">Souvenirs / Regalos</option>
+                              <option value="Perifoneo">Perifoneo</option>
+                              <option value="Lonas / Publicidad impresa">Lonas / Publicidad impresa</option>
+                              <option value="Otro">Otro</option>
                             </select>
                             <input
                               type="number"
@@ -2313,8 +2320,8 @@ function FlujoCaja() {
                             />
                             <input
                               type="text"
-                              placeholder="Comentarios opcionales..."
-                              style={{ ...styles.input, flex: 2 }}
+                              placeholder="Comentario adicional"
+                              style={{ ...styles.input, flex: 1.5 }}
                               value={item.comentario}
                               onChange={(e) => handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'comentario', e.target.value)}
                             />
@@ -2345,7 +2352,7 @@ function FlujoCaja() {
                         <label style={styles.label}>Cantidad (Opcional)</label>
                         <input
                           type="text"
-                          placeholder="Ej. 2 kg, 1 caja..."
+                          placeholder="Ej. 5 piezas, 2 paquetes..."
                           style={styles.input}
                           value={cantidadCajaChica}
                           onChange={(e) => setCantidadCajaChica(e.target.value)}
@@ -2367,11 +2374,11 @@ function FlujoCaja() {
                       </div>
 
                       <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
-                        <label style={styles.label}>¿Qué compraste? *</label>
-                        <input
-                          type="text"
-                          placeholder="Ej. Café, azúcar, galletas..."
-                          style={styles.input}
+                        <label style={styles.label}>Escribe lo que compraste *</label>
+                        <textarea
+                          rows="2"
+                          placeholder="Ej. Papelería, hojas tamaño carta, fabuloso para limpieza de oficinas..."
+                          style={{ ...styles.input, resize: 'vertical' }}
                           value={detalleCajaChica}
                           onChange={(e) => setDetalleCajaChica(e.target.value)}
                           required
@@ -2382,8 +2389,8 @@ function FlujoCaja() {
 
                   {subDeptoActivo === 14 && (
                     <>
-                      <div style={styles.fieldGroup}>
-                        <label style={styles.label}>Fecha de pago *</label>
+                      <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
+                        <label style={styles.label}>Fecha de Pago *</label>
                         <input
                           type="date"
                           style={styles.input}
@@ -2394,24 +2401,24 @@ function FlujoCaja() {
                       </div>
 
                       <div style={styles.fieldGroup}>
-                        <label style={styles.label}>Profesional Externo *</label>
+                        <label style={styles.label}>Servicio prestado por *</label>
                         <select
                           style={styles.select}
                           value={empleadoServicios}
                           onChange={(e) => setEmpleadoServicios(e.target.value)}
                           required
                         >
-                          <option value="">-- Seleccionar profesional --</option>
+                          <option value="">-- Seleccionar prestador --</option>
                           {empleados.map((emp) => (
                             <option key={emp.id_empleado} value={emp.id_empleado}>
-                              {emp.nombre_completo || `${emp.nombre || ''} ${emp.apellido1 || ''}`} ({emp.puesto})
+                              {emp.nombre_completo || `${emp.nombre || ''} ${emp.apellido1 || ''}`}
                             </option>
                           ))}
                         </select>
                       </div>
 
-                      <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
-                        <label style={styles.label}>Monto pagado ($) *</label>
+                      <div style={styles.fieldGroup}>
+                        <label style={styles.label}>Monto de Honorarios ($) *</label>
                         <input
                           type="number"
                           step="any"
@@ -2427,7 +2434,7 @@ function FlujoCaja() {
                   )}
 
                   <div style={styles.fieldGroup}>
-                    <label style={styles.label}>Origen de pago *</label>
+                    <label style={styles.label}>Origen de Pago *</label>
                     <select
                       style={styles.select}
                       value={origenPago}
@@ -2446,7 +2453,7 @@ function FlujoCaja() {
 
                   {origenPago === 'TRANSFERENCIA' && (
                     <div style={styles.fieldGroup}>
-                      <label style={styles.label}>Cuenta de banco *</label>
+                      <label style={styles.label}>Cuenta Bancaria de Salida *</label>
                       <select
                         style={styles.select}
                         value={cuentaBancaria}
@@ -2456,7 +2463,7 @@ function FlujoCaja() {
                         }}
                         required
                       >
-                        <option value="">-- Seleccionar cuenta --</option>
+                        <option value="">-- Seleccionar Cuenta --</option>
                         <option value="Cuenta Fiscal">Cuenta fiscal</option>
                         <option value="OTRO">Otro</option>
                       </select>
@@ -2464,7 +2471,7 @@ function FlujoCaja() {
                   )}
 
                   {origenPago === 'TRANSFERENCIA' && cuentaBancaria === 'OTRO' && (
-                    <div style={styles.fieldGroup}>
+                    <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
                       <label style={styles.label}>Nombre y Apellido del dueño de la cuenta *</label>
                       <input
                         type="text"
