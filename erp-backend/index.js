@@ -2821,8 +2821,8 @@ app.get('/api/caja/resumen', async (req, res) => {
     const saldoBanco = Number(cajaActiva.monto_inicial_banco) + ingBanco - egrBanco
     const saldoTotal = saldoEfectivo + saldoBanco
 
-    // E) Lista de movimientos unificada con COLLATE y FORMAT para comas en los montos
-    const [movimientos] = await db.query(
+    // E) Lista de movimientos unificada con COLLATE
+    const [movimientosRaw] = await db.query(
       `(SELECT 
           p.id_pago AS id,
           'INGRESO' COLLATE utf8mb4_unicode_ci AS tipo,
@@ -2835,7 +2835,7 @@ app.get('/api/caja/resumen', async (req, res) => {
               'Cliente'
             )
           ) COLLATE utf8mb4_unicode_ci AS concepto,
-          FORMAT(p.monto, 2) AS monto,
+          p.monto,
           p.metodo COLLATE utf8mb4_unicode_ci AS forma_pago,
           p.fecha_registro AS fecha
         FROM pagos p
@@ -2847,7 +2847,7 @@ app.get('/api/caja/resumen', async (req, res) => {
           e.id_egreso AS id,
           'EGRESO' COLLATE utf8mb4_unicode_ci AS tipo,
           CONCAT('Gasto - ', e.concepto) COLLATE utf8mb4_unicode_ci AS concepto,
-          FORMAT(e.monto, 2) AS monto,
+          e.monto,
           e.origen_pago COLLATE utf8mb4_unicode_ci AS forma_pago,
           e.fecha_captura AS fecha
         FROM flujo_egresos e
@@ -2856,6 +2856,12 @@ app.get('/api/caja/resumen', async (req, res) => {
        LIMIT 50`,
       [fechaInicio, fechaInicio]
     )
+
+    // Formatear montos con comas de miles sin alterar el tipo numérico
+    const movimientos = movimientosRaw.map(m => ({
+      ...m,
+      monto: Number(m.monto).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    }))
 
     res.json({
       ok: true,
