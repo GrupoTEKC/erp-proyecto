@@ -2826,7 +2826,15 @@ app.get('/api/caja/resumen', async (req, res) => {
       `(SELECT 
           p.id_pago AS id,
           'INGRESO' COLLATE utf8mb4_unicode_ci AS tipo,
-          CONCAT('Abono - ', COALESCE(c.nombre, p.nombre_usuario, 'Cliente')) COLLATE utf8mb4_unicode_ci AS concepto,
+          CONCAT(
+            'Abono - ', 
+            COALESCE(
+              NULLIF(TRIM(c.nombre_tienda), ''), 
+              c.nombre, 
+              p.nombre_usuario, 
+              'Cliente'
+            )
+          ) COLLATE utf8mb4_unicode_ci AS concepto,
           p.monto,
           p.metodo COLLATE utf8mb4_unicode_ci AS forma_pago,
           p.fecha_registro AS fecha
