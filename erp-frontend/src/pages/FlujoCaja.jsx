@@ -1084,23 +1084,23 @@ function FlujoCaja() {
       {/* TARJETAS DE SALDOS (KPIs) */}
       <div style={styles.kpiGrid}>
         <div style={styles.kpiCard}>
-          <p style={styles.kpiTitle}>Saldo TEKC</p>
+          <p style={styles.kpiTitle}>Saldo general TEKC</p>
           <p style={styles.kpiValue}>${saldos.saldo_tekc.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
         </div>
         <div style={styles.kpiCard}>
-          <p style={styles.kpiTitle}>Efectivo</p>
+          <p style={styles.kpiTitle}>Total en efectivo</p>
           <p style={styles.kpiValue}>${saldos.efectivo.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
         </div>
         <div style={styles.kpiCard}>
-          <p style={styles.kpiTitle}>Banco</p>
+          <p style={styles.kpiTitle}>Total en banco</p>
           <p style={styles.kpiValue}>${saldos.banco.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
         </div>
         <div style={styles.kpiCard}>
-          <p style={styles.kpiTitle}>Total Ingresos</p>
+          <p style={styles.kpiTitle}>Total de ingresos</p>
           <p style={styles.kpiValue}>${saldos.total_ingresos.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
         </div>
         <div style={styles.kpiCard}>
-          <p style={styles.kpiTitle}>Total Egresos</p>
+          <p style={styles.kpiTitle}>Total de egresos</p>
           <p style={styles.kpiValue}>${saldos.total_egresos.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
         </div>
       </div>
