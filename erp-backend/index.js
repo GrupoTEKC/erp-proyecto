@@ -2791,18 +2791,17 @@ app.get('/api/caja/resumen', async (req, res) => {
     const cajaActiva = cajas[0]
     const fechaInicio = cajaActiva.fecha_inicio
 
-   // B) Sumar INGRESOS (Pagos) del mes actual por fecha_pago (efectivo y transferencia)
-const [ingresos] = await db.query(
-  `SELECT 
-    SUM(CASE WHEN LOWER(metodo) = 'efectivo' THEN monto ELSE 0 END) AS total_ingreso_efectivo,
-    SUM(CASE WHEN LOWER(metodo) = 'transferencia' THEN monto ELSE 0 END) AS total_ingreso_banco,
-    SUM(CASE WHEN LOWER(metodo) IN ('efectivo', 'transferencia') THEN monto ELSE 0 END) AS total_ingresos
-   FROM pagos
-   WHERE fecha_pago >= DATE_FORMAT(CURRENT_DATE(), '%Y-%m-01')
-     AND fecha_pago <= LAST_DAY(CURRENT_DATE())`
-);
+    // B) Sumar INGRESOS (Pagos) del mes actual por fecha_pago (efectivo y transferencia)
+    const [ingresos] = await db.query(
+      `SELECT 
+        SUM(CASE WHEN LOWER(metodo) = 'efectivo' THEN monto ELSE 0 END) AS total_ingreso_efectivo,
+        SUM(CASE WHEN LOWER(metodo) = 'transferencia' THEN monto ELSE 0 END) AS total_ingreso_banco,
+        SUM(CASE WHEN LOWER(metodo) IN ('efectivo', 'transferencia') THEN monto ELSE 0 END) AS total_ingresos
+       FROM pagos
+       WHERE fecha_pago >= DATE_FORMAT(CURRENT_DATE(), '%Y-%m-01')
+         AND fecha_pago <= LAST_DAY(CURRENT_DATE())`
+    );
 
-  
     // C) Sumar EGRESOS (Gastos) desde la fecha de apertura (INTACTO)
     const [egresos] = await db.query(
       `SELECT 
@@ -2813,7 +2812,7 @@ const [ingresos] = await db.query(
       [fechaInicio]
     )
 
-    // D) Cálculo de Saldos (TUS MISMAS VARIABLES)
+    // D) Cálculo de Saldos
     const ingEfectivo = Number(ingresos[0]?.total_ingreso_efectivo || 0)
     const ingBanco = Number(ingresos[0]?.total_ingreso_banco || 0)
 
@@ -2824,9 +2823,9 @@ const [ingresos] = await db.query(
     const saldoBanco = Number(cajaActiva.monto_inicial_banco) + ingBanco - egrBanco
     const saldoTotal = saldoEfectivo + saldoBanco
 
-    // 🔴 NUEVA FÓRMA SALDO TEKC (Suma de montos iniciales + ingresos - egresos)
+    // FÓRMULA SALDO TEKC (Suma de montos iniciales + ingresos - egresos)
     const montoInicialTotal = Number(cajaActiva.monto_inicial_efectivo) + Number(cajaActiva.monto_inicial_banco)
-    const totalIngresos = ingEfectivo + ingBanco
+    const totalIngresos = Number(ingresos[0]?.total_ingresos || (ingEfectivo + ingBanco))
     const totalEgresos = egrEfectivo + egrBanco
     
     const saldoTEKC = montoInicialTotal + totalIngresos - totalEgresos
@@ -2866,7 +2865,7 @@ const [ingresos] = await db.query(
       [fechaInicio, fechaInicio]
     )
 
-    // RESPUESTA JSON (Preserva todo lo anterior + agrega saldo_tekc)
+    // RESPUESTA JSON (Incluye total_ingresos y total_egresos en saldos)
     res.json({
       ok: true,
       caja_info: {
@@ -2877,7 +2876,9 @@ const [ingresos] = await db.query(
       },
       saldos: {
         total: saldoTotal,
-        saldo_tekc: saldoTEKC, // 👈 AQUÍ TIENES TU NUEVA PROPIEDAD
+        saldo_tekc: saldoTEKC,
+        total_ingresos: totalIngresos, // 👈 CORREGIDO: Se envía a la tarjeta de Total Ingresos
+        total_egresos: totalEgresos,   // 👈 Agregado por consistencia
         efectivo: saldoEfectivo,
         banco: saldoBanco
       },
@@ -2888,7 +2889,6 @@ const [ingresos] = await db.query(
     res.status(500).json({ ok: false, error: err.message })
   }
 })
-
 
 
 
