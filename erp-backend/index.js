@@ -2878,8 +2878,6 @@ app.get('/api/caja/resumen', async (req, res) => {
   }
 })
 
-
-// 2. CERRAR PERÍODO Y ABRIR NUEVO CON MONTO CONFIRMADO O AJUSTADO
 app.post('/api/caja/cerrar-y-abrir', async (req, res) => {
   const { 
     monto_cierre_efectivo, 
@@ -2888,20 +2886,27 @@ app.post('/api/caja/cerrar-y-abrir', async (req, res) => {
     id_usuario 
   } = req.body
 
+  const connection = await db.getConnection() // Obtener conexión para transacción
+
   try {
-    const [cajas] = await db.query(
+    await connection.beginTransaction()
+
+    // 1. Obtener caja abierta
+    const [cajas] = await connection.query(
       `SELECT * FROM caja_apertura_cierre WHERE estatus = 'ABIERTA' ORDER BY id_caja DESC LIMIT 1`
     )
 
     if (!cajas.length) {
+      await connection.rollback()
+      connection.release()
       return res.status(404).json({ ok: false, error: 'No hay ninguna caja abierta actualmente' })
     }
 
     const cajaActual = cajas[0]
     const hoy = new Date().toISOString().split('T')[0]
 
-    // Cierre de caja previa
-    await db.query(
+    // 2. Cerrar caja previa
+    await connection.query(
       `UPDATE caja_apertura_cierre 
        SET fecha_fin = ?, 
            monto_cierre_efectivo = ?, 
@@ -2920,13 +2925,16 @@ app.post('/api/caja/cerrar-y-abrir', async (req, res) => {
       ]
     )
 
-    // Apertura automática del siguiente periodo
-    const [nuevoRegistro] = await db.query(
+    // 3. Abrir nuevo período
+    const [nuevoRegistro] = await connection.query(
       `INSERT INTO caja_apertura_cierre 
        (fecha_inicio, monto_inicial_efectivo, monto_inicial_banco, estatus, id_usuario_apertura) 
        VALUES (?, ?, ?, 'ABIERTA', ?)`,
       [hoy, monto_cierre_efectivo, monto_cierre_banco, id_usuario || null]
     )
+
+    await connection.commit() // Confirmar ambas operaciones
+    connection.release()
 
     res.json({
       success: true,
@@ -2935,10 +2943,11 @@ app.post('/api/caja/cerrar-y-abrir', async (req, res) => {
     })
 
   } catch (err) {
+    await connection.rollback() // Deshacer cambios si algo falla
+    connection.release()
     res.status(500).json({ ok: false, error: err.message })
   }
 })
-
 
 
 // =============================
