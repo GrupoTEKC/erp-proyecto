@@ -2821,7 +2821,7 @@ app.get('/api/caja/resumen', async (req, res) => {
     const saldoBanco = Number(cajaActiva.monto_inicial_banco) + ingBanco - egrBanco
     const saldoTotal = saldoEfectivo + saldoBanco
 
-    // E) Lista de movimientos unificada con COLLATE
+    // E) Lista de movimientos unificada con COLLATE y FORMAT para comas en monto
     const [movimientos] = await db.query(
       `(SELECT 
           p.id_pago AS id,
@@ -2835,7 +2835,7 @@ app.get('/api/caja/resumen', async (req, res) => {
               'Cliente'
             )
           ) COLLATE utf8mb4_unicode_ci AS concepto,
-          p.monto,
+          FORMAT(p.monto, 2) AS monto,
           p.metodo COLLATE utf8mb4_unicode_ci AS forma_pago,
           p.fecha_registro AS fecha
         FROM pagos p
@@ -2847,7 +2847,7 @@ app.get('/api/caja/resumen', async (req, res) => {
           e.id_egreso AS id,
           'EGRESO' COLLATE utf8mb4_unicode_ci AS tipo,
           CONCAT('Gasto - ', e.concepto) COLLATE utf8mb4_unicode_ci AS concepto,
-          e.monto,
+          FORMAT(e.monto, 2) AS monto,
           e.origen_pago COLLATE utf8mb4_unicode_ci AS forma_pago,
           e.fecha_captura AS fecha
         FROM flujo_egresos e
@@ -2877,6 +2877,7 @@ app.get('/api/caja/resumen', async (req, res) => {
     res.status(500).json({ ok: false, error: err.message })
   }
 })
+
 
 
 // 2. CERRAR PERÍODO Y ABRIR NUEVO CON MONTO CONFIRMADO O AJUSTADO
