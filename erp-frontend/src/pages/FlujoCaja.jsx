@@ -135,6 +135,15 @@ const styles = {
     fontSize: '12px',
     display: 'inline-block'
   },
+  badgeTemporal: {
+    backgroundColor: '#fef3c7',
+    color: '#b45309',
+    padding: '4px 10px',
+    borderRadius: '12px',
+    fontWeight: 'bold',
+    fontSize: '12px',
+    display: 'inline-block'
+  },
   montoIngreso: {
     color: '#16a34a',
     fontWeight: 'bold'
@@ -301,6 +310,16 @@ const styles = {
     cursor: 'pointer',
     width: '100%'
   },
+  actionBtn: {
+    backgroundColor: vino,
+    color: '#fff',
+    border: 'none',
+    padding: '6px 12px',
+    borderRadius: '4px',
+    fontSize: '12px',
+    fontWeight: 'bold',
+    cursor: 'pointer'
+  },
   /* ESTILOS ESPECÍFICOS PARA GASTOS DE PERSONAL */
   puestoTabs: {
     display: 'flex',
@@ -419,6 +438,9 @@ function FlujoCaja() {
   const [movimientos, setMovimientos] = useState([])
   const [cargandoResumen, setCargandoResumen] = useState(true)
 
+  // ESTADO - GASTOS TEMPORALES (ENTREGAS PENDIENTES)
+  const [gastosTemporales, setGastosTemporales] = useState([])
+
   // ESTADOS - GASTOS OPERATIVOS (PRODUCCIÓN)
   const [produccionAbierto, setProduccionAbierto] = useState(false)
   const [apartadoActivo, setApartadoActivo] = useState(null)
@@ -519,9 +541,25 @@ function FlujoCaja() {
     }
   }
 
+  // Cargar lista de Gastos Temporales pendientes
+  const cargarGastosTemporales = async () => {
+    try {
+      const res = await fetch(`${API}/api/gastos-temporales?estatus=PENDIENTE`)
+      if (res.ok) {
+        const data = await res.json()
+        if (data.ok && Array.isArray(data.gastos)) {
+          setGastosTemporales(data.gastos)
+        }
+      }
+    } catch (err) {
+      console.error('Error al obtener gastos temporales:', err)
+    }
+  }
+
   // Cargar catálogo de datos y resumen
   useEffect(() => {
     cargarResumenCaja()
+    cargarGastosTemporales()
     fetch(`${API}/productos`).then(r => r.json()).then(d => Array.isArray(d) && setProductosBD(d)).catch(console.error)
     fetch(`${API}/empleados`).then(r => r.json()).then(d => Array.isArray(d) && setEmpleados(d)).catch(console.error)
     fetch(`${API}/rutas`).then(r => r.json()).then(d => Array.isArray(d) && setRutas(d)).catch(console.error)
@@ -601,6 +639,57 @@ function FlujoCaja() {
     )
     setEmpleadoServicios(almaEmp ? String(almaEmp.id_empleado) : '')
     setMontoServicios('')
+  }
+
+  // PASO B: Navegar a la pantalla de Viáticos con los datos iniciales
+  const handleComprobarGastoTemporal = (gasto) => {
+    navigate('/viaticos', {
+      state: {
+        id_gasto_temporal: gasto.id_temporal,
+        id_empleado: gasto.id_empleado,
+        empleado_nombre: gasto.empleado_nombre,
+        monto_entregado: gasto.monto_entregado,
+        origen_pago: gasto.origen_pago,
+        concepto: gasto.concepto
+      }
+    })
+  }
+
+  // PASO A: Registrar una entrega/gasto temporal
+  const handleGuardarGastoTemporal = async () => {
+    if (!empleadoSeleccionado || !monto || parseFloat(monto) <= 0 || !concepto.trim()) {
+      alert('⚠️ Por favor completa los datos obligatorios del gasto temporal.')
+      return
+    }
+
+    try {
+      const res = await fetch(`${API}/api/gastos-temporales`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id_empleado: parseInt(empleadoSeleccionado),
+          monto_entregado: parseFloat(monto),
+          origen_pago: origenPago,
+          concepto: concepto.trim()
+        })
+      })
+
+      const data = await res.json()
+      if (data.ok) {
+        alert('¡Gasto temporal registrado con éxito!')
+        setSubPersonalActivo(null)
+        setEmpleadoSeleccionado('')
+        setMonto('')
+        setConcepto('')
+        cargarResumenCaja()
+        cargarGastosTemporales()
+      } else {
+        alert(`Error: ${data.error || 'No se pudo registrar el gasto temporal'}`)
+      }
+    } catch (err) {
+      console.error('Error al registrar gasto temporal:', err)
+      alert('Error de conexión al servidor.')
+    }
   }
 
   // Detectar cambio de empleado en Viáticos
@@ -1105,6 +1194,52 @@ function FlujoCaja() {
         </div>
       </div>
 
+      {/* TABLA DE GASTOS TEMPORALES PENDIENTES DE COMPROBAR */}
+      {gastosTemporales.length > 0 && (
+        <div style={styles.movimientosCard}>
+          <h3 style={{ color: vino, marginTop: 0, marginBottom: '10px' }}>
+            ⏳ Gastos Temporales Pendientes por Comprobar
+          </h3>
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.th}>Empleado</th>
+                <th style={styles.th}>Concepto</th>
+                <th style={styles.th}>Origen Pago</th>
+                <th style={styles.th}>Monto Entregado</th>
+                <th style={styles.th}>Fecha Entrega</th>
+                <th style={styles.th}>Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              {gastosTemporales.map((gt) => (
+                <tr key={gt.id_temporal}>
+                  <td style={styles.td}>
+                    <strong>{gt.empleado_nombre}</strong> ({gt.puesto})
+                  </td>
+                  <td style={styles.td}>{gt.concepto}</td>
+                  <td style={styles.td}>{gt.origen_pago}</td>
+                  <td style={{ ...styles.td, ...styles.montoEgreso }}>
+                    -${parseFloat(gt.monto_entregado).toFixed(2)}
+                  </td>
+                  <td style={styles.td}>
+                    {new Date(gt.fecha_entrega).toLocaleString()}
+                  </td>
+                  <td style={styles.td}>
+                    <button
+                      style={styles.actionBtn}
+                      onClick={() => handleComprobarGastoTemporal(gt)}
+                    >
+                      Comprobar
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {/* TABLA DE HISTORIAL DE MOVIMIENTOS DE CAJA */}
       <div style={styles.movimientosCard}>
         <h3 style={{ color: vino, marginTop: 0, marginBottom: '10px' }}>
@@ -1127,18 +1262,29 @@ function FlujoCaja() {
             </thead>
             <tbody>
               {movimientos.map((m, idx) => {
-                const esIngreso = m.tipo?.toUpperCase() === 'INGRESO'
+                const tipoUpper = m.tipo?.toUpperCase()
+                const esIngreso = tipoUpper === 'INGRESO'
+                const esTemporal = tipoUpper === 'GASTO TEMPORAL'
+
                 return (
                   <tr key={idx}>
                     <td style={styles.td}>
-                      <span style={esIngreso ? styles.badgeIngreso : styles.badgeEgreso}>
-                        {esIngreso ? 'INGRESO' : 'EGRESO'}
+                      <span
+                        style={
+                          esIngreso
+                            ? styles.badgeIngreso
+                            : esTemporal
+                            ? styles.badgeTemporal
+                            : styles.badgeEgreso
+                        }
+                      >
+                        {m.tipo}
                       </span>
                     </td>
                     <td style={styles.td}>
                       {esIngreso
                         ? `Abono - ${m.cliente || m.concepto || 'Cliente'}`
-                        : `Gasto - ${m.concepto || 'Egreso general'}`}
+                        : m.concepto || 'Egreso general'}
                     </td>
                     <td style={styles.td}>
                       {m.forma_pago || m.origen_pago || 'Efectivo'}
@@ -1385,7 +1531,7 @@ function FlujoCaja() {
             <div>
               <h3 style={styles.parentTitle}>GASTOS DE PERSONAL</h3>
               <p style={styles.parentSubtitle}>
-                Pago de nómina base, IMSS , ISR , comedor y viáticos.
+                Pago de nómina base, IMSS, ISR, comedor, entrega de gastos temporales y viáticos.
               </p>
             </div>
           </div>
@@ -1441,7 +1587,20 @@ function FlujoCaja() {
                   <span style={styles.cardIcon}>✈️</span>
                 </div>
                 <p style={styles.cardDesc}>
-                  Asignaciones para gastos de transporte, comidas y despensa del personal.
+                  Asignaciones directas para gastos de transporte, comidas y despensa del personal.
+                </p>
+              </div>
+
+              <div
+                style={{ ...styles.card, ...(subPersonalActivo === 88 ? styles.cardActive : {}) }}
+                onClick={() => handleSelectSubPersonal(88)}
+              >
+                <div style={styles.cardHeader}>
+                  <span style={styles.cardName}>Entrega Temporal</span>
+                  <span style={styles.cardIcon}>⏳</span>
+                </div>
+                <p style={styles.cardDesc}>
+                  Entrega de efectivo pendiente por comprobar que reduce la caja activa.
                 </p>
               </div>
             </div>
@@ -1455,6 +1614,7 @@ function FlujoCaja() {
                     {subPersonalActivo === 5 && '🏥 IMSS / ISR'}
                     {subPersonalActivo === 6 && '🍽️ Comedor'}
                     {subPersonalActivo === 7 && '✈️ Viáticos'}
+                    {subPersonalActivo === 88 && '⏳ Entrega de Dinero Temporal'}
                   </span>
                   <button type="button" style={styles.closeBtn} onClick={() => setSubPersonalActivo(null)}>
                     ✕ Cerrar
@@ -1462,6 +1622,71 @@ function FlujoCaja() {
                 </div>
 
                 <form onSubmit={(e) => e.preventDefault()} style={styles.grid}>
+                  {subPersonalActivo === 88 && (
+                    <>
+                      <div style={styles.fieldGroup}>
+                        <label style={styles.label}>Empleado que recibe dinero *</label>
+                        <select
+                          style={styles.select}
+                          value={empleadoSeleccionado}
+                          onChange={(e) => setEmpleadoSeleccionado(e.target.value)}
+                          required
+                        >
+                          <option value="">-- Seleccionar empleado --</option>
+                          {empleados.map((emp) => (
+                            <option key={emp.id_empleado} value={emp.id_empleado}>
+                              {emp.nombre_completo || `${emp.nombre || ''} ${emp.apellido1 || ''}`} ({emp.puesto})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div style={styles.fieldGroup}>
+                        <label style={styles.label}>Monto Entregado ($) *</label>
+                        <input
+                          type="number"
+                          step="any"
+                          min="0.01"
+                          placeholder="0.00"
+                          style={styles.input}
+                          value={monto}
+                          onChange={(e) => setMonto(e.target.value)}
+                          required
+                        />
+                      </div>
+
+                      <div style={styles.fieldGroup}>
+                        <label style={styles.label}>Origen de pago *</label>
+                        <select
+                          style={styles.select}
+                          value={origenPago}
+                          onChange={(e) => setOrigenPago(e.target.value)}
+                        >
+                          <option value="EFECTIVO">Efectivo</option>
+                          <option value="TRANSFERENCIA">Transferencia</option>
+                        </select>
+                      </div>
+
+                      <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
+                        <label style={styles.label}>Concepto / Motivo de la entrega *</label>
+                        <textarea
+                          rows="2"
+                          placeholder="Ej. Entrega para viáticos de viaje a Veracruz..."
+                          style={{ ...styles.input, resize: 'vertical' }}
+                          value={concepto}
+                          onChange={(e) => setConcepto(e.target.value)}
+                          required
+                        />
+                      </div>
+
+                      <div style={styles.fullRow}>
+                        <button type="button" onClick={handleGuardarGastoTemporal} style={styles.submitButton}>
+                          Registrar Entrega Temporal
+                        </button>
+                      </div>
+                    </>
+                  )}
+
                   {subPersonalActivo === 4 && (
                     <div style={{ ...styles.fullRow, marginBottom: '10px' }}>
                       <label style={styles.label}>1. Seleccionar semana a pagar</label>
@@ -1730,89 +1955,93 @@ function FlujoCaja() {
                     </>
                   )}
 
-                  <div style={styles.fieldGroup}>
-                    <label style={styles.label}>Origen de pago *</label>
-                    <select
-                      style={styles.select}
-                      value={origenPago}
-                      onChange={(e) => {
-                        setOrigenPago(e.target.value)
-                        if (e.target.value !== 'TRANSFERENCIA') {
-                          setCuentaBancaria('')
-                          setNombreDuenioCuenta('')
-                        }
-                      }}
-                    >
-                      <option value="EFECTIVO">Efectivo</option>
-                      <option value="TRANSFERENCIA">Transferencia</option>
-                    </select>
-                  </div>
+                  {subPersonalActivo !== 88 && (
+                    <>
+                      <div style={styles.fieldGroup}>
+                        <label style={styles.label}>Origen de pago *</label>
+                        <select
+                          style={styles.select}
+                          value={origenPago}
+                          onChange={(e) => {
+                            setOrigenPago(e.target.value)
+                            if (e.target.value !== 'TRANSFERENCIA') {
+                              setCuentaBancaria('')
+                              setNombreDuenioCuenta('')
+                            }
+                          }}
+                        >
+                          <option value="EFECTIVO">Efectivo</option>
+                          <option value="TRANSFERENCIA">Transferencia</option>
+                        </select>
+                      </div>
 
-                  {origenPago === 'TRANSFERENCIA' && (
-                    <div style={styles.fieldGroup}>
-                      <label style={styles.label}>Cuenta de banco *</label>
-                      <select
-                        style={styles.select}
-                        value={cuentaBancaria}
-                        onChange={(e) => {
-                          setCuentaBancaria(e.target.value)
-                          if (e.target.value !== 'OTRO') setNombreDuenioCuenta('')
-                        }}
-                        required
-                      >
-                        <option value="">-- Seleccionar cuenta --</option>
-                        <option value="Cuenta Fiscal">Cuenta fiscal</option>
-                        <option value="OTRO">Otro</option>
-                      </select>
-                    </div>
+                      {origenPago === 'TRANSFERENCIA' && (
+                        <div style={styles.fieldGroup}>
+                          <label style={styles.label}>Cuenta de banco *</label>
+                          <select
+                            style={styles.select}
+                            value={cuentaBancaria}
+                            onChange={(e) => {
+                              setCuentaBancaria(e.target.value)
+                              if (e.target.value !== 'OTRO') setNombreDuenioCuenta('')
+                            }}
+                            required
+                          >
+                            <option value="">-- Seleccionar cuenta --</option>
+                            <option value="Cuenta Fiscal">Cuenta fiscal</option>
+                            <option value="OTRO">Otro</option>
+                          </select>
+                        </div>
+                      )}
+
+                      {origenPago === 'TRANSFERENCIA' && cuentaBancaria === 'OTRO' && (
+                        <div style={styles.fieldGroup}>
+                          <label style={styles.label}>Nombre y Apellido del dueño de la cuenta *</label>
+                          <input
+                            type="text"
+                            placeholder="Ej. Eli Maravillas"
+                            style={styles.input}
+                            value={nombreDuenioCuenta}
+                            onChange={(e) => setNombreDuenioCuenta(e.target.value)}
+                            required
+                          />
+                        </div>
+                      )}
+
+                      {subPersonalActivo !== 7 && (
+                        <div style={styles.fieldGroup}>
+                          <label style={styles.label}>Monto ($) *</label>
+                          <input
+                            type="number"
+                            step="any"
+                            min="0.01"
+                            placeholder="0.00"
+                            style={styles.input}
+                            value={monto}
+                            onChange={(e) => setMonto(e.target.value)}
+                            required
+                          />
+                        </div>
+                      )}
+
+                      <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
+                        <label style={styles.label}>Observaciones / Destino / Motivo</label>
+                        <textarea
+                          rows="2"
+                          placeholder="Escribe detalles adicionales sobre este egreso..."
+                          style={{ ...styles.input, resize: 'vertical' }}
+                          value={concepto}
+                          onChange={(e) => setConcepto(e.target.value)}
+                        />
+                      </div>
+
+                      <div style={styles.fullRow}>
+                        <button type="button" onClick={handleGuardarPersonal} style={styles.submitButton}>
+                          {subPersonalActivo === 7 ? 'Guardar Viáticos' : 'Guardar gasto'}
+                        </button>
+                      </div>
+                    </>
                   )}
-
-                  {origenPago === 'TRANSFERENCIA' && cuentaBancaria === 'OTRO' && (
-                    <div style={styles.fieldGroup}>
-                      <label style={styles.label}>Nombre y Apellido del dueño de la cuenta *</label>
-                      <input
-                        type="text"
-                        placeholder="Ej. Eli Maravillas"
-                        style={styles.input}
-                        value={nombreDuenioCuenta}
-                        onChange={(e) => setNombreDuenioCuenta(e.target.value)}
-                        required
-                      />
-                    </div>
-                  )}
-
-                  {subPersonalActivo !== 7 && (
-                    <div style={styles.fieldGroup}>
-                      <label style={styles.label}>Monto ($) *</label>
-                      <input
-                        type="number"
-                        step="any"
-                        min="0.01"
-                        placeholder="0.00"
-                        style={styles.input}
-                        value={monto}
-                        onChange={(e) => setMonto(e.target.value)}
-                        required
-                      />
-                    </div>
-                  )}
-
-                  <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
-                    <label style={styles.label}>Observaciones / Destino / Motivo</label>
-                    <textarea
-                      rows="2"
-                      placeholder="Escribe detalles adicionales sobre este egreso..."
-                      style={{ ...styles.input, resize: 'vertical' }}
-                      value={concepto}
-                      onChange={(e) => setConcepto(e.target.value)}
-                    />
-                  </div>
-
-                  <div style={styles.fullRow}>
-                    <button type="button" onClick={handleGuardarPersonal} style={styles.submitButton}>
-                      {subPersonalActivo === 7 ? 'Guardar Viáticos' : 'Guardar gasto'}
-                    </button>
-                  </div>
                 </form>
               </div>
             )}
@@ -2301,12 +2530,13 @@ function FlujoCaja() {
                               onChange={(e) => handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'tipoGasto', e.target.value)}
                               required
                             >
-                              <option value="">-- Seleccionar Tipo --</option>
-                              <option value="Feria / Evento">Feria / Evento</option>
+                              <option value="">-- Seleccionar concepto --</option>
+                              <option value="Eventos">Eventos</option>
                               <option value="Capacitaciones">Capacitaciones</option>
-                              <option value="Souvenirs / Regalos">Souvenirs / Regalos</option>
+                              <option value="Ferias">Ferias</option>
+                              <option value="Souvenirs">Souvenirs</option>
                               <option value="Perifoneo">Perifoneo</option>
-                              <option value="Lonas / Publicidad impresa">Lonas / Publicidad impresa</option>
+                              <option value="Lonas">Lonas</option>
                               <option value="Otro">Otro</option>
                             </select>
                             <input
@@ -2320,8 +2550,8 @@ function FlujoCaja() {
                             />
                             <input
                               type="text"
-                              placeholder="Comentario adicional"
-                              style={{ ...styles.input, flex: 1.5 }}
+                              placeholder="Comentarios (opcional)"
+                              style={{ ...styles.input, flex: 2 }}
                               value={item.comentario}
                               onChange={(e) => handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'comentario', e.target.value)}
                             />
@@ -2349,10 +2579,10 @@ function FlujoCaja() {
                   {subDeptoActivo === 13 && (
                     <>
                       <div style={styles.fieldGroup}>
-                        <label style={styles.label}>Cantidad (Opcional)</label>
+                        <label style={styles.label}>Cantidad (Unidades / Piezas)</label>
                         <input
-                          type="text"
-                          placeholder="Ej. 5 piezas, 2 paquetes..."
+                          type="number"
+                          placeholder="Ej. 5"
                           style={styles.input}
                           value={cantidadCajaChica}
                           onChange={(e) => setCantidadCajaChica(e.target.value)}
@@ -2360,11 +2590,10 @@ function FlujoCaja() {
                       </div>
 
                       <div style={styles.fieldGroup}>
-                        <label style={styles.label}>Monto pagado ($) *</label>
+                        <label style={styles.label}>Monto Total ($) *</label>
                         <input
                           type="number"
                           step="any"
-                          min="0.01"
                           placeholder="0.00"
                           style={styles.input}
                           value={montoCajaChica}
@@ -2374,10 +2603,10 @@ function FlujoCaja() {
                       </div>
 
                       <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
-                        <label style={styles.label}>Escribe lo que compraste *</label>
+                        <label style={styles.label}>Detalle del Gasto (Papelería, Insumos de limpieza, Imprevistos) *</label>
                         <textarea
                           rows="2"
-                          placeholder="Ej. Papelería, hojas tamaño carta, fabuloso para limpieza de oficinas..."
+                          placeholder="Ej. Compra de resmas de papel y plumas para la oficina..."
                           style={{ ...styles.input, resize: 'vertical' }}
                           value={detalleCajaChica}
                           onChange={(e) => setDetalleCajaChica(e.target.value)}
@@ -2389,7 +2618,7 @@ function FlujoCaja() {
 
                   {subDeptoActivo === 14 && (
                     <>
-                      <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
+                      <div style={styles.fieldGroup}>
                         <label style={styles.label}>Fecha de Pago *</label>
                         <input
                           type="date"
@@ -2401,34 +2630,33 @@ function FlujoCaja() {
                       </div>
 
                       <div style={styles.fieldGroup}>
-                        <label style={styles.label}>Servicio prestado por *</label>
-                        <select
-                          style={styles.select}
-                          value={empleadoServicios}
-                          onChange={(e) => setEmpleadoServicios(e.target.value)}
-                          required
-                        >
-                          <option value="">-- Seleccionar prestador --</option>
-                          {empleados.map((emp) => (
-                            <option key={emp.id_empleado} value={emp.id_empleado}>
-                              {emp.nombre_completo || `${emp.nombre || ''} ${emp.apellido1 || ''}`}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div style={styles.fieldGroup}>
-                        <label style={styles.label}>Monto de Honorarios ($) *</label>
+                        <label style={styles.label}>Honorarios ($) *</label>
                         <input
                           type="number"
                           step="any"
-                          min="0.01"
                           placeholder="0.00"
                           style={styles.input}
                           value={montoServicios}
                           onChange={(e) => setMontoServicios(e.target.value)}
                           required
                         />
+                      </div>
+
+                      <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
+                        <label style={styles.label}>Profesional / Contador *</label>
+                        <select
+                          style={styles.select}
+                          value={empleadoServicios}
+                          onChange={(e) => setEmpleadoServicios(e.target.value)}
+                          required
+                        >
+                          <option value="">-- Seleccionar profesional --</option>
+                          {empleados.map((emp) => (
+                            <option key={emp.id_empleado} value={emp.id_empleado}>
+                              {emp.nombre_completo || `${emp.nombre || ''} ${emp.apellido1 || ''}`} ({emp.puesto})
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     </>
                   )}
