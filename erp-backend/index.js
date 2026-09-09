@@ -2768,7 +2768,6 @@ app.get('/pagos/:id_pedido', async (req, res) => {
 })
 
 
-
 // =============================
 // 📊 CAJA Y FLUJO DE CAJA (EN TIEMPO REAL)
 // =============================
@@ -2802,15 +2801,20 @@ app.get('/api/caja/resumen', async (req, res) => {
          AND fecha_pago <= LAST_DAY(CURRENT_DATE())`
     );
 
-    // C) Sumar EGRESOS (Gastos) desde la fecha de apertura (INTACTO)
+    // C) Sumar EGRESOS DEFINITIVOS (Gastos) + GASTOS TEMPORALES PENDIENTES
     const [egresos] = await db.query(
       `SELECT 
         SUM(CASE WHEN UPPER(origen_pago) = 'EFECTIVO' THEN monto ELSE 0 END) AS total_egreso_efectivo,
         SUM(CASE WHEN UPPER(origen_pago) = 'TRANSFERENCIA' THEN monto ELSE 0 END) AS total_egreso_banco
-       FROM flujo_egresos
-       WHERE fecha_captura >= ?`,
-      [fechaInicio]
-    )
+       FROM (
+         -- 1. Gastos definitivos
+         SELECT origen_pago, monto FROM flujo_egresos WHERE fecha_captura >= ?
+         UNION ALL
+         -- 2. Entregas de dinero pendiente por comprobar (reducen la caja activa)
+         SELECT origen_pago, monto_entregado AS monto FROM gastos_temporales WHERE estatus = 'PENDIENTE' AND fecha_entrega >= ?
+       ) AS egresos_totales`,
+      [fechaInicio, fechaInicio]
+    );
 
     // D) Cálculo de Saldos
     const ingEfectivo = Number(ingresos[0]?.total_ingreso_efectivo || 0)
@@ -2830,7 +2834,7 @@ app.get('/api/caja/resumen', async (req, res) => {
     
     const saldoTEKC = montoInicialTotal + totalIngresos - totalEgresos
 
-    // E) Lista de movimientos unificada con COLLATE (INTACTO)
+    // E) Lista de movimientos unificada con COLLATE (INCLUYE INGRESOS, GASTOS Y TEMPORALES PENDIENTES)
     const [movimientos] = await db.query(
       `(SELECT 
           p.id_pago AS id,
@@ -2861,8 +2865,19 @@ app.get('/api/caja/resumen', async (req, res) => {
           e.fecha_captura AS fecha
         FROM flujo_egresos e
         WHERE e.fecha_captura >= ?)
+       UNION ALL
+       (SELECT 
+          gt.id_temporal AS id,
+          'GASTO TEMPORAL' COLLATE utf8mb4_unicode_ci AS tipo,
+          CONCAT('Pendiente (', emp.nombre, ') - ', gt.concepto) COLLATE utf8mb4_unicode_ci AS concepto,
+          gt.monto_entregado AS monto,
+          gt.origen_pago COLLATE utf8mb4_unicode_ci AS forma_pago,
+          gt.fecha_entrega AS fecha
+        FROM gastos_temporales gt
+        INNER JOIN empleados emp ON gt.id_empleado = emp.id_empleado
+        WHERE gt.estatus = 'PENDIENTE' AND gt.fecha_entrega >= ?)
        ORDER BY fecha DESC`,
-      [fechaInicio, fechaInicio]
+      [fechaInicio, fechaInicio, fechaInicio]
     )
 
     // RESPUESTA JSON (Incluye total_ingresos y total_egresos en saldos)
@@ -2877,8 +2892,8 @@ app.get('/api/caja/resumen', async (req, res) => {
       saldos: {
         total: saldoTotal,
         saldo_tekc: saldoTEKC,
-        total_ingresos: totalIngresos, // 👈 CORREGIDO: Se envía a la tarjeta de Total Ingresos
-        total_egresos: totalEgresos,   // 👈 Agregado por consistencia
+        total_ingresos: totalIngresos,
+        total_egresos: totalEgresos,
         efectivo: saldoEfectivo,
         banco: saldoBanco
       },
@@ -2891,6 +2906,117 @@ app.get('/api/caja/resumen', async (req, res) => {
 })
 
 
+app.post('/api/gastos-temporales', async (req, res) => {
+  try {
+    const { id_empleado, monto_entregado, origen_pago, concepto } = req.body;
+
+    if (!id_empleado || !monto_entregado || !origen_pago || !concepto) {
+      return res.status(400).json({ ok: false, error: 'Faltan campos obligatorios' });
+    }
+
+    const [result] = await db.query(
+      `INSERT INTO gastos_temporales (id_empleado, monto_entregado, origen_pago, concepto)
+       VALUES (?, ?, ?, ?)`,
+      [id_empleado, monto_entregado, origen_pago, concepto]
+    );
+
+    res.json({
+      ok: true,
+      message: 'Gasto temporal registrado correctamente',
+      id_temporal: result.insertId
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+
+app.get('/api/gastos-temporales', async (req, res) => {
+  try {
+    const { estatus } = req.query; // PENDIENTE o COMPROBADO
+    let sql = `
+      SELECT 
+        gt.*,
+        CONCAT(e.nombre, ' ', e.apellido1) AS empleado_nombre,
+        e.puesto
+      FROM gastos_temporales gt
+      INNER JOIN empleados e ON gt.id_empleado = e.id_empleado
+    `;
+    
+    const params = [];
+    if (estatus) {
+      sql += ` WHERE gt.estatus = ?`;
+      params.push(estatus);
+    }
+
+    sql += ` ORDER BY gt.fecha_entrega DESC`;
+
+    const [rows] = await db.query(sql, params);
+    res.json({ ok: true, gastos: rows });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+
+app.post('/api/gastos-temporales/:id/comprobar', async (req, res) => {
+  const conn = await db.getConnection();
+  try {
+    const { id } = req.params; // id_temporal
+    const { id_categoria, monto_comprobado, num_comprobante, concepto } = req.body;
+
+    await conn.beginTransaction();
+
+    // 1. Obtener la entrega temporal original
+    const [temporales] = await conn.query(
+      `SELECT * FROM gastos_temporales WHERE id_temporal = ? AND estatus = 'PENDIENTE'`,
+      [id]
+    );
+
+    if (!temporales.length) {
+      await conn.rollback();
+      return res.status(404).json({ ok: false, error: 'Gasto temporal no encontrado o ya comprobado' });
+    }
+
+    const temp = temporales[0];
+
+    // 2. Insertar en flujo_egresos el gasto final
+    const [egresoResult] = await conn.query(
+      `INSERT INTO flujo_egresos (
+        id_categoria, monto, origen_pago, id_empleado, concepto, num_comprobante
+      ) VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        id_categoria,
+        monto_comprobado,
+        temp.origen_pago,
+        temp.id_empleado,
+        concepto || temp.concepto,
+        num_comprobante || null
+      ]
+    );
+
+    const id_egreso = egresoResult.insertId;
+
+    // 3. Marcar el gasto temporal como COMPROBADO
+    await conn.query(
+      `UPDATE gastos_temporales 
+       SET estatus = 'COMPROBADO', 
+           fecha_comprobacion = NOW(), 
+           id_egreso_relacionado = ?
+       WHERE id_temporal = ?`,
+      [id_egreso, id]
+    );
+
+    await conn.commit();
+    res.json({ ok: true, message: 'Gasto comprobado y liquidado con éxito', id_egreso });
+
+  } catch (err) {
+    await conn.rollback();
+    res.status(500).json({ ok: false, error: err.message });
+  } finally {
+    conn.release();
+  }
+});
 
 
 app.post('/api/caja/cerrar-y-abrir', async (req, res) => {
