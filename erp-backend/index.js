@@ -2905,6 +2905,60 @@ app.get('/api/caja/resumen', async (req, res) => {
   }
 })
 
+app.post('/api/egresos', async (req, res) => {
+  try {
+    const {
+      id_categoria,
+      monto,
+      origen_pago,
+      cuenta_bancaria,
+      id_producto_relacionado,
+      id_empleado,
+      empleado_relacionado,
+      unidad_relacionada,
+      id_unidad_relacionada,
+      id_ruta_relacionada,
+      concepto,
+      num_comprobante
+    } = req.body;
+
+    if (!id_categoria || !monto || !origen_pago || !concepto) {
+      return res.status(400).json({ ok: false, error: 'Faltan campos obligatorios' });
+    }
+
+    const [result] = await db.query(
+      `INSERT INTO flujo_egresos (
+        id_categoria, monto, origen_pago, cuenta_bancaria,
+        id_producto_relacionado, id_empleado, empleado_relacionado,
+        unidad_relacionada, id_unidad_relacionada, id_ruta_relacionada,
+        concepto, num_comprobante
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id_categoria,
+        monto,
+        origen_pago,
+        cuenta_bancaria || null,
+        id_producto_relacionado || null,
+        id_empleado || null,
+        empleado_relacionado || null,
+        unidad_relacionada || null,
+        id_unidad_relacionada || null,
+        id_ruta_relacionada || null,
+        concepto,
+        num_comprobante || null
+      ]
+    );
+
+    res.json({
+      ok: true,
+      message: 'Egreso registrado correctamente',
+      id_egreso: result.insertId
+    });
+
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
 
 app.post('/api/gastos-temporales', async (req, res) => {
   try {
@@ -2963,11 +3017,20 @@ app.post('/api/gastos-temporales/:id/comprobar', async (req, res) => {
   const conn = await db.getConnection();
   try {
     const { id } = req.params; // id_temporal
-    const { id_categoria, monto_comprobado, num_comprobante, concepto } = req.body;
+    const { 
+      id_categoria, 
+      monto_comprobado, 
+      num_comprobante, 
+      concepto,
+      cuenta_bancaria,
+      id_unidad_relacionada,
+      unidad_relacionada,
+      id_ruta_relacionada
+    } = req.body;
 
     await conn.beginTransaction();
 
-    // 1. Obtener la entrega temporal original
+    // 1. Verificar la entrega temporal
     const [temporales] = await conn.query(
       `SELECT * FROM gastos_temporales WHERE id_temporal = ? AND estatus = 'PENDIENTE'`,
       [id]
@@ -2980,16 +3043,22 @@ app.post('/api/gastos-temporales/:id/comprobar', async (req, res) => {
 
     const temp = temporales[0];
 
-    // 2. Insertar en flujo_egresos el gasto final
+    // 2. Crear el registro final en flujo_egresos
     const [egresoResult] = await conn.query(
       `INSERT INTO flujo_egresos (
-        id_categoria, monto, origen_pago, id_empleado, concepto, num_comprobante
-      ) VALUES (?, ?, ?, ?, ?, ?)`,
+        id_categoria, monto, origen_pago, cuenta_bancaria, id_empleado, 
+        id_unidad_relacionada, unidad_relacionada, id_ruta_relacionada, 
+        concepto, num_comprobante
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id_categoria,
         monto_comprobado,
         temp.origen_pago,
+        cuenta_bancaria || null,
         temp.id_empleado,
+        id_unidad_relacionada || null,
+        unidad_relacionada || null,
+        id_ruta_relacionada || null,
         concepto || temp.concepto,
         num_comprobante || null
       ]
@@ -3008,7 +3077,7 @@ app.post('/api/gastos-temporales/:id/comprobar', async (req, res) => {
     );
 
     await conn.commit();
-    res.json({ ok: true, message: 'Gasto comprobado y liquidado con éxito', id_egreso });
+    res.json({ ok: true, message: 'Gasto comprobado y registrado en flujo_egresos con éxito', id_egreso });
 
   } catch (err) {
     await conn.rollback();
