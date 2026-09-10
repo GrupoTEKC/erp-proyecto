@@ -2843,9 +2843,8 @@ app.get('/api/caja/resumen', async (req, res) => {
             'Abono - ', 
             COALESCE(
               NULLIF(TRIM(c.nombre_tienda), ''), 
-              c.nombre, 
-              p.nombre_usuario, 
-              'Cliente'
+              NULLIF(TRIM(c.nombre), ''), 
+              'Sin Nombre de Tienda'
             )
           ) COLLATE utf8mb4_unicode_ci AS concepto,
           p.monto,
