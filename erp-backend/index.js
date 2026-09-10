@@ -2834,6 +2834,7 @@ app.get('/api/caja/resumen', async (req, res) => {
     
     const saldoTEKC = montoInicialTotal + totalIngresos - totalEgresos
 
+
     // E) Lista de movimientos unificada con COLLATE (INCLUYE INGRESOS, GASTOS Y TEMPORALES PENDIENTES)
     const [movimientos] = await db.query(
       `(SELECT 
@@ -2852,7 +2853,8 @@ app.get('/api/caja/resumen', async (req, res) => {
           p.fecha_registro AS fecha
         FROM pagos p
         LEFT JOIN pedidos ped ON p.id_pedido = ped.id_pedido
-        LEFT JOIN clientes c ON ped.id_cliente = c.id_cliente
+        LEFT JOIN rezagados rez ON p.id_rezagado = rez.id_rezagado
+        LEFT JOIN clientes c ON c.id_cliente = COALESCE(ped.id_cliente, rez.id_cliente)
         WHERE p.fecha_pago >= ?)
        UNION ALL
        (SELECT 
@@ -2878,7 +2880,7 @@ app.get('/api/caja/resumen', async (req, res) => {
        ORDER BY fecha DESC`,
       [fechaInicio, fechaInicio, fechaInicio]
     )
-
+    
     // RESPUESTA JSON (Incluye total_ingresos y total_egresos en saldos)
     res.json({
       ok: true,
