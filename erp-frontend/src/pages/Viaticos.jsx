@@ -189,7 +189,7 @@ export default function Viaticos() {
   const [unidades, setUnidades] = useState([])
 
   // ESTADOS FORMULARIO
-  const [idGastoTemporal, setIdGastoTemporal] = useState(initialData.id_gasto_temporal || null)
+  const [idGastoTemporal] = useState(initialData.id_gasto_temporal || null)
   const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState(initialData.id_empleado ? String(initialData.id_empleado) : '')
   const [montoEntregado] = useState(initialData.monto_entregado || 0)
   const [origenPago, setOrigenPago] = useState(initialData.origen_pago || 'EFECTIVO')
@@ -297,23 +297,44 @@ export default function Viaticos() {
       comentario: concepto.trim() || null
     })
 
-    const payload = {
-      id_categoria: 8,
-      monto: totalViaticosGeneral,
-      origen_pago: origenPago,
-      cuenta_bancaria: cuentaFinal,
-      id_empleado: parseInt(empleadoSeleccionado),
-      empleado_relacionado: nombreEmpleado,
-      id_unidad_relacionada: idUnidadSeleccionada ? parseInt(idUnidadSeleccionada) : null,
-      unidad_relacionada: nombreUnidad,
-      id_ruta_relacionada: idRutaSeleccionada ? parseInt(idRutaSeleccionada) : null,
-      concepto: conceptoPayload,
-      num_comprobante: foliosLimpios.length > 0 ? foliosLimpios.join(', ') : null,
-      id_gasto_temporal: idGastoTemporal ? parseInt(idGastoTemporal) : null
+    const numComprobanteFinal = foliosLimpios.length > 0 ? foliosLimpios.join(', ') : null
+
+    let url = ''
+    let payload = {}
+
+    if (idGastoTemporal) {
+      // 🚀 RUTA A: COMPROBACIÓN DE GASTO TEMPORAL
+      url = `${API}/gastos-temporales/${idGastoTemporal}/comprobar`
+      payload = {
+        id_categoria: 8,
+        monto_comprobado: totalViaticosGeneral,
+        num_comprobante: numComprobanteFinal,
+        concepto: conceptoPayload,
+        cuenta_bancaria: cuentaFinal,
+        id_unidad_relacionada: idUnidadSeleccionada ? parseInt(idUnidadSeleccionada) : null,
+        unidad_relacionada: nombreUnidad,
+        id_ruta_relacionada: idRutaSeleccionada ? parseInt(idRutaSeleccionada) : null
+      }
+    } else {
+      // 💵 RUTA B: EGRESO DIRECTO E INMEDIATO
+      url = `${API}/egresos`
+      payload = {
+        id_categoria: 8,
+        monto: totalViaticosGeneral,
+        origen_pago: origenPago,
+        cuenta_bancaria: cuentaFinal,
+        id_empleado: parseInt(empleadoSeleccionado),
+        empleado_relacionado: nombreEmpleado,
+        id_unidad_relacionada: idUnidadSeleccionada ? parseInt(idUnidadSeleccionada) : null,
+        unidad_relacionada: nombreUnidad,
+        id_ruta_relacionada: idRutaSeleccionada ? parseInt(idRutaSeleccionada) : null,
+        concepto: conceptoPayload,
+        num_comprobante: numComprobanteFinal
+      }
     }
 
     try {
-      const res = await fetch(`${API}/egresos`, {
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -371,6 +392,7 @@ export default function Viaticos() {
               style={styles.select}
               value={empleadoSeleccionado}
               onChange={(e) => handleEmpleadoChange(e.target.value)}
+              disabled={!!idGastoTemporal}
               required
             >
               <option value="">-- Seleccionar empleado --</option>
@@ -513,6 +535,7 @@ export default function Viaticos() {
             <select
               style={styles.select}
               value={origenPago}
+              disabled={!!idGastoTemporal}
               onChange={(e) => {
                 setOrigenPago(e.target.value)
                 if (e.target.value !== 'TRANSFERENCIA') {
@@ -593,4 +616,3 @@ export default function Viaticos() {
     </div>
   )
 }
-
