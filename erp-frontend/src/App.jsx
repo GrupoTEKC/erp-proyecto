@@ -20,6 +20,7 @@ import ClientePrecios from './pages/ClientePrecios'
 import ControlVentas from './pages/ControlVentas'
 import ControlFolios from './pages/ControlFolios'
 import FlujoCaja from './pages/FlujoCaja'
+import Viaticos from './pages/Viaticos' // 👈 1. IMPORTAR AQUÍ
 
 function App() {
   return (
@@ -68,6 +69,9 @@ function App() {
 
         {/* 💰 FLUJO DE CAJA */}
         <Route path="/flujo-caja" element={<FlujoCaja />} />
+
+        {/* ✈️ VIÁTICOS */}
+        <Route path="/viaticos" element={<Viaticos />} /> 
       </Routes>
     </div>
   )
