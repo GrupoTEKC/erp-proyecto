@@ -302,23 +302,23 @@ export default function Viaticos() {
     let url = ''
     let payload = {}
 
-    if (idGastoTemporal) {
-      // 🚀 RUTA A: COMPROBACIÓN DE GASTO TEMPORAL
-      url = `${API}/gastos-temporales/${idGastoTemporal}/comprobar`
-      payload = {
-        id_categoria: 8,
-        monto_comprobado: totalViaticosGeneral,
-        num_comprobante: numComprobanteFinal,
-        concepto: conceptoPayload,
-        cuenta_bancaria: cuentaFinal,
-        id_unidad_relacionada: idUnidadSeleccionada ? parseInt(idUnidadSeleccionada) : null,
-        unidad_relacionada: nombreUnidad,
-        id_ruta_relacionada: idRutaSeleccionada ? parseInt(idRutaSeleccionada) : null
-      }
-    } else {
-      // 💵 RUTA B: EGRESO DIRECTO E INMEDIATO
-      url = `${API}/egresos`
-      payload = {
+   if (idGastoTemporal) {
+  // 🚀 RUTA A: COMPROBACIÓN DE GASTO TEMPORAL (Agrega /api)
+  url = `${API}/api/gastos-temporales/${idGastoTemporal}/comprobar`
+  payload = {
+    id_categoria: 8,
+    monto_comprobado: totalViaticosGeneral,
+    num_comprobante: numComprobanteFinal,
+    concepto: conceptoPayload,
+    cuenta_bancaria: cuentaFinal,
+    id_unidad_relacionada: idUnidadSeleccionada ? parseInt(idUnidadSeleccionada) : null,
+    unidad_relacionada: nombreUnidad,
+    id_ruta_relacionada: idRutaSeleccionada ? parseInt(idRutaSeleccionada) : null
+  }
+} else {
+  // 💵 RUTA B: EGRESO DIRECTO E INMEDIATO (Agrega /api si aplica)
+  url = `${API}/api/egresos`
+          payload = {
         id_categoria: 8,
         monto: totalViaticosGeneral,
         origen_pago: origenPago,
