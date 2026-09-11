@@ -441,6 +441,7 @@ function FlujoCaja() {
   // ESTADO - FILTROS DE HISTORIAL MOVIMIENTOS
   const [filtroTipo, setFiltroTipo] = useState('TODOS')
   const [filtroPedido, setFiltroPedido] = useState('TODOS')
+  const [busquedaTienda, setBusquedaTienda] = useState('')
 
   // ESTADO - GASTOS TEMPORALES (ENTREGAS PENDIENTES)
   const [gastosTemporales, setGastosTemporales] = useState([])
@@ -1157,7 +1158,7 @@ function FlujoCaja() {
     return puestoEmp === tabActual
   })
 
-  // FILTRADO DINÁMICO DE MOVIMIENTOS POR TIPO Y TIPO DE PEDIDO
+  // FILTRADO DINÁMICO DE MOVIMIENTOS POR TIPO, TIPO DE PEDIDO Y TIENDA/CLIENTE
   const movimientosFiltrados = movimientos.filter((m) => {
     const tipoUpper = m.tipo?.toUpperCase() || ''
     const esIngreso = tipoUpper === 'INGRESO'
@@ -1169,7 +1170,20 @@ function FlujoCaja() {
     if (filtroTipo === 'EGRESO' && !esEgreso) return false
     if (filtroTipo === 'GASTO TEMPORAL' && !esTemporal) return false
 
-    // 2. Filtrado por Tipo de Pedido
+    // 2. Filtrado por Tienda / Cliente (Buscador)
+    if (busquedaTienda.trim() !== '') {
+      const nombreTienda = (
+        m.tienda ||
+        m.cliente ||
+        m.tienda_cliente ||
+        m.nombre_tienda ||
+        'Venta General'
+      ).toLowerCase()
+      const terminoBusqueda = busquedaTienda.trim().toLowerCase()
+      if (!nombreTienda.includes(terminoBusqueda)) return false
+    }
+
+    // 3. Filtrado por Tipo de Pedido
     if (filtroPedido === 'TODOS') return true
 
     const esRezagado =
@@ -1313,7 +1327,28 @@ function FlujoCaja() {
                     </select>
                   </div>
                 </th>
-                <th style={styles.th}>Tienda / Cliente</th>
+                <th style={styles.th}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <span>Tienda / Cliente</span>
+                    <input
+                      type="text"
+                      placeholder="🔍 Buscar tienda..."
+                      value={busquedaTienda}
+                      onChange={(e) => setBusquedaTienda(e.target.value)}
+                      style={{
+                        padding: '4px 8px',
+                        borderRadius: '6px',
+                        border: '1px solid #cbd5e1',
+                        fontSize: '12px',
+                        backgroundColor: '#ffffff',
+                        color: '#334155',
+                        fontWeight: 'normal',
+                        outline: 'none',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+                </th>
                 <th style={styles.th}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <span>Origen / Tipo Pedido</span>
@@ -2605,10 +2640,10 @@ function FlujoCaja() {
                 onClick={() => handleSelectSubDepto(13)}
               >
                 <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Caja Chica</span>
+                  <span style={styles.cardName}>Caja chica</span>
                   <span style={styles.cardIcon}>🪙</span>
                 </div>
-                <p style={styles.cardDesc}>Papelería, consumibles de oficina, insumos de limpieza y imprevistos.</p>
+                <p style={styles.cardDesc}>Gastos menores operativos.</p>
               </div>
 
               <div
@@ -2616,10 +2651,10 @@ function FlujoCaja() {
                 onClick={() => handleSelectSubDepto(14)}
               >
                 <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Servicios Profesionales</span>
-                  <span style={styles.cardIcon}>📋</span>
+                  <span style={styles.cardName}>Servicios profesionales</span>
+                  <span style={styles.cardIcon}>👔</span>
                 </div>
-                <p style={styles.cardDesc}>Honorarios de Contaduría / Contadora Alma Nely Hernández Minor.</p>
+                <p style={styles.cardDesc}>Honorarios pagados a la Contadora Alma Nely Hernández Minor.</p>
               </div>
             </div>
 
@@ -2628,9 +2663,9 @@ function FlujoCaja() {
                 <div style={styles.formTitle}>
                   <span>
                     Estás capturando:{' '}
-                    {subDeptoActivo === 12 && '📢 Marketing'}
+                    {subDeptoActivo === 12 && '📢 Marketing y Publicidad'}
                     {subDeptoActivo === 13 && '🪙 Caja Chica'}
-                    {subDeptoActivo === 14 && '📋 Servicios Profesionales (Contaduría)'}
+                    {subDeptoActivo === 14 && '👔 Servicios Profesionales (Honorarios Contadora)'}
                   </span>
                   <button type="button" style={styles.closeBtn} onClick={() => setSubDeptoActivo(null)}>
                     ✕ Cerrar
@@ -2641,7 +2676,7 @@ function FlujoCaja() {
                   {subDeptoActivo === 12 && (
                     <>
                       <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
-                        <label style={styles.label}>Fecha del evento / gasto *</label>
+                        <label style={styles.label}>Fecha del evento / pago *</label>
                         <input
                           type="date"
                           style={styles.input}
@@ -2657,13 +2692,7 @@ function FlujoCaja() {
                           <button
                             type="button"
                             style={styles.addBtn}
-                            onClick={() =>
-                              handleAgregarObjeto(setLineasMarketing, lineasMarketing, {
-                                tipoGasto: '',
-                                monto: '',
-                                comentario: ''
-                              })
-                            }
+                            onClick={() => handleAgregarObjeto(setLineasMarketing, lineasMarketing, { tipoGasto: '', monto: '', comentario: '' })}
                           >
                             +
                           </button>
@@ -2671,20 +2700,19 @@ function FlujoCaja() {
                         {lineasMarketing.map((item, idx) => (
                           <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
                             <select
-                              style={{ ...styles.select, flex: 1.2 }}
+                              style={{ ...styles.select, flex: 1.5 }}
                               value={item.tipoGasto}
-                              onChange={(e) =>
-                                handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'tipoGasto', e.target.value)
-                              }
+                              onChange={(e) => handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'tipoGasto', e.target.value)}
                               required
                             >
-                              <option value="">-- Seleccionar concepto --</option>
+                              <option value="">-- Seleccionar tipo --</option>
                               <option value="Eventos">Eventos</option>
                               <option value="Capacitaciones">Capacitaciones</option>
                               <option value="Ferias">Ferias</option>
                               <option value="Souvenirs">Souvenirs</option>
                               <option value="Perifoneo">Perifoneo</option>
-                              <option value="Lonas / Publicidad">Lonas / Publicidad</option>
+                              <option value="Lonas">Lonas</option>
+                              <option value="Anuncios en redes">Anuncios en redes</option>
                               <option value="Otros">Otros</option>
                             </select>
                             <input
@@ -2693,19 +2721,15 @@ function FlujoCaja() {
                               placeholder="Monto ($)"
                               style={{ ...styles.input, flex: 1 }}
                               value={item.monto}
-                              onChange={(e) =>
-                                handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'monto', e.target.value)
-                              }
+                              onChange={(e) => handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'monto', e.target.value)}
                               required
                             />
                             <input
                               type="text"
-                              placeholder="Comentario adicional..."
-                              style={{ ...styles.input, flex: 1.5 }}
+                              placeholder="Comentario (opcional)"
+                              style={{ ...styles.input, flex: 2 }}
                               value={item.comentario}
-                              onChange={(e) =>
-                                handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'comentario', e.target.value)
-                              }
+                              onChange={(e) => handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'comentario', e.target.value)}
                             />
                             {lineasMarketing.length > 1 && (
                               <button
@@ -2731,10 +2755,10 @@ function FlujoCaja() {
                   {subDeptoActivo === 13 && (
                     <>
                       <div style={styles.fieldGroup}>
-                        <label style={styles.label}>Cantidad de artículos (Opcional)</label>
+                        <label style={styles.label}>Cantidad (Unidades / Piezas)</label>
                         <input
                           type="text"
-                          placeholder="Ej. 5 piezas / 2 paquetes"
+                          placeholder="Ej. 5 piezas, 2 paquetes..."
                           style={styles.input}
                           value={cantidadCajaChica}
                           onChange={(e) => setCantidadCajaChica(e.target.value)}
@@ -2742,7 +2766,7 @@ function FlujoCaja() {
                       </div>
 
                       <div style={styles.fieldGroup}>
-                        <label style={styles.label}>Monto pagado ($) *</label>
+                        <label style={styles.label}>Monto Total ($) *</label>
                         <input
                           type="number"
                           step="any"
@@ -2756,10 +2780,10 @@ function FlujoCaja() {
                       </div>
 
                       <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
-                        <label style={styles.label}>Detalle del gasto / ¿Qué se compró? *</label>
+                        <label style={styles.label}>¿Qué se compró / Detalle del gasto? *</label>
                         <textarea
                           rows="2"
-                          placeholder="Ej. Hojas blancas, plumas, jabón de manos, etc..."
+                          placeholder="Ej. Garrafón de agua para oficina..."
                           style={{ ...styles.input, resize: 'vertical' }}
                           value={detalleCajaChica}
                           onChange={(e) => setDetalleCajaChica(e.target.value)}
@@ -2783,6 +2807,23 @@ function FlujoCaja() {
                       </div>
 
                       <div style={styles.fieldGroup}>
+                        <label style={styles.label}>Empleado / Profesional *</label>
+                        <select
+                          style={styles.select}
+                          value={empleadoServicios}
+                          onChange={(e) => setEmpleadoServicios(e.target.value)}
+                          required
+                        >
+                          <option value="">-- Seleccionar Profesional --</option>
+                          {empleados.map((emp) => (
+                            <option key={emp.id_empleado} value={emp.id_empleado}>
+                              {emp.nombre_completo || `${emp.nombre || ''} ${emp.apellido1 || ''}`} ({emp.puesto})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
                         <label style={styles.label}>Monto pagado ($) *</label>
                         <input
                           type="number"
@@ -2794,23 +2835,6 @@ function FlujoCaja() {
                           onChange={(e) => setMontoServicios(e.target.value)}
                           required
                         />
-                      </div>
-
-                      <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
-                        <label style={styles.label}>Prestador de Servicios / Contadora *</label>
-                        <select
-                          style={styles.select}
-                          value={empleadoServicios}
-                          onChange={(e) => setEmpleadoServicios(e.target.value)}
-                          required
-                        >
-                          <option value="">-- Seleccionar profesional --</option>
-                          {empleados.map((emp) => (
-                            <option key={emp.id_empleado} value={emp.id_empleado}>
-                              {emp.nombre_completo || `${emp.nombre || ''} ${emp.apellido1 || ''}`} ({emp.puesto})
-                            </option>
-                          ))}
-                        </select>
                       </div>
                     </>
                   )}
