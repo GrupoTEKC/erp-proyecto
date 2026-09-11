@@ -2835,72 +2835,82 @@ app.get('/api/caja/resumen', async (req, res) => {
     const saldoTEKC = montoInicialTotal + totalIngresos - totalEgresos
 
 
-
     // E) Lista de movimientos unificada
     const [movimientos] = await db.query(
       `(SELECT 
           p.id_pago AS id,
           'INGRESO' COLLATE utf8mb4_unicode_ci AS tipo,
-          COALESCE(
-            NULLIF(TRIM(c_ped.nombre_tienda), ''),
-            c_ped.nombre,
-            NULLIF(TRIM(c_rez.nombre_tienda), ''),
-            c_rez.nombre,
-            'Venta General'
-          ) COLLATE utf8mb4_unicode_ci AS tienda,
-          CASE 
-            WHEN p.tipo_origen = 'rezagado' THEN 'REZAGADO'
-            ELSE 'NORMAL'
-          END COLLATE utf8mb4_unicode_ci AS tipo_pedido,
-          CONCAT(
-            'Abono ', 
-            IF(p.tipo_origen = 'rezagado', '(Rezagado) - ', '- '), 
+          CAST(
             COALESCE(
-              NULLIF(TRIM(c_ped.nombre_tienda), ''), 
-              c_ped.nombre, 
-              NULLIF(TRIM(c_rez.nombre_tienda), ''), 
-              c_rez.nombre, 
-              p.nombre_usuario, 
-              'Cliente'
-            )
+              NULLIF(TRIM(c_ped.nombre_tienda), ''),
+              c_ped.nombre,
+              NULLIF(TRIM(c_rez.nombre_tienda), ''),
+              c_rez.nombre,
+              'Venta General'
+            ) AS CHAR(255)
+          ) COLLATE utf8mb4_unicode_ci AS tienda,
+          CAST(
+            CASE 
+              WHEN p.tipo_origen = 'rezagado' THEN 'REZAGADO'
+              ELSE 'NORMAL'
+            END AS CHAR(50)
+          ) COLLATE utf8mb4_unicode_ci AS tipo_pedido,
+          CAST(
+            CONCAT(
+              'Abono ', 
+              IF(p.tipo_origen = 'rezagado', '(Rezagado) - ', '- '), 
+              COALESCE(
+                NULLIF(TRIM(c_ped.nombre_tienda), ''), 
+                c_ped.nombre, 
+                NULLIF(TRIM(c_rez.nombre_tienda), ''), 
+                c_rez.nombre, 
+                p.nombre_usuario, 
+                'Cliente'
+              )
+            ) AS CHAR(255)
           ) COLLATE utf8mb4_unicode_ci AS concepto,
-          p.monto,
-          p.metodo COLLATE utf8mb4_unicode_ci AS forma_pago,
+          CAST(p.monto AS DECIMAL(10,2)) AS monto,
+          CAST(p.metodo AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS forma_pago,
           p.fecha_registro AS fecha
         FROM pagos p
         LEFT JOIN pedidos ped ON p.id_pedido = ped.id_pedido
         LEFT JOIN clientes c_ped ON ped.id_cliente = c_ped.id_cliente
-        LEFT JOIN rezagados rez ON p.id_rezagado = rez.id_rezagado
+        LEFT JOIN pedidos_rezagados rez ON p.id_rezagado = rez.id_rezagado
         LEFT JOIN clientes c_rez ON rez.id_cliente = c_rez.id_cliente
         WHERE p.fecha_pago >= ?)
+
        UNION ALL
+
        (SELECT 
           e.id_egreso AS id,
           'EGRESO' COLLATE utf8mb4_unicode_ci AS tipo,
-          CAST(NULL AS CHAR) COLLATE utf8mb4_unicode_ci AS tienda,
-          CAST(NULL AS CHAR) COLLATE utf8mb4_unicode_ci AS tipo_pedido,
-          CONCAT('Gasto - ', e.concepto) COLLATE utf8mb4_unicode_ci AS concepto,
-          e.monto,
-          e.origen_pago COLLATE utf8mb4_unicode_ci AS forma_pago,
+          CAST(NULL AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS tienda,
+          CAST(NULL AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS tipo_pedido,
+          CAST(CONCAT('Gasto - ', e.concepto) AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS concepto,
+          CAST(e.monto AS DECIMAL(10,2)) AS monto,
+          CAST(e.origen_pago AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS forma_pago,
           e.fecha_captura AS fecha
         FROM flujo_egresos e
         WHERE e.fecha_captura >= ?)
+
        UNION ALL
+
        (SELECT 
           gt.id_temporal AS id,
           'GASTO TEMPORAL' COLLATE utf8mb4_unicode_ci AS tipo,
-          CAST(NULL AS CHAR) COLLATE utf8mb4_unicode_ci AS tienda,
-          CAST(NULL AS CHAR) COLLATE utf8mb4_unicode_ci AS tipo_pedido,
-          CONCAT('Pendiente (', emp.nombre, ') - ', gt.concepto) COLLATE utf8mb4_unicode_ci AS concepto,
-          gt.monto_entregado AS monto,
-          gt.origen_pago COLLATE utf8mb4_unicode_ci AS forma_pago,
+          CAST(NULL AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS tienda,
+          CAST(NULL AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS tipo_pedido,
+          CAST(CONCAT('Pendiente (', emp.nombre, ') - ', gt.concepto) AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS concepto,
+          CAST(gt.monto_entregado AS DECIMAL(10,2)) AS monto,
+          CAST(gt.origen_pago AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS forma_pago,
           gt.fecha_entrega AS fecha
         FROM gastos_temporales gt
         INNER JOIN empleados emp ON gt.id_empleado = emp.id_empleado
         WHERE gt.estatus = 'PENDIENTE' AND gt.fecha_entrega >= ?)
+
        ORDER BY fecha DESC`,
       [fechaInicio, fechaInicio, fechaInicio]
-    )
+    );
     
     
     // RESPUESTA JSON (Incluye total_ingresos y total_egresos en saldos)
