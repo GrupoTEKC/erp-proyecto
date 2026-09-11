@@ -2835,12 +2835,12 @@ app.get('/api/caja/resumen', async (req, res) => {
     const saldoTEKC = montoInicialTotal + totalIngresos - totalEgresos
 
 
+
     // E) Lista de movimientos unificada
     const [movimientos] = await db.query(
       `(SELECT 
           p.id_pago AS id,
           'INGRESO' COLLATE utf8mb4_unicode_ci AS tipo,
-          -- Trae la tienda/cliente tanto si es pedido normal como si es rezagado
           COALESCE(
             NULLIF(TRIM(c_ped.nombre_tienda), ''),
             c_ped.nombre,
@@ -2848,7 +2848,6 @@ app.get('/api/caja/resumen', async (req, res) => {
             c_rez.nombre,
             'Venta General'
           ) COLLATE utf8mb4_unicode_ci AS tienda,
-          -- Define si es rezagado o normal para la etiqueta del frontend
           CASE 
             WHEN p.tipo_origen = 'rezagado' THEN 'REZAGADO'
             ELSE 'NORMAL'
@@ -2869,10 +2868,8 @@ app.get('/api/caja/resumen', async (req, res) => {
           p.metodo COLLATE utf8mb4_unicode_ci AS forma_pago,
           p.fecha_registro AS fecha
         FROM pagos p
-        -- JOIN para pedidos normales
         LEFT JOIN pedidos ped ON p.id_pedido = ped.id_pedido
         LEFT JOIN clientes c_ped ON ped.id_cliente = c_ped.id_cliente
-        -- JOIN para pedidos rezagados
         LEFT JOIN rezagados rez ON p.id_rezagado = rez.id_rezagado
         LEFT JOIN clientes c_rez ON rez.id_cliente = c_rez.id_cliente
         WHERE p.fecha_pago >= ?)
@@ -2880,8 +2877,8 @@ app.get('/api/caja/resumen', async (req, res) => {
        (SELECT 
           e.id_egreso AS id,
           'EGRESO' COLLATE utf8mb4_unicode_ci AS tipo,
-          NULL AS tienda,
-          NULL AS tipo_pedido,
+          CAST(NULL AS CHAR) COLLATE utf8mb4_unicode_ci AS tienda,
+          CAST(NULL AS CHAR) COLLATE utf8mb4_unicode_ci AS tipo_pedido,
           CONCAT('Gasto - ', e.concepto) COLLATE utf8mb4_unicode_ci AS concepto,
           e.monto,
           e.origen_pago COLLATE utf8mb4_unicode_ci AS forma_pago,
@@ -2892,8 +2889,8 @@ app.get('/api/caja/resumen', async (req, res) => {
        (SELECT 
           gt.id_temporal AS id,
           'GASTO TEMPORAL' COLLATE utf8mb4_unicode_ci AS tipo,
-          NULL AS tienda,
-          NULL AS tipo_pedido,
+          CAST(NULL AS CHAR) COLLATE utf8mb4_unicode_ci AS tienda,
+          CAST(NULL AS CHAR) COLLATE utf8mb4_unicode_ci AS tipo_pedido,
           CONCAT('Pendiente (', emp.nombre, ') - ', gt.concepto) COLLATE utf8mb4_unicode_ci AS concepto,
           gt.monto_entregado AS monto,
           gt.origen_pago COLLATE utf8mb4_unicode_ci AS forma_pago,
