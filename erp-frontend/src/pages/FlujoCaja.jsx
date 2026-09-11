@@ -1240,68 +1240,122 @@ function FlujoCaja() {
         </div>
       )}
 
+ 
       {/* TABLA DE HISTORIAL DE MOVIMIENTOS DE CAJA */}
-      <div style={styles.movimientosCard}>
-        <h3 style={{ color: vino, marginTop: 0, marginBottom: '10px' }}>
-          📜 Historial de Movimientos de Caja
-        </h3>
-        {cargandoResumen ? (
-          <p style={{ color: '#64748b' }}>Cargando movimientos...</p>
-        ) : movimientos.length === 0 ? (
-          <p style={{ color: '#64748b' }}>No hay movimientos registrados en la caja actual.</p>
-        ) : (
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.th}>Tipo</th>
-                <th style={styles.th}>Concepto / Detalle</th>
-                <th style={styles.th}>Forma de Pago</th>
-                <th style={styles.th}>Monto</th>
-                <th style={styles.th}>Fecha y Hora</th>
-              </tr>
-            </thead>
-            <tbody>
-              {movimientos.map((m, idx) => {
-                const tipoUpper = m.tipo?.toUpperCase()
-                const esIngreso = tipoUpper === 'INGRESO'
-                const esTemporal = tipoUpper === 'GASTO TEMPORAL'
+<div style={styles.movimientosCard}>
+  <h3 style={{ color: vino, marginTop: 0, marginBottom: '10px' }}>
+    📜 Historial de Movimientos de Caja
+  </h3>
+  {cargandoResumen ? (
+    <p style={{ color: '#64748b' }}>Cargando movimientos...</p>
+  ) : movimientos.length === 0 ? (
+    <p style={{ color: '#64748b' }}>No hay movimientos registrados en la caja actual.</p>
+  ) : (
+    <table style={styles.table}>
+      <thead>
+        <tr>
+          <th style={styles.th}>Tipo</th>
+          <th style={styles.th}>Tienda / Cliente</th>
+          <th style={styles.th}>Origen / Tipo Pedido</th>
+          <th style={styles.th}>Forma de Pago</th>
+          <th style={styles.th}>Monto</th>
+          <th style={styles.th}>Fecha y Hora</th>
+        </tr>
+      </thead>
+      <tbody>
+        {movimientos.map((m, idx) => {
+          const tipoUpper = m.tipo?.toUpperCase() || ''
+          const esIngreso = tipoUpper === 'INGRESO'
+          const esTemporal = tipoUpper === 'GASTO TEMPORAL'
 
-                return (
-                  <tr key={idx}>
-                    <td style={styles.td}>
-                      <span
-                        style={
-                          esIngreso
-                            ? styles.badgeIngreso
-                            : esTemporal
-                            ? styles.badgeTemporal
-                            : styles.badgeEgreso
-                        }
-                      >
-                        {m.tipo}
-                      </span>
-                    </td>
-                    <td style={styles.td}>
-                      {esIngreso
-                        ? `Abono - ${m.cliente || m.concepto || 'Cliente'}`
-                        : m.concepto || 'Egreso general'}
-                    </td>
-                    <td style={styles.td}>
-                      {m.forma_pago || m.origen_pago || 'Efectivo'}
-                    </td>
-                    <td style={{ ...styles.td, ...(esIngreso ? styles.montoIngreso : styles.montoEgreso) }}>
-                      {esIngreso ? `+$${parseFloat(m.monto).toFixed(2)}` : `-$${parseFloat(m.monto).toFixed(2)}`}
-                    </td>
-                    <td style={styles.td}>
-                      {m.fecha ? new Date(m.fecha).toLocaleString() : 'N/A'}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
+          // 1. Detección dinámica de Tienda / Cliente
+          const nombreTienda =
+            m.tienda ||
+            m.cliente ||
+            m.tienda_cliente ||
+            m.nombre_tienda ||
+            'Venta General'
+
+          // 2. Detección de Pedido Rezagado vs Pedido Normal
+          const esRezagado =
+            m.es_rezagado === true ||
+            m.tipo_pedido === 'REZAGADO' ||
+            m.es_pedido_rezagado ||
+            (m.concepto && m.concepto.toLowerCase().includes('rezagado'))
+
+          return (
+            <tr key={m.id_movimiento || idx}>
+              <td style={styles.td}>
+                <span
+                  style={
+                    esIngreso
+                      ? styles.badgeIngreso
+                      : esTemporal
+                      ? styles.badgeTemporal
+                      : styles.badgeEgreso
+                  }
+                >
+                  {m.tipo}
+                </span>
+              </td>
+
+              {/* Columna Tienda / Cliente */}
+              <td style={styles.td}>
+                <strong>{nombreTienda}</strong>
+                {m.concepto && (
+                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                    {m.concepto}
+                  </div>
+                )}
+              </td>
+
+              {/* Columna Tipo de Pedido */}
+              <td style={styles.td}>
+                {esIngreso ? (
+                  <span
+                    style={{
+                      padding: '4px 10px',
+                      borderRadius: '10px',
+                      fontSize: '11px',
+                      fontWeight: 'bold',
+                      backgroundColor: esRezagado ? '#dcfce7' : '#e0f2fe',
+                      color: esRezagado ? '#15803d' : '#0369a1',
+                      border: esRezagado ? '1px solid #86efac' : 'none'
+                    }}
+                  >
+                    {esRezagado ? '📦 Pedido Rezagado' : '🛒 Pedido Normal'}
+                  </span>
+                ) : (
+                  <span style={{ color: '#94a3b8', fontSize: '12px' }}>N/A</span>
+                )}
+              </td>
+
+              <td style={styles.td}>
+                {m.forma_pago || m.origen_pago || 'Efectivo'}
+              </td>
+
+              <td
+                style={{
+                  ...styles.td,
+                  ...(esIngreso ? styles.montoIngreso : styles.montoEgreso)
+                }}
+              >
+                {esIngreso
+                  ? `+$${parseFloat(m.monto || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+                  : `-$${parseFloat(m.monto || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`}
+              </td>
+
+              <td style={styles.td}>
+                {m.fecha ? new Date(m.fecha).toLocaleString('es-MX') : 'N/A'}
+              </td>
+            </tr>
+          )
+        })}
+      </tbody>
+    </table>
+  )}
+</div>
+      
 
       {/* SUBTÍTULO DESGLOSE DE CAJA */}
       <h2 style={styles.subTitle}>DESGLOSE DE CAJA</h2>
