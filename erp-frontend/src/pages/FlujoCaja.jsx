@@ -438,6 +438,9 @@ function FlujoCaja() {
   const [movimientos, setMovimientos] = useState([])
   const [cargandoResumen, setCargandoResumen] = useState(true)
 
+  // ESTADO - FILTRO TIPO DE PEDIDO ('TODOS', 'NORMAL', 'REZAGADO')
+  const [filtroPedido, setFiltroPedido] = useState('TODOS')
+
   // ESTADO - GASTOS TEMPORALES (ENTREGAS PENDIENTES)
   const [gastosTemporales, setGastosTemporales] = useState([])
 
@@ -1153,6 +1156,29 @@ function FlujoCaja() {
     return puestoEmp === tabActual
   })
 
+  // FILTRADO DINÁMICO DE MOVIMIENTOS POR TIPO DE PEDIDO
+  const movimientosFiltrados = movimientos.filter((m) => {
+    if (filtroPedido === 'TODOS') return true
+
+    const tipoUpper = m.tipo?.toUpperCase() || ''
+    const esIngreso = tipoUpper === 'INGRESO'
+    const esRezagado =
+      m.es_rezagado === true ||
+      m.tipo_pedido === 'REZAGADO' ||
+      m.es_pedido_rezagado ||
+      (m.concepto && m.concepto.toLowerCase().includes('rezagado'))
+
+    if (filtroPedido === 'REZAGADO') {
+      return esIngreso && esRezagado
+    }
+
+    if (filtroPedido === 'NORMAL') {
+      return esIngreso && !esRezagado
+    }
+
+    return true
+  })
+
   return (
     <div style={styles.page}>
       {/* ENCABEZADO CORPORATIVO */}
@@ -1240,122 +1266,150 @@ function FlujoCaja() {
         </div>
       )}
 
- 
       {/* TABLA DE HISTORIAL DE MOVIMIENTOS DE CAJA */}
-<div style={styles.movimientosCard}>
-  <h3 style={{ color: vino, marginTop: 0, marginBottom: '10px' }}>
-    📜 Historial de Movimientos de Caja
-  </h3>
-  {cargandoResumen ? (
-    <p style={{ color: '#64748b' }}>Cargando movimientos...</p>
-  ) : movimientos.length === 0 ? (
-    <p style={{ color: '#64748b' }}>No hay movimientos registrados en la caja actual.</p>
-  ) : (
-    <table style={styles.table}>
-      <thead>
-        <tr>
-          <th style={styles.th}>Tipo</th>
-          <th style={styles.th}>Tienda / Cliente</th>
-          <th style={styles.th}>Origen / Tipo Pedido</th>
-          <th style={styles.th}>Forma de Pago</th>
-          <th style={styles.th}>Monto</th>
-          <th style={styles.th}>Fecha y Hora</th>
-        </tr>
-      </thead>
-      <tbody>
-        {movimientos.map((m, idx) => {
-          const tipoUpper = m.tipo?.toUpperCase() || ''
-          const esIngreso = tipoUpper === 'INGRESO'
-          const esTemporal = tipoUpper === 'GASTO TEMPORAL'
-
-          // 1. Detección dinámica de Tienda / Cliente
-          const nombreTienda =
-            m.tienda ||
-            m.cliente ||
-            m.tienda_cliente ||
-            m.nombre_tienda ||
-            'Venta General'
-
-          // 2. Detección de Pedido Rezagado vs Pedido Normal
-          const esRezagado =
-            m.es_rezagado === true ||
-            m.tipo_pedido === 'REZAGADO' ||
-            m.es_pedido_rezagado ||
-            (m.concepto && m.concepto.toLowerCase().includes('rezagado'))
-
-          return (
-            <tr key={m.id_movimiento || idx}>
-              <td style={styles.td}>
-                <span
-                  style={
-                    esIngreso
-                      ? styles.badgeIngreso
-                      : esTemporal
-                      ? styles.badgeTemporal
-                      : styles.badgeEgreso
-                  }
-                >
-                  {m.tipo}
-                </span>
-              </td>
-
-              {/* Columna Tienda / Cliente */}
-              <td style={styles.td}>
-                <strong>{nombreTienda}</strong>
-                {m.concepto && (
-                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
-                    {m.concepto}
+      <div style={styles.movimientosCard}>
+        <h3 style={{ color: vino, marginTop: 0, marginBottom: '10px' }}>
+          📜 Historial de Movimientos de Caja
+        </h3>
+        {cargandoResumen ? (
+          <p style={{ color: '#64748b' }}>Cargando movimientos...</p>
+        ) : movimientos.length === 0 ? (
+          <p style={{ color: '#64748b' }}>No hay movimientos registrados en la caja actual.</p>
+        ) : (
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.th}>Tipo</th>
+                <th style={styles.th}>Tienda / Cliente</th>
+                <th style={styles.th}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <span>Origen / Tipo Pedido</span>
+                    <select
+                      value={filtroPedido}
+                      onChange={(e) => setFiltroPedido(e.target.value)}
+                      style={{
+                        padding: '4px 8px',
+                        borderRadius: '6px',
+                        border: '1px solid #cbd5e1',
+                        fontSize: '12px',
+                        backgroundColor: '#ffffff',
+                        color: '#334155',
+                        cursor: 'pointer',
+                        fontWeight: 'normal'
+                      }}
+                    >
+                      <option value="TODOS">🔍 Todos los pedidos</option>
+                      <option value="NORMAL">🛒 Pedidos Normales</option>
+                      <option value="REZAGADO">📦 Pedidos Rezagados</option>
+                    </select>
                   </div>
-                )}
-              </td>
+                </th>
+                <th style={styles.th}>Forma de Pago</th>
+                <th style={styles.th}>Monto</th>
+                <th style={styles.th}>Fecha y Hora</th>
+              </tr>
+            </thead>
+            <tbody>
+              {movimientosFiltrados.length === 0 ? (
+                <tr>
+                  <td colSpan="6" style={{ ...styles.td, textAlign: 'center', color: '#64748b' }}>
+                    No se encontraron movimientos para el filtro seleccionado.
+                  </td>
+                </tr>
+              ) : (
+                movimientosFiltrados.map((m, idx) => {
+                  const tipoUpper = m.tipo?.toUpperCase() || ''
+                  const esIngreso = tipoUpper === 'INGRESO'
+                  const esTemporal = tipoUpper === 'GASTO TEMPORAL'
 
-              {/* Columna Tipo de Pedido */}
-              <td style={styles.td}>
-                {esIngreso ? (
-                  <span
-                    style={{
-                      padding: '4px 10px',
-                      borderRadius: '10px',
-                      fontSize: '11px',
-                      fontWeight: 'bold',
-                      backgroundColor: esRezagado ? '#dcfce7' : '#e0f2fe',
-                      color: esRezagado ? '#15803d' : '#0369a1',
-                      border: esRezagado ? '1px solid #86efac' : 'none'
-                    }}
-                  >
-                    {esRezagado ? '📦 Pedido Rezagado' : '🛒 Pedido Normal'}
-                  </span>
-                ) : (
-                  <span style={{ color: '#94a3b8', fontSize: '12px' }}>N/A</span>
-                )}
-              </td>
+                  // 1. Detección dinámica de Tienda / Cliente
+                  const nombreTienda =
+                    m.tienda ||
+                    m.cliente ||
+                    m.tienda_cliente ||
+                    m.nombre_tienda ||
+                    'Venta General'
 
-              <td style={styles.td}>
-                {m.forma_pago || m.origen_pago || 'Efectivo'}
-              </td>
+                  // 2. Detección de Pedido Rezagado vs Pedido Normal
+                  const esRezagado =
+                    m.es_rezagado === true ||
+                    m.tipo_pedido === 'REZAGADO' ||
+                    m.es_pedido_rezagado ||
+                    (m.concepto && m.concepto.toLowerCase().includes('rezagado'))
 
-              <td
-                style={{
-                  ...styles.td,
-                  ...(esIngreso ? styles.montoIngreso : styles.montoEgreso)
-                }}
-              >
-                {esIngreso
-                  ? `+$${parseFloat(m.monto || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
-                  : `-$${parseFloat(m.monto || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`}
-              </td>
+                  return (
+                    <tr key={m.id_movimiento || idx}>
+                      <td style={styles.td}>
+                        <span
+                          style={
+                            esIngreso
+                              ? styles.badgeIngreso
+                              : esTemporal
+                              ? styles.badgeTemporal
+                              : styles.badgeEgreso
+                          }
+                        >
+                          {m.tipo}
+                        </span>
+                      </td>
 
-              <td style={styles.td}>
-                {m.fecha ? new Date(m.fecha).toLocaleString('es-MX') : 'N/A'}
-              </td>
-            </tr>
-          )
-        })}
-      </tbody>
-    </table>
-  )}
-</div>
-      
+                      {/* Columna Tienda / Cliente */}
+                      <td style={styles.td}>
+                        <strong>{nombreTienda}</strong>
+                        {m.concepto && (
+                          <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                            {m.concepto}
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Columna Tipo de Pedido */}
+                      <td style={styles.td}>
+                        {esIngreso ? (
+                          <span
+                            style={{
+                              padding: '4px 10px',
+                              borderRadius: '10px',
+                              fontSize: '11px',
+                              fontWeight: 'bold',
+                              backgroundColor: esRezagado ? '#dcfce7' : '#e0f2fe',
+                              color: esRezagado ? '#15803d' : '#0369a1',
+                              border: esRezagado ? '1px solid #86efac' : 'none'
+                            }}
+                          >
+                            {esRezagado ? '📦 Pedido Rezagado' : '🛒 Pedido Normal'}
+                          </span>
+                        ) : (
+                          <span style={{ color: '#94a3b8', fontSize: '12px' }}>N/A</span>
+                        )}
+                      </td>
+
+                      <td style={styles.td}>
+                        {m.forma_pago || m.origen_pago || 'Efectivo'}
+                      </td>
+
+                      <td
+                        style={{
+                          ...styles.td,
+                          ...(esIngreso ? styles.montoIngreso : styles.montoEgreso)
+                        }}
+                      >
+                        {esIngreso
+                          ? `+$${parseFloat(m.monto || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+                          : `-$${parseFloat(m.monto || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`}
+                      </td>
+
+                      <td style={styles.td}>
+                        {m.fecha ? new Date(m.fecha).toLocaleString('es-MX') : 'N/A'}
+                      </td>
+                    </tr>
+                  )
+                })
+              )}
+            </tbody>
+          </table>
+        )}
+      </div>
 
       {/* SUBTÍTULO DESGLOSE DE CAJA */}
       <h2 style={styles.subTitle}>DESGLOSE DE CAJA</h2>
@@ -2590,187 +2644,12 @@ function FlujoCaja() {
                               <option value="Ferias">Ferias</option>
                               <option value="Souvenirs">Souvenirs</option>
                               <option value="Perifoneo">Perifoneo</option>
-                              <option value="Lonas">Lonas</option>
-                              <option value="Otro">Otro</option>
                             </select>
-                            <input
-                              type="number"
-                              step="any"
-                              placeholder="Monto ($)"
-                              style={{ ...styles.input, flex: 1 }}
-                              value={item.monto}
-                              onChange={(e) => handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'monto', e.target.value)}
-                              required
-                            />
-                            <input
-                              type="text"
-                              placeholder="Comentarios (opcional)"
-                              style={{ ...styles.input, flex: 2 }}
-                              value={item.comentario}
-                              onChange={(e) => handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'comentario', e.target.value)}
-                            />
-                            {lineasMarketing.length > 1 && (
-                              <button
-                                type="button"
-                                style={styles.removeBtn}
-                                onClick={() => handleEliminarObjeto(setLineasMarketing, lineasMarketing, idx)}
-                              >
-                                ✕
-                              </button>
-                            )}
                           </div>
                         ))}
                       </div>
-
-                      <div style={{ ...styles.fullRow, ...styles.totalSummaryBox }}>
-                        <span style={{ fontSize: '18px', fontWeight: 'bold', color: vino }}>
-                          TOTAL MARKETING: ${totalMarketing.toFixed(2)}
-                        </span>
-                      </div>
                     </>
                   )}
-
-                  {subDeptoActivo === 13 && (
-                    <>
-                      <div style={styles.fieldGroup}>
-                        <label style={styles.label}>Cantidad (Unidades / Piezas)</label>
-                        <input
-                          type="number"
-                          placeholder="Ej. 5"
-                          style={styles.input}
-                          value={cantidadCajaChica}
-                          onChange={(e) => setCantidadCajaChica(e.target.value)}
-                        />
-                      </div>
-
-                      <div style={styles.fieldGroup}>
-                        <label style={styles.label}>Monto Total ($) *</label>
-                        <input
-                          type="number"
-                          step="any"
-                          placeholder="0.00"
-                          style={styles.input}
-                          value={montoCajaChica}
-                          onChange={(e) => setMontoCajaChica(e.target.value)}
-                          required
-                        />
-                      </div>
-
-                      <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
-                        <label style={styles.label}>Detalle del Gasto (Papelería, Insumos de limpieza, Imprevistos) *</label>
-                        <textarea
-                          rows="2"
-                          placeholder="Ej. Compra de resmas de papel y plumas para la oficina..."
-                          style={{ ...styles.input, resize: 'vertical' }}
-                          value={detalleCajaChica}
-                          onChange={(e) => setDetalleCajaChica(e.target.value)}
-                          required
-                        />
-                      </div>
-                    </>
-                  )}
-
-                  {subDeptoActivo === 14 && (
-                    <>
-                      <div style={styles.fieldGroup}>
-                        <label style={styles.label}>Fecha de Pago *</label>
-                        <input
-                          type="date"
-                          style={styles.input}
-                          value={fechaPagoDepto}
-                          onChange={(e) => setFechaPagoDepto(e.target.value)}
-                          required
-                        />
-                      </div>
-
-                      <div style={styles.fieldGroup}>
-                        <label style={styles.label}>Honorarios ($) *</label>
-                        <input
-                          type="number"
-                          step="any"
-                          placeholder="0.00"
-                          style={styles.input}
-                          value={montoServicios}
-                          onChange={(e) => setMontoServicios(e.target.value)}
-                          required
-                        />
-                      </div>
-
-                      <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
-                        <label style={styles.label}>Profesional / Contador *</label>
-                        <select
-                          style={styles.select}
-                          value={empleadoServicios}
-                          onChange={(e) => setEmpleadoServicios(e.target.value)}
-                          required
-                        >
-                          <option value="">-- Seleccionar profesional --</option>
-                          {empleados.map((emp) => (
-                            <option key={emp.id_empleado} value={emp.id_empleado}>
-                              {emp.nombre_completo || `${emp.nombre || ''} ${emp.apellido1 || ''}`} ({emp.puesto})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </>
-                  )}
-
-                  <div style={styles.fieldGroup}>
-                    <label style={styles.label}>Origen de Pago *</label>
-                    <select
-                      style={styles.select}
-                      value={origenPago}
-                      onChange={(e) => {
-                        setOrigenPago(e.target.value)
-                        if (e.target.value !== 'TRANSFERENCIA') {
-                          setCuentaBancaria('')
-                          setNombreDuenioCuenta('')
-                        }
-                      }}
-                    >
-                      <option value="EFECTIVO">Efectivo</option>
-                      <option value="TRANSFERENCIA">Transferencia</option>
-                    </select>
-                  </div>
-
-                  {origenPago === 'TRANSFERENCIA' && (
-                    <div style={styles.fieldGroup}>
-                      <label style={styles.label}>Cuenta Bancaria de Salida *</label>
-                      <select
-                        style={styles.select}
-                        value={cuentaBancaria}
-                        onChange={(e) => {
-                          setCuentaBancaria(e.target.value)
-                          if (e.target.value !== 'OTRO') setNombreDuenioCuenta('')
-                        }}
-                        required
-                      >
-                        <option value="">-- Seleccionar Cuenta --</option>
-                        <option value="Cuenta Fiscal">Cuenta fiscal</option>
-                        <option value="OTRO">Otro</option>
-                      </select>
-                    </div>
-                  )}
-
-                  {origenPago === 'TRANSFERENCIA' && cuentaBancaria === 'OTRO' && (
-                    <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
-                      <label style={styles.label}>Nombre y Apellido del dueño de la cuenta *</label>
-                      <input
-                        type="text"
-                        placeholder="Ej. Eli Maravillas"
-                        style={styles.input}
-                        value={nombreDuenioCuenta}
-                        onChange={(e) => setNombreDuenioCuenta(e.target.value)}
-                        required
-                      />
-                    </div>
-                  )}
-
-                  <div style={styles.fullRow}>
-                    <button type="button" onClick={handleGuardarDeptos} style={styles.submitButton}>
-                      Guardar gasto departamental
-                    </button>
-                  </div>
                 </form>
               </div>
             )}
