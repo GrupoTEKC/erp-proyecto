@@ -433,6 +433,9 @@ const styles = {
 function FlujoCaja() {
   const navigate = useNavigate()
 
+  // ESTADO - CONTROL PLEGABLE DE HISTORIAL DE MOVIMIENTOS
+  const [historialAbierto, setHistorialAbierto] = useState(false)
+
   // ESTADO - RESUMEN DE CAJA Y MOVIMIENTOS
   const [saldos, setSaldos] = useState({ efectivo: 0, banco: 0, total_ingresos: 0, total_egresos: 0, saldo_tekc: 0 })
   const [movimientos, setMovimientos] = useState([])
@@ -1311,254 +1314,285 @@ function FlujoCaja() {
         </div>
       )}
 
-      {/* TABLA DE HISTORIAL DE MOVIMIENTOS DE CAJA */}
+      {/* TABLA DE HISTORIAL DE MOVIMIENTOS DE CAJA (DESPLEGABLE / PLEGABLE) */}
       <div style={styles.movimientosCard}>
-        <h3 style={{ color: vino, marginTop: 0, marginBottom: '10px' }}>
-          📜 Historial de Movimientos de Caja
-        </h3>
-        {cargandoResumen ? (
-          <p style={{ color: '#64748b' }}>Cargando movimientos...</p>
-        ) : movimientos.length === 0 ? (
-          <p style={{ color: '#64748b' }}>No hay movimientos registrados en la caja actual.</p>
-        ) : (
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.th}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <span>Tipo</span>
-                    <select
-                      value={filtroTipo}
-                      onChange={(e) => setFiltroTipo(e.target.value)}
-                      style={{
-                        padding: '4px 8px',
-                        borderRadius: '6px',
-                        border: '1px solid #cbd5e1',
-                        fontSize: '12px',
-                        backgroundColor: '#ffffff',
-                        color: '#334155',
-                        cursor: 'pointer',
-                        fontWeight: 'normal'
-                      }}
-                    >
-                      <option value="TODOS">🔍 Todos los tipos</option>
-                      <option value="INGRESO">🟢 INGRESO</option>
-                      <option value="EGRESO">🔴 EGRESO</option>
-                      <option value="GASTO TEMPORAL">🟡 GASTO TEMPORAL</option>
-                    </select>
-                  </div>
-                </th>
-                <th style={styles.th}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <span>Tienda / Cliente</span>
-                    <input
-                      type="text"
-                      placeholder="🔍 Buscar tienda..."
-                      value={busquedaTienda}
-                      onChange={(e) => setBusquedaTienda(e.target.value)}
-                      style={{
-                        padding: '4px 8px',
-                        borderRadius: '6px',
-                        border: '1px solid #cbd5e1',
-                        fontSize: '12px',
-                        backgroundColor: '#ffffff',
-                        color: '#334155',
-                        fontWeight: 'normal',
-                        outline: 'none',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                  </div>
-                </th>
-                <th style={styles.th}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <span>Origen / Tipo Pedido</span>
-                    <select
-                      value={filtroPedido}
-                      onChange={(e) => setFiltroPedido(e.target.value)}
-                      style={{
-                        padding: '4px 8px',
-                        borderRadius: '6px',
-                        border: '1px solid #cbd5e1',
-                        fontSize: '12px',
-                        backgroundColor: '#ffffff',
-                        color: '#334155',
-                        cursor: 'pointer',
-                        fontWeight: 'normal'
-                      }}
-                    >
-                      <option value="TODOS">🔍 Todos los pedidos</option>
-                      <option value="NORMAL">🛒 Pedidos Normales</option>
-                      <option value="REZAGADO">📦 Pedidos Rezagados</option>
-                    </select>
-                  </div>
-                </th>
-                <th style={styles.th}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <span>Forma de Pago</span>
-                    <select
-                      value={filtroFormaPago}
-                      onChange={(e) => setFiltroFormaPago(e.target.value)}
-                      style={{
-                        padding: '4px 8px',
-                        borderRadius: '6px',
-                        border: '1px solid #cbd5e1',
-                        fontSize: '12px',
-                        backgroundColor: '#ffffff',
-                        color: '#334155',
-                        cursor: 'pointer',
-                        fontWeight: 'normal'
-                      }}
-                    >
-                      <option value="TODOS">🔍 Todas las formas</option>
-                      <option value="EFECTIVO">💵 Efectivo</option>
-                      <option value="TRANSFERENCIA">💳 Transferencia</option>
-                    </select>
-                  </div>
-                </th>
-                <th style={styles.th}>Monto</th>
-                <th style={styles.th}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <span>Fecha y Hora</span>
-                    <div style={{ display: 'flex', gap: '4px' }}>
-                      <input
-                        type="date"
-                        value={fechaDesde}
-                        onChange={(e) => setFechaDesde(e.target.value)}
-                        title="Fecha Desde"
-                        style={{
-                          padding: '3px 4px',
-                          borderRadius: '6px',
-                          border: '1px solid #cbd5e1',
-                          fontSize: '11px',
-                          backgroundColor: '#ffffff',
-                          color: '#334155',
-                          fontWeight: 'normal',
-                          outline: 'none',
-                          width: '50%'
-                        }}
-                      />
-                      <input
-                        type="date"
-                        value={fechaHasta}
-                        onChange={(e) => setFechaHasta(e.target.value)}
-                        title="Fecha Hasta"
-                        style={{
-                          padding: '3px 4px',
-                          borderRadius: '6px',
-                          border: '1px solid #cbd5e1',
-                          fontSize: '11px',
-                          backgroundColor: '#ffffff',
-                          color: '#334155',
-                          fontWeight: 'normal',
-                          outline: 'none',
-                          width: '50%'
-                        }}
-                      />
-                    </div>
-                  </div>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {movimientosFiltrados.length === 0 ? (
-                <tr>
-                  <td colSpan="6" style={{ ...styles.td, textAlign: 'center', color: '#64748b' }}>
-                    No se encontraron movimientos para los filtros seleccionados.
-                  </td>
-                </tr>
-              ) : (
-                movimientosFiltrados.map((m, idx) => {
-                  const tipoUpper = m.tipo?.toUpperCase() || ''
-                  const esIngreso = tipoUpper === 'INGRESO'
-                  const esTemporal = tipoUpper === 'GASTO TEMPORAL'
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            cursor: 'pointer',
+            userSelect: 'none'
+          }}
+          onClick={() => setHistorialAbierto(!historialAbierto)}
+        >
+          <h3 style={{ color: vino, margin: 0 }}>
+            📜 Historial de Movimientos de Caja
+          </h3>
+          <button
+            type="button"
+            style={{
+              backgroundColor: vino,
+              color: '#ffffff',
+              border: 'none',
+              padding: '6px 14px',
+              borderRadius: '20px',
+              fontSize: '13px',
+              fontWeight: 'bold',
+              cursor: 'pointer'
+            }}
+          >
+            {historialAbierto ? '▲ Ocultar Detalles' : '▼ Ver Detalles'}
+          </button>
+        </div>
 
-                  // 1. Detección dinámica de Tienda / Cliente
-                  const nombreTienda =
-                    m.tienda ||
-                    m.cliente ||
-                    m.tienda_cliente ||
-                    m.nombre_tienda ||
-                    'Venta General'
-
-                  // 2. Detección de Pedido Rezagado vs Pedido Normal
-                  const esRezagado =
-                    m.es_rezagado === true ||
-                    m.tipo_pedido === 'REZAGADO' ||
-                    m.es_pedido_rezagado ||
-                    (m.concepto && m.concepto.toLowerCase().includes('rezagado'))
-
-                  return (
-                    <tr key={m.id_movimiento || idx}>
-                      <td style={styles.td}>
-                        <span
-                          style={
-                            esIngreso
-                              ? styles.badgeIngreso
-                              : esTemporal
-                              ? styles.badgeTemporal
-                              : styles.badgeEgreso
-                          }
+        {historialAbierto && (
+          <div style={{ marginTop: '15px' }}>
+            {cargandoResumen ? (
+              <p style={{ color: '#64748b' }}>Cargando movimientos...</p>
+            ) : movimientos.length === 0 ? (
+              <p style={{ color: '#64748b' }}>No hay movimientos registrados en la caja actual.</p>
+            ) : (
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={styles.th}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <span>Tipo</span>
+                        <select
+                          value={filtroTipo}
+                          onChange={(e) => setFiltroTipo(e.target.value)}
+                          style={{
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            border: '1px solid #cbd5e1',
+                            fontSize: '12px',
+                            backgroundColor: '#ffffff',
+                            color: '#334155',
+                            cursor: 'pointer',
+                            fontWeight: 'normal'
+                          }}
                         >
-                          {m.tipo}
-                        </span>
-                      </td>
-
-                      {/* Columna Tienda / Cliente */}
-                      <td style={styles.td}>
-                        <strong>{nombreTienda}</strong>
-                        {m.concepto && (
-                          <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
-                            {m.concepto}
-                          </div>
-                        )}
-                      </td>
-
-                      {/* Columna Tipo de Pedido */}
-                      <td style={styles.td}>
-                        {esIngreso ? (
-                          <span
+                          <option value="TODOS">🔍 Todos los tipos</option>
+                          <option value="INGRESO">🟢 INGRESO</option>
+                          <option value="EGRESO">🔴 EGRESO</option>
+                          <option value="GASTO TEMPORAL">🟡 GASTO TEMPORAL</option>
+                        </select>
+                      </div>
+                    </th>
+                    <th style={styles.th}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <span>Tienda / Cliente</span>
+                        <input
+                          type="text"
+                          placeholder="🔍 Buscar tienda..."
+                          value={busquedaTienda}
+                          onChange={(e) => setBusquedaTienda(e.target.value)}
+                          style={{
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            border: '1px solid #cbd5e1',
+                            fontSize: '12px',
+                            backgroundColor: '#ffffff',
+                            color: '#334155',
+                            fontWeight: 'normal',
+                            outline: 'none',
+                            boxSizing: 'border-box'
+                          }}
+                        />
+                      </div>
+                    </th>
+                    <th style={styles.th}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <span>Origen / Tipo Pedido</span>
+                        <select
+                          value={filtroPedido}
+                          onChange={(e) => setFiltroPedido(e.target.value)}
+                          style={{
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            border: '1px solid #cbd5e1',
+                            fontSize: '12px',
+                            backgroundColor: '#ffffff',
+                            color: '#334155',
+                            cursor: 'pointer',
+                            fontWeight: 'normal'
+                          }}
+                        >
+                          <option value="TODOS">🔍 Todos los pedidos</option>
+                          <option value="NORMAL">🛒 Pedidos Normales</option>
+                          <option value="REZAGADO">📦 Pedidos Rezagados</option>
+                        </select>
+                      </div>
+                    </th>
+                    <th style={styles.th}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <span>Forma de Pago</span>
+                        <select
+                          value={filtroFormaPago}
+                          onChange={(e) => setFiltroFormaPago(e.target.value)}
+                          style={{
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            border: '1px solid #cbd5e1',
+                            fontSize: '12px',
+                            backgroundColor: '#ffffff',
+                            color: '#334155',
+                            cursor: 'pointer',
+                            fontWeight: 'normal'
+                          }}
+                        >
+                          <option value="TODOS">🔍 Todas las formas</option>
+                          <option value="EFECTIVO">💵 Efectivo</option>
+                          <option value="TRANSFERENCIA">💳 Transferencia</option>
+                        </select>
+                      </div>
+                    </th>
+                    <th style={styles.th}>Monto</th>
+                    <th style={styles.th}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <span>Fecha y Hora</span>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <input
+                            type="date"
+                            value={fechaDesde}
+                            onChange={(e) => setFechaDesde(e.target.value)}
+                            title="Fecha Desde"
                             style={{
-                              padding: '4px 10px',
-                              borderRadius: '10px',
+                              padding: '3px 4px',
+                              borderRadius: '6px',
+                              border: '1px solid #cbd5e1',
                               fontSize: '11px',
-                              fontWeight: 'bold',
-                              backgroundColor: esRezagado ? '#dcfce7' : '#e0f2fe',
-                              color: esRezagado ? '#15803d' : '#0369a1',
-                              border: esRezagado ? '1px solid #86efac' : 'none'
+                              backgroundColor: '#ffffff',
+                              color: '#334155',
+                              fontWeight: 'normal',
+                              outline: 'none',
+                              width: '50%'
                             }}
-                          >
-                            {esRezagado ? '📦 Pedido Rezagado' : '🛒 Pedido Normal'}
-                          </span>
-                        ) : (
-                          <span style={{ color: '#94a3b8', fontSize: '12px' }}>N/A</span>
-                        )}
-                      </td>
-
-                      <td style={styles.td}>
-                        {m.forma_pago || m.origen_pago || 'Efectivo'}
-                      </td>
-
-                      <td
-                        style={{
-                          ...styles.td,
-                          ...(esIngreso ? styles.montoIngreso : styles.montoEgreso)
-                        }}
-                      >
-                        {esIngreso
-                          ? `+$${parseFloat(m.monto || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
-                          : `-$${parseFloat(m.monto || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`}
-                      </td>
-
-                      <td style={styles.td}>
-                        {m.fecha ? new Date(m.fecha).toLocaleString('es-MX') : 'N/A'}
+                          />
+                          <input
+                            type="date"
+                            value={fechaHasta}
+                            onChange={(e) => setFechaHasta(e.target.value)}
+                            title="Fecha Hasta"
+                            style={{
+                              padding: '3px 4px',
+                              borderRadius: '6px',
+                              border: '1px solid #cbd5e1',
+                              fontSize: '11px',
+                              backgroundColor: '#ffffff',
+                              color: '#334155',
+                              fontWeight: 'normal',
+                              outline: 'none',
+                              width: '50%'
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {movimientosFiltrados.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" style={{ ...styles.td, textAlign: 'center', color: '#64748b' }}>
+                        No se encontraron movimientos para los filtros seleccionados.
                       </td>
                     </tr>
-                  )
-                })
-              )}
-            </tbody>
-          </table>
+                  ) : (
+                    movimientosFiltrados.map((m, idx) => {
+                      const tipoUpper = m.tipo?.toUpperCase() || ''
+                      const esIngreso = tipoUpper === 'INGRESO'
+                      const esTemporal = tipoUpper === 'GASTO TEMPORAL'
+
+                      // 1. Detección dinámica de Tienda / Cliente
+                      const nombreTienda =
+                        m.tienda ||
+                        m.cliente ||
+                        m.tienda_cliente ||
+                        m.nombre_tienda ||
+                        'Venta General'
+
+                      // 2. Detección de Pedido Rezagado vs Pedido Normal
+                      const esRezagado =
+                        m.es_rezagado === true ||
+                        m.tipo_pedido === 'REZAGADO' ||
+                        m.es_pedido_rezagado ||
+                        (m.concepto && m.concepto.toLowerCase().includes('rezagado'))
+
+                      return (
+                        <tr key={m.id_movimiento || idx}>
+                          <td style={styles.td}>
+                            <span
+                              style={
+                                esIngreso
+                                  ? styles.badgeIngreso
+                                  : esTemporal
+                                  ? styles.badgeTemporal
+                                  : styles.badgeEgreso
+                              }
+                            >
+                              {m.tipo}
+                            </span>
+                          </td>
+
+                          {/* Columna Tienda / Cliente */}
+                          <td style={styles.td}>
+                            <strong>{nombreTienda}</strong>
+                            {m.concepto && (
+                              <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                                {m.concepto}
+                              </div>
+                            )}
+                          </td>
+
+                          {/* Columna Tipo de Pedido */}
+                          <td style={styles.td}>
+                            {esIngreso ? (
+                              <span
+                                style={{
+                                  padding: '4px 10px',
+                                  borderRadius: '10px',
+                                  fontSize: '11px',
+                                  fontWeight: 'bold',
+                                  backgroundColor: esRezagado ? '#dcfce7' : '#e0f2fe',
+                                  color: esRezagado ? '#15803d' : '#0369a1',
+                                  border: esRezagado ? '1px solid #86efac' : 'none'
+                                }}
+                              >
+                                {esRezagado ? '📦 Pedido Rezagado' : '🛒 Pedido Normal'}
+                              </span>
+                            ) : (
+                              <span style={{ color: '#94a3b8', fontSize: '12px' }}>N/A</span>
+                            )}
+                          </td>
+
+                          <td style={styles.td}>
+                            {m.forma_pago || m.origen_pago || 'Efectivo'}
+                          </td>
+
+                          <td
+                            style={{
+                              ...styles.td,
+                              ...(esIngreso ? styles.montoIngreso : styles.montoEgreso)
+                            }}
+                          >
+                            {esIngreso
+                              ? `+$${parseFloat(m.monto || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+                              : `-$${parseFloat(m.monto || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`}
+                          </td>
+
+                          <td style={styles.td}>
+                            {m.fecha ? new Date(m.fecha).toLocaleString('es-MX') : 'N/A'}
+                          </td>
+                        </tr>
+                      )
+                    })
+                  )}
+                </tbody>
+              </table>
+            )}
+          </div>
         )}
       </div>
 
@@ -2664,7 +2698,7 @@ function FlujoCaja() {
                   )}
 
                   {origenPago === 'TRANSFERENCIA' && cuentaBancaria === 'OTRO' && (
-                    <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
+                    <div style={styles.fieldGroup}>
                       <label style={styles.label}>Nombre y Apellido del dueño de la cuenta *</label>
                       <input
                         type="text"
@@ -2679,7 +2713,7 @@ function FlujoCaja() {
 
                   <div style={styles.fullRow}>
                     <button type="button" onClick={handleGuardarPlanta} style={styles.submitButton}>
-                      Guardar registro de planta
+                      Guardar registro de gasto
                     </button>
                   </div>
                 </form>
@@ -2697,7 +2731,7 @@ function FlujoCaja() {
             <div>
               <h3 style={styles.parentTitle}>GASTOS DEPARTAMENTALES</h3>
               <p style={styles.parentSubtitle}>
-                Marketing, Caja Chica y Servicios Profesionales.
+                Eventos de marketing, reposición de caja chica y honorarios por servicios profesionales.
               </p>
             </div>
           </div>
@@ -2715,7 +2749,9 @@ function FlujoCaja() {
                   <span style={styles.cardName}>Marketing</span>
                   <span style={styles.cardIcon}>📢</span>
                 </div>
-                <p style={styles.cardDesc}>Gastos de publicidad, volantes, eventos y promociones.</p>
+                <p style={styles.cardDesc}>
+                  Gastos de eventos, lonas, volantes, publicidad y campañas de MKT.
+                </p>
               </div>
 
               <div
@@ -2724,9 +2760,11 @@ function FlujoCaja() {
               >
                 <div style={styles.cardHeader}>
                   <span style={styles.cardName}>Caja Chica</span>
-                  <span style={styles.cardIcon}>☕</span>
+                  <span style={styles.cardIcon}>🪙</span>
                 </div>
-                <p style={styles.cardDesc}>Gastos menores de oficina y compras imprevistas de planta.</p>
+                <p style={styles.cardDesc}>
+                  Gastos menores de oficina, papelería, aseo y reposiciones menores.
+                </p>
               </div>
 
               <div
@@ -2735,9 +2773,11 @@ function FlujoCaja() {
               >
                 <div style={styles.cardHeader}>
                   <span style={styles.cardName}>Servicios Profesionales</span>
-                  <span style={styles.cardIcon}>💼</span>
+                  <span style={styles.cardIcon}>👔</span>
                 </div>
-                <p style={styles.cardDesc}>Honorarios y pago de asesorías externas (Contabilidad / Alma Nely).</p>
+                <p style={styles.cardDesc}>
+                  Honorarios contables, legales o de consultoría externa.
+                </p>
               </div>
             </div>
 
@@ -2746,9 +2786,9 @@ function FlujoCaja() {
                 <div style={styles.formTitle}>
                   <span>
                     Estás capturando:{' '}
-                    {subDeptoActivo === 12 && '📢 Marketing'}
-                    {subDeptoActivo === 13 && '☕ Caja Chica'}
-                    {subDeptoActivo === 14 && '💼 Servicios Profesionales'}
+                    {subDeptoActivo === 12 && '📢 Marketing y Publicidad'}
+                    {subDeptoActivo === 13 && '🪙 Caja Chica'}
+                    {subDeptoActivo === 14 && '👔 Servicios Profesionales'}
                   </span>
                   <button type="button" style={styles.closeBtn} onClick={() => setSubDeptoActivo(null)}>
                     ✕ Cerrar
@@ -2759,7 +2799,7 @@ function FlujoCaja() {
                   {subDeptoActivo === 12 && (
                     <>
                       <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
-                        <label style={styles.label}>Fecha del evento / gasto *</label>
+                        <label style={styles.label}>Fecha del Evento / Gasto *</label>
                         <input
                           type="date"
                           style={styles.input}
@@ -2771,40 +2811,57 @@ function FlujoCaja() {
 
                       <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
                         <div style={styles.dynamicHeader}>
-                          <span>Detalle de Marketing *</span>
+                          <span>Desglose de Marketing *</span>
                           <button
                             type="button"
                             style={styles.addBtn}
-                            onClick={() => handleAgregarObjeto(setLineasMarketing, lineasMarketing, { tipoGasto: '', monto: '', comentario: '' })}
+                            onClick={() =>
+                              handleAgregarObjeto(setLineasMarketing, lineasMarketing, {
+                                tipoGasto: '',
+                                monto: '',
+                                comentario: ''
+                              })
+                            }
                           >
                             +
                           </button>
                         </div>
                         {lineasMarketing.map((item, idx) => (
-                          <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                            <input
-                              type="text"
-                              placeholder="Ej. Volantes / Anuncios Meta"
-                              style={{ ...styles.input, flex: 1.5 }}
+                          <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
+                            <select
+                              style={{ ...styles.select, flex: 1 }}
                               value={item.tipoGasto}
-                              onChange={(e) => handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'tipoGasto', e.target.value)}
+                              onChange={(e) =>
+                                handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'tipoGasto', e.target.value)
+                              }
                               required
-                            />
+                            >
+                              <option value="">-- Seleccionar concepto --</option>
+                              <option value="Evento / Expo">Evento / Expo</option>
+                              <option value="Lonas / Publicidad impresa">Lonas / Publicidad impresa</option>
+                              <option value="Volantes / Folletos">Volantes / Folletos</option>
+                              <option value="Campaña Digital / Redes">Campaña Digital / Redes</option>
+                              <option value="Otro">Otro</option>
+                            </select>
                             <input
                               type="number"
                               step="any"
                               placeholder="Monto ($)"
                               style={{ ...styles.input, flex: 1 }}
                               value={item.monto}
-                              onChange={(e) => handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'monto', e.target.value)}
+                              onChange={(e) =>
+                                handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'monto', e.target.value)
+                              }
                               required
                             />
                             <input
                               type="text"
-                              placeholder="Comentario (opcional)"
-                              style={{ ...styles.input, flex: 1.5 }}
+                              placeholder="Comentario adicional..."
+                              style={{ ...styles.input, flex: 2 }}
                               value={item.comentario}
-                              onChange={(e) => handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'comentario', e.target.value)}
+                              onChange={(e) =>
+                                handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'comentario', e.target.value)
+                              }
                             />
                             {lineasMarketing.length > 1 && (
                               <button
@@ -2830,10 +2887,10 @@ function FlujoCaja() {
                   {subDeptoActivo === 13 && (
                     <>
                       <div style={styles.fieldGroup}>
-                        <label style={styles.label}>Cantidad / Unidades (Opcional)</label>
+                        <label style={styles.label}>Cantidad (Piezas/Unidades)</label>
                         <input
                           type="text"
-                          placeholder="Ej. 2 garrafones, 1 paquete..."
+                          placeholder="Ej. 2 paquetes de hojas, 5 plumas..."
                           style={styles.input}
                           value={cantidadCajaChica}
                           onChange={(e) => setCantidadCajaChica(e.target.value)}
@@ -2855,10 +2912,10 @@ function FlujoCaja() {
                       </div>
 
                       <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
-                        <label style={styles.label}>¿Qué se compró? (Detalle) *</label>
+                        <label style={styles.label}>Detalle del gasto / Qué se compró *</label>
                         <textarea
                           rows="2"
-                          placeholder="Ej. Café y azúcar para recepción de oficinas..."
+                          placeholder="Escribe el desglose de lo que se compró con caja chica..."
                           style={{ ...styles.input, resize: 'vertical' }}
                           value={detalleCajaChica}
                           onChange={(e) => setDetalleCajaChica(e.target.value)}
@@ -2870,7 +2927,7 @@ function FlujoCaja() {
 
                   {subDeptoActivo === 14 && (
                     <>
-                      <div style={styles.fieldGroup}>
+                      <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
                         <label style={styles.label}>Fecha de pago *</label>
                         <input
                           type="date"
@@ -2882,14 +2939,14 @@ function FlujoCaja() {
                       </div>
 
                       <div style={styles.fieldGroup}>
-                        <label style={styles.label}>Profesional / Asesor externo *</label>
+                        <label style={styles.label}>Profesionista / Empleado *</label>
                         <select
                           style={styles.select}
                           value={empleadoServicios}
                           onChange={(e) => setEmpleadoServicios(e.target.value)}
                           required
                         >
-                          <option value="">-- Seleccionar Asesor --</option>
+                          <option value="">-- Seleccionar profesionista --</option>
                           {empleados.map((emp) => (
                             <option key={emp.id_empleado} value={emp.id_empleado}>
                               {emp.nombre_completo || `${emp.nombre || ''} ${emp.apellido1 || ''}`} ({emp.puesto})
@@ -2898,7 +2955,7 @@ function FlujoCaja() {
                         </select>
                       </div>
 
-                      <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
+                      <div style={styles.fieldGroup}>
                         <label style={styles.label}>Monto de Honorarios ($) *</label>
                         <input
                           type="number"
@@ -2952,7 +3009,7 @@ function FlujoCaja() {
                   )}
 
                   {origenPago === 'TRANSFERENCIA' && cuentaBancaria === 'OTRO' && (
-                    <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
+                    <div style={styles.fieldGroup}>
                       <label style={styles.label}>Nombre y Apellido del dueño de la cuenta *</label>
                       <input
                         type="text"
@@ -2967,7 +3024,7 @@ function FlujoCaja() {
 
                   <div style={styles.fullRow}>
                     <button type="button" onClick={handleGuardarDeptos} style={styles.submitButton}>
-                      Guardar gasto departamental
+                      Guardar registro departamental
                     </button>
                   </div>
                 </form>
