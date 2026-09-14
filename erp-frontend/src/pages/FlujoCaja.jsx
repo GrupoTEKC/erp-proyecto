@@ -1429,7 +1429,7 @@ function FlujoCaja() {
           onClick={() => setHistorialAbierto(!historialAbierto)}
         >
           <h3 style={{ color: vino, margin: 0 }}>
-            📜 Historial de Movimientos de Caja
+            📜 Historial de movimientos de caja
           </h3>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
             {historialAbierto && (
@@ -1450,7 +1450,7 @@ function FlujoCaja() {
                   cursor: 'pointer'
                 }}
               >
-                📥 Descargar CSV / Excel
+                📥 Descargar hoja de calculo 
               </button>
             )}
             <button
@@ -1507,7 +1507,7 @@ function FlujoCaja() {
                     </th>
                     <th style={styles.th}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <span>Tienda / Cliente</span>
+                        <span>Tienda</span>
                         <input
                           type="text"
                           placeholder="🔍 Buscar tienda..."
@@ -1529,7 +1529,7 @@ function FlujoCaja() {
                     </th>
                     <th style={styles.th}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <span>Origen / Tipo Pedido</span>
+                        <span>Tipo Pedido</span>
                         <select
                           value={filtroPedido}
                           onChange={(e) => setFiltroPedido(e.target.value)}
@@ -1545,14 +1545,14 @@ function FlujoCaja() {
                           }}
                         >
                           <option value="TODOS">🔍 Todos los pedidos</option>
-                          <option value="NORMAL">🛒 Pedidos Normales</option>
-                          <option value="REZAGADO">📦 Pedidos Rezagados</option>
+                          <option value="NORMAL">🛒 Pedidos normales</option>
+                          <option value="REZAGADO">📦 Pedidos rezagados</option>
                         </select>
                       </div>
                     </th>
                     <th style={styles.th}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <span>Forma de Pago</span>
+                        <span>Forma de pago</span>
                         <select
                           value={filtroFormaPago}
                           onChange={(e) => setFiltroFormaPago(e.target.value)}
@@ -1707,9 +1707,15 @@ function FlujoCaja() {
                               : `-$${parseFloat(m.monto || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`}
                           </td>
 
-                          <td style={styles.td}>
-                            {m.fecha ? new Date(m.fecha).toLocaleString('es-MX') : 'N/A'}
-                          </td>
+                         <td style={styles.td}>
+                         {m.fecha
+                         ? new Date(m.fecha).toLocaleDateString('es-MX', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric'
+                         })
+                         : 'N/A'}
+                         </td>
                         </tr>
                       )
                     })
