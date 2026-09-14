@@ -1661,15 +1661,15 @@ function FlujoCaja() {
                             </span>
                           </td>
 
-                          {/* Columna Tienda / Cliente */}
-                          <td style={styles.td}>
-                            <strong>{nombreTienda}</strong>
-                            {m.concepto && (
-                              <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
-                                {m.concepto}
-                              </div>
-                            )}
-                          </td>
+                         {/* Columna Tienda / Cliente */}
+                         <td style={styles.td}>
+                         <strong>{nombreTienda}</strong>
+                         {m.concepto && (
+                         <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                         {m.concepto.split('-')[0].trim()}
+                         </div>
+                         )}
+                         </td>
 
                           {/* Columna Tipo de Pedido */}
                           <td style={styles.td}>
