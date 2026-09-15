@@ -2768,7 +2768,6 @@ app.get('/pagos/:id_pedido', async (req, res) => {
 })
 
 
-// =============================
 // 📊 CAJA Y FLUJO DE CAJA (EN TIEMPO REAL)
 // =============================
 
@@ -2790,15 +2789,15 @@ app.get('/api/caja/resumen', async (req, res) => {
     const cajaActiva = cajas[0]
     const fechaInicio = cajaActiva.fecha_inicio
 
-    // B) Sumar INGRESOS (Pagos) del mes actual por fecha_pago (efectivo y transferencia)
+    // B) Sumar INGRESOS (Pagos) a partir de la fecha de apertura de la caja activa
     const [ingresos] = await db.query(
       `SELECT 
         SUM(CASE WHEN LOWER(metodo) = 'efectivo' THEN monto ELSE 0 END) AS total_ingreso_efectivo,
         SUM(CASE WHEN LOWER(metodo) = 'transferencia' THEN monto ELSE 0 END) AS total_ingreso_banco,
         SUM(CASE WHEN LOWER(metodo) IN ('efectivo', 'transferencia') THEN monto ELSE 0 END) AS total_ingresos
        FROM pagos
-       WHERE fecha_pago >= DATE_FORMAT(CURRENT_DATE(), '%Y-%m-01')
-         AND fecha_pago <= LAST_DAY(CURRENT_DATE())`
+       WHERE fecha_pago >= ?`,
+      [fechaInicio]
     );
 
     // C) Sumar EGRESOS DEFINITIVOS (Gastos) + GASTOS TEMPORALES PENDIENTES
@@ -2912,8 +2911,7 @@ app.get('/api/caja/resumen', async (req, res) => {
       [fechaInicio, fechaInicio, fechaInicio]
     );
     
-    
-    // RESPUESTA JSON (Incluye total_ingresos y total_egresos en saldos)
+    // RESPUESTA JSON
     res.json({
       ok: true,
       caja_info: {
