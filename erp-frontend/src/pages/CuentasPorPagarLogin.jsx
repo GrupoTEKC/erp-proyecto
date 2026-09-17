@@ -89,7 +89,7 @@ function CuentasPorPagarLogin() {
 
         <h2 style={styles.title}>Cuentas por pagar</h2>
         <p style={styles.subtitle}>
-          Aquí podrás administrar, controlar todos los pagos y obligaciones de tu empresa.
+          Aquí podrás administrar, controlar todos los pagos y obligaciones de Grupo TECK.
         </p>
 
         {error && <div style={styles.error}>{error}</div>}
