@@ -89,7 +89,7 @@ function CuentasPorPagarLogin() {
 
         <h2 style={styles.title}>Cuentas por pagar</h2>
         <p style={styles.subtitle}>
-          Aquí podrás administrar tus pagos de manera fácil y segura, manteniendo el control de todas las obligaciones de tu empresa.
+          Aquí podrás administrar, controlar todos los pagos y obligaciones de tu empresa.
         </p>
 
         {error && <div style={styles.error}>{error}</div>}
