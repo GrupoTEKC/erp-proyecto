@@ -21,7 +21,8 @@ import ControlVentas from './pages/ControlVentas'
 import ControlFolios from './pages/ControlFolios'
 import FlujoCaja from './pages/FlujoCaja'
 import Viaticos from './pages/Viaticos'
-import CuentasPorPagarLogin from './pages/CuentasPorPagarLogin' // 👈 1. IMPORTAR AQUÍ
+import CuentasPorPagarLogin from './pages/CuentasPorPagarLogin'
+import CuentasPorPagar from './pages/CuentasPorPagar' // 👈 1. IMPORTACIÓN AGREGADA
 
 function App() {
   return (
@@ -48,8 +49,9 @@ function App() {
         {/* 🔐 LOGIN PAGOS */}
         <Route path="/pagos-login" element={<PagosLogin />} />
 
-        {/* 💳 🔐 LOGIN CUENTAS POR PAGAR */}
+        {/* 💳 🔐 LOGIN Y PANTALLA CUENTAS POR PAGAR */}
         <Route path="/cuentas-por-pagar-login" element={<CuentasPorPagarLogin />} />
+        <Route path="/cuentas-por-pagar" element={<CuentasPorPagar />} /> {/* 👈 2. RUTA AGREGADA */}
 
         {/* 💵 PAGOS */}
         <Route path="/pagos" element={<Pagos />} />
