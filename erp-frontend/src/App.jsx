@@ -20,7 +20,8 @@ import ClientePrecios from './pages/ClientePrecios'
 import ControlVentas from './pages/ControlVentas'
 import ControlFolios from './pages/ControlFolios'
 import FlujoCaja from './pages/FlujoCaja'
-import Viaticos from './pages/Viaticos' // 👈 1. IMPORTAR AQUÍ
+import Viaticos from './pages/Viaticos'
+import CuentasPorPagarLogin from './pages/CuentasPorPagarLogin' // 👈 1. IMPORTAR AQUÍ
 
 function App() {
   return (
@@ -46,6 +47,9 @@ function App() {
 
         {/* 🔐 LOGIN PAGOS */}
         <Route path="/pagos-login" element={<PagosLogin />} />
+
+        {/* 💳 🔐 LOGIN CUENTAS POR PAGAR */}
+        <Route path="/cuentas-por-pagar-login" element={<CuentasPorPagarLogin />} />
 
         {/* 💵 PAGOS */}
         <Route path="/pagos" element={<Pagos />} />
