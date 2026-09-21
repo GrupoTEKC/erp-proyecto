@@ -4,6 +4,149 @@ import logo from "../assets/TRANSPARENTE.png"
 
 const API = "https://erp-proyecto-production.up.railway.app"
 
+// 🎨 OBJETO DE ESTILOS UNIFICADO CON LA PALETA GUINDA/VINO
+const styles = {
+  page: {
+    backgroundColor: '#ffffff',
+    minHeight: '100vh',
+    padding: '20px',
+    fontFamily: 'Arial, sans-serif'
+  },
+  backTop: {
+    padding: '8px 12px',
+    fontSize: '13px',
+    backgroundColor: '#fff',
+    color: '#8B1E1E',
+    border: '1px solid #8B1E1E',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontWeight: 'bold'
+  },
+  titleCenter: {
+    textAlign: "center",
+    fontSize: "28px",
+    fontWeight: "bold",
+    color: "#8B1E1E",
+    margin: 0,
+    letterSpacing: "1px"
+  },
+  subTitle: {
+    fontSize: '16px',
+    fontWeight: 'bold',
+    color: '#8B1E1E',
+    margin: '0 0 12px 0',
+    borderBottom: '2px solid #8B1E1E',
+    paddingBottom: '6px'
+  },
+  field: {
+    width: '100%',
+    padding: '8px',
+    borderRadius: '6px',
+    border: '1px solid #8B1E1E',
+    marginTop: '4px',
+    boxSizing: 'border-box'
+  },
+  selectFiltro: {
+    padding: '6px 10px',
+    borderRadius: '4px',
+    border: '1px solid #8B1E1E',
+    color: '#8B1E1E',
+    fontWeight: 'bold',
+    backgroundColor: '#fff',
+    cursor: 'pointer'
+  },
+  botonAccion: {
+    padding: '8px 14px',
+    fontSize: '13px',
+    backgroundColor: '#8B1E1E',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontWeight: 'bold'
+  },
+  botonNav: {
+    backgroundColor: '#8B1E1E',
+    color: '#fff',
+    border: 'none',
+    padding: '6px 12px',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontWeight: 'bold'
+  },
+  botonOutlined: {
+    backgroundColor: '#fff',
+    color: '#8B1E1E',
+    border: '1px solid #8B1E1E',
+    padding: '6px 12px',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontWeight: 'bold'
+  },
+  hamburger: {
+    position: "fixed",
+    top: 18,
+    right: 18,
+    background: "transparent",
+    border: "none",
+    color: "#C62828",
+    fontSize: 30,
+    cursor: "pointer",
+    zIndex: 1001,
+    padding: 0,
+    lineHeight: 1
+  },
+  menu: {
+    position: "fixed",
+    top: 0,
+    right: 0,
+    width: 290,
+    height: "100%",
+    background: "#ffffff",
+    color: "#222",
+    boxShadow: "-8px 0 25px rgba(0,0,0,.18)",
+    padding: "20px 18px",
+    zIndex: 1000,
+    transition: "transform .25s ease"
+  },
+  menuItem: {
+    width: "100%",
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    padding: "14px 12px",
+    marginBottom: 8,
+    background: "#fff",
+    color: "#333",
+    border: "none",
+    borderBottom: "1px solid #ececec",
+    fontSize: "17px",
+    cursor: "pointer",
+    textAlign: "left"
+  },
+  overlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(139,30,30,.12)",
+    zIndex: 999
+  },
+  cardPanel: {
+    backgroundColor: '#fff',
+    borderRadius: '10px',
+    padding: '18px',
+    border: '1px solid #e5e5e5',
+    height: 'fit-content'
+  },
+  modalBox: {
+    backgroundColor: '#fff',
+    borderRadius: '10px',
+    padding: '24px',
+    width: '420px',
+    maxWidth: '90%',
+    border: '2px solid #8B1E1E'
+  }
+}
+
 function CuentasPorPagar() {
   const navigate = useNavigate()
   const [menuAbierto, setMenuAbierto] = useState(false)
@@ -11,15 +154,17 @@ function CuentasPorPagar() {
   const [eventos, setEventos] = useState([])
   const [cargando, setCargando] = useState(true)
 
-  // Modales y Estados de Filtros
+  // Modales
   const [modalNuevo, setModalNuevo] = useState(false)
   const [modalAbono, setModalAbono] = useState(null)
   const [modalHistorial, setModalHistorial] = useState(null)
   const [historialAbonos, setHistorialAbonos] = useState([])
   const [prestamosSeleccionados, setPrestamosSeleccionados] = useState([])
 
-  // Fecha de referencia para el calendario semanal
-  const [fechaReferencia, setFechaReferencia] = useState(new Date())
+  // Estado del mes/año seleccionado para el calendario
+  const hoy = new Date()
+  const [mesSeleccionado, setMesSeleccionado] = useState(hoy.getMonth())
+  const [anioSeleccionado, setAnioSeleccionado] = useState(hoy.getFullYear())
 
   // Formularios
   const [formPrestamo, setFormPrestamo] = useState({
@@ -28,7 +173,7 @@ function CuentasPorPagar() {
     plazos_meses: "6",
     frecuencia: "MENSUAL",
     fecha_primer_pago: new Date().toISOString().split('T')[0],
-    color_identificador: "#4A90E2",
+    color_identificador: "#8B1E1E",
     cuenta_destino: "TRANSFERENCIA",
     cuenta_bancaria_destino: "BBVA Fiscal"
   })
@@ -80,7 +225,7 @@ function CuentasPorPagar() {
           plazos_meses: "6",
           frecuencia: "MENSUAL",
           fecha_primer_pago: new Date().toISOString().split('T')[0],
-          color_identificador: "#4A90E2",
+          color_identificador: "#8B1E1E",
           cuenta_destino: "TRANSFERENCIA",
           cuenta_bancaria_destino: "BBVA Fiscal"
         })
@@ -139,26 +284,6 @@ function CuentasPorPagar() {
     }
   }
 
-  // Helpers de Fechas para la Semana
-  const obtenerDiasSemana = (fechaRef) => {
-    const d = new Date(fechaRef)
-    const day = d.getDay()
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1) // Lunes
-    const lunes = new Date(d.setDate(diff))
-
-    const dias = []
-    for (let i = 0; i < 5; i++) {
-      const temp = new Date(lunes)
-      temp.setDate(lunes.getDate() + i)
-      dias.push(temp)
-    }
-    return dias
-  }
-
-  const diasSemana = obtenerDiasSemana(fechaReferencia)
-  const nombresDias = ['LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES']
-  const hoyISO = new Date().toISOString().split('T')[0]
-
   const toggleFiltroPrestamo = (id) => {
     if (prestamosSeleccionados.includes(id)) {
       setPrestamosSeleccionados(prestamosSeleccionados.filter(item => item !== id))
@@ -167,165 +292,261 @@ function CuentasPorPagar() {
     }
   }
 
+  // Lógica de Generación de Días para Calendario Mensual
+  const nombresMeses = [
+    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+  ]
+
+  const obtenerDiasMes = (mes, anio) => {
+    const primerDia = new Date(anio, mes, 1)
+    const ultimoDia = new Date(anio, mes + 1, 0)
+
+    let diaSemanaInicio = primerDia.getDay() - 1 // Lunes = 0
+    if (diaSemanaInicio === -1) diaSemanaInicio = 6 // Domingo = 6
+
+    const totalDias = ultimoDia.getDate()
+    const celdas = []
+
+    for (let i = 0; i < diaSemanaInicio; i++) {
+      celdas.push(null)
+    }
+
+    for (let d = 1; d <= totalDias; d++) {
+      celdas.push(new Date(anio, mes, d))
+    }
+
+    return celdas
+  }
+
+  const diasCalendario = obtenerDiasMes(mesSeleccionado, anioSeleccionado)
+  const hoyISO = new Date().toISOString().split('T')[0]
+
+  const cambiarMes = (direccion) => {
+    if (direccion === -1) {
+      if (mesSeleccionado === 0) {
+        setMesSeleccionado(11)
+        setAnioSeleccionado(anioSeleccionado - 1)
+      } else {
+        setMesSeleccionado(mesSeleccionado - 1)
+      }
+    } else {
+      if (mesSeleccionado === 11) {
+        setMesSeleccionado(0)
+        setAnioSeleccionado(anioSeleccionado + 1)
+      } else {
+        setMesSeleccionado(mesSeleccionado + 1)
+      }
+    }
+  }
+
   return (
-    <div style={{ backgroundColor: '#F4F6F9', minHeight: '100vh', fontFamily: 'Segoe UI, Roboto, sans-serif' }}>
+    <div style={styles.page}>
       
-      {/* HEADER SUPERIOR APP */}
-      <header style={{ backgroundColor: '#fff', borderBottom: '1px solid #E2E8F0', padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <button style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#8B1E1E' }} onClick={() => navigate("/")}>
-            ⬅
-          </button>
-          <img src={logo} alt="Logo" style={{ height: '32px', objectFit: 'contain' }} />
-          <h2 style={{ margin: 0, fontSize: '18px', color: '#2D3748', fontWeight: '600' }}>Cuentas por Pagar</h2>
-        </div>
+      {/* 🍔 BOTÓN DE MENÚ */}
+      {!menuAbierto && (
+        <button style={styles.hamburger} onClick={() => setMenuAbierto(true)}>
+          ☰
+        </button>
+      )}
 
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button
-            style={{ backgroundColor: '#4A90E2', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '20px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}
-            onClick={() => setModalNuevo(true)}
-          >
-            + Nuevo Préstamo
-          </button>
-        </div>
-      </header>
-
-      {/* CONTENEDOR PRINCIPAL DOS COLUMNAS */}
-      <div style={{ display: 'flex', padding: '20px', gap: '20px', maxWidth: '1400px', margin: '0 auto' }}>
-        
-        {/* BARRA LATERAL IZQUIERDA (MINI CALENDARIO & FILTROS) */}
-        <div style={{ width: '280px', backgroundColor: '#fff', borderRadius: '12px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', height: 'fit-content' }}>
-          
-          <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', color: '#1A202C' }}>Junio 2026</h3>
-          
-          {/* Mini Grilla Mes */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', textAlign: 'center', fontSize: '11px', color: '#A0AEC0', marginBottom: '20px' }}>
-            <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
-            {[...Array(30)].map((_, i) => (
-              <div
-                key={i}
-                style={{
-                  padding: '6px 0',
-                  borderRadius: '50%',
-                  fontSize: '12px',
-                  color: (i + 1) === 27 ? '#fff' : '#4A5568',
-                  backgroundColor: (i + 1) === 27 ? '#4A90E2' : 'transparent',
-                  fontWeight: (i + 1) === 27 ? 'bold' : 'normal'
-                }}
-              >
-                {i + 1}
-              </div>
-            ))}
+      {/* 📂 DESPLEGABLE DE MENÚ */}
+      {menuAbierto && (
+        <>
+          <div style={styles.overlay} onClick={() => setMenuAbierto(false)} />
+          <div style={styles.menu}>
+            <h3 style={{ margin: 0, paddingBottom: 18, marginBottom: 18, borderBottom: "1px solid #E5E5E5", fontSize: 24, color: "#8B1E1E", fontWeight: "700" }}>
+              ☰ MENÚ
+            </h3>
+            <button style={styles.menuItem} onClick={() => { setMenuAbierto(false); navigate("/"); }}>
+              <span style={{ color: "#C62828" }}>🏠</span> Inicio
+            </button>
+            <button style={styles.menuItem} onClick={() => { setMenuAbierto(false); navigate("/cuentas-por-pagar"); }}>
+              <span style={{ color: "#C62828" }}>💳</span> Cuentas por pagar
+            </button>
+            <button style={styles.menuItem} onClick={() => { setMenuAbierto(false); navigate("/flujo-caja"); }}>
+              <span style={{ color: "#C62828" }}>$</span> Flujo de caja
+            </button>
+            <button style={styles.menuItem} onClick={() => setMenuAbierto(false)}>
+              <span style={{ color: "#C62828" }}>✖</span> Salir del menú
+            </button>
           </div>
+        </>
+      )}
 
-          <hr style={{ border: 'none', borderTop: '1px solid #EDF2F7', margin: '16px 0' }} />
+      {/* ⬅ BOTÓN VOLVER */}
+      <button style={styles.backTop} onClick={() => navigate("/")}>
+        ⬅ Volver al Menú Principal
+      </button>
 
-          {/* LISTA / FILTRO DE PRÉSTAMOS */}
-          <h4 style={{ fontSize: '12px', letterSpacing: '0.5px', color: '#A0AEC0', margin: '0 0 12px 0', textTransform: 'uppercase' }}>
-            Acreedores / Préstamos
-          </h4>
+      {/* 🔵 ENCABEZADO Y LOGO */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: -5, marginBottom: 20 }}>
+        <img src={logo} alt="Pegatek" style={{ width: 140, objectFit: "contain", marginBottom: 6 }} />
+        <h1 style={styles.titleCenter}>
+          CUENTAS POR PAGAR
+        </h1>
+      </div>
+
+      {/* CONTENEDOR DOS COLUMNAS */}
+      <div style={{ display: 'flex', gap: '20px', maxWidth: '1400px', margin: '0 auto', flexWrap: 'wrap' }}>
+        
+        {/* BARRA LATERAL IZQUIERDA */}
+        <div style={{ ...styles.cardPanel, width: '280px' }}>
+          
+          <button style={{ ...styles.botonAccion, width: '100%', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} onClick={() => setModalNuevo(true)}>
+            ➕ Registrar Nuevo Préstamo
+          </button>
+
+          <h3 style={styles.subTitle}>
+            Acreedores Activos
+          </h3>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {prestamos.map((p) => (
-              <label key={p.id_prestamo} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: '#2D3748', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={prestamosSeleccionados.includes(p.id_prestamo)}
-                  onChange={() => toggleFiltroPrestamo(p.id_prestamo)}
-                  style={{ accentColor: p.color_identificador }}
-                />
-                <span style={{ width: '12px', height: '12px', borderRadius: '3px', backgroundColor: p.color_identificador }} />
-                <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.prestamista}</span>
-                <button
-                  style={{ border: 'none', background: 'none', color: '#A0AEC0', cursor: 'pointer', fontSize: '11px' }}
-                  onClick={(e) => { e.preventDefault(); handleVerHistorial(p.id_prestamo); }}
-                >
-                  📋
-                </button>
-              </label>
-            ))}
+            {prestamos.length === 0 ? (
+              <p style={{ fontSize: '13px', color: '#666' }}>No hay préstamos registrados.</p>
+            ) : (
+              prestamos.map((p) => (
+                <label key={p.id_prestamo} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: '#333', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={prestamosSeleccionados.includes(p.id_prestamo)}
+                    onChange={() => toggleFiltroPrestamo(p.id_prestamo)}
+                    style={{ accentColor: '#8B1E1E' }}
+                  />
+                  <span style={{ width: '12px', height: '12px', borderRadius: '3px', backgroundColor: p.color_identificador || '#8B1E1E' }} />
+                  <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 'bold' }}>{p.prestamista}</span>
+                  <button
+                    style={{ border: 'none', background: 'none', color: '#8B1E1E', cursor: 'pointer', fontSize: '12px' }}
+                    onClick={(e) => { e.preventDefault(); handleVerHistorial(p.id_prestamo); }}
+                    title="Ver Historial"
+                  >
+                    📋
+                  </button>
+                </label>
+              ))
+            )}
           </div>
         </div>
 
-        {/* CALENDARIO DE VISTA SEMANAL PRINCIPAL */}
-        <div style={{ flex: 1, backgroundColor: '#fff', borderRadius: '12px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+        {/* CALENDARIO MENSUAL PRINCIPAL */}
+        <div style={{ ...styles.cardPanel, flex: 1, minWidth: '320px', padding: '20px' }}>
           
-          {/* HEADER DEL CALENDARIO */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h2 style={{ margin: 0, fontSize: '22px', color: '#1A202C', fontWeight: '600' }}>
-              Semana Actual de Pagos
+          {/* CONTROL Y FILTRO DEL MES */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
+            <h2 style={{ margin: 0, fontSize: '22px', color: '#8B1E1E', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              📅 {nombresMeses[mesSeleccionado]} {anioSeleccionado}
             </h2>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <button
-                style={{ border: '1px solid #E2E8F0', background: '#fff', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}
-                onClick={() => {
-                  const d = new Date(fechaReferencia)
-                  d.setDate(d.getDate() - 7)
-                  setFechaReferencia(d)
-                }}
-              >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button style={styles.botonNav} onClick={() => cambiarMes(-1)}>
                 ◀
               </button>
-              <button
-                style={{ border: '1px solid #E2E8F0', background: '#fff', padding: '6px 14px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}
-                onClick={() => setFechaReferencia(new Date())}
+
+              {/* SELECTORES DE MES Y AÑO */}
+              <select
+                style={styles.selectFiltro}
+                value={mesSeleccionado}
+                onChange={(e) => setMesSeleccionado(parseInt(e.target.value))}
               >
-                HOY
+                {nombresMeses.map((m, idx) => (
+                  <option key={idx} value={idx}>{m}</option>
+                ))}
+              </select>
+
+              <select
+                style={styles.selectFiltro}
+                value={anioSeleccionado}
+                onChange={(e) => setAnioSeleccionado(parseInt(e.target.value))}
+              >
+                {[2025, 2026, 2027, 2028].map((a) => (
+                  <option key={a} value={a}>{a}</option>
+                ))}
+              </select>
+
+              <button style={styles.botonNav} onClick={() => cambiarMes(1)}>
+                ▶
               </button>
+
               <button
-                style={{ border: '1px solid #E2E8F0', background: '#fff', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}
+                style={{ ...styles.botonOutlined, marginLeft: '6px' }}
                 onClick={() => {
-                  const d = new Date(fechaReferencia)
-                  d.setDate(d.getDate() + 7)
-                  setFechaReferencia(d)
+                  setMesSeleccionado(hoy.getMonth())
+                  setAnioSeleccionado(hoy.getFullYear())
                 }}
               >
-                ▶
+                MES ACTUAL
               </button>
             </div>
           </div>
 
-          {/* CABECERA DE DÍAS (COLUMNAS) */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', borderBottom: '1px solid #E2E8F0', paddingBottom: '12px', textAlign: 'center' }}>
-            {diasSemana.map((d, index) => {
-              const iso = d.toISOString().split('T')[0]
-              const esHoy = iso === hoyISO
-              return (
-                <div key={index} style={{ padding: '4px' }}>
-                  <div style={{ fontSize: '14px', fontWeight: 'bold', color: esHoy ? '#fff' : '#2D3748', backgroundColor: esHoy ? '#4A90E2' : 'transparent', borderRadius: '6px', padding: '4px 8px', display: 'inline-block' }}>
-                    {d.getDate()} <span style={{ fontSize: '11px', fontWeight: 'normal', textTransform: 'uppercase' }}>{nombresDias[index]}</span>
-                  </div>
-                </div>
-              )
-            })}
+          {/* CABECERA DÍAS DE LA SEMANA */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', backgroundColor: '#8B1E1E', color: '#fff', borderRadius: '6px 6px 0 0', fontWeight: 'bold', fontSize: '12px', textAlign: 'center', padding: '10px 0' }}>
+            <span>LUN</span>
+            <span>MAR</span>
+            <span>MIÉ</span>
+            <span>JUE</span>
+            <span>VIE</span>
+            <span>SÁB</span>
+            <span>DOM</span>
           </div>
 
-          {/* CUERPO DEL CALENDARIO / GRILLA DE TARJETAS */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px', minHeight: '480px', paddingTop: '16px', position: 'relative' }}>
-            
-            {diasSemana.map((d, colIndex) => {
-              const fechaColISO = d.toISOString().split('T')[0]
-              
-              // Eventos que coinciden en este día
-              const eventosDelDia = eventos.filter(ev => ev.fecha_programada === fechaColISO && prestamosSeleccionados.includes(ev.id_prestamo))
+          {/* GRILLA DE CELDAS DEL MES COMPLETO */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderLeft: '1px solid #e5e5e5', borderBottom: '1px solid #e5e5e5' }}>
+            {diasCalendario.map((fechaObj, idx) => {
+              if (!fechaObj) {
+                return (
+                  <div key={idx} style={{ minHeight: '100px', backgroundColor: '#fcfcfc', borderRight: '1px solid #e5e5e5', borderTop: '1px solid #e5e5e5' }} />
+                )
+              }
+
+              const y = fechaObj.getFullYear()
+              const m = String(fechaObj.getMonth() + 1).padStart(2, '0')
+              const d = String(fechaObj.getDate()).padStart(2, '0')
+              const isoFecha = `${y}-${m}-${d}`
+
+              const esHoy = isoFecha === hoyISO
+              const eventosDelDia = eventos.filter(ev => ev.fecha_programada === isoFecha && prestamosSeleccionados.includes(ev.id_prestamo))
 
               return (
-                <div key={colIndex} style={{ borderRight: colIndex < 4 ? '1px dashed #EDF2F7' : 'none', paddingRight: '8px', minHeight: '100%' }}>
-                  
-                  {eventosDelDia.map((ev, evIndex) => {
+                <div
+                  key={idx}
+                  style={{
+                    minHeight: '100px',
+                    padding: '6px',
+                    borderRight: '1px solid #e5e5e5',
+                    borderTop: '1px solid #e5e5e5',
+                    backgroundColor: esHoy ? '#fff8f8' : '#fff'
+                  }}
+                >
+                  <div style={{ textAlign: 'right', marginBottom: '4px' }}>
+                    <span
+                      style={{
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                        padding: '2px 6px',
+                        borderRadius: '50%',
+                        backgroundColor: esHoy ? '#8B1E1E' : 'transparent',
+                        color: esHoy ? '#fff' : '#444'
+                      }}
+                    >
+                      {fechaObj.getDate()}
+                    </span>
+                  </div>
+
+                  {/* EVENTOS DEL DÍA */}
+                  {eventosDelDia.map((ev, evIdx) => {
                     const esVencido = ev.fecha_programada < hoyISO && ev.estatus_prestamo !== 'LIQUIDADO'
 
                     return (
                       <div
-                        key={evIndex}
+                        key={evIdx}
                         style={{
-                          backgroundColor: `${ev.color}15`,
-                          borderLeft: `4px solid ${ev.color}`,
-                          borderRadius: '8px',
-                          padding: '10px',
-                          marginBottom: '10px',
-                          boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+                          backgroundColor: `${ev.color || '#8B1E1E'}18`,
+                          borderLeft: `3px solid ${ev.color || '#8B1E1E'}`,
+                          borderRadius: '4px',
+                          padding: '4px 6px',
+                          marginBottom: '4px',
+                          fontSize: '11px',
                           cursor: 'pointer'
                         }}
                         onClick={() => {
@@ -338,20 +559,16 @@ function CuentasPorPagar() {
                           setFormAbono((prev) => ({ ...prev, monto_abonado: ev.monto_sugerido }))
                         }}
                       >
-                        <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#2D3748' }}>
+                        <div style={{ fontWeight: 'bold', color: '#8B1E1E', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
                           {ev.prestamista}
                         </div>
-                        <div style={{ fontSize: '11px', color: '#718096', margin: '4px 0' }}>
-                          Cuota #{ev.numero_periodo}
+                        <div style={{ color: '#333', fontSize: '10px' }}>
+                          Cuota #{ev.numero_periodo}: <strong>${Number(ev.monto_sugerido).toLocaleString()}</strong>
                         </div>
-                        <div style={{ fontSize: '12px', fontWeight: 'bold', color: ev.color }}>
-                          ${Number(ev.monto_sugerido).toLocaleString()} MXN
-                        </div>
-
                         {esVencido && (
-                          <span style={{ fontSize: '10px', color: '#E53E3E', fontWeight: 'bold', backgroundColor: '#FFF5F5', padding: '2px 6px', borderRadius: '4px', display: 'inline-block', marginTop: '6px' }}>
-                            ⚠️ Pendiente
-                          </span>
+                          <div style={{ color: '#C62828', fontWeight: 'bold', fontSize: '9px', marginTop: '2px' }}>
+                            ⚠️ Vencido
+                          </div>
                         )}
                       </div>
                     )
@@ -360,7 +577,6 @@ function CuentasPorPagar() {
                 </div>
               )
             })}
-
           </div>
 
         </div>
@@ -369,16 +585,16 @@ function CuentasPorPagar() {
 
       {/* MODAL NUEVO PRÉSTAMO */}
       {modalNuevo && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ backgroundColor: '#fff', borderRadius: '12px', padding: '24px', width: '420px', maxWidth: '90%' }}>
-            <h3 style={{ margin: '0 0 16px 0', color: '#2D3748' }}>➕ Registrar Nuevo Préstamo</h3>
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={styles.modalBox}>
+            <h3 style={{ margin: '0 0 16px 0', color: '#8B1E1E' }}>➕ Registrar Nuevo Préstamo</h3>
             <form onSubmit={handleCrearPrestamo}>
               <div style={{ marginBottom: '12px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#4A5568' }}>Acreedor *</label>
+                <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#444' }}>Acreedor / Prestamista *</label>
                 <input
-                  style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #CBD5E0', marginTop: '4px' }}
+                  style={styles.field}
                   required
-                  placeholder="Ej. Banco / Proveedor"
+                  placeholder="Ej. Proveedor Cemento"
                   value={formPrestamo.prestamista}
                   onChange={(e) => setFormPrestamo({ ...formPrestamo, prestamista: e.target.value })}
                 />
@@ -386,20 +602,20 @@ function CuentasPorPagar() {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
                 <div>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#4A5568' }}>Monto Original *</label>
+                  <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#444' }}>Monto Original *</label>
                   <input
                     type="number"
-                    style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #CBD5E0', marginTop: '4px' }}
+                    style={styles.field}
                     required
                     value={formPrestamo.monto_original}
                     onChange={(e) => setFormPrestamo({ ...formPrestamo, monto_original: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#4A5568' }}>Plazo (Meses) *</label>
+                  <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#444' }}>Plazo (Meses) *</label>
                   <input
                     type="number"
-                    style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #CBD5E0', marginTop: '4px' }}
+                    style={styles.field}
                     required
                     value={formPrestamo.plazos_meses}
                     onChange={(e) => setFormPrestamo({ ...formPrestamo, plazos_meses: e.target.value })}
@@ -409,19 +625,19 @@ function CuentasPorPagar() {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
                 <div>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#4A5568' }}>Color Identificador</label>
+                  <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#444' }}>Color Identificador</label>
                   <input
                     type="color"
-                    style={{ width: '100%', height: '36px', padding: '2px', border: 'none', borderRadius: '6px', marginTop: '4px' }}
+                    style={{ width: '100%', height: '36px', padding: '2px', border: '1px solid #8B1E1E', borderRadius: '6px', marginTop: '4px' }}
                     value={formPrestamo.color_identificador}
                     onChange={(e) => setFormPrestamo({ ...formPrestamo, color_identificador: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#4A5568' }}>Fecha Primer Pago</label>
+                  <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#444' }}>Fecha Primer Pago</label>
                   <input
                     type="date"
-                    style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #CBD5E0', marginTop: '4px' }}
+                    style={styles.field}
                     value={formPrestamo.fecha_primer_pago}
                     onChange={(e) => setFormPrestamo({ ...formPrestamo, fecha_primer_pago: e.target.value })}
                   />
@@ -429,10 +645,10 @@ function CuentasPorPagar() {
               </div>
 
               <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-                <button type="submit" style={{ flex: 1, backgroundColor: '#4A90E2', color: '#fff', border: 'none', padding: '10px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
-                  Guardar
+                <button type="submit" style={{ ...styles.botonAccion, flex: 1 }}>
+                  Guardar Préstamo
                 </button>
-                <button type="button" style={{ backgroundColor: '#EDF2F7', border: 'none', padding: '10px', borderRadius: '6px', cursor: 'pointer' }} onClick={() => setModalNuevo(false)}>
+                <button type="button" style={{ backgroundColor: '#ccc', border: 'none', padding: '10px', borderRadius: '6px', cursor: 'pointer' }} onClick={() => setModalNuevo(false)}>
                   Cancelar
                 </button>
               </div>
@@ -443,18 +659,18 @@ function CuentasPorPagar() {
 
       {/* MODAL ABONO */}
       {modalAbono && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ backgroundColor: '#fff', borderRadius: '12px', padding: '24px', width: '400px', maxWidth: '90%' }}>
-            <h3 style={{ margin: '0 0 10px 0', color: '#2D3748' }}>💲 Registrar Pago / Abono</h3>
-            <p style={{ fontSize: '13px', color: '#718096', margin: '0 0 16px 0' }}>Préstamo: <strong>{modalAbono.prestamista}</strong></p>
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={styles.modalBox}>
+            <h3 style={{ margin: '0 0 10px 0', color: '#8B1E1E' }}>💲 Registrar Pago / Abono</h3>
+            <p style={{ fontSize: '13px', color: '#555', margin: '0 0 16px 0' }}>Préstamo: <strong>{modalAbono.prestamista}</strong></p>
 
             <form onSubmit={handleRegistrarAbono}>
               <div style={{ marginBottom: '12px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#4A5568' }}>Monto ($ MXN) *</label>
+                <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#444' }}>Monto ($ MXN) *</label>
                 <input
                   type="number"
                   step="0.01"
-                  style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #CBD5E0', marginTop: '4px' }}
+                  style={styles.field}
                   required
                   value={formAbono.monto_abonado}
                   onChange={(e) => setFormAbono({ ...formAbono, monto_abonado: e.target.value })}
@@ -462,9 +678,9 @@ function CuentasPorPagar() {
               </div>
 
               <div style={{ marginBottom: '12px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#4A5568' }}>Responsable que Entrega / Autoriza *</label>
+                <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#444' }}>Responsable que Entrega / Autoriza *</label>
                 <input
-                  style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #CBD5E0', marginTop: '4px' }}
+                  style={styles.field}
                   required
                   placeholder="Nombre completo"
                   value={formAbono.responsable_pago}
@@ -473,10 +689,10 @@ function CuentasPorPagar() {
               </div>
 
               <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-                <button type="submit" style={{ flex: 1, backgroundColor: '#48BB78', color: '#fff', border: 'none', padding: '10px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
+                <button type="submit" style={{ ...styles.botonAccion, flex: 1 }}>
                   Confirmar Pago
                 </button>
-                <button type="button" style={{ backgroundColor: '#EDF2F7', border: 'none', padding: '10px', borderRadius: '6px', cursor: 'pointer' }} onClick={() => setModalAbono(null)}>
+                <button type="button" style={{ backgroundColor: '#ccc', border: 'none', padding: '10px', borderRadius: '6px', cursor: 'pointer' }} onClick={() => setModalAbono(null)}>
                   Cancelar
                 </button>
               </div>
@@ -487,16 +703,16 @@ function CuentasPorPagar() {
 
       {/* MODAL HISTORIAL */}
       {modalHistorial && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ backgroundColor: '#fff', borderRadius: '12px', padding: '24px', width: '500px', maxWidth: '90%' }}>
-            <h3 style={{ margin: '0 0 16px 0', color: '#2D3748' }}>📋 Historial de Pagos</h3>
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={styles.modalBox}>
+            <h3 style={{ margin: '0 0 16px 0', color: '#8B1E1E' }}>📋 Historial de Pagos</h3>
             
             {historialAbonos.length === 0 ? (
-              <p style={{ fontSize: '13px', color: '#718096' }}>Sin pagos registrados.</p>
+              <p style={{ fontSize: '13px', color: '#666' }}>Sin pagos registrados para este préstamo.</p>
             ) : (
               <table style={{ width: '100%', fontSize: '12px', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr style={{ textAlign: 'left', borderBottom: '1px solid #E2E8F0' }}>
+                  <tr style={{ textAlign: 'left', borderBottom: '2px solid #8B1E1E', color: '#8B1E1E' }}>
                     <th style={{ padding: '8px' }}>Fecha</th>
                     <th style={{ padding: '8px' }}>Monto</th>
                     <th style={{ padding: '8px' }}>Responsable</th>
@@ -504,9 +720,9 @@ function CuentasPorPagar() {
                 </thead>
                 <tbody>
                   {historialAbonos.map((h) => (
-                    <tr key={h.id_abono} style={{ borderBottom: '1px solid #EDF2F7' }}>
+                    <tr key={h.id_abono} style={{ borderBottom: '1px solid #eee' }}>
                       <td style={{ padding: '8px' }}>{h.fecha_abono}</td>
-                      <td style={{ padding: '8px', fontWeight: 'bold', color: '#38A169' }}>${Number(h.monto_abonado).toLocaleString()}</td>
+                      <td style={{ padding: '8px', fontWeight: 'bold', color: '#8B1E1E' }}>${Number(h.monto_abonado).toLocaleString()}</td>
                       <td style={{ padding: '8px' }}>{h.responsable_pago}</td>
                     </tr>
                   ))}
@@ -514,7 +730,7 @@ function CuentasPorPagar() {
               </table>
             )}
 
-            <button style={{ width: '100%', marginTop: '20px', backgroundColor: '#EDF2F7', border: 'none', padding: '8px', borderRadius: '6px', cursor: 'pointer' }} onClick={() => setModalHistorial(null)}>
+            <button style={{ ...styles.botonAccion, width: '100%', marginTop: '20px' }} onClick={() => setModalHistorial(null)}>
               Cerrar
             </button>
           </div>
