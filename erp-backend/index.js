@@ -4608,6 +4608,224 @@ app.get('/produccion/:fecha', async (req, res) => {
 
 
 
+// =============================
+// 💳 CUENTAS POR PAGAR / PRÉSTAMOS
+// =============================
+
+// 1. CREAR PRÉSTAMO
+app.post('/api/prestamos', async (req, res) => {
+  const conn = await db.getConnection();
+  try {
+    const {
+      prestamista,
+      monto_original,
+      plazos_meses,
+      frecuencia,
+      fecha_primer_pago,
+      color_identificador,
+      cuenta_destino,
+      cuenta_bancaria_destino
+    } = req.body;
+
+    if (!prestamista || !monto_original || !plazos_meses || !fecha_primer_pago || !cuenta_destino) {
+      return res.status(400).json({ error: 'Faltan campos obligatorios' });
+    }
+
+    const montoNum = parseFloat(monto_original);
+    const plazosNum = parseInt(plazos_meses);
+    const cuotaSugerida = (montoNum / plazosNum).toFixed(2);
+
+    await conn.beginTransaction();
+
+    // A) Insertar préstamo
+    const [resPrestamo] = await conn.query(
+      `INSERT INTO prestamos 
+       (prestamista, monto_original, saldo_pendiente, plazos_meses, frecuencia, monto_cuota_sugerida, fecha_primer_pago, color_identificador, cuenta_destino, cuenta_bancaria_destino, estatus)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVO')`,
+      [
+        prestamista.toUpperCase(),
+        montoNum,
+        montoNum, // Inicialmente el saldo pendiente es igual al monto original
+        plazosNum,
+        frecuencia || 'MENSUAL',
+        cuotaSugerida,
+        fecha_primer_pago,
+        color_identificador || '#007bff',
+        cuenta_destino,
+        cuenta_bancaria_destino || null
+      ]
+    );
+
+    await conn.commit();
+    res.json({ success: true, id_prestamo: resPrestamo.insertId });
+  } catch (err) {
+    await conn.rollback();
+    console.error('Error al crear préstamo:', err);
+    res.status(500).json({ error: err.message });
+  } finally {
+    conn.release();
+  }
+});
+
+// 2. OBTENER PRÉSTAMOS ACTIVOS Y CALENDARIO
+app.get('/api/prestamos', async (req, res) => {
+  try {
+    const [prestamos] = await db.query(
+      `SELECT * FROM prestamos ORDER BY estatus ASC, fecha_registro DESC`
+    );
+
+    // Formatear/Generar los eventos esperados del calendario por cada préstamo
+    const eventosCalendario = [];
+
+    prestamos.forEach((p) => {
+      const fechaBase = new Date(p.fecha_primer_pago);
+
+      for (let i = 0; i < p.plazos_meses; i++) {
+        const fechaEvento = new Date(fechaBase);
+        
+        // Calcular fecha según frecuencia
+        if (p.frecuencia === 'SEMANAL') {
+          fechaEvento.setDate(fechaBase.getDate() + i * 7);
+        } else if (p.frecuencia === 'QUINCENAL') {
+          fechaEvento.setDate(fechaBase.getDate() + i * 15);
+        } else {
+          // MENSUAL por defecto
+          fechaEvento.setMonth(fechaBase.getMonth() + i);
+        }
+
+        eventosCalendario.push({
+          id_prestamo: p.id_prestamo,
+          prestamista: p.prestamista,
+          numero_periodo: i + 1,
+          monto_sugerido: p.monto_cuota_sugerida,
+          fecha_programada: fechaEvento.toISOString().split('T')[0],
+          color: p.color_identificador,
+          estatus_prestamo: p.estatus
+        });
+      }
+    });
+
+    res.json({ prestamos, eventosCalendario });
+  } catch (err) {
+    console.error('Error al consultar préstamos:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 3. REGISTRAR ABONO Y VINCULAR CON FLUJO DE EGRESOS
+app.post('/api/prestamos/abono', async (req, res) => {
+  const conn = await db.getConnection();
+  try {
+    const {
+      id_prestamo,
+      numero_periodo,
+      monto_abonado,
+      origen_pago,
+      cuenta_bancaria_salida,
+      responsable_pago,
+      num_comprobante,
+      fecha_abono,
+      id_categoria_egreso // ID de la categoría "Cuentas por Pagar"
+    } = req.body;
+
+    if (!id_prestamo || !monto_abonado || !origen_pago || !responsable_pago || !fecha_abono) {
+      return res.status(400).json({ error: 'Faltan datos obligatorios para el abono' });
+    }
+
+    const abonoNum = parseFloat(monto_abonado);
+
+    await conn.beginTransaction();
+
+    // A) Obtener datos del préstamo actual
+    const [rowsP] = await conn.query(`SELECT * FROM prestamos WHERE id_prestamo = ? FOR UPDATE`, [id_prestamo]);
+    if (!rowsP.length) {
+      throw new Error('Préstamo no encontrado');
+    }
+    const prestamo = rowsP[0];
+
+    // B) Registrar el abono en prestamos_abonos
+    const [resAbono] = await conn.query(
+      `INSERT INTO prestamos_abonos 
+       (id_prestamo, numero_periodo, monto_abonado, origen_pago, cuenta_bancaria_salida, responsable_pago, num_comprobante, fecha_abono)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id_prestamo,
+        numero_periodo || 1,
+        abonoNum,
+        origen_pago,
+        cuenta_bancaria_salida || null,
+        responsable_pago.toUpperCase(),
+        num_comprobante || null,
+        fecha_abono
+      ]
+    );
+
+    const idAbono = resAbono.insertId;
+
+    // C) Registrar automáticamente la salida en flujo_egresos
+    const conceptoEgreso = `ABONO CUOTA #${numero_periodo || 1} - PRESTAMO ${prestamo.prestamista} (RESP: ${responsable_pago.toUpperCase()})`;
+    
+    const [resEgreso] = await conn.query(
+      `INSERT INTO flujo_egresos 
+       (id_categoria, monto, origen_pago, cuenta_bancaria, concepto, num_comprobante, id_prestamo_abono)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id_categoria_egreso || 1, // Si no se envía ID, puedes asignar un ID por defecto de Cuentas por pagar
+        abonoNum,
+        origen_pago,
+        cuenta_bancaria_salida || null,
+        conceptoEgreso,
+        num_comprobante || null,
+        idAbono
+      ]
+    );
+
+    // Actualizar referencia inversa en prestamos_abonos
+    await conn.query(
+      `UPDATE prestamos_abonos SET id_egreso_relacionado = ? WHERE id_abono = ?`,
+      [resEgreso.insertId, idAbono]
+    );
+
+    // D) Actualizar saldo del préstamo y cambiar a LIQUIDADO si llega a 0
+    const nuevoSaldo = Math.max(0, parseFloat(prestamo.saldo_pendiente) - abonoNum);
+    const nuevoEstatus = nuevoSaldo === 0 ? 'LIQUIDADO' : 'ACTIVO';
+
+    await conn.query(
+      `UPDATE prestamos SET saldo_pendiente = ?, estatus = ? WHERE id_prestamo = ?`,
+      [nuevoSaldo, nuevoEstatus, id_prestamo]
+    );
+
+    await conn.commit();
+    res.json({ success: true, id_abono: idAbono, nuevo_saldo: nuevoSaldo, estatus: nuevoEstatus });
+  } catch (err) {
+    await conn.rollback();
+    console.error('Error al registrar abono:', err);
+    res.status(500).json({ error: err.message });
+  } finally {
+    conn.release();
+  }
+});
+
+// 4. HISTORIAL DE ABONOS DE UN PRÉSTAMO
+app.get('/api/prestamos/:id/historial', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await db.query(
+      `SELECT a.*, p.prestamista 
+       FROM prestamos_abonos a
+       INNER JOIN prestamos p ON p.id_prestamo = a.id_prestamo
+       WHERE a.id_prestamo = ?
+       ORDER BY a.fecha_abono DESC, a.fecha_registro DESC`,
+      [id]
+    );
+
+    res.json(rows);
+  } catch (err) {
+    console.error('Error al consultar historial de abonos:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/inventario-inicial', async (req, res) => {
   try {
     const { datos, periodo } = req.body
@@ -4640,6 +4858,9 @@ app.post('/inventario-inicial', async (req, res) => {
     res.status(500).json({ error: 'Error al guardar inventario' })
   }
 })
+
+
+
 app.get('/inventario-inicial/:periodo', async (req, res) => {
   try {
     const { periodo } = req.params
