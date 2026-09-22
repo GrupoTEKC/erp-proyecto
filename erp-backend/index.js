@@ -2797,10 +2797,10 @@ app.get('/api/caja/resumen', async (req, res) => {
         SUM(CASE WHEN LOWER(metodo) IN ('efectivo', 'transferencia') THEN monto ELSE 0 END) AS total_ingresos
        FROM (
          -- 1. Pagos generales / clientes
-         SELECT metodo, monto FROM pagos WHERE fecha_pago >= ?
+         SELECT CAST(metodo AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS metodo, monto FROM pagos WHERE fecha_pago >= ?
          UNION ALL
          -- 2. Préstamos solicitados / recibidos
-         SELECT cuenta_destino AS metodo, monto_original AS monto FROM prestamos WHERE fecha_registro >= ?
+         SELECT CAST(cuenta_destino AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS metodo, monto_original AS monto FROM prestamos WHERE fecha_registro >= ?
        ) AS ingresos_totales`,
       [fechaInicio, fechaInicio]
     );
@@ -2812,13 +2812,13 @@ app.get('/api/caja/resumen', async (req, res) => {
         SUM(CASE WHEN UPPER(origen_pago) = 'TRANSFERENCIA' THEN monto ELSE 0 END) AS total_egreso_banco
        FROM (
          -- 1. Gastos definitivos
-         SELECT origen_pago, monto FROM flujo_egresos WHERE fecha_captura >= ?
+         SELECT CAST(origen_pago AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS origen_pago, monto FROM flujo_egresos WHERE fecha_captura >= ?
          UNION ALL
          -- 2. Entregas de dinero pendiente por comprobar (reducen la caja activa)
-         SELECT origen_pago, monto_entregado AS monto FROM gastos_temporales WHERE estatus = 'PENDIENTE' AND fecha_entrega >= ?
+         SELECT CAST(origen_pago AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS origen_pago, monto_entregado AS monto FROM gastos_temporales WHERE estatus = 'PENDIENTE' AND fecha_entrega >= ?
          UNION ALL
          -- 3. Abonos realizados a préstamos
-         SELECT origen_pago, monto_abonado AS monto FROM prestamos_abonos WHERE fecha_abono >= ?
+         SELECT CAST(origen_pago AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS origen_pago, monto_abonado AS monto FROM prestamos_abonos WHERE fecha_abono >= ?
        ) AS egresos_totales`,
       [fechaInicio, fechaInicio, fechaInicio]
     );
@@ -2947,7 +2947,6 @@ app.get('/api/caja/resumen', async (req, res) => {
       [fechaInicio, fechaInicio, fechaInicio, fechaInicio, fechaInicio]
     );
 
-    // RESPUESTA JSON (Estructura idéntica que el frontend consumirá automáticamente)
     res.json({
       ok: true,
       caja_info: {
