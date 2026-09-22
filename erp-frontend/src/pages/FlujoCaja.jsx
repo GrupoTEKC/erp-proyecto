@@ -1661,15 +1661,15 @@ function FlujoCaja() {
                             </span>
                           </td>
 
-                         {/* Columna Tienda / Cliente */}
-                         <td style={styles.td}>
-                         <strong>{nombreTienda}</strong>
-                         {m.concepto && (
-                         <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
-                         {m.concepto.split('-')[0].trim()}
-                         </div>
-                         )}
-                         </td>
+                          {/* Columna Tienda / Cliente */}
+                          <td style={styles.td}>
+                            <strong>{nombreTienda}</strong>
+                            {m.concepto && (
+                              <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                                {m.concepto.split('-')[0].trim()}
+                              </div>
+                            )}
+                          </td>
 
                           {/* Columna Tipo de Pedido */}
                           <td style={styles.td}>
@@ -1707,15 +1707,15 @@ function FlujoCaja() {
                               : `-$${parseFloat(m.monto || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`}
                           </td>
 
-                         <td style={styles.td}>
-                         {m.fecha
-                         ? new Date(m.fecha).toLocaleDateString('es-MX', {
-                          day: '2-digit',
-                          month: '2-digit',
-                          year: 'numeric'
-                         })
-                         : 'N/A'}
-                         </td>
+                          <td style={styles.td}>
+                            {m.fecha
+                              ? new Date(m.fecha).toLocaleDateString('es-MX', {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric'
+                                })
+                              : 'N/A'}
+                          </td>
                         </tr>
                       )
                     })
@@ -2187,77 +2187,74 @@ function FlujoCaja() {
                       </div>
 
                       <label style={{ ...styles.label, marginBottom: '8px', display: 'block' }}>
-                        3. Seleccionar trabajador ({puestoTab}) *
+                        3. Seleccionar trabajador
                       </label>
                       <div style={styles.empleadosGrid}>
-                        {empleadosFiltrados.length === 0 ? (
-                          <p style={{ color: '#64748b', fontSize: '13.5px', gridColumn: '1 / -1' }}>
-                            No hay empleados registrados en este puesto.
-                          </p>
-                        ) : (
-                          empleadosFiltrados.map((emp) => {
-                            const pagado = empleadosPagados.includes(emp.id_empleado)
-                            const estaSeleccionado = String(empleadoSeleccionado) === String(emp.id_empleado)
+                        {empleadosFiltrados.map((emp) => {
+                          const estaPagado = empleadosPagados.includes(emp.id_empleado)
+                          const estaSeleccionado = String(empleadoSeleccionado) === String(emp.id_empleado)
+                          const nombreCompleto = emp.nombre_completo || `${emp.nombre || ''} ${emp.apellido1 || ''}`
 
-                            return (
-                              <div
-                                key={emp.id_empleado}
+                          return (
+                            <div
+                              key={emp.id_empleado}
+                              style={{
+                                ...styles.empleadoCard,
+                                ...(estaSeleccionado ? styles.empleadoCardSelected : {})
+                              }}
+                              onClick={() => {
+                                setEmpleadoSeleccionado(emp.id_empleado)
+                                if (emp.sueldo_base) setMonto(emp.sueldo_base)
+                              }}
+                            >
+                              <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#1e293b' }}>
+                                {nombreCompleto}
+                              </span>
+                              <span
                                 style={{
-                                  ...styles.empleadoCard,
-                                  ...(estaSeleccionado ? styles.empleadoCardSelected : {})
+                                  ...styles.statusBadge,
+                                  ...(estaPagado ? styles.badgePagado : styles.badgePendiente)
                                 }}
-                                onClick={() => setEmpleadoSeleccionado(emp.id_empleado)}
                               >
-                                <span style={{ fontWeight: 'bold', fontSize: '13.5px' }}>
-                                  {emp.nombre_completo || `${emp.nombre || ''} ${emp.apellido1 || ''}`}
-                                </span>
-                                <span
-                                  style={{
-                                    ...styles.statusBadge,
-                                    ...(pagado ? styles.badgePagado : styles.badgePendiente)
-                                  }}
-                                >
-                                  {pagado ? '🟢 Pagado' : '🔴 Pendiente'}
-                                </span>
-                              </div>
-                            )
-                          })
-                        )}
+                                {estaPagado ? 'Pagado' : 'Pendiente'}
+                              </span>
+                            </div>
+                          )
+                        })}
                       </div>
                     </div>
                   )}
 
                   {subPersonalActivo === 5 && (
-                    <>
-                      <div style={styles.fieldGroup}>
-                        <label style={styles.label}>Tipo de gasto*</label>
-                        <select
-                          style={styles.select}
-                          value={subTipoImpuesto}
-                          onChange={(e) => setSubTipoImpuesto(e.target.value)}
-                        >
-                          <option value="IMSS">IMSS</option>
-                          <option value="ISR">ISR</option>
-                        </select>
-                      </div>
+                    <div style={styles.fieldGroup}>
+                      <label style={styles.label}>Tipo de Impuesto *</label>
+                      <select
+                        style={styles.select}
+                        value={subTipoImpuesto}
+                        onChange={(e) => setSubTipoImpuesto(e.target.value)}
+                      >
+                        <option value="IMSS">IMSS</option>
+                        <option value="ISR">ISR</option>
+                      </select>
+                    </div>
+                  )}
 
-                      <div style={styles.fieldGroup}>
-                        <label style={styles.label}>Empleado beneficiado*</label>
-                        <select
-                          style={styles.select}
-                          value={empleadoSeleccionado}
-                          onChange={(e) => setEmpleadoSeleccionado(e.target.value)}
-                          required
-                        >
-                          <option value="">-- Seleccionar empleado --</option>
-                          {empleados.map((emp) => (
-                            <option key={emp.id_empleado} value={emp.id_empleado}>
-                              {emp.nombre_completo || `${emp.nombre || ''} ${emp.apellido1 || ''}`} ({emp.puesto})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </>
+                  {subPersonalActivo === 5 && (
+                    <div style={styles.fieldGroup}>
+                      <label style={styles.label}>Empleado asignado (Opcional)</label>
+                      <select
+                        style={styles.select}
+                        value={empleadoSeleccionado}
+                        onChange={(e) => setEmpleadoSeleccionado(e.target.value)}
+                      >
+                        <option value="">-- Pago General / Global --</option>
+                        {empleados.map((emp) => (
+                          <option key={emp.id_empleado} value={emp.id_empleado}>
+                            {emp.nombre_completo || `${emp.nombre || ''} ${emp.apellido1 || ''}`}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   )}
 
                   {subPersonalActivo === 7 && (
@@ -2280,140 +2277,192 @@ function FlujoCaja() {
                       </div>
 
                       <div style={styles.fieldGroup}>
-                        <label style={styles.label}>
-                          Ruta {esChofer ? <span style={{ color: '#dc2626' }}>* (Obligatorio Chofer)</span> : '(Opcional)'}
-                        </label>
+                        <label style={styles.label}>Ruta de Viaje {esChofer && '*'}</label>
                         <select
                           style={styles.select}
                           value={idRutaSeleccionada}
                           onChange={(e) => setIdRutaSeleccionada(e.target.value)}
+                          required={esChofer}
                         >
-                          <option value="">-- Seleccionar Ruta --</option>
+                          <option value="">-- Seleccionar ruta --</option>
                           {rutas.map((r) => (
                             <option key={r.id_ruta} value={r.id_ruta}>
-                              {r.nombre}
+                              {r.nombre || r.origen_destino}
                             </option>
                           ))}
                         </select>
                       </div>
 
-                      <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
-                        <label style={styles.label}>
-                          Unidad relacionada {esChofer ? <span style={{ color: '#dc2626' }}>* (Obligatorio Chofer)</span> : '(Opcional)'}
-                        </label>
+                      <div style={styles.fieldGroup}>
+                        <label style={styles.label}>Unidad Vehicular {esChofer && '*'}</label>
                         <select
                           style={styles.select}
                           value={idUnidadSeleccionada}
                           onChange={(e) => setIdUnidadSeleccionada(e.target.value)}
+                          required={esChofer}
                         >
-                          <option value="">-- Seleccionar Unidad --</option>
+                          <option value="">-- Seleccionar unidad --</option>
                           {unidades.map((u) => (
                             <option key={u.id_unidad} value={u.id_unidad}>
-                              {u.nombre || u.placas} {u.placas ? `(${u.placas})` : ''}
+                              {u.nombre || u.placas}
                             </option>
                           ))}
                         </select>
                       </div>
 
+                      {/* CASETAS */}
                       <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
                         <div style={styles.dynamicHeader}>
-                          <span>🚗 Casetas — Total: ${totalCasetas.toFixed(2)}</span>
-                          <button type="button" style={styles.addBtn} onClick={() => handleAgregarCampo(setCasetas, casetas)}>+</button>
+                          <span>🚘 Casetas ($)</span>
+                          <button
+                            type="button"
+                            style={styles.addBtn}
+                            onClick={() => handleAgregarCampo(setCasetas, casetas)}
+                          >
+                            +
+                          </button>
                         </div>
-                        {casetas.map((val, idx) => (
+                        {casetas.map((montoCaseta, idx) => (
                           <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
                             <input
                               type="number"
                               step="any"
-                              placeholder="Monto caseta"
+                              placeholder="Monto de caseta"
                               style={styles.input}
-                              value={val}
+                              value={montoCaseta}
                               onChange={(e) => handleCambioCampo(setCasetas, casetas, idx, e.target.value)}
                             />
                             {casetas.length > 1 && (
-                              <button type="button" style={styles.removeBtn} onClick={() => handleEliminarCampo(setCasetas, casetas, idx)}>✕</button>
+                              <button
+                                type="button"
+                                style={styles.removeBtn}
+                                onClick={() => handleEliminarCampo(setCasetas, casetas, idx)}
+                              >
+                                ✕
+                              </button>
                             )}
                           </div>
                         ))}
                       </div>
 
+                      {/* GASOLINA */}
                       <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
                         <div style={styles.dynamicHeader}>
-                          <span>⛽ Gasolina / Diesel — Total: ${totalGasolina.toFixed(2)}</span>
-                          <button type="button" style={styles.addBtn} onClick={() => handleAgregarCampo(setGasolina, gasolina)}>+</button>
+                          <span>⛽ Gasolina / Combustible ($)</span>
+                          <button
+                            type="button"
+                            style={styles.addBtn}
+                            onClick={() => handleAgregarCampo(setGasolina, gasolina)}
+                          >
+                            +
+                          </button>
                         </div>
-                        {gasolina.map((val, idx) => (
+                        {gasolina.map((montoGasolina, idx) => (
                           <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
                             <input
                               type="number"
                               step="any"
-                              placeholder="Monto gasolina"
+                              placeholder="Monto de gasolina"
                               style={styles.input}
-                              value={val}
+                              value={montoGasolina}
                               onChange={(e) => handleCambioCampo(setGasolina, gasolina, idx, e.target.value)}
                             />
                             {gasolina.length > 1 && (
-                              <button type="button" style={styles.removeBtn} onClick={() => handleEliminarCampo(setGasolina, gasolina, idx)}>✕</button>
+                              <button
+                                type="button"
+                                style={styles.removeBtn}
+                                onClick={() => handleEliminarCampo(setGasolina, gasolina, idx)}
+                              >
+                                ✕
+                              </button>
                             )}
                           </div>
                         ))}
                       </div>
 
+                      {/* COMIDAS */}
                       <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
                         <div style={styles.dynamicHeader}>
-                          <span>🍽️ Comidas — Total: ${totalComidas.toFixed(2)}</span>
-                          <button type="button" style={styles.addBtn} onClick={() => handleAgregarCampo(setComidas, comidas)}>+</button>
+                          <span>🍔 Comidas / Alimentos ($)</span>
+                          <button
+                            type="button"
+                            style={styles.addBtn}
+                            onClick={() => handleAgregarCampo(setComidas, comidas)}
+                          >
+                            +
+                          </button>
                         </div>
-                        {comidas.map((val, idx) => (
+                        {comidas.map((montoComida, idx) => (
                           <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
                             <input
                               type="number"
                               step="any"
-                              placeholder="Monto comida"
+                              placeholder="Monto de alimentos"
                               style={styles.input}
-                              value={val}
+                              value={montoComida}
                               onChange={(e) => handleCambioCampo(setComidas, comidas, idx, e.target.value)}
                             />
                             {comidas.length > 1 && (
-                              <button type="button" style={styles.removeBtn} onClick={() => handleEliminarCampo(setComidas, comidas, idx)}>✕</button>
+                              <button
+                                type="button"
+                                style={styles.removeBtn}
+                                onClick={() => handleEliminarCampo(setComidas, comidas, idx)}
+                              >
+                                ✕
+                              </button>
                             )}
                           </div>
                         ))}
                       </div>
 
+                      {/* FOLIOS */}
                       <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
                         <div style={styles.dynamicHeader}>
-                          <span>
-                            📄 Folios / Comprobantes{' '}
-                            {esChofer && <span style={{ color: '#dc2626', fontSize: '12px' }}>* (Obligatorio Chofer)</span>}
-                          </span>
-                          <button type="button" style={styles.addBtn} onClick={() => handleAgregarCampo(setFolios, folios)}>+</button>
+                          <span>📄 Folios / Comprobantes {esChofer && '*'}</span>
+                          <button
+                            type="button"
+                            style={styles.addBtn}
+                            onClick={() => handleAgregarCampo(setFolios, folios)}
+                          >
+                            +
+                          </button>
                         </div>
-                        {folios.map((val, idx) => (
+                        {folios.map((folio, idx) => (
                           <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
                             <input
                               type="text"
-                              placeholder="Número de folio"
+                              placeholder="Número de folio o ticket"
                               style={styles.input}
-                              value={val}
+                              value={folio}
                               onChange={(e) => handleCambioCampo(setFolios, folios, idx, e.target.value)}
+                              required={esChofer && idx === 0}
                             />
                             {folios.length > 1 && (
-                              <button type="button" style={styles.removeBtn} onClick={() => handleEliminarCampo(setFolios, folios, idx)}>✕</button>
+                              <button
+                                type="button"
+                                style={styles.removeBtn}
+                                onClick={() => handleEliminarCampo(setFolios, folios, idx)}
+                              >
+                                ✕
+                              </button>
                             )}
                           </div>
                         ))}
                       </div>
 
+                      {/* RESUMEN DE TOTAL DE VIÁTICOS */}
                       <div style={{ ...styles.fullRow, ...styles.totalSummaryBox }}>
-                        <span style={{ fontSize: '20px', fontWeight: '900', color: vino }}>
-                          MONTO TOTAL VIÁTICOS: ${totalViaticosGeneral.toFixed(2)}
-                        </span>
+                        <div style={{ fontSize: '13px', color: '#64748b' }}>
+                          Casetas: ${totalCasetas.toFixed(2)} | Gasolina: ${totalGasolina.toFixed(2)} | Comidas: ${totalComidas.toFixed(2)}
+                        </div>
+                        <div style={{ fontSize: '18px', fontWeight: 'bold', color: vino, marginTop: '4px' }}>
+                          Total Viáticos: ${totalViaticosGeneral.toFixed(2)}
+                        </div>
                       </div>
                     </>
                   )}
 
-                  {subPersonalActivo !== 88 && (
+                  {subPersonalActivo !== 88 && subPersonalActivo !== 7 && (
                     <>
                       <div style={styles.fieldGroup}>
                         <label style={styles.label}>Origen de pago *</label>
@@ -2435,7 +2484,7 @@ function FlujoCaja() {
 
                       {origenPago === 'TRANSFERENCIA' && (
                         <div style={styles.fieldGroup}>
-                          <label style={styles.label}>Cuenta de banco *</label>
+                          <label style={styles.label}>Cuenta Bancaria de Salida *</label>
                           <select
                             style={styles.select}
                             value={cuentaBancaria}
@@ -2445,7 +2494,7 @@ function FlujoCaja() {
                             }}
                             required
                           >
-                            <option value="">-- Seleccionar cuenta --</option>
+                            <option value="">-- Seleccionar Cuenta --</option>
                             <option value="Cuenta Fiscal">Cuenta fiscal</option>
                             <option value="OTRO">Otro</option>
                           </select>
@@ -2466,27 +2515,29 @@ function FlujoCaja() {
                         </div>
                       )}
 
-                      {subPersonalActivo !== 7 && (
-                        <div style={styles.fieldGroup}>
-                          <label style={styles.label}>Monto ($) *</label>
-                          <input
-                            type="number"
-                            step="any"
-                            min="0.01"
-                            placeholder="0.00"
-                            style={styles.input}
-                            value={monto}
-                            onChange={(e) => setMonto(e.target.value)}
-                            required
-                          />
-                        </div>
-                      )}
+                      <div style={styles.fieldGroup}>
+                        <label style={styles.label}>Monto Pagado ($) *</label>
+                        <input
+                          type="number"
+                          step="any"
+                          min="0.01"
+                          placeholder="0.00"
+                          style={styles.input}
+                          value={monto}
+                          onChange={(e) => setMonto(e.target.value)}
+                          required
+                        />
+                      </div>
+                    </>
+                  )}
 
+                  {subPersonalActivo !== 88 && (
+                    <>
                       <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
-                        <label style={styles.label}>Observaciones / Destino / Motivo</label>
+                        <label style={styles.label}>Comentarios u Observaciones (Opcional)</label>
                         <textarea
                           rows="2"
-                          placeholder="Escribe detalles adicionales sobre este egreso..."
+                          placeholder="Notas sobre el pago de personal..."
                           style={{ ...styles.input, resize: 'vertical' }}
                           value={concepto}
                           onChange={(e) => setConcepto(e.target.value)}
@@ -2495,7 +2546,7 @@ function FlujoCaja() {
 
                       <div style={styles.fullRow}>
                         <button type="button" onClick={handleGuardarPersonal} style={styles.submitButton}>
-                          {subPersonalActivo === 7 ? 'Guardar Viáticos' : 'Guardar gasto'}
+                          Guardar Registro de Personal
                         </button>
                       </div>
                     </>
@@ -2507,19 +2558,24 @@ function FlujoCaja() {
         )}
       </div>
 
-      {/* 🏛️ TARJETA PRINCIPAL 3: GASTOS DE PLANTA Y MANTENIMIENTO */}
+      {/* 🏢 TARJETA PRINCIPAL 3: PLANTA Y MANTENIMIENTO */}
       <div style={styles.parentCard}>
-        <div style={styles.parentHeader} onClick={() => setPlantaAbierto(!plantaAbierto)}>
+        <div
+          style={styles.parentHeader}
+          onClick={() => setPlantaAbierto(!plantaAbierto)}
+        >
           <div style={styles.parentTitleGroup}>
-            <span style={{ fontSize: '28px' }}>🏛️</span>
+            <span style={{ fontSize: '28px' }}>🏢</span>
             <div>
-              <h3 style={styles.parentTitle}>GASTOS DE PLANTA Y MANTENIMIENTO</h3>
+              <h3 style={styles.parentTitle}>PLANTA Y MANTENIMIENTO</h3>
               <p style={styles.parentSubtitle}>
-                Servicios públicos, mantenimiento de vehículos/montacargas y herramientas.
+                Pago de servicios públicos de la fábrica, mantenimientos de vehículos y compra de herramientas.
               </p>
             </div>
           </div>
-          <span style={styles.toggleBadge}>{plantaAbierto ? '▼ Ocultar' : '▶ Desplegar'}</span>
+          <span style={styles.toggleBadge}>
+            {plantaAbierto ? '▼ Ocultar' : '▶ Desplegar'}
+          </span>
         </div>
 
         {plantaAbierto && (
@@ -2530,10 +2586,10 @@ function FlujoCaja() {
                 onClick={() => handleSelectSubPlanta(8)}
               >
                 <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Servicios públicos</span>
+                  <span style={styles.cardName}>Servicios Públicos</span>
                   <span style={styles.cardIcon}>⚡</span>
                 </div>
-                <p style={styles.cardDesc}>Pago de luz (CFE), Agua, Gas e Internet/Telefonía.</p>
+                <p style={styles.cardDesc}>Pago de Luz (CFE) y Agua potable de la planta.</p>
               </div>
 
               <div
@@ -2541,10 +2597,10 @@ function FlujoCaja() {
                 onClick={() => handleSelectSubPlanta(9)}
               >
                 <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Servicios vehiculares</span>
-                  <span style={styles.cardIcon}>🛠️</span>
+                  <span style={styles.cardName}>Mantenimientos</span>
+                  <span style={styles.cardIcon}>🔧</span>
                 </div>
-                <p style={styles.cardDesc}>Mantenimiento y reparaciones de vehículos y montacargas.</p>
+                <p style={styles.cardDesc}>Mantenimiento preventivo o correctivo de unidades y montacargas.</p>
               </div>
 
               <div
@@ -2552,10 +2608,10 @@ function FlujoCaja() {
                 onClick={() => handleSelectSubPlanta(10)}
               >
                 <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Compra de herramientas</span>
-                  <span style={styles.cardIcon}>🧰</span>
+                  <span style={styles.cardName}>Herramientas y Refacciones</span>
+                  <span style={styles.cardIcon}>🛠️</span>
                 </div>
-                <p style={styles.cardDesc}>Compra de herramientas generales desde el pastero hasta Liz etc.</p>
+                <p style={styles.cardDesc}>Compra de herramientas de trabajo y accesorios de planta.</p>
               </div>
             </div>
 
@@ -2564,9 +2620,9 @@ function FlujoCaja() {
                 <div style={styles.formTitle}>
                   <span>
                     Estás capturando:{' '}
-                    {subPlantaActivo === 8 && '⚡ Servicios Públicos'}
-                    {subPlantaActivo === 9 && '🛠️ Operaciones y Mantenimiento'}
-                    {subPlantaActivo === 10 && '🧰 Compra de Herramientas y Consumibles'}
+                    {subPlantaActivo === 8 && '⚡ Servicios Públicos de Planta'}
+                    {subPlantaActivo === 9 && '🔧 Mantenimiento de Equipos / Unidades'}
+                    {subPlantaActivo === 10 && '🛠️ Herramientas y Refacciones'}
                   </span>
                   <button type="button" style={styles.closeBtn} onClick={() => setSubPlantaActivo(null)}>
                     ✕ Cerrar
@@ -2574,8 +2630,8 @@ function FlujoCaja() {
                 </div>
 
                 <form onSubmit={(e) => e.preventDefault()} style={styles.grid}>
-                  <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
-                    <label style={styles.label}>Fecha de pago (Seleccionable) *</label>
+                  <div style={styles.fieldGroup}>
+                    <label style={styles.label}>Fecha del Pago *</label>
                     <input
                       type="date"
                       style={styles.input}
@@ -2585,9 +2641,61 @@ function FlujoCaja() {
                     />
                   </div>
 
+                  <div style={styles.fieldGroup}>
+                    <label style={styles.label}>Origen de pago *</label>
+                    <select
+                      style={styles.select}
+                      value={origenPago}
+                      onChange={(e) => {
+                        setOrigenPago(e.target.value)
+                        if (e.target.value !== 'TRANSFERENCIA') {
+                          setCuentaBancaria('')
+                          setNombreDuenioCuenta('')
+                        }
+                      }}
+                    >
+                      <option value="EFECTIVO">Efectivo</option>
+                      <option value="TRANSFERENCIA">Transferencia</option>
+                    </select>
+                  </div>
+
+                  {origenPago === 'TRANSFERENCIA' && (
+                    <div style={styles.fieldGroup}>
+                      <label style={styles.label}>Cuenta Bancaria de Salida *</label>
+                      <select
+                        style={styles.select}
+                        value={cuentaBancaria}
+                        onChange={(e) => {
+                          setCuentaBancaria(e.target.value)
+                          if (e.target.value !== 'OTRO') setNombreDuenioCuenta('')
+                        }}
+                        required
+                      >
+                        <option value="">-- Seleccionar Cuenta --</option>
+                        <option value="Cuenta Fiscal">Cuenta fiscal</option>
+                        <option value="OTRO">Otro</option>
+                      </select>
+                    </div>
+                  )}
+
+                  {origenPago === 'TRANSFERENCIA' && cuentaBancaria === 'OTRO' && (
+                    <div style={styles.fieldGroup}>
+                      <label style={styles.label}>Nombre y Apellido del dueño de la cuenta *</label>
+                      <input
+                        type="text"
+                        placeholder="Ej. Eli Maravillas"
+                        style={styles.input}
+                        value={nombreDuenioCuenta}
+                        onChange={(e) => setNombreDuenioCuenta(e.target.value)}
+                        required
+                      />
+                    </div>
+                  )}
+
+                  {/* FORMULARIO SUB 8: SERVICIOS PÚBLICOS */}
                   {subPlantaActivo === 8 && (
                     <>
-                      <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
+                      <div style={styles.fieldGroup}>
                         <label style={styles.label}>Tipo de Servicio *</label>
                         <select
                           style={styles.select}
@@ -2595,17 +2703,15 @@ function FlujoCaja() {
                           onChange={(e) => setTipoServicioPublico(e.target.value)}
                           required
                         >
-                          <option value="">-- Seleccionar Servicio --</option>
-                          <option value="Luz">⚡ Luz / Energía Eléctrica (CFE)</option>
-                          <option value="Agua">💧 Agua </option>
-                          <option value="Gas">⛽ Gas </option>
-                          <option value="Internet">📶 Internet / Telefonía</option>
+                          <option value="">-- Seleccionar --</option>
+                          <option value="LUZ (CFE)">Luz (CFE)</option>
+                          <option value="AGUA POTABLE">Agua Potable</option>
                         </select>
                       </div>
 
                       <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
                         <div style={styles.dynamicHeader}>
-                          <span>Escribe que compraste..</span>
+                          <span>Desglose de Conceptos de Servicio</span>
                           <button
                             type="button"
                             style={styles.addBtn}
@@ -2614,21 +2720,21 @@ function FlujoCaja() {
                             +
                           </button>
                         </div>
-                        {lineasServicios.map((item, idx) => (
-                          <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                        {lineasServicios.map((linea, idx) => (
+                          <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr auto', gap: '8px', marginBottom: '6px' }}>
                             <input
                               type="text"
-                              placeholder="Comentarios..."
-                              style={{ ...styles.input, flex: 2 }}
-                              value={item.concepto}
+                              placeholder="Ej. Recibo Bimestral Planta 1"
+                              style={styles.input}
+                              value={linea.concepto}
                               onChange={(e) => handleCambioObjeto(setLineasServicios, lineasServicios, idx, 'concepto', e.target.value)}
                             />
                             <input
                               type="number"
                               step="any"
-                              placeholder="Monto ($)"
-                              style={{ ...styles.input, flex: 1 }}
-                              value={item.monto}
+                              placeholder="Monto $"
+                              style={styles.input}
+                              value={linea.monto}
                               onChange={(e) => handleCambioObjeto(setLineasServicios, lineasServicios, idx, 'monto', e.target.value)}
                             />
                             {lineasServicios.length > 1 && (
@@ -2645,13 +2751,14 @@ function FlujoCaja() {
                       </div>
 
                       <div style={{ ...styles.fullRow, ...styles.totalSummaryBox }}>
-                        <span style={{ fontSize: '18px', fontWeight: 'bold', color: vino }}>
-                          TOTAL SERVICIOS: ${totalServiciosPublicos.toFixed(2)}
-                        </span>
+                        <div style={{ fontSize: '18px', fontWeight: 'bold', color: vino }}>
+                          Total Servicio: ${totalServiciosPublicos.toFixed(2)}
+                        </div>
                       </div>
                     </>
                   )}
 
+                  {/* FORMULARIO SUB 9: MANTENIMIENTOS */}
                   {subPlantaActivo === 9 && (
                     <>
                       <div style={styles.fieldGroup}>
@@ -2664,60 +2771,51 @@ function FlujoCaja() {
                             setEquipoSeleccionado('')
                           }}
                         >
-                          <option value="Unidad">Unidades / Vehículos</option>
+                          <option value="Unidad">Unidad Vehicular</option>
                           <option value="Montacargas">Montacargas</option>
                         </select>
                       </div>
 
                       <div style={styles.fieldGroup}>
-                        <label style={styles.label}>
-                          {tipoEquipo === 'Unidad' ? 'Seleccionar Unidad *' : 'Seleccionar Montacargas *'}
-                        </label>
+                        <label style={styles.label}>Seleccionar {tipoEquipo} *</label>
                         <select
                           style={styles.select}
                           value={equipoSeleccionado}
                           onChange={(e) => setEquipoSeleccionado(e.target.value)}
                           required
                         >
-                          <option value="">-- Seleccionar del catálogo --</option>
+                          <option value="">-- Seleccionar --</option>
                           {tipoEquipo === 'Unidad'
                             ? unidades.map((u) => (
                                 <option key={u.id_unidad} value={u.id_unidad}>
-                                  {u.nombre || u.placas} {u.placas ? `(${u.placas})` : ''}
+                                  {u.nombre || u.placas}
                                 </option>
                               ))
                             : montacargas.map((m) => (
                                 <option key={m.id_montacargas} value={m.id_montacargas}>
-                                  {m.nombre || m.num_serie || `Montacargas #${m.id_montacargas}`}
+                                  {m.nombre || m.num_serie}
                                 </option>
                               ))}
                         </select>
                       </div>
 
-                      <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
-                        <label style={styles.label}>Tipo de Servicio *</label>
+                      <div style={styles.fieldGroup}>
+                        <label style={styles.label}>Tipo de Mantenimiento *</label>
                         <select
                           style={styles.select}
                           value={tipoServicioMantenimiento}
                           onChange={(e) => setTipoServicioMantenimiento(e.target.value)}
                           required
                         >
-                          <option value="">-- Seleccionar tipo de servicio --</option>
-                          <option value="Servicio mecánico / Taller">Servicio mecánico / Taller</option>
-                          <option value="Refacciones (balatas, filtros, aceites, etc.)">Refacciones (balatas, filtros, aceites, etc.)</option>
-                          <option value="Llantas">Llantas</option>
-                          <option value="Afinación">Afinación</option>
-                          <option value="Hojalatería y pintura">Hojalatería y pintura</option>
-                          <option value="Tenencias y verificaciones">Tenencias y verificaciones</option>
-                          <option value="Otro">Otro</option>
+                          <option value="">-- Seleccionar --</option>
+                          <option value="PREVENTIVO">Preventivo (Afinación, Aceite)</option>
+                          <option value="CORRECTIVO">Correctivo (Reparación de falla)</option>
                         </select>
                       </div>
 
                       <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
                         <div style={styles.dynamicHeader}>
-                          <span>
-                            Detalle de la reparación / mantenimiento {tipoServicioMantenimiento === 'Otro' && '*'}
-                          </span>
+                          <span>Desglose de Trabajos / Refacciones</span>
                           <button
                             type="button"
                             style={styles.addBtn}
@@ -2726,21 +2824,21 @@ function FlujoCaja() {
                             +
                           </button>
                         </div>
-                        {lineasMantenimiento.map((item, idx) => (
-                          <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                        {lineasMantenimiento.map((linea, idx) => (
+                          <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr auto', gap: '8px', marginBottom: '6px' }}>
                             <input
                               type="text"
-                              placeholder="Ej. Cambio de llantas debido a que se poncho"
-                              style={{ ...styles.input, flex: 2 }}
-                              value={item.concepto}
+                              placeholder="Ej. Cambio de balatas / filtro"
+                              style={styles.input}
+                              value={linea.concepto}
                               onChange={(e) => handleCambioObjeto(setLineasMantenimiento, lineasMantenimiento, idx, 'concepto', e.target.value)}
                             />
                             <input
                               type="number"
                               step="any"
-                              placeholder="Monto ($)"
-                              style={{ ...styles.input, flex: 1 }}
-                              value={item.monto}
+                              placeholder="Monto $"
+                              style={styles.input}
+                              value={linea.monto}
                               onChange={(e) => handleCambioObjeto(setLineasMantenimiento, lineasMantenimiento, idx, 'monto', e.target.value)}
                             />
                             {lineasMantenimiento.length > 1 && (
@@ -2757,18 +2855,19 @@ function FlujoCaja() {
                       </div>
 
                       <div style={{ ...styles.fullRow, ...styles.totalSummaryBox }}>
-                        <span style={{ fontSize: '18px', fontWeight: 'bold', color: vino }}>
-                          TOTAL MANTENIMIENTO: ${totalMantenimiento.toFixed(2)}
-                        </span>
+                        <div style={{ fontSize: '18px', fontWeight: 'bold', color: vino }}>
+                          Total Mantenimiento: ${totalMantenimiento.toFixed(2)}
+                        </div>
                       </div>
                     </>
                   )}
 
+                  {/* FORMULARIO SUB 10: HERRAMIENTAS */}
                   {subPlantaActivo === 10 && (
                     <>
                       <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
                         <div style={styles.dynamicHeader}>
-                          <span>Herramientas a comprar</span>
+                          <span>Lista de Herramientas Adquiridas</span>
                           <button
                             type="button"
                             style={styles.addBtn}
@@ -2777,29 +2876,28 @@ function FlujoCaja() {
                             +
                           </button>
                         </div>
-                        {lineasHerramientas.map((item, idx) => (
-                          <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                        {lineasHerramientas.map((linea, idx) => (
+                          <div key={idx} style={{ display: 'grid', gridTemplateColumns: '80px 2fr 1fr auto', gap: '8px', marginBottom: '6px' }}>
                             <input
                               type="number"
-                              min="1"
                               placeholder="Cant."
-                              style={{ ...styles.input, flex: '0.5' }}
-                              value={item.cantidad}
+                              style={styles.input}
+                              value={linea.cantidad}
                               onChange={(e) => handleCambioObjeto(setLineasHerramientas, lineasHerramientas, idx, 'cantidad', e.target.value)}
                             />
                             <input
                               type="text"
-                              placeholder="Descripción de la herramienta"
-                              style={{ ...styles.input, flex: 2 }}
-                              value={item.concepto}
+                              placeholder="Ej. Pala cuadrada, marro, flexómetro"
+                              style={styles.input}
+                              value={linea.concepto}
                               onChange={(e) => handleCambioObjeto(setLineasHerramientas, lineasHerramientas, idx, 'concepto', e.target.value)}
                             />
                             <input
                               type="number"
                               step="any"
-                              placeholder="Precio unitario ($)"
-                              style={{ ...styles.input, flex: 1 }}
-                              value={item.precio}
+                              placeholder="Precio Unit $"
+                              style={styles.input}
+                              value={linea.precio}
                               onChange={(e) => handleCambioObjeto(setLineasHerramientas, lineasHerramientas, idx, 'precio', e.target.value)}
                             />
                             {lineasHerramientas.length > 1 && (
@@ -2816,13 +2914,97 @@ function FlujoCaja() {
                       </div>
 
                       <div style={{ ...styles.fullRow, ...styles.totalSummaryBox }}>
-                        <span style={{ fontSize: '18px', fontWeight: 'bold', color: vino }}>
-                          TOTAL HERRAMIENTAS: ${totalHerramientas.toFixed(2)}
-                        </span>
+                        <div style={{ fontSize: '18px', fontWeight: 'bold', color: vino }}>
+                          Total Herramientas: ${totalHerramientas.toFixed(2)}
+                        </div>
                       </div>
                     </>
                   )}
 
+                  <div style={styles.fullRow}>
+                    <button type="button" onClick={handleGuardarPlanta} style={styles.submitButton}>
+                      Guardar Gasto de Planta
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* 📊 TARJETA PRINCIPAL 4: GASTOS DEPARTAMENTALES */}
+      <div style={styles.parentCard}>
+        <div
+          style={styles.parentHeader}
+          onClick={() => setDeptosAbierto(!deptosAbierto)}
+        >
+          <div style={styles.parentTitleGroup}>
+            <span style={{ fontSize: '28px' }}>📊</span>
+            <div>
+              <h3 style={styles.parentTitle}>GASTOS DEPARTAMENTALES</h3>
+              <p style={styles.parentSubtitle}>
+                Gastos de Marketing, Caja Chica y Servicios Profesionales / Honorarios externos.
+              </p>
+            </div>
+          </div>
+          <span style={styles.toggleBadge}>
+            {deptosAbierto ? '▼ Ocultar' : '▶ Desplegar'}
+          </span>
+        </div>
+
+        {deptosAbierto && (
+          <div>
+            <div style={styles.cardsContainer}>
+              <div
+                style={{ ...styles.card, ...(subDeptoActivo === 12 ? styles.cardActive : {}) }}
+                onClick={() => handleSelectSubDepto(12)}
+              >
+                <div style={styles.cardHeader}>
+                  <span style={styles.cardName}>Marketing</span>
+                  <span style={styles.cardIcon}>📢</span>
+                </div>
+                <p style={styles.cardDesc}>Publicidad en redes, eventos, lonas y material promocional.</p>
+              </div>
+
+              <div
+                style={{ ...styles.card, ...(subDeptoActivo === 13 ? styles.cardActive : {}) }}
+                onClick={() => handleSelectSubDepto(13)}
+              >
+                <div style={styles.cardHeader}>
+                  <span style={styles.cardName}>Caja Chica</span>
+                  <span style={styles.cardIcon}>📦</span>
+                </div>
+                <p style={styles.cardDesc}>Gastos menores imprevistos de oficina o insumos de limpieza.</p>
+              </div>
+
+              <div
+                style={{ ...styles.card, ...(subDeptoActivo === 14 ? styles.cardActive : {}) }}
+                onClick={() => handleSelectSubDepto(14)}
+              >
+                <div style={styles.cardHeader}>
+                  <span style={styles.cardName}>Servicios Profesionales</span>
+                  <span style={styles.cardIcon}>💼</span>
+                </div>
+                <p style={styles.cardDesc}>Honorarios externos (Asesoría Contable por Alma Nely).</p>
+              </div>
+            </div>
+
+            {subDeptoActivo && (
+              <div style={styles.formContainer}>
+                <div style={styles.formTitle}>
+                  <span>
+                    Estás capturando:{' '}
+                    {subDeptoActivo === 12 && '📢 Gastos de Marketing'}
+                    {subDeptoActivo === 13 && '📦 Gastos de Caja Chica'}
+                    {subDeptoActivo === 14 && '💼 Servicios Profesionales'}
+                  </span>
+                  <button type="button" style={styles.closeBtn} onClick={() => setSubDeptoActivo(null)}>
+                    ✕ Cerrar
+                  </button>
+                </div>
+
+                <form onSubmit={(e) => e.preventDefault()} style={styles.grid}>
                   <div style={styles.fieldGroup}>
                     <label style={styles.label}>Origen de pago *</label>
                     <select
@@ -2861,7 +3043,7 @@ function FlujoCaja() {
                   )}
 
                   {origenPago === 'TRANSFERENCIA' && cuentaBancaria === 'OTRO' && (
-                    <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
+                    <div style={styles.fieldGroup}>
                       <label style={styles.label}>Nombre y Apellido del dueño de la cuenta *</label>
                       <input
                         type="text"
@@ -2874,93 +3056,11 @@ function FlujoCaja() {
                     </div>
                   )}
 
-                  <div style={styles.fullRow}>
-                    <button type="button" onClick={handleGuardarPlanta} style={styles.submitButton}>
-                      Guardar registro de gasto
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* 🏬 TARJETA PRINCIPAL 4: GASTOS DEPARTAMENTALES */}
-      <div style={styles.parentCard}>
-        <div style={styles.parentHeader} onClick={() => setDeptosAbierto(!deptosAbierto)}>
-          <div style={styles.parentTitleGroup}>
-            <span style={{ fontSize: '28px' }}>🏬</span>
-            <div>
-              <h3 style={styles.parentTitle}>GASTOS DEPARTAMENTALES</h3>
-              <p style={styles.parentSubtitle}>
-                Gastos de Marketing, Caja Chica y Servicios Profesionales.
-              </p>
-            </div>
-          </div>
-          <span style={styles.toggleBadge}>{deptosAbierto ? '▼ Ocultar' : '▶ Desplegar'}</span>
-        </div>
-
-        {deptosAbierto && (
-          <div>
-            <div style={styles.cardsContainer}>
-              <div
-                style={{ ...styles.card, ...(subDeptoActivo === 12 ? styles.cardActive : {}) }}
-                onClick={() => handleSelectSubDepto(12)}
-              >
-                <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Marketing</span>
-                  <span style={styles.cardIcon}>📢</span>
-                </div>
-                <p style={styles.cardDesc}>Eventos, impresiones, publicidad y campañas.</p>
-              </div>
-
-              <div
-                style={{ ...styles.card, ...(subDeptoActivo === 13 ? styles.cardActive : {}) }}
-                onClick={() => handleSelectSubDepto(13)}
-              >
-                <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Caja Chica</span>
-                  <span style={styles.cardIcon}>☕</span>
-                </div>
-                <p style={styles.cardDesc}>
-                  Insumos de oficina, café, agua, jabón, escobas y gastos menores inmediatos.
-                </p>
-              </div>
-
-              <div
-                style={{ ...styles.card, ...(subDeptoActivo === 14 ? styles.cardActive : {}) }}
-                onClick={() => handleSelectSubDepto(14)}
-              >
-                <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Servicios Profesionales</span>
-                  <span style={styles.cardIcon}>📑</span>
-                </div>
-                <p style={styles.cardDesc}>
-                  Pago de honorarios profesionales externos (Contadora Alma Nely Hernández Minor).
-                </p>
-              </div>
-            </div>
-
-            {subDeptoActivo && (
-              <div style={styles.formContainer}>
-                <div style={styles.formTitle}>
-                  <span>
-                    Estás capturando:{' '}
-                    {subDeptoActivo === 12 && '📢 Marketing'}
-                    {subDeptoActivo === 13 && '☕ Caja Chica'}
-                    {subDeptoActivo === 14 && '📑 Servicios Profesionales'}
-                  </span>
-                  <button type="button" style={styles.closeBtn} onClick={() => setSubDeptoActivo(null)}>
-                    ✕ Cerrar
-                  </button>
-                </div>
-
-                <form onSubmit={(e) => e.preventDefault()} style={styles.grid}>
+                  {/* FORMULARIO SUB 12: MARKETING */}
                   {subDeptoActivo === 12 && (
                     <>
-                      <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
-                        <label style={styles.label}>Fecha del evento / gasto *</label>
+                      <div style={styles.fieldGroup}>
+                        <label style={styles.label}>Fecha del Evento / Campaña *</label>
                         <input
                           type="date"
                           style={styles.input}
@@ -2972,64 +3072,43 @@ function FlujoCaja() {
 
                       <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
                         <div style={styles.dynamicHeader}>
-                          <span>Desglose de Marketing</span>
+                          <span>Desglose de Gastos de Publicidad</span>
                           <button
                             type="button"
                             style={styles.addBtn}
-                            onClick={() =>
-                              handleAgregarObjeto(setLineasMarketing, lineasMarketing, {
-                                tipoGasto: '',
-                                monto: '',
-                                comentario: ''
-                              })
-                            }
+                            onClick={() => handleAgregarObjeto(setLineasMarketing, lineasMarketing, { tipoGasto: '', monto: '', comentario: '' })}
                           >
                             +
                           </button>
                         </div>
                         {lineasMarketing.map((item, idx) => (
-                          <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                          <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 2fr auto', gap: '8px', marginBottom: '6px' }}>
                             <select
-                              style={{ ...styles.select, flex: 1.5 }}
+                              style={styles.select}
                               value={item.tipoGasto}
-                              onChange={(e) =>
-                                handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'tipoGasto', e.target.value)
-                              }
+                              onChange={(e) => handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'tipoGasto', e.target.value)}
                             >
-                              <option value="">-- Seleccionar tipo --</option>
-                              <option value="Eventos">Eventos</option>
-                              <option value="Impresiones / Lonas">Impresiones / Lonas</option>
-                              <option value="Publicidad Digital">Publicidad Digital</option>
-                              <option value="Otros">Otros</option>
+                              <option value="">-- Concepto --</option>
+                              <option value="Facebook Ads">Facebook / Meta Ads</option>
+                              <option value="Lonas / Impresos">Lonas / Impresos</option>
+                              <option value="Uniformes / Merch">Uniformes / Merch</option>
+                              <option value="Evento / Exposición">Evento / Exposición</option>
                             </select>
-
                             <input
                               type="number"
                               step="any"
-                              placeholder="Monto ($)"
-                              style={{ ...styles.input, flex: 1 }}
+                              placeholder="Monto $"
+                              style={styles.input}
                               value={item.monto}
-                              onChange={(e) =>
-                                handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'monto', e.target.value)
-                              }
+                              onChange={(e) => handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'monto', e.target.value)}
                             />
-
                             <input
                               type="text"
-                              placeholder="Comentarios opcionales"
-                              style={{ ...styles.input, flex: 2 }}
+                              placeholder="Notas opcionales"
+                              style={styles.input}
                               value={item.comentario}
-                              onChange={(e) =>
-                                handleCambioObjeto(
-                                  setLineasMarketing,
-                                  lineasMarketing,
-                                  idx,
-                                  'comentario',
-                                  e.target.value
-                                )
-                              }
+                              onChange={(e) => handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'comentario', e.target.value)}
                             />
-
                             {lineasMarketing.length > 1 && (
                               <button
                                 type="button"
@@ -3044,20 +3123,21 @@ function FlujoCaja() {
                       </div>
 
                       <div style={{ ...styles.fullRow, ...styles.totalSummaryBox }}>
-                        <span style={{ fontSize: '18px', fontWeight: 'bold', color: vino }}>
-                          TOTAL MARKETING: ${totalMarketing.toFixed(2)}
-                        </span>
+                        <div style={{ fontSize: '18px', fontWeight: 'bold', color: vino }}>
+                          Total Marketing: ${totalMarketing.toFixed(2)}
+                        </div>
                       </div>
                     </>
                   )}
 
+                  {/* FORMULARIO SUB 13: CAJA CHICA */}
                   {subDeptoActivo === 13 && (
                     <>
                       <div style={styles.fieldGroup}>
-                        <label style={styles.label}>Cantidad comprada (Opcional)</label>
+                        <label style={styles.label}>Cantidad Adquirida (Opcional)</label>
                         <input
                           type="text"
-                          placeholder="Ej. 2 cajas, 5 litros..."
+                          placeholder="Ej. 2 paquetes, 5 pzs"
                           style={styles.input}
                           value={cantidadCajaChica}
                           onChange={(e) => setCantidadCajaChica(e.target.value)}
@@ -3065,7 +3145,7 @@ function FlujoCaja() {
                       </div>
 
                       <div style={styles.fieldGroup}>
-                        <label style={styles.label}>Monto total ($) *</label>
+                        <label style={styles.label}>Monto Total ($) *</label>
                         <input
                           type="number"
                           step="any"
@@ -3079,10 +3159,10 @@ function FlujoCaja() {
                       </div>
 
                       <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
-                        <label style={styles.label}>Detalle del gasto / Producto comprado *</label>
+                        <label style={styles.label}>Detalle del Gasto de Caja Chica *</label>
                         <textarea
                           rows="2"
-                          placeholder="Ej. Compra de café, azúcar y papel sanitario para la oficina"
+                          placeholder="Ej. Compra de hojas de papel, garrafones de agua, artículos de limpieza..."
                           style={{ ...styles.input, resize: 'vertical' }}
                           value={detalleCajaChica}
                           onChange={(e) => setDetalleCajaChica(e.target.value)}
@@ -3092,10 +3172,11 @@ function FlujoCaja() {
                     </>
                   )}
 
+                  {/* FORMULARIO SUB 14: SERVICIOS PROFESIONALES */}
                   {subDeptoActivo === 14 && (
                     <>
                       <div style={styles.fieldGroup}>
-                        <label style={styles.label}>Fecha de pago *</label>
+                        <label style={styles.label}>Fecha de Pago *</label>
                         <input
                           type="date"
                           style={styles.input}
@@ -3106,23 +3187,23 @@ function FlujoCaja() {
                       </div>
 
                       <div style={styles.fieldGroup}>
-                        <label style={styles.label}>Profesional que recibe el pago *</label>
+                        <label style={styles.label}>Profesional / Proveedor *</label>
                         <select
                           style={styles.select}
                           value={empleadoServicios}
                           onChange={(e) => setEmpleadoServicios(e.target.value)}
                           required
                         >
-                          {empleados.map((emp) => (
-                            <option key={emp.id_empleado} value={emp.id_empleado}>
-                              {emp.nombre_completo || `${emp.nombre || ''} ${emp.apellido1 || ''}`} ({emp.puesto})
+                          {empleados.map((e) => (
+                            <option key={e.id_empleado} value={e.id_empleado}>
+                              {e.nombre_completo || `${e.nombre} ${e.apellido1}`}
                             </option>
                           ))}
                         </select>
                       </div>
 
-                      <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
-                        <label style={styles.label}>Monto pagado ($) *</label>
+                      <div style={styles.fieldGroup}>
+                        <label style={styles.label}>Monto de Honorarios ($) *</label>
                         <input
                           type="number"
                           step="any"
@@ -3137,60 +3218,9 @@ function FlujoCaja() {
                     </>
                   )}
 
-                  <div style={styles.fieldGroup}>
-                    <label style={styles.label}>Origen de pago *</label>
-                    <select
-                      style={styles.select}
-                      value={origenPago}
-                      onChange={(e) => {
-                        setOrigenPago(e.target.value)
-                        if (e.target.value !== 'TRANSFERENCIA') {
-                          setCuentaBancaria('')
-                          setNombreDuenioCuenta('')
-                        }
-                      }}
-                    >
-                      <option value="EFECTIVO">Efectivo</option>
-                      <option value="TRANSFERENCIA">Transferencia</option>
-                    </select>
-                  </div>
-
-                  {origenPago === 'TRANSFERENCIA' && (
-                    <div style={styles.fieldGroup}>
-                      <label style={styles.label}>Cuenta Bancaria de Salida *</label>
-                      <select
-                        style={styles.select}
-                        value={cuentaBancaria}
-                        onChange={(e) => {
-                          setCuentaBancaria(e.target.value)
-                          if (e.target.value !== 'OTRO') setNombreDuenioCuenta('')
-                        }}
-                        required
-                      >
-                        <option value="">-- Seleccionar Cuenta --</option>
-                        <option value="Cuenta Fiscal">Cuenta fiscal</option>
-                        <option value="OTRO">Otro</option>
-                      </select>
-                    </div>
-                  )}
-
-                  {origenPago === 'TRANSFERENCIA' && cuentaBancaria === 'OTRO' && (
-                    <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
-                      <label style={styles.label}>Nombre y Apellido del dueño de la cuenta *</label>
-                      <input
-                        type="text"
-                        placeholder="Ej. Eli Maravillas"
-                        style={styles.input}
-                        value={nombreDuenioCuenta}
-                        onChange={(e) => setNombreDuenioCuenta(e.target.value)}
-                        required
-                      />
-                    </div>
-                  )}
-
                   <div style={styles.fullRow}>
                     <button type="button" onClick={handleGuardarDeptos} style={styles.submitButton}>
-                      Guardar gasto departamental
+                      Guardar Gasto Departamental
                     </button>
                   </div>
                 </form>
