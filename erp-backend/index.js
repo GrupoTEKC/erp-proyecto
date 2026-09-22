@@ -2768,8 +2768,8 @@ app.get('/pagos/:id_pedido', async (req, res) => {
 })
 
 
-// 📊 CAJA Y FLUJO DE CAJA (EN TIEMPO REAL)
-// =============================
+// 📊 CAJA Y FLUJO DE CAJA (EN TIEMPO REAL CON PRÉSTAMOS Y ABONOS)
+// ==============================================================
 
 // 1. OBTENER SALDOS Y HISTORIAL EN TIEMPO REAL
 app.get('/api/caja/resumen', async (req, res) => {
@@ -2777,62 +2777,73 @@ app.get('/api/caja/resumen', async (req, res) => {
     // A) Traer la caja abierta actual
     const [cajas] = await db.query(
       `SELECT * FROM caja_apertura_cierre WHERE estatus = 'ABIERTA' ORDER BY id_caja DESC LIMIT 1`
-    )
+    );
 
     if (!cajas.length) {
       return res.status(404).json({
         ok: false,
         error: 'No hay ninguna caja abierta actualmente'
-      })
+      });
     }
 
-    const cajaActiva = cajas[0]
-    const fechaInicio = cajaActiva.fecha_inicio
+    const cajaActiva = cajas[0];
+    const fechaInicio = cajaActiva.fecha_inicio;
 
-    // B) Sumar INGRESOS (Pagos) a partir de la fecha de apertura de la caja activa
+    // B) Sumar INGRESOS: (Pagos de clientes + Préstamos Recibidos)
     const [ingresos] = await db.query(
       `SELECT 
         SUM(CASE WHEN LOWER(metodo) = 'efectivo' THEN monto ELSE 0 END) AS total_ingreso_efectivo,
         SUM(CASE WHEN LOWER(metodo) = 'transferencia' THEN monto ELSE 0 END) AS total_ingreso_banco,
-        SUM(CASE WHEN LOWER(metodo) IN ('efectivo', 'transferencia') THEN monto ELSE 0 END) AS total_ingresos
-       FROM pagos
-       WHERE fecha_pago >= ?`,
-      [fechaInicio]
+        SUM(monto) AS total_ingresos
+       FROM (
+         -- 1. Pagos regulares de clientes
+         SELECT metodo, monto FROM pagos WHERE fecha_pago >= ?
+         UNION ALL
+         -- 2. Entradas por préstamos solicitados
+         SELECT cuenta_destino AS metodo, monto_original AS monto 
+         FROM prestamos 
+         WHERE fecha_registro >= ?
+       ) AS ingresos_totales`,
+      [fechaInicio, fechaInicio]
     );
 
-    // C) Sumar EGRESOS DEFINITIVOS (Gastos) + GASTOS TEMPORALES PENDIENTES
+    // C) Sumar EGRESOS: (Gastos definitivos + Gastos temporales + Abonos a Préstamos no duplicados)
     const [egresos] = await db.query(
       `SELECT 
         SUM(CASE WHEN UPPER(origen_pago) = 'EFECTIVO' THEN monto ELSE 0 END) AS total_egreso_efectivo,
         SUM(CASE WHEN UPPER(origen_pago) = 'TRANSFERENCIA' THEN monto ELSE 0 END) AS total_egreso_banco
        FROM (
-         -- 1. Gastos definitivos
+         -- 1. Gastos definitivos (incluye los vinculados a abonos si se registran ahí)
          SELECT origen_pago, monto FROM flujo_egresos WHERE fecha_captura >= ?
          UNION ALL
-         -- 2. Entregas de dinero pendiente por comprobar (reducen la caja activa)
+         -- 2. Entregas de dinero pendiente por comprobar
          SELECT origen_pago, monto_entregado AS monto FROM gastos_temporales WHERE estatus = 'PENDIENTE' AND fecha_entrega >= ?
+         UNION ALL
+         -- 3. Abonos a préstamos (solo si NO tienen un egreso ya registrado en flujo_egresos para evitar duplicar)
+         SELECT origen_pago, monto_abonado AS monto 
+         FROM prestamos_abonos 
+         WHERE fecha_registro >= ? AND (id_egreso_relacionado IS NULL OR id_egreso_relacionado = 0)
        ) AS egresos_totales`,
-      [fechaInicio, fechaInicio]
+      [fechaInicio, fechaInicio, fechaInicio]
     );
 
     // D) Cálculo de Saldos
-    const ingEfectivo = Number(ingresos[0]?.total_ingreso_efectivo || 0)
-    const ingBanco = Number(ingresos[0]?.total_ingreso_banco || 0)
+    const ingEfectivo = Number(ingresos[0]?.total_ingreso_efectivo || 0);
+    const ingBanco = Number(ingresos[0]?.total_ingreso_banco || 0);
 
-    const egrEfectivo = Number(egresos[0]?.total_egreso_efectivo || 0)
-    const egrBanco = Number(egresos[0]?.total_egreso_banco || 0)
+    const egrEfectivo = Number(egresos[0]?.total_egreso_efectivo || 0);
+    const egrBanco = Number(egresos[0]?.total_egreso_banco || 0);
 
-    const saldoEfectivo = Number(cajaActiva.monto_inicial_efectivo) + ingEfectivo - egrEfectivo
-    const saldoBanco = Number(cajaActiva.monto_inicial_banco) + ingBanco - egrBanco
-    const saldoTotal = saldoEfectivo + saldoBanco
+    const saldoEfectivo = Number(cajaActiva.monto_inicial_efectivo) + ingEfectivo - egrEfectivo;
+    const saldoBanco = Number(cajaActiva.monto_inicial_banco) + ingBanco - egrBanco;
+    const saldoTotal = saldoEfectivo + saldoBanco;
 
     // FÓRMULA SALDO TEKC (Suma de montos iniciales + ingresos - egresos)
-    const montoInicialTotal = Number(cajaActiva.monto_inicial_efectivo) + Number(cajaActiva.monto_inicial_banco)
-    const totalIngresos = Number(ingresos[0]?.total_ingresos || (ingEfectivo + ingBanco))
-    const totalEgresos = egrEfectivo + egrBanco
+    const montoInicialTotal = Number(cajaActiva.monto_inicial_efectivo) + Number(cajaActiva.monto_inicial_banco);
+    const totalIngresos = Number(ingresos[0]?.total_ingresos || (ingEfectivo + ingBanco));
+    const totalEgresos = egrEfectivo + egrBanco;
     
-    const saldoTEKC = montoInicialTotal + totalIngresos - totalEgresos
-
+    const saldoTEKC = montoInicialTotal + totalIngresos - totalEgresos;
 
     // E) Lista de movimientos unificada
     const [movimientos] = await db.query(
@@ -2907,10 +2918,38 @@ app.get('/api/caja/resumen', async (req, res) => {
         INNER JOIN empleados emp ON gt.id_empleado = emp.id_empleado
         WHERE gt.estatus = 'PENDIENTE' AND gt.fecha_entrega >= ?)
 
+       UNION ALL
+
+       (SELECT 
+          pr.id_prestamo AS id,
+          'INGRESO' COLLATE utf8mb4_unicode_ci AS tipo,
+          CAST(NULL AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS tienda,
+          CAST('PRESTAMO' AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS tipo_pedido,
+          CAST(CONCAT('Préstamo Recibido - ', pr.prestamista) AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS concepto,
+          CAST(pr.monto_original AS DECIMAL(10,2)) AS monto,
+          CAST(pr.cuenta_destino AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS forma_pago,
+          pr.fecha_registro AS fecha
+        FROM prestamos pr
+        WHERE pr.fecha_registro >= ?)
+
+       UNION ALL
+
+       (SELECT 
+          pa.id_abono AS id,
+          'ABONO PRESTAMO' COLLATE utf8mb4_unicode_ci AS tipo,
+          CAST(NULL AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS tienda,
+          CAST('PRESTAMO' AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS tipo_pedido,
+          CAST(CONCAT('Abono Préstamo #', pa.id_prestamo, ' (', pa.responsable_pago, ')') AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS concepto,
+          CAST(pa.monto_abonado AS DECIMAL(10,2)) AS monto,
+          CAST(pa.origen_pago AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS forma_pago,
+          pa.fecha_registro AS fecha
+        FROM prestamos_abonos pa
+        WHERE pa.fecha_registro >= ?)
+
        ORDER BY fecha DESC`,
-      [fechaInicio, fechaInicio, fechaInicio]
+      [fechaInicio, fechaInicio, fechaInicio, fechaInicio, fechaInicio]
     );
-    
+
     // RESPUESTA JSON
     res.json({
       ok: true,
@@ -2929,12 +2968,13 @@ app.get('/api/caja/resumen', async (req, res) => {
         banco: saldoBanco
       },
       movimientos
-    })
+    });
 
   } catch (err) {
-    res.status(500).json({ ok: false, error: err.message })
+    res.status(500).json({ ok: false, error: err.message });
   }
-})
+});
+
 
 app.post('/api/egresos', async (req, res) => {
   try {
@@ -2950,7 +2990,8 @@ app.post('/api/egresos', async (req, res) => {
       id_unidad_relacionada,
       id_ruta_relacionada,
       concepto,
-      num_comprobante
+      num_comprobante,
+      id_prestamo_abono // 👈 Nuevo campo opcional
     } = req.body;
 
     if (!id_categoria || !monto || !origen_pago || !concepto) {
@@ -2962,8 +3003,8 @@ app.post('/api/egresos', async (req, res) => {
         id_categoria, monto, origen_pago, cuenta_bancaria,
         id_producto_relacionado, id_empleado, empleado_relacionado,
         unidad_relacionada, id_unidad_relacionada, id_ruta_relacionada,
-        concepto, num_comprobante
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        concepto, num_comprobante, id_prestamo_abono
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id_categoria,
         monto,
@@ -2976,7 +3017,8 @@ app.post('/api/egresos', async (req, res) => {
         id_unidad_relacionada || null,
         id_ruta_relacionada || null,
         concepto,
-        num_comprobante || null
+        num_comprobante || null,
+        id_prestamo_abono || null
       ]
     );
 
@@ -2990,6 +3032,7 @@ app.post('/api/egresos', async (req, res) => {
     res.status(500).json({ ok: false, error: err.message });
   }
 });
+
 
 app.post('/api/gastos-temporales', async (req, res) => {
   try {
