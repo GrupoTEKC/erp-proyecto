@@ -2768,7 +2768,6 @@ app.get('/pagos/:id_pedido', async (req, res) => {
 })
 
 
-
 // 📊 CAJA Y FLUJO DE CAJA (EN TIEMPO REAL)
 // =============================
 
@@ -2778,30 +2777,35 @@ app.get('/api/caja/resumen', async (req, res) => {
     // A) Traer la caja abierta actual
     const [cajas] = await db.query(
       `SELECT * FROM caja_apertura_cierre WHERE estatus = 'ABIERTA' ORDER BY id_caja DESC LIMIT 1`
-    )
+    );
 
     if (!cajas.length) {
       return res.status(404).json({
         ok: false,
         error: 'No hay ninguna caja abierta actualmente'
-      })
+      });
     }
 
-    const cajaActiva = cajas[0]
-    const fechaInicio = cajaActiva.fecha_inicio
+    const cajaActiva = cajas[0];
+    const fechaInicio = cajaActiva.fecha_inicio;
 
-    // B) Sumar INGRESOS (Pagos) a partir de la fecha de apertura de la caja activa
+    // B) Sumar INGRESOS (Pagos + Préstamos recibidos)
     const [ingresos] = await db.query(
       `SELECT 
         SUM(CASE WHEN LOWER(metodo) = 'efectivo' THEN monto ELSE 0 END) AS total_ingreso_efectivo,
         SUM(CASE WHEN LOWER(metodo) = 'transferencia' THEN monto ELSE 0 END) AS total_ingreso_banco,
         SUM(CASE WHEN LOWER(metodo) IN ('efectivo', 'transferencia') THEN monto ELSE 0 END) AS total_ingresos
-       FROM pagos
-       WHERE fecha_pago >= ?`,
-      [fechaInicio]
+       FROM (
+         -- 1. Pagos generales / clientes
+         SELECT metodo, monto FROM pagos WHERE fecha_pago >= ?
+         UNION ALL
+         -- 2. Préstamos solicitados / recibidos
+         SELECT cuenta_destino AS metodo, monto_original AS monto FROM prestamos WHERE fecha_registro >= ?
+       ) AS ingresos_totales`,
+      [fechaInicio, fechaInicio]
     );
 
-    // C) Sumar EGRESOS DEFINITIVOS (Gastos) + GASTOS TEMPORALES PENDIENTES
+    // C) Sumar EGRESOS DEFINITIVOS (Gastos) + GASTOS TEMPORALES PENDIENTES + ABONOS A PRÉSTAMOS
     const [egresos] = await db.query(
       `SELECT 
         SUM(CASE WHEN UPPER(origen_pago) = 'EFECTIVO' THEN monto ELSE 0 END) AS total_egreso_efectivo,
@@ -2812,30 +2816,32 @@ app.get('/api/caja/resumen', async (req, res) => {
          UNION ALL
          -- 2. Entregas de dinero pendiente por comprobar (reducen la caja activa)
          SELECT origen_pago, monto_entregado AS monto FROM gastos_temporales WHERE estatus = 'PENDIENTE' AND fecha_entrega >= ?
+         UNION ALL
+         -- 3. Abonos realizados a préstamos
+         SELECT origen_pago, monto_abonado AS monto FROM prestamos_abonos WHERE fecha_abono >= ?
        ) AS egresos_totales`,
-      [fechaInicio, fechaInicio]
+      [fechaInicio, fechaInicio, fechaInicio]
     );
 
     // D) Cálculo de Saldos
-    const ingEfectivo = Number(ingresos[0]?.total_ingreso_efectivo || 0)
-    const ingBanco = Number(ingresos[0]?.total_ingreso_banco || 0)
+    const ingEfectivo = Number(ingresos[0]?.total_ingreso_efectivo || 0);
+    const ingBanco = Number(ingresos[0]?.total_ingreso_banco || 0);
 
-    const egrEfectivo = Number(egresos[0]?.total_egreso_efectivo || 0)
-    const egrBanco = Number(egresos[0]?.total_egreso_banco || 0)
+    const egrEfectivo = Number(egresos[0]?.total_egreso_efectivo || 0);
+    const egrBanco = Number(egresos[0]?.total_egreso_banco || 0);
 
-    const saldoEfectivo = Number(cajaActiva.monto_inicial_efectivo) + ingEfectivo - egrEfectivo
-    const saldoBanco = Number(cajaActiva.monto_inicial_banco) + ingBanco - egrBanco
-    const saldoTotal = saldoEfectivo + saldoBanco
+    const saldoEfectivo = Number(cajaActiva.monto_inicial_efectivo) + ingEfectivo - egrEfectivo;
+    const saldoBanco = Number(cajaActiva.monto_inicial_banco) + ingBanco - egrBanco;
+    const saldoTotal = saldoEfectivo + saldoBanco;
 
     // FÓRMULA SALDO TEKC (Suma de montos iniciales + ingresos - egresos)
-    const montoInicialTotal = Number(cajaActiva.monto_inicial_efectivo) + Number(cajaActiva.monto_inicial_banco)
-    const totalIngresos = Number(ingresos[0]?.total_ingresos || (ingEfectivo + ingBanco))
-    const totalEgresos = egrEfectivo + egrBanco
+    const montoInicialTotal = Number(cajaActiva.monto_inicial_efectivo) + Number(cajaActiva.monto_inicial_banco);
+    const totalIngresos = Number(ingresos[0]?.total_ingresos || (ingEfectivo + ingBanco));
+    const totalEgresos = egrEfectivo + egrBanco;
     
-    const saldoTEKC = montoInicialTotal + totalIngresos - totalEgresos
+    const saldoTEKC = montoInicialTotal + totalIngresos - totalEgresos;
 
-
-    // E) Lista de movimientos unificada
+    // E) Lista de movimientos unificada (Incluye pagos, egresos, temporales, préstamos y abonos)
     const [movimientos] = await db.query(
       `(SELECT 
           p.id_pago AS id,
@@ -2882,6 +2888,20 @@ app.get('/api/caja/resumen', async (req, res) => {
        UNION ALL
 
        (SELECT 
+          pr.id_prestamo AS id,
+          'INGRESO' COLLATE utf8mb4_unicode_ci AS tipo,
+          CAST(NULL AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS tienda,
+          CAST('PRÉSTAMO' AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS tipo_pedido,
+          CAST(CONCAT('Entrada Préstamo - ', pr.prestamista) AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS concepto,
+          CAST(pr.monto_original AS DECIMAL(10,2)) AS monto,
+          CAST(pr.cuenta_destino AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS forma_pago,
+          pr.fecha_registro AS fecha
+        FROM prestamos pr
+        WHERE pr.fecha_registro >= ?)
+
+       UNION ALL
+
+       (SELECT 
           e.id_egreso AS id,
           'EGRESO' COLLATE utf8mb4_unicode_ci AS tipo,
           CAST(NULL AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS tienda,
@@ -2892,6 +2912,21 @@ app.get('/api/caja/resumen', async (req, res) => {
           e.fecha_captura AS fecha
         FROM flujo_egresos e
         WHERE e.fecha_captura >= ?)
+
+       UNION ALL
+
+       (SELECT 
+          pa.id_abono AS id,
+          'EGRESO' COLLATE utf8mb4_unicode_ci AS tipo,
+          CAST(NULL AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS tienda,
+          CAST('ABONO PRÉSTAMO' AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS tipo_pedido,
+          CAST(CONCAT('Abono Préstamo (', pr.prestamista, ') - Periodo ', pa.numero_periodo) AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS concepto,
+          CAST(pa.monto_abonado AS DECIMAL(10,2)) AS monto,
+          CAST(pa.origen_pago AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS forma_pago,
+          pa.fecha_abono AS fecha
+        FROM prestamos_abonos pa
+        INNER JOIN prestamos pr ON pa.id_prestamo = pr.id_prestamo
+        WHERE pa.fecha_abono >= ?)
 
        UNION ALL
 
@@ -2909,10 +2944,10 @@ app.get('/api/caja/resumen', async (req, res) => {
         WHERE gt.estatus = 'PENDIENTE' AND gt.fecha_entrega >= ?)
 
        ORDER BY fecha DESC`,
-      [fechaInicio, fechaInicio, fechaInicio]
+      [fechaInicio, fechaInicio, fechaInicio, fechaInicio, fechaInicio]
     );
-    
-    // RESPUESTA JSON
+
+    // RESPUESTA JSON (Estructura idéntica que el frontend consumirá automáticamente)
     res.json({
       ok: true,
       caja_info: {
@@ -2930,12 +2965,12 @@ app.get('/api/caja/resumen', async (req, res) => {
         banco: saldoBanco
       },
       movimientos
-    })
+    });
 
   } catch (err) {
-    res.status(500).json({ ok: false, error: err.message })
+    res.status(500).json({ ok: false, error: err.message });
   }
-})
+});
 
 app.post('/api/egresos', async (req, res) => {
   try {
