@@ -2841,7 +2841,8 @@ app.get('/api/caja/resumen', async (req, res) => {
     
     const saldoTEKC = montoInicialTotal + totalIngresos - totalEgresos;
 
-    // E) Lista de movimientos unificada (Incluye pagos, egresos, temporales, préstamos y abonos)
+
+    // E) Lista de movimientos unificada
     const [movimientos] = await db.query(
       `(SELECT 
           p.id_pago AS id,
@@ -2890,7 +2891,7 @@ app.get('/api/caja/resumen', async (req, res) => {
        (SELECT 
           pr.id_prestamo AS id,
           'INGRESO' COLLATE utf8mb4_unicode_ci AS tipo,
-          CAST(NULL AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS tienda,
+          CAST(CONCAT('Préstamo - ', pr.prestamista) AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS tienda,
           CAST('PRÉSTAMO' AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS tipo_pedido,
           CAST(CONCAT('Entrada Préstamo - ', pr.prestamista) AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS concepto,
           CAST(pr.monto_original AS DECIMAL(10,2)) AS monto,
@@ -2901,10 +2902,11 @@ app.get('/api/caja/resumen', async (req, res) => {
 
        UNION ALL
 
+       -- EGRESO 1: Flujo de Egresos (Gastos Generales)
        (SELECT 
           e.id_egreso AS id,
           'EGRESO' COLLATE utf8mb4_unicode_ci AS tipo,
-          CAST(NULL AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS tienda,
+          CAST(e.concepto AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS tienda, -- <--- AQUÍ: Desglose del gasto
           CAST(NULL AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS tipo_pedido,
           CAST(CONCAT('Gasto - ', e.concepto) AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS concepto,
           CAST(e.monto AS DECIMAL(10,2)) AS monto,
@@ -2915,10 +2917,11 @@ app.get('/api/caja/resumen', async (req, res) => {
 
        UNION ALL
 
+       -- EGRESO 2: Abonos a Préstamos
        (SELECT 
           pa.id_abono AS id,
           'EGRESO' COLLATE utf8mb4_unicode_ci AS tipo,
-          CAST(NULL AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS tienda,
+          CAST(CONCAT('Abono Préstamo (', pr.prestamista, ')') AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS tienda, -- <--- AQUÍ: Desglose del abono
           CAST('ABONO PRÉSTAMO' AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS tipo_pedido,
           CAST(CONCAT('Abono Préstamo (', pr.prestamista, ') - Periodo ', pa.numero_periodo) AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS concepto,
           CAST(pa.monto_abonado AS DECIMAL(10,2)) AS monto,
@@ -2930,10 +2933,11 @@ app.get('/api/caja/resumen', async (req, res) => {
 
        UNION ALL
 
+       -- EGRESO 3: Gastos Temporales Pendientes
        (SELECT 
           gt.id_temporal AS id,
           'GASTO TEMPORAL' COLLATE utf8mb4_unicode_ci AS tipo,
-          CAST(NULL AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS tienda,
+          CAST(CONCAT(gt.concepto, ' (', emp.nombre, ')') AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS tienda, -- <--- AQUÍ: Desglose temporal
           CAST(NULL AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS tipo_pedido,
           CAST(CONCAT('Pendiente (', emp.nombre, ') - ', gt.concepto) AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS concepto,
           CAST(gt.monto_entregado AS DECIMAL(10,2)) AS monto,
@@ -2946,7 +2950,8 @@ app.get('/api/caja/resumen', async (req, res) => {
        ORDER BY fecha DESC`,
       [fechaInicio, fechaInicio, fechaInicio, fechaInicio, fechaInicio]
     );
-
+    
+    
     res.json({
       ok: true,
       caja_info: {
