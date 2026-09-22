@@ -376,16 +376,17 @@ function CuentasPorPagar() {
 
       {/* ⬅ BOTÓN VOLVER */}
       <button style={styles.backTop} onClick={() => navigate("/")}>
-        ⬅ Volver al Menú Principal
+        ⬅ Volver
       </button>
 
-      {/* 🔵 ENCABEZADO Y LOGO */}
+     {/* 🔵 ENCABEZADO Y LOGO */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: -5, marginBottom: 20 }}>
         <img src={logo} alt="Pegatek" style={{ width: 140, objectFit: "contain", marginBottom: 6 }} />
-        <h1 style={styles.titleCenter}>
+        <h1 style={{ ...styles.titleCenter, fontSize: "48px" }}>
           CUENTAS POR PAGAR
         </h1>
       </div>
+      
 
       {/* CONTENEDOR DOS COLUMNAS */}
       <div style={{ display: 'flex', gap: '20px', maxWidth: '1400px', margin: '0 auto', flexWrap: 'wrap' }}>
@@ -394,11 +395,11 @@ function CuentasPorPagar() {
         <div style={{ ...styles.cardPanel, width: '280px' }}>
           
           <button style={{ ...styles.botonAccion, width: '100%', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} onClick={() => setModalNuevo(true)}>
-            ➕ Registrar Nuevo Préstamo
+            ➕ Registrar préstamo
           </button>
 
           <h3 style={styles.subTitle}>
-            Acreedores Activos
+            Prestamos activos
           </h3>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -594,7 +595,7 @@ function CuentasPorPagar() {
                 <input
                   style={styles.field}
                   required
-                  placeholder="Ej. Proveedor Cemento"
+                  placeholder="Ej. YADESA"
                   value={formPrestamo.prestamista}
                   onChange={(e) => setFormPrestamo({ ...formPrestamo, prestamista: e.target.value })}
                 />
@@ -602,7 +603,7 @@ function CuentasPorPagar() {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
                 <div>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#444' }}>Monto Original *</label>
+                  <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#444' }}>Monto del prestamo*</label>
                   <input
                     type="number"
                     style={styles.field}
@@ -612,7 +613,7 @@ function CuentasPorPagar() {
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#444' }}>Plazo (Meses) *</label>
+                  <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#444' }}> Plazo de pago (meses)*</label>
                   <input
                     type="number"
                     style={styles.field}
@@ -625,7 +626,7 @@ function CuentasPorPagar() {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
                 <div>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#444' }}>Color Identificador</label>
+                  <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#444' }}>Selecciona un color</label>
                   <input
                     type="color"
                     style={{ width: '100%', height: '36px', padding: '2px', border: '1px solid #8B1E1E', borderRadius: '6px', marginTop: '4px' }}
@@ -661,7 +662,7 @@ function CuentasPorPagar() {
       {modalAbono && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={styles.modalBox}>
-            <h3 style={{ margin: '0 0 10px 0', color: '#8B1E1E' }}>💲 Registrar Pago / Abono</h3>
+            <h3 style={{ margin: '0 0 10px 0', color: '#8B1E1E' }}>💲 Registrar abono</h3>
             <p style={{ fontSize: '13px', color: '#555', margin: '0 0 16px 0' }}>Préstamo: <strong>{modalAbono.prestamista}</strong></p>
 
             <form onSubmit={handleRegistrarAbono}>
@@ -678,7 +679,7 @@ function CuentasPorPagar() {
               </div>
 
               <div style={{ marginBottom: '12px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#444' }}>Responsable que Entrega / Autoriza *</label>
+                <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#444' }}>Persona que realizo el pago*</label>
                 <input
                   style={styles.field}
                   required
@@ -705,7 +706,7 @@ function CuentasPorPagar() {
       {modalHistorial && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={styles.modalBox}>
-            <h3 style={{ margin: '0 0 16px 0', color: '#8B1E1E' }}>📋 Historial de Pagos</h3>
+            <h3 style={{ margin: '0 0 16px 0', color: '#8B1E1E' }}>📋 Historial de abonos</h3>
             
             {historialAbonos.length === 0 ? (
               <p style={{ fontSize: '13px', color: '#666' }}>Sin pagos registrados para este préstamo.</p>
