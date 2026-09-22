@@ -2768,6 +2768,7 @@ app.get('/pagos/:id_pedido', async (req, res) => {
 })
 
 
+
 // 📊 CAJA Y FLUJO DE CAJA (EN TIEMPO REAL)
 // =============================
 
@@ -2789,23 +2790,18 @@ app.get('/api/caja/resumen', async (req, res) => {
     const cajaActiva = cajas[0]
     const fechaInicio = cajaActiva.fecha_inicio
 
-    // B) Sumar INGRESOS (Pagos de clientes + Préstamos recibidos)
+    // B) Sumar INGRESOS (Pagos) a partir de la fecha de apertura de la caja activa
     const [ingresos] = await db.query(
       `SELECT 
         SUM(CASE WHEN LOWER(metodo) = 'efectivo' THEN monto ELSE 0 END) AS total_ingreso_efectivo,
         SUM(CASE WHEN LOWER(metodo) = 'transferencia' THEN monto ELSE 0 END) AS total_ingreso_banco,
         SUM(CASE WHEN LOWER(metodo) IN ('efectivo', 'transferencia') THEN monto ELSE 0 END) AS total_ingresos
-       FROM (
-         -- 1. Pagos regulares
-         SELECT metodo, monto FROM pagos WHERE fecha_pago >= ?
-         UNION ALL
-         -- 2. Entradas de dinero por préstamos recibidos
-         SELECT LOWER(cuenta_destino) AS metodo, monto_original AS monto FROM prestamos WHERE fecha_registro >= ?
-       ) AS ingresos_totales`,
-      [fechaInicio, fechaInicio]
+       FROM pagos
+       WHERE fecha_pago >= ?`,
+      [fechaInicio]
     );
 
-    // C) Sumar EGRESOS DEFINITIVOS (Gastos) + GASTOS TEMPORALES PENDIENTES + ABONOS A PRÉSTAMOS
+    // C) Sumar EGRESOS DEFINITIVOS (Gastos) + GASTOS TEMPORALES PENDIENTES
     const [egresos] = await db.query(
       `SELECT 
         SUM(CASE WHEN UPPER(origen_pago) = 'EFECTIVO' THEN monto ELSE 0 END) AS total_egreso_efectivo,
@@ -2816,11 +2812,8 @@ app.get('/api/caja/resumen', async (req, res) => {
          UNION ALL
          -- 2. Entregas de dinero pendiente por comprobar (reducen la caja activa)
          SELECT origen_pago, monto_entregado AS monto FROM gastos_temporales WHERE estatus = 'PENDIENTE' AND fecha_entrega >= ?
-         UNION ALL
-         -- 3. Salida de dinero por abonos a préstamos (solo si no se han registrado en flujo_egresos para evitar duplicar)
-         SELECT origen_pago, monto_abonado AS monto FROM prestamos_abonos WHERE fecha_registro >= ? AND (id_egreso_relacionado IS NULL OR id_egreso_relacionado = 0)
        ) AS egresos_totales`,
-      [fechaInicio, fechaInicio, fechaInicio]
+      [fechaInicio, fechaInicio]
     );
 
     // D) Cálculo de Saldos
@@ -2915,36 +2908,8 @@ app.get('/api/caja/resumen', async (req, res) => {
         INNER JOIN empleados emp ON gt.id_empleado = emp.id_empleado
         WHERE gt.estatus = 'PENDIENTE' AND gt.fecha_entrega >= ?)
 
-       UNION ALL
-
-       (SELECT 
-          pr.id_prestamo AS id,
-          'INGRESO' COLLATE utf8mb4_unicode_ci AS tipo,
-          CAST(NULL AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS tienda,
-          CAST('PRESTAMO' AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS tipo_pedido,
-          CAST(CONCAT('Préstamo Recibido - ', pr.prestamista) AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS concepto,
-          CAST(pr.monto_original AS DECIMAL(10,2)) AS monto,
-          CAST(pr.cuenta_destino AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS forma_pago,
-          pr.fecha_registro AS fecha
-        FROM prestamos pr
-        WHERE pr.fecha_registro >= ?)
-
-       UNION ALL
-
-       (SELECT 
-          pa.id_abono AS id,
-          'EGRESO' COLLATE utf8mb4_unicode_ci AS tipo,
-          CAST(NULL AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS tienda,
-          CAST('ABONO PRESTAMO' AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS tipo_pedido,
-          CAST(CONCAT('Abono Préstamo #', pa.id_prestamo, ' - Resp: ', pa.responsable_pago) AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS concepto,
-          CAST(pa.monto_abonado AS DECIMAL(10,2)) AS monto,
-          CAST(pa.origen_pago AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS forma_pago,
-          pa.fecha_registro AS fecha
-        FROM prestamos_abonos pa
-        WHERE pa.fecha_registro >= ?)
-
        ORDER BY fecha DESC`,
-      [fechaInicio, fechaInicio, fechaInicio, fechaInicio, fechaInicio]
+      [fechaInicio, fechaInicio, fechaInicio]
     );
     
     // RESPUESTA JSON
@@ -2986,8 +2951,7 @@ app.post('/api/egresos', async (req, res) => {
       id_unidad_relacionada,
       id_ruta_relacionada,
       concepto,
-      num_comprobante,
-      id_prestamo_abono
+      num_comprobante
     } = req.body;
 
     if (!id_categoria || !monto || !origen_pago || !concepto) {
@@ -2999,8 +2963,8 @@ app.post('/api/egresos', async (req, res) => {
         id_categoria, monto, origen_pago, cuenta_bancaria,
         id_producto_relacionado, id_empleado, empleado_relacionado,
         unidad_relacionada, id_unidad_relacionada, id_ruta_relacionada,
-        concepto, num_comprobante, id_prestamo_abono
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        concepto, num_comprobante
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id_categoria,
         monto,
@@ -3013,8 +2977,7 @@ app.post('/api/egresos', async (req, res) => {
         id_unidad_relacionada || null,
         id_ruta_relacionada || null,
         concepto,
-        num_comprobante || null,
-        id_prestamo_abono || null
+        num_comprobante || null
       ]
     );
 
@@ -3028,6 +2991,7 @@ app.post('/api/egresos', async (req, res) => {
     res.status(500).json({ ok: false, error: err.message });
   }
 });
+
 
 
 app.post('/api/gastos-temporales', async (req, res) => {
