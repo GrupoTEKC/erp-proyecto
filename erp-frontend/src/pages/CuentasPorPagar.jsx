@@ -4,146 +4,174 @@ import logo from "../assets/TRANSPARENTE.png"
 
 const API = "https://erp-proyecto-production.up.railway.app"
 
-// 🎨 OBJETO DE ESTILOS UNIFICADO CON LA PALETA GUINDA/VINO
+// 🎨 OBJETO DE ESTILOS PROFESIONAL Y AMPLIO
 const styles = {
   page: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#F8FAFC',
     minHeight: '100vh',
-    padding: '20px',
-    fontFamily: 'Arial, sans-serif'
+    padding: '24px 32px',
+    fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+    boxSizing: 'border-box'
+  },
+  headerRow: {
+    display: 'flex',
+    justify: 'space-between',
+    alignItems: 'center',
+    marginBottom: '28px',
+    width: '100%'
   },
   backTop: {
-    padding: '8px 12px',
+    padding: '10px 18px',
     fontSize: '13px',
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
     color: '#8B1E1E',
     border: '1px solid #8B1E1E',
     borderRadius: '6px',
     cursor: 'pointer',
-    fontWeight: 'bold'
+    fontWeight: '600',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+  },
+  brandContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '16px'
   },
   titleCenter: {
-    textAlign: "center",
-    fontSize: "28px",
-    fontWeight: "bold",
-    color: "#8B1E1E",
+    fontSize: '28px',
+    fontWeight: '800',
+    color: '#8B1E1E',
     margin: 0,
-    letterSpacing: "1px"
+    letterSpacing: '0.5px'
   },
   subTitle: {
-    fontSize: '16px',
-    fontWeight: 'bold',
+    fontSize: '15px',
+    fontWeight: '700',
     color: '#8B1E1E',
-    margin: '0 0 12px 0',
+    margin: '0 0 16px 0',
     borderBottom: '2px solid #8B1E1E',
-    paddingBottom: '6px'
+    paddingBottom: '8px',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px'
   },
   field: {
     width: '100%',
-    padding: '8px',
+    padding: '10px 12px',
     borderRadius: '6px',
-    border: '1px solid #8B1E1E',
-    marginTop: '4px',
-    boxSizing: 'border-box'
+    border: '1px solid #CBD5E1',
+    marginTop: '6px',
+    boxSizing: 'border-box',
+    fontSize: '14px',
+    outline: 'none',
+    backgroundColor: '#FFFFFF'
   },
   selectFiltro: {
-    padding: '6px 10px',
-    borderRadius: '4px',
-    border: '1px solid #8B1E1E',
-    color: '#8B1E1E',
-    fontWeight: 'bold',
-    backgroundColor: '#fff',
-    cursor: 'pointer'
+    padding: '8px 12px',
+    borderRadius: '6px',
+    border: '1px solid #CBD5E1',
+    color: '#334155',
+    fontWeight: '600',
+    backgroundColor: '#FFFFFF',
+    cursor: 'pointer',
+    fontSize: '13px'
   },
   botonAccion: {
-    padding: '8px 14px',
-    fontSize: '13px',
+    padding: '10px 18px',
+    fontSize: '14px',
     backgroundColor: '#8B1E1E',
-    color: '#fff',
+    color: '#FFFFFF',
     border: 'none',
     borderRadius: '6px',
     cursor: 'pointer',
-    fontWeight: 'bold'
+    fontWeight: '600',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
   },
   botonNav: {
-    backgroundColor: '#8B1E1E',
-    color: '#fff',
-    border: 'none',
-    padding: '6px 12px',
-    borderRadius: '4px',
+    backgroundColor: '#FFFFFF',
+    color: '#8B1E1E',
+    border: '1px solid #CBD5E1',
+    padding: '8px 14px',
+    borderRadius: '6px',
     cursor: 'pointer',
-    fontWeight: 'bold'
+    fontWeight: '700'
   },
   botonOutlined: {
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
     color: '#8B1E1E',
     border: '1px solid #8B1E1E',
-    padding: '6px 12px',
-    borderRadius: '4px',
+    padding: '8px 14px',
+    borderRadius: '6px',
     cursor: 'pointer',
-    fontWeight: 'bold'
+    fontWeight: '600',
+    fontSize: '13px'
   },
   hamburger: {
-    position: "fixed",
-    top: 18,
-    right: 18,
-    background: "transparent",
-    border: "none",
-    color: "#C62828",
-    fontSize: 30,
-    cursor: "pointer",
+    position: 'fixed',
+    top: 24,
+    right: 32,
+    background: '#FFFFFF',
+    border: '1px solid #E2E8F0',
+    borderRadius: '8px',
+    color: '#8B1E1E',
+    fontSize: '22px',
+    cursor: 'pointer',
     zIndex: 1001,
-    padding: 0,
-    lineHeight: 1
+    padding: '8px 12px',
+    boxShadow: '0 2px 6px rgba(0,0,0,0.08)'
   },
   menu: {
-    position: "fixed",
+    position: 'fixed',
     top: 0,
     right: 0,
-    width: 290,
-    height: "100%",
-    background: "#ffffff",
-    color: "#222",
-    boxShadow: "-8px 0 25px rgba(0,0,0,.18)",
-    padding: "20px 18px",
+    width: 300,
+    height: '100%',
+    background: '#FFFFFF',
+    color: '#1E293B',
+    boxShadow: '-8px 0 25px rgba(0,0,0,0.15)',
+    padding: '24px',
     zIndex: 1000,
-    transition: "transform .25s ease"
+    boxSizing: 'border-box'
   },
   menuItem: {
-    width: "100%",
-    display: "flex",
-    alignItems: "center",
+    width: '100%',
+    display: 'flex',
+    alignItems: 'center',
     gap: 12,
-    padding: "14px 12px",
+    padding: '12px 14px',
     marginBottom: 8,
-    background: "#fff",
-    color: "#333",
-    border: "none",
-    borderBottom: "1px solid #ececec",
-    fontSize: "17px",
-    cursor: "pointer",
-    textAlign: "left"
+    background: '#FFFFFF',
+    color: '#334155',
+    border: 'none',
+    borderRadius: '6px',
+    fontSize: '15px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    textAlign: 'left'
   },
   overlay: {
-    position: "fixed",
+    position: 'fixed',
     inset: 0,
-    background: "rgba(139,30,30,.12)",
+    background: 'rgba(15, 23, 42, 0.4)',
     zIndex: 999
   },
   cardPanel: {
-    backgroundColor: '#fff',
-    borderRadius: '10px',
-    padding: '18px',
-    border: '1px solid #e5e5e5',
-    height: 'fit-content'
+    backgroundColor: '#FFFFFF',
+    borderRadius: '12px',
+    padding: '24px',
+    border: '1px solid #E2E8F0',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+    boxSizing: 'border-box'
   },
   modalBox: {
-    backgroundColor: '#fff',
-    borderRadius: '10px',
-    padding: '24px',
-    width: '420px',
+    backgroundColor: '#FFFFFF',
+    borderRadius: '12px',
+    padding: '28px',
+    width: '460px',
     maxWidth: '90%',
-    border: '2px solid #8B1E1E'
+    border: '1px solid #E2E8F0',
+    boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)'
   }
 }
 
@@ -355,95 +383,110 @@ function CuentasPorPagar() {
         <>
           <div style={styles.overlay} onClick={() => setMenuAbierto(false)} />
           <div style={styles.menu}>
-            <h3 style={{ margin: 0, paddingBottom: 18, marginBottom: 18, borderBottom: "1px solid #E5E5E5", fontSize: 24, color: "#8B1E1E", fontWeight: "700" }}>
-              ☰ MENÚ
+            <h3 style={{ margin: 0, paddingBottom: 18, marginBottom: 18, borderBottom: "1px solid #E2E8F0", fontSize: 20, color: "#8B1E1E", fontWeight: "700" }}>
+              MENÚ
             </h3>
             <button style={styles.menuItem} onClick={() => { setMenuAbierto(false); navigate("/"); }}>
-              <span style={{ color: "#C62828" }}>🏠</span> Inicio
+              <span style={{ color: "#8B1E1E" }}>🏠</span> Inicio
             </button>
-            <button style={styles.menuItem} onClick={() => { setMenuAbierto(false); navigate("/cuentas-por-pagar"); }}>
-              <span style={{ color: "#C62828" }}>💳</span> Cuentas por pagar
+            <button style={{ ...styles.menuItem, backgroundColor: '#F8FAFC', color: '#8B1E1E' }} onClick={() => { setMenuAbierto(false); navigate("/cuentas-por-pagar"); }}>
+              <span style={{ color: "#8B1E1E" }}>💳</span> Cuentas por pagar
             </button>
             <button style={styles.menuItem} onClick={() => { setMenuAbierto(false); navigate("/flujo-caja"); }}>
-              <span style={{ color: "#C62828" }}>$</span> Flujo de caja
+              <span style={{ color: "#8B1E1E" }}>$</span> Flujo de caja
             </button>
-            <button style={styles.menuItem} onClick={() => setMenuAbierto(false)}>
-              <span style={{ color: "#C62828" }}>✖</span> Salir del menú
+            <button style={{ ...styles.menuItem, marginTop: '20px', color: '#64748B' }} onClick={() => setMenuAbierto(false)}>
+              <span>✖</span> Salir del menú
             </button>
           </div>
         </>
       )}
 
-      {/* ⬅ BOTÓN VOLVER */}
-      <button style={styles.backTop} onClick={() => navigate("/")}>
-        ⬅ Volver
-      </button>
+      {/* 🔵 CABECERA GENERAL */}
+      <div style={styles.headerRow}>
+        <button style={styles.backTop} onClick={() => navigate("/")}>
+          ⬅ Volver
+        </button>
 
-     {/* 🔵 ENCABEZADO Y LOGO */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: -5, marginBottom: 20 }}>
-        <img src={logo} alt="Pegatek" style={{ width: 140, objectFit: "contain", marginBottom: 6 }} />
-        <h1 style={{ ...styles.titleCenter, fontSize: "48px" }}>
-          CUENTAS POR PAGAR
-        </h1>
+        <div style={styles.brandContainer}>
+          <img src={logo} alt="Logo" style={{ height: 48, objectFit: "contain" }} />
+          <h1 style={styles.titleCenter}>CUENTAS POR PAGAR</h1>
+        </div>
+
+        <div style={{ width: 100 }} /> {/* Espaciador para balancear la cabecera */}
       </div>
-      
 
-      {/* CONTENEDOR DOS COLUMNAS */}
-      <div style={{ display: 'flex', gap: '20px', maxWidth: '1400px', margin: '0 auto', flexWrap: 'wrap' }}>
+      {/* CONTENEDOR PRINCIPAL QUE OCUPA TODO EL ANCHO */}
+      <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '28px', width: '100%', alignItems: 'start' }}>
         
         {/* BARRA LATERAL IZQUIERDA */}
-        <div style={{ ...styles.cardPanel, width: '280px' }}>
-          
-          <button style={{ ...styles.botonAccion, width: '100%', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} onClick={() => setModalNuevo(true)}>
+        <div style={styles.cardPanel}>
+          <button style={{ ...styles.botonAccion, width: '100%', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} onClick={() => setModalNuevo(true)}>
             ➕ Registrar préstamo
           </button>
 
-          <h3 style={styles.subTitle}>
-            Prestamos activos
-          </h3>
+          <h3 style={styles.subTitle}>Préstamos activos</h3>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {prestamos.length === 0 ? (
-              <p style={{ fontSize: '13px', color: '#666' }}>No hay préstamos registrados.</p>
+              <p style={{ fontSize: '13px', color: '#64748B', margin: 0 }}>No hay préstamos registrados.</p>
             ) : (
-              prestamos.map((p) => (
-                <label key={p.id_prestamo} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: '#333', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={prestamosSeleccionados.includes(p.id_prestamo)}
-                    onChange={() => toggleFiltroPrestamo(p.id_prestamo)}
-                    style={{ accentColor: '#8B1E1E' }}
-                  />
-                  <span style={{ width: '12px', height: '12px', borderRadius: '3px', backgroundColor: p.color_identificador || '#8B1E1E' }} />
-                  <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 'bold' }}>{p.prestamista}</span>
-                  <button
-                    style={{ border: 'none', background: 'none', color: '#8B1E1E', cursor: 'pointer', fontSize: '12px' }}
-                    onClick={(e) => { e.preventDefault(); handleVerHistorial(p.id_prestamo); }}
-                    title="Ver Historial"
-                  >
-                    📋
-                  </button>
-                </label>
-              ))
+              prestamos.map((p) => {
+                const totalPagado = Number(p.monto_pagado || 0)
+                const totalMonto = Number(p.monto_original || 1)
+                const pct = Math.min(100, Math.round((totalPagado / totalMonto) * 100))
+                const colorHex = p.color_identificador || '#8B1E1E'
+
+                return (
+                  <div key={p.id_prestamo} style={{ padding: '12px', border: '1px solid #E2E8F0', borderRadius: '8px', backgroundColor: '#F8FAFC' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', color: '#1E293B', cursor: 'pointer', fontWeight: '600', flex: 1, overflow: 'hidden' }}>
+                        <input
+                          type="checkbox"
+                          checked={prestamosSeleccionados.includes(p.id_prestamo)}
+                          onChange={() => toggleFiltroPrestamo(p.id_prestamo)}
+                          style={{ accentColor: '#8B1E1E', cursor: 'pointer' }}
+                        />
+                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: colorHex, flexShrink: 0 }} />
+                        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.prestamista}</span>
+                      </label>
+                      
+                      <button
+                        style={{ border: 'none', background: 'none', color: '#64748B', cursor: 'pointer', fontSize: '14px', padding: '2px 4px' }}
+                        onClick={(e) => { e.preventDefault(); handleVerHistorial(p.id_prestamo); }}
+                        title="Ver Historial"
+                      >
+                        📋
+                      </button>
+                    </div>
+
+                    {/* BARRA DE PROGRESO DE PAGO */}
+                    <div style={{ width: '100%', height: '6px', backgroundColor: '#E2E8F0', borderRadius: '3px', overflow: 'hidden', marginTop: '6px' }}>
+                      <div style={{ width: `${pct}%`, height: '100%', backgroundColor: colorHex, borderRadius: '3px' }} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#64748B', marginTop: '4px' }}>
+                      <span>Pagado: ${totalPagado.toLocaleString()}</span>
+                      <span>{pct}%</span>
+                    </div>
+                  </div>
+                )
+              })
             )}
           </div>
         </div>
 
         {/* CALENDARIO MENSUAL PRINCIPAL */}
-        <div style={{ ...styles.cardPanel, flex: 1, minWidth: '320px', padding: '20px' }}>
+        <div style={styles.cardPanel}>
           
           {/* CONTROL Y FILTRO DEL MES */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
-            <h2 style={{ margin: 0, fontSize: '22px', color: '#8B1E1E', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              📅 {nombresMeses[mesSeleccionado]} {anioSeleccionado}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+            <h2 style={{ margin: 0, fontSize: '22px', color: '#1E293B', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span>📅</span> {nombresMeses[mesSeleccionado]} {anioSeleccionado}
             </h2>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <button style={styles.botonNav} onClick={() => cambiarMes(-1)}>
-                ◀
-              </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <button style={styles.botonNav} onClick={() => cambiarMes(-1)}>◀</button>
 
-              {/* SELECTORES DE MES Y AÑO */}
               <select
                 style={styles.selectFiltro}
                 value={mesSeleccionado}
@@ -464,24 +507,22 @@ function CuentasPorPagar() {
                 ))}
               </select>
 
-              <button style={styles.botonNav} onClick={() => cambiarMes(1)}>
-                ▶
-              </button>
+              <button style={styles.botonNav} onClick={() => cambiarMes(1)}>▶</button>
 
               <button
-                style={{ ...styles.botonOutlined, marginLeft: '6px' }}
+                style={{ ...styles.botonOutlined, marginLeft: '8px' }}
                 onClick={() => {
                   setMesSeleccionado(hoy.getMonth())
                   setAnioSeleccionado(hoy.getFullYear())
                 }}
               >
-                MES ACTUAL
+                Mes Actual
               </button>
             </div>
           </div>
 
           {/* CABECERA DÍAS DE LA SEMANA */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', backgroundColor: '#8B1E1E', color: '#fff', borderRadius: '6px 6px 0 0', fontWeight: 'bold', fontSize: '12px', textAlign: 'center', padding: '10px 0' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', backgroundColor: '#8B1E1E', color: '#FFFFFF', borderRadius: '8px 8px 0 0', fontWeight: '700', fontSize: '13px', textAlign: 'center', padding: '12px 0', letterSpacing: '0.5px' }}>
             <span>LUN</span>
             <span>MAR</span>
             <span>MIÉ</span>
@@ -491,12 +532,12 @@ function CuentasPorPagar() {
             <span>DOM</span>
           </div>
 
-          {/* GRILLA DE CELDAS DEL MES COMPLETO */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderLeft: '1px solid #e5e5e5', borderBottom: '1px solid #e5e5e5' }}>
+          {/* GRILLA DE CELDAS DEL MES */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderLeft: '1px solid #E2E8F0', borderBottom: '1px solid #E2E8F0', borderRadius: '0 0 8px 8px', overflow: 'hidden' }}>
             {diasCalendario.map((fechaObj, idx) => {
               if (!fechaObj) {
                 return (
-                  <div key={idx} style={{ minHeight: '100px', backgroundColor: '#fcfcfc', borderRight: '1px solid #e5e5e5', borderTop: '1px solid #e5e5e5' }} />
+                  <div key={idx} style={{ minHeight: '120px', backgroundColor: '#F8FAFC', borderRight: '1px solid #E2E8F0', borderTop: '1px solid #E2E8F0' }} />
                 )
               }
 
@@ -512,22 +553,23 @@ function CuentasPorPagar() {
                 <div
                   key={idx}
                   style={{
-                    minHeight: '100px',
-                    padding: '6px',
-                    borderRight: '1px solid #e5e5e5',
-                    borderTop: '1px solid #e5e5e5',
-                    backgroundColor: esHoy ? '#fff8f8' : '#fff'
+                    minHeight: '120px',
+                    padding: '8px',
+                    borderRight: '1px solid #E2E8F0',
+                    borderTop: '1px solid #E2E8F0',
+                    backgroundColor: esHoy ? '#FEF2F2' : '#FFFFFF',
+                    boxSizing: 'border-box'
                   }}
                 >
-                  <div style={{ textAlign: 'right', marginBottom: '4px' }}>
+                  <div style={{ textAlign: 'right', marginBottom: '6px' }}>
                     <span
                       style={{
                         fontSize: '12px',
-                        fontWeight: 'bold',
-                        padding: '2px 6px',
-                        borderRadius: '50%',
+                        fontWeight: '700',
+                        padding: '3px 7px',
+                        borderRadius: '12px',
                         backgroundColor: esHoy ? '#8B1E1E' : 'transparent',
-                        color: esHoy ? '#fff' : '#444'
+                        color: esHoy ? '#FFFFFF' : '#64748B'
                       }}
                     >
                       {fechaObj.getDate()}
@@ -535,45 +577,50 @@ function CuentasPorPagar() {
                   </div>
 
                   {/* EVENTOS DEL DÍA */}
-                  {eventosDelDia.map((ev, evIdx) => {
-                    const esVencido = ev.fecha_programada < hoyISO && ev.estatus_prestamo !== 'LIQUIDADO'
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {eventosDelDia.map((ev, evIdx) => {
+                      const esVencido = ev.fecha_programada < hoyISO && ev.estatus_prestamo !== 'LIQUIDADO'
+                      const colorHex = ev.color || '#8B1E1E'
 
-                    return (
-                      <div
-                        key={evIdx}
-                        style={{
-                          backgroundColor: `${ev.color || '#8B1E1E'}18`,
-                          borderLeft: `3px solid ${ev.color || '#8B1E1E'}`,
-                          borderRadius: '4px',
-                          padding: '4px 6px',
-                          marginBottom: '4px',
-                          fontSize: '11px',
-                          cursor: 'pointer'
-                        }}
-                        onClick={() => {
-                          setModalAbono({
-                            id_prestamo: ev.id_prestamo,
-                            prestamista: ev.prestamista,
-                            numero_periodo: ev.numero_periodo,
-                            monto_cuota_sugerida: ev.monto_sugerido
-                          })
-                          setFormAbono((prev) => ({ ...prev, monto_abonado: ev.monto_sugerido }))
-                        }}
-                      >
-                        <div style={{ fontWeight: 'bold', color: '#8B1E1E', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-                          {ev.prestamista}
-                        </div>
-                        <div style={{ color: '#333', fontSize: '10px' }}>
-                          Cuota #{ev.numero_periodo}: <strong>${Number(ev.monto_sugerido).toLocaleString()}</strong>
-                        </div>
-                        {esVencido && (
-                          <div style={{ color: '#C62828', fontWeight: 'bold', fontSize: '9px', marginTop: '2px' }}>
-                            ⚠️ Vencido
+                      return (
+                        <div
+                          key={evIdx}
+                          style={{
+                            backgroundColor: '#FFFFFF',
+                            borderLeft: `4px solid ${colorHex}`,
+                            borderTop: '1px solid #E2E8F0',
+                            borderRight: '1px solid #E2E8F0',
+                            borderBottom: '1px solid #E2E8F0',
+                            borderRadius: '4px',
+                            padding: '6px 8px',
+                            cursor: 'pointer',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
+                          }}
+                          onClick={() => {
+                            setModalAbono({
+                              id_prestamo: ev.id_prestamo,
+                              prestamista: ev.prestamista,
+                              numero_periodo: ev.numero_periodo,
+                              monto_cuota_sugerida: ev.monto_sugerido
+                            })
+                            setFormAbono((prev) => ({ ...prev, monto_abonado: ev.monto_sugerido }))
+                          }}
+                        >
+                          <div style={{ fontWeight: '700', color: '#1E293B', fontSize: '12px', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                            {ev.prestamista}
                           </div>
-                        )}
-                      </div>
-                    )
-                  })}
+                          <div style={{ color: '#475569', fontSize: '11px', marginTop: '2px' }}>
+                            Cuota #{ev.numero_periodo}: <strong style={{ color: '#0F172A' }}>${Number(ev.monto_sugerido).toLocaleString()}</strong>
+                          </div>
+                          {esVencido && (
+                            <div style={{ color: '#DC2626', fontWeight: '700', fontSize: '10px', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                              ⚠️ Vencido
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
 
                 </div>
               )
@@ -586,24 +633,24 @@ function CuentasPorPagar() {
 
       {/* MODAL NUEVO PRÉSTAMO */}
       {modalNuevo && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={styles.modalBox}>
-            <h3 style={{ margin: '0 0 16px 0', color: '#8B1E1E' }}>➕ Registrar Nuevo Préstamo</h3>
+            <h3 style={{ margin: '0 0 20px 0', color: '#8B1E1E', fontSize: '18px', fontWeight: '700' }}>➕ Registrar Nuevo Préstamo</h3>
             <form onSubmit={handleCrearPrestamo}>
-              <div style={{ marginBottom: '12px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#444' }}>Acreedor / Prestamista *</label>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Acreedor / Prestamista *</label>
                 <input
                   style={styles.field}
                   required
-                  placeholder="Ej. YADESA"
+                  placeholder="Ej. BANCO / YADESA"
                   value={formPrestamo.prestamista}
                   onChange={(e) => setFormPrestamo({ ...formPrestamo, prestamista: e.target.value })}
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#444' }}>Monto del prestamo*</label>
+                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Monto del préstamo *</label>
                   <input
                     type="number"
                     style={styles.field}
@@ -613,7 +660,7 @@ function CuentasPorPagar() {
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#444' }}> Plazo de pago (meses)*</label>
+                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Plazo (meses) *</label>
                   <input
                     type="number"
                     style={styles.field}
@@ -624,18 +671,18 @@ function CuentasPorPagar() {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
                 <div>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#444' }}>Selecciona un color</label>
+                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Color identificador</label>
                   <input
                     type="color"
-                    style={{ width: '100%', height: '36px', padding: '2px', border: '1px solid #8B1E1E', borderRadius: '6px', marginTop: '4px' }}
+                    style={{ width: '100%', height: '42px', padding: '4px', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '6px', cursor: 'pointer', backgroundColor: '#FFFFFF' }}
                     value={formPrestamo.color_identificador}
                     onChange={(e) => setFormPrestamo({ ...formPrestamo, color_identificador: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#444' }}>Fecha Primer Pago</label>
+                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Fecha Primer Pago</label>
                   <input
                     type="date"
                     style={styles.field}
@@ -645,11 +692,11 @@ function CuentasPorPagar() {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+              <div style={{ display: 'flex', gap: '12px' }}>
                 <button type="submit" style={{ ...styles.botonAccion, flex: 1 }}>
                   Guardar Préstamo
                 </button>
-                <button type="button" style={{ backgroundColor: '#ccc', border: 'none', padding: '10px', borderRadius: '6px', cursor: 'pointer' }} onClick={() => setModalNuevo(false)}>
+                <button type="button" style={{ ...styles.botonOutlined, backgroundColor: '#F1F5F9', borderColor: '#CBD5E1', color: '#475569' }} onClick={() => setModalNuevo(false)}>
                   Cancelar
                 </button>
               </div>
@@ -660,14 +707,14 @@ function CuentasPorPagar() {
 
       {/* MODAL ABONO */}
       {modalAbono && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={styles.modalBox}>
-            <h3 style={{ margin: '0 0 10px 0', color: '#8B1E1E' }}>💲 Registrar abono</h3>
-            <p style={{ fontSize: '13px', color: '#555', margin: '0 0 16px 0' }}>Préstamo: <strong>{modalAbono.prestamista}</strong></p>
+            <h3 style={{ margin: '0 0 8px 0', color: '#8B1E1E', fontSize: '18px', fontWeight: '700' }}>💲 Registrar Abono</h3>
+            <p style={{ fontSize: '14px', color: '#64748B', margin: '0 0 20px 0' }}>Préstamo: <strong style={{ color: '#0F172A' }}>{modalAbono.prestamista}</strong></p>
 
             <form onSubmit={handleRegistrarAbono}>
-              <div style={{ marginBottom: '12px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#444' }}>Monto ($ MXN) *</label>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Monto ($ MXN) *</label>
                 <input
                   type="number"
                   step="0.01"
@@ -678,8 +725,8 @@ function CuentasPorPagar() {
                 />
               </div>
 
-              <div style={{ marginBottom: '12px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#444' }}>Persona que realizo el pago*</label>
+              <div style={{ marginBottom: '24px' }}>
+                <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Persona que realizó el pago *</label>
                 <input
                   style={styles.field}
                   required
@@ -689,11 +736,11 @@ function CuentasPorPagar() {
                 />
               </div>
 
-              <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+              <div style={{ display: 'flex', gap: '12px' }}>
                 <button type="submit" style={{ ...styles.botonAccion, flex: 1 }}>
                   Confirmar Pago
                 </button>
-                <button type="button" style={{ backgroundColor: '#ccc', border: 'none', padding: '10px', borderRadius: '6px', cursor: 'pointer' }} onClick={() => setModalAbono(null)}>
+                <button type="button" style={{ ...styles.botonOutlined, backgroundColor: '#F1F5F9', borderColor: '#CBD5E1', color: '#475569' }} onClick={() => setModalAbono(null)}>
                   Cancelar
                 </button>
               </div>
@@ -704,34 +751,36 @@ function CuentasPorPagar() {
 
       {/* MODAL HISTORIAL */}
       {modalHistorial && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={styles.modalBox}>
-            <h3 style={{ margin: '0 0 16px 0', color: '#8B1E1E' }}>📋 Historial de abonos</h3>
+            <h3 style={{ margin: '0 0 20px 0', color: '#8B1E1E', fontSize: '18px', fontWeight: '700' }}>📋 Historial de Abonos</h3>
             
             {historialAbonos.length === 0 ? (
-              <p style={{ fontSize: '13px', color: '#666' }}>Sin pagos registrados para este préstamo.</p>
+              <p style={{ fontSize: '14px', color: '#64748B', margin: '20px 0' }}>Sin pagos registrados para este préstamo.</p>
             ) : (
-              <table style={{ width: '100%', fontSize: '12px', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ textAlign: 'left', borderBottom: '2px solid #8B1E1E', color: '#8B1E1E' }}>
-                    <th style={{ padding: '8px' }}>Fecha</th>
-                    <th style={{ padding: '8px' }}>Monto</th>
-                    <th style={{ padding: '8px' }}>Responsable</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {historialAbonos.map((h) => (
-                    <tr key={h.id_abono} style={{ borderBottom: '1px solid #eee' }}>
-                      <td style={{ padding: '8px' }}>{h.fecha_abono}</td>
-                      <td style={{ padding: '8px', fontWeight: 'bold', color: '#8B1E1E' }}>${Number(h.monto_abonado).toLocaleString()}</td>
-                      <td style={{ padding: '8px' }}>{h.responsable_pago}</td>
+              <div style={{ maxHeight: '280px', overflowY: 'auto', border: '1px solid #E2E8F0', borderRadius: '6px', marginBottom: '20px' }}>
+                <table style={{ width: '100%', fontSize: '13px', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ textAlign: 'left', backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0', color: '#475569' }}>
+                      <th style={{ padding: '10px 12px' }}>Fecha</th>
+                      <th style={{ padding: '10px 12px' }}>Monto</th>
+                      <th style={{ padding: '10px 12px' }}>Responsable</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {historialAbonos.map((h) => (
+                      <tr key={h.id_abono} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                        <td style={{ padding: '10px 12px', color: '#334155' }}>{h.fecha_abono}</td>
+                        <td style={{ padding: '10px 12px', fontWeight: '700', color: '#8B1E1E' }}>${Number(h.monto_abonado).toLocaleString()}</td>
+                        <td style={{ padding: '10px 12px', color: '#334155' }}>{h.responsable_pago}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
 
-            <button style={{ ...styles.botonAccion, width: '100%', marginTop: '20px' }} onClick={() => setModalHistorial(null)}>
+            <button style={{ ...styles.botonAccion, width: '100%' }} onClick={() => setModalHistorial(null)}>
               Cerrar
             </button>
           </div>
