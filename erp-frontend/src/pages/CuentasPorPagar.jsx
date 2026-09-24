@@ -4,7 +4,6 @@ import logo from "../assets/TRANSPARENTE.png"
 
 const API = "https://erp-proyecto-production.up.railway.app"
 
-// 🎨 OBJETO DE ESTILOS PROFESIONAL Y AMPLIO
 const styles = {
   page: {
     backgroundColor: '#F8FAFC',
@@ -15,7 +14,6 @@ const styles = {
   },
   headerRow: {
     display: 'flex',
-    justify: 'space-between',
     alignItems: 'center',
     marginBottom: '28px',
     width: '100%'
@@ -34,13 +32,8 @@ const styles = {
     gap: '6px',
     boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
   },
-  brandContainer: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '16px'
-  },
   titleCenter: {
-    fontSize: '28px',
+    fontSize: '34px',
     fontWeight: '800',
     color: '#8B1E1E',
     margin: 0,
@@ -174,6 +167,7 @@ const styles = {
     boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)'
   }
 }
+
 
 function CuentasPorPagar() {
   const navigate = useNavigate()
@@ -402,18 +396,15 @@ function CuentasPorPagar() {
         </>
       )}
 
+
       {/* 🔵 CABECERA GENERAL */}
       <div style={styles.headerRow}>
-        <button style={styles.backTop} onClick={() => navigate("/")}>
-          ⬅ Volver
-        </button>
-
-        <div style={styles.brandContainer}>
-          <img src={logo} alt="Logo" style={{ height: 48, objectFit: "contain" }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <button style={styles.backTop} onClick={() => navigate("/")}>
+            ⬅ Volver
+          </button>
           <h1 style={styles.titleCenter}>CUENTAS POR PAGAR</h1>
         </div>
-
-        <div style={{ width: 100 }} /> {/* Espaciador para balancear la cabecera */}
       </div>
 
       {/* CONTENEDOR PRINCIPAL QUE OCUPA TODO EL ANCHO */}
@@ -421,6 +412,12 @@ function CuentasPorPagar() {
         
         {/* BARRA LATERAL IZQUIERDA */}
         <div style={styles.cardPanel}>
+          
+          {/* LOGO CENTRADO Y MÁS GRANDE ARRIBA DEL BOTÓN */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+            <img src={logo} alt="Logo" style={{ height: 64, objectFit: "contain" }} />
+          </div>
+
           <button style={{ ...styles.botonAccion, width: '100%', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} onClick={() => setModalNuevo(true)}>
             ➕ Registrar préstamo
           </button>
@@ -460,7 +457,7 @@ function CuentasPorPagar() {
                       </button>
                     </div>
 
-                    {/* BARRA DE PROGRESO DE PAGO */}
+                    {/* BARRA DE PROGRESO CON COLOR DEL PRÉSTAMO */}
                     <div style={{ width: '100%', height: '6px', backgroundColor: '#E2E8F0', borderRadius: '3px', overflow: 'hidden', marginTop: '6px' }}>
                       <div style={{ width: `${pct}%`, height: '100%', backgroundColor: colorHex, borderRadius: '3px' }} />
                     </div>
@@ -474,7 +471,8 @@ function CuentasPorPagar() {
             )}
           </div>
         </div>
-
+        
+      
         {/* CALENDARIO MENSUAL PRINCIPAL */}
         <div style={styles.cardPanel}>
           
