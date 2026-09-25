@@ -12,7 +12,6 @@ const styles = {
     fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
     boxSizing: 'border-box'
   },
-
   headerRow: {
     display: 'grid',
     gridTemplateColumns: '320px 1fr',
@@ -170,7 +169,6 @@ const styles = {
     boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)'
   }
 }
-
 
 function CuentasPorPagar() {
   const navigate = useNavigate()
@@ -399,8 +397,7 @@ function CuentasPorPagar() {
         </>
       )}
 
-
-     {/* 🔵 CABECERA GENERAL ALINEADA */}
+      {/* 🔵 CABECERA GENERAL ALINEADA */}
       <div style={styles.headerRow}>
         <div>
           <button style={styles.backTop} onClick={() => navigate("/")}>
@@ -412,14 +409,11 @@ function CuentasPorPagar() {
         </div>
       </div>
 
-    
       {/* CONTENEDOR PRINCIPAL QUE OCUPA TODO EL ANCHO */}
       <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '28px', width: '100%', alignItems: 'start' }}>
         
-      {/* BARRA LATERAL IZQUIERDA */}
+        {/* BARRA LATERAL IZQUIERDA */}
         <div style={styles.cardPanel}>
-          
-          {/* LOGO CENTRADO Y DUPLICADO EN TAMAÑO (128px) */}
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
             <img src={logo} alt="Logo" style={{ height: 128, objectFit: "contain" }} />
           </div>
@@ -478,7 +472,6 @@ function CuentasPorPagar() {
           </div>
         </div>
         
-      
         {/* CALENDARIO MENSUAL PRINCIPAL */}
         <div style={styles.cardPanel}>
           
@@ -583,15 +576,15 @@ function CuentasPorPagar() {
                   {/* EVENTOS DEL DÍA */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {eventosDelDia.map((ev, evIdx) => {
-                      const esVencido = ev.fecha_programada < hoyISO && ev.estatus_prestamo !== 'LIQUIDADO'
+                      const esVencido = ev.fecha_programada < hoyISO && ev.estatus_prestamo !== 'LIQUIDADO' && !ev.pagado
                       const colorHex = ev.color || '#8B1E1E'
 
                       return (
                         <div
                           key={evIdx}
                           style={{
-                            backgroundColor: '#FFFFFF',
-                            borderLeft: `4px solid ${colorHex}`,
+                            backgroundColor: ev.pagado ? '#F0FDF4' : '#FFFFFF',
+                            borderLeft: `4px solid ${ev.pagado ? '#16A34A' : colorHex}`,
                             borderTop: '1px solid #E2E8F0',
                             borderRight: '1px solid #E2E8F0',
                             borderBottom: '1px solid #E2E8F0',
@@ -601,6 +594,13 @@ function CuentasPorPagar() {
                             boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
                           }}
                           onClick={() => {
+                            if (ev.pagado) {
+                              const confirmar = window.confirm(
+                                `El pago de la cuota #${ev.numero_periodo} de este mes ya fue realizado.\n\n¿Desea registrar un nuevo abono para este préstamo?`
+                              )
+                              if (!confirmar) return
+                            }
+
                             setModalAbono({
                               id_prestamo: ev.id_prestamo,
                               prestamista: ev.prestamista,
@@ -616,9 +616,19 @@ function CuentasPorPagar() {
                           <div style={{ color: '#475569', fontSize: '11px', marginTop: '2px' }}>
                             Cuota #{ev.numero_periodo}: <strong style={{ color: '#0F172A' }}>${Number(ev.monto_sugerido).toLocaleString()}</strong>
                           </div>
-                          {esVencido && (
+
+                          {/* ESTATUS DE PAGO */}
+                          {ev.pagado ? (
+                            <div style={{ color: '#16A34A', fontWeight: '700', fontSize: '10px', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                              ✓ Abonado
+                            </div>
+                          ) : esVencido ? (
                             <div style={{ color: '#DC2626', fontWeight: '700', fontSize: '10px', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '3px' }}>
                               ⚠️ Vencido
+                            </div>
+                          ) : (
+                            <div style={{ color: '#D97706', fontWeight: '600', fontSize: '10px', marginTop: '3px' }}>
+                              • Pendiente
                             </div>
                           )}
                         </div>
@@ -714,7 +724,14 @@ function CuentasPorPagar() {
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={styles.modalBox}>
             <h3 style={{ margin: '0 0 8px 0', color: '#8B1E1E', fontSize: '18px', fontWeight: '700' }}>💲 Registrar Abono</h3>
-            <p style={{ fontSize: '14px', color: '#64748B', margin: '0 0 20px 0' }}>Préstamo: <strong style={{ color: '#0F172A' }}>{modalAbono.prestamista}</strong></p>
+            <p style={{ fontSize: '14px', color: '#64748B', margin: '0 0 12px 0' }}>Préstamo: <strong style={{ color: '#0F172A' }}>{modalAbono.prestamista}</strong></p>
+
+            {/* AVISO SI YA TIENE ABONO REGISTRADO */}
+            {eventos.find(ev => ev.id_prestamo === modalAbono.id_prestamo && ev.numero_periodo === modalAbono.numero_periodo)?.pagado && (
+              <div style={{ backgroundColor: '#FEF3C7', border: '1px solid #F59E0B', color: '#B45309', padding: '8px 12px', borderRadius: '6px', fontSize: '12px', marginBottom: '16px', fontWeight: '600' }}>
+                ℹ️ Esta cuota ya cuenta con un pago registrado. El importe ingresado se sumará como un abono adicional.
+              </div>
+            )}
 
             <form onSubmit={handleRegistrarAbono}>
               <div style={{ marginBottom: '16px' }}>
