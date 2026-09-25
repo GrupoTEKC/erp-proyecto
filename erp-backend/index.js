@@ -4649,65 +4649,62 @@ app.get('/produccion/:fecha', async (req, res) => {
 })
 
 
-
-// =============================
-// 💳 CUENTAS POR PAGAR / PRÉSTAMOS
-// =============================
-
-// 1. CREAR PRÉSTAMO
+// Endpoint POST /api/prestamos
 app.post('/api/prestamos', async (req, res) => {
-  const conn = await db.getConnection();
+  const {
+    prestamista,
+    tipo_deuda, // 👈 NUEVO CAMPO
+    monto_original,
+    plazos_meses,
+    frecuencia = 'MENSUAL',
+    fecha_primer_pago,
+    color_identificador,
+    cuenta_destino, // 'EFECTIVO' o 'TRANSFERENCIA'
+    cuenta_bancaria_destino
+  } = req.body;
+
   try {
-    const {
+    const monto_cuota_sugerida = Number(monto_original) / Number(plazos_meses);
+    const saldo_pendiente = monto_original;
+
+    const query = `
+      INSERT INTO prestamos (
+        prestamista, 
+        tipo_deuda, 
+        monto_original, 
+        saldo_pendiente, 
+        plazos_meses, 
+        frecuencia, 
+        monto_cuota_sugerida, 
+        fecha_primer_pago, 
+        color_identificador, 
+        cuenta_destino, 
+        cuenta_bancaria_destino
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    await db.query(query, [
       prestamista,
+      tipo_deuda, // 👈 SE AGREGA AL ARRAY DE VALORES
       monto_original,
+      saldo_pendiente,
       plazos_meses,
       frecuencia,
+      monto_cuota_sugerida,
       fecha_primer_pago,
       color_identificador,
       cuenta_destino,
       cuenta_bancaria_destino
-    } = req.body;
+    ]);
 
-    if (!prestamista || !monto_original || !plazos_meses || !fecha_primer_pago || !cuenta_destino) {
-      return res.status(400).json({ error: 'Faltan campos obligatorios' });
-    }
-
-    const montoNum = parseFloat(monto_original);
-    const plazosNum = parseInt(plazos_meses);
-    const cuotaSugerida = (montoNum / plazosNum).toFixed(2);
-
-    await conn.beginTransaction();
-
-    // A) Insertar préstamo
-    const [resPrestamo] = await conn.query(
-      `INSERT INTO prestamos 
-       (prestamista, monto_original, saldo_pendiente, plazos_meses, frecuencia, monto_cuota_sugerida, fecha_primer_pago, color_identificador, cuenta_destino, cuenta_bancaria_destino, estatus)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVO')`,
-      [
-        prestamista.toUpperCase(),
-        montoNum,
-        montoNum, // Inicialmente el saldo pendiente es igual al monto original
-        plazosNum,
-        frecuencia || 'MENSUAL',
-        cuotaSugerida,
-        fecha_primer_pago,
-        color_identificador || '#007bff',
-        cuenta_destino,
-        cuenta_bancaria_destino || null
-      ]
-    );
-
-    await conn.commit();
-    res.json({ success: true, id_prestamo: resPrestamo.insertId });
-  } catch (err) {
-    await conn.rollback();
-    console.error('Error al crear préstamo:', err);
-    res.status(500).json({ error: err.message });
-  } finally {
-    conn.release();
+    res.status(201).json({ message: "Deuda registrada exitosamente" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al registrar la deuda" });
   }
 });
+
+
 
 
 // 2. OBTENER PRÉSTAMOS ACTIVOS Y CALENDARIO
