@@ -211,7 +211,7 @@ function CuentasPorPagar() {
     fecha_primer_pago: new Date().toISOString().split('T')[0],
     color_identificador: "#8B1E1E",
     cuenta_destino: "TRANSFERENCIA",
-    cuenta_bancaria_destino: "BBVA Fiscal"
+    cuenta_bancaria_destino: "Fiscal"
   })
 
   const [formAbono, setFormAbono] = useState({
@@ -264,7 +264,7 @@ function CuentasPorPagar() {
           fecha_primer_pago: new Date().toISOString().split('T')[0],
           color_identificador: "#8B1E1E",
           cuenta_destino: "TRANSFERENCIA",
-          cuenta_bancaria_destino: "BBVA Fiscal"
+          cuenta_bancaria_destino: "Fiscal"
         })
         cargarDatos()
       }
@@ -381,11 +381,11 @@ function CuentasPorPagar() {
   const obtenerMensajeTipoDeuda = (tipo) => {
     switch (tipo) {
       case "PROVEEDORES":
-        return "Haz seleccionado Préstamo de Proveedores: Hace énfasis en financiamiento o crédito directo de materia prima, insumos y mercancía para la operación."
+        return "Haz seleccionado préstamo de proveedores: Hace énfasis en financiamiento o crédito directo de materia prima, insumos y mercancía para la operación."
       case "FINANCIEROS":
-        return "Haz seleccionado Créditos Financieros: Relacionado con préstamos, líneas de crédito o financiamientos otorgados por instituciones bancarias y financieras."
+        return "Haz seleccionado créditos financieros: Relacionado con préstamos, líneas de crédito o financiamientos otorgados por instituciones bancarias y financieras."
       case "DIVERSOS":
-        return "Haz seleccionado Créditos Diversos: Aplica para deudas con acreedores varios, préstamos de socios, terceros o financiamientos que no corresponden a proveedores ni bancos."
+        return "Haz seleccionado créditos diversos: Aplica para deudas con acreedores varios, préstamos de socios, terceros o financiamientos que no corresponden a proveedores ni bancos."
       default:
         return ""
     }
@@ -678,21 +678,21 @@ function CuentasPorPagar() {
       {modalNuevo && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={styles.modalBox}>
-            <h3 style={{ margin: '0 0 20px 0', color: '#8B1E1E', fontSize: '18px', fontWeight: '700' }}>➕ Registrar Nueva Deuda</h3>
+            <h3 style={{ margin: '0 0 20px 0', color: '#8B1E1E', fontSize: '18px', fontWeight: '700' }}>➕ Registrar nueva deuda</h3>
             <form onSubmit={handleCrearPrestamo}>
 
               {/* TIPO DE DEUDA CON AVISO DINÁMICO */}
               <div style={{ marginBottom: '16px' }}>
-                <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Tipo de Deuda *</label>
+                <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Tipo de deuda *</label>
                 <select
                   style={styles.field}
                   required
                   value={formPrestamo.tipo_deuda}
                   onChange={(e) => setFormPrestamo({ ...formPrestamo, tipo_deuda: e.target.value })}
                 >
-                  <option value="FINANCIEROS">Créditos Financieros</option>
-                  <option value="PROVEEDORES">Préstamo de Proveedores</option>
-                  <option value="DIVERSOS">Créditos Diversos</option>
+                  <option value="FINANCIEROS">Créditos financieros</option>
+                  <option value="PROVEEDORES">Préstamo de proveedores</option>
+                  <option value="DIVERSOS">Créditos diversos</option>
                 </select>
 
                 {/* MENSAJE EXPLICATIVO SEGÚN LA ELECCIÓN */}
@@ -732,7 +732,7 @@ function CuentasPorPagar() {
                     <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Cuenta bancaria destino</label>
                     <input
                       style={styles.field}
-                      placeholder="Ej. BBVA Fiscal"
+                      placeholder="Ej. Fiscal"
                       value={formPrestamo.cuenta_bancaria_destino}
                       onChange={(e) => setFormPrestamo({ ...formPrestamo, cuenta_bancaria_destino: e.target.value })}
                     />
@@ -742,7 +742,7 @@ function CuentasPorPagar() {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Monto total ($) *</label>
+                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Monto otorgado ($) *</label>
                   <input
                     type="number"
                     style={styles.field}
@@ -765,7 +765,7 @@ function CuentasPorPagar() {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
                 <div>
-                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Color identificador</label>
+                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Selecciona un color</label>
                   <input
                     type="color"
                     style={{ width: '100%', height: '42px', padding: '4px', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '6px', cursor: 'pointer', backgroundColor: '#FFFFFF' }}
@@ -774,7 +774,7 @@ function CuentasPorPagar() {
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Fecha Primer Pago</label>
+                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Fecha del primer pago</label>
                   <input
                     type="date"
                     style={styles.field}
@@ -786,7 +786,7 @@ function CuentasPorPagar() {
 
               <div style={{ display: 'flex', gap: '12px' }}>
                 <button type="submit" style={{ ...styles.botonAccion, flex: 1 }}>
-                  Guardar Deuda
+                  Guardar deuda
                 </button>
                 <button type="button" style={{ ...styles.botonOutlined, backgroundColor: '#F1F5F9', borderColor: '#CBD5E1', color: '#475569' }} onClick={() => setModalNuevo(false)}>
                   Cancelar
