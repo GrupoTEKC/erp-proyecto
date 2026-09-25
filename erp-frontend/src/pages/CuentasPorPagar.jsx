@@ -12,8 +12,11 @@ const styles = {
     fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
     boxSizing: 'border-box'
   },
+
   headerRow: {
-    display: 'flex',
+    display: 'grid',
+    gridTemplateColumns: '320px 1fr',
+    gap: '28px',
     alignItems: 'center',
     marginBottom: '28px',
     width: '100%'
@@ -397,25 +400,28 @@ function CuentasPorPagar() {
       )}
 
 
-      {/* 🔵 CABECERA GENERAL */}
+     {/* 🔵 CABECERA GENERAL ALINEADA */}
       <div style={styles.headerRow}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+        <div>
           <button style={styles.backTop} onClick={() => navigate("/")}>
             ⬅ Volver
           </button>
+        </div>
+        <div>
           <h1 style={styles.titleCenter}>CUENTAS POR PAGAR</h1>
         </div>
       </div>
 
+    
       {/* CONTENEDOR PRINCIPAL QUE OCUPA TODO EL ANCHO */}
       <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '28px', width: '100%', alignItems: 'start' }}>
         
-        {/* BARRA LATERAL IZQUIERDA */}
+      {/* BARRA LATERAL IZQUIERDA */}
         <div style={styles.cardPanel}>
           
-          {/* LOGO CENTRADO Y MÁS GRANDE ARRIBA DEL BOTÓN */}
+          {/* LOGO CENTRADO Y DUPLICADO EN TAMAÑO (128px) */}
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
-            <img src={logo} alt="Logo" style={{ height: 64, objectFit: "contain" }} />
+            <img src={logo} alt="Logo" style={{ height: 128, objectFit: "contain" }} />
           </div>
 
           <button style={{ ...styles.botonAccion, width: '100%', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} onClick={() => setModalNuevo(true)}>
