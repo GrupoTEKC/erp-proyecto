@@ -163,10 +163,22 @@ const styles = {
     backgroundColor: '#FFFFFF',
     borderRadius: '12px',
     padding: '28px',
-    width: '460px',
-    maxWidth: '90%',
+    width: '520px',
+    maxWidth: '92%',
+    maxHeight: '90vh',
+    overflowY: 'auto',
     border: '1px solid #E2E8F0',
     boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)'
+  },
+  infoBox: {
+    backgroundColor: '#EFF6FF',
+    borderLeft: '4px solid #2563EB',
+    color: '#1E40AF',
+    padding: '10px 14px',
+    borderRadius: '6px',
+    fontSize: '13px',
+    marginTop: '10px',
+    lineHeight: '1.4'
   }
 }
 
@@ -192,6 +204,7 @@ function CuentasPorPagar() {
   // Formularios
   const [formPrestamo, setFormPrestamo] = useState({
     prestamista: "",
+    tipo_deuda: "FINANCIEROS",
     monto_original: "",
     plazos_meses: "6",
     frecuencia: "MENSUAL",
@@ -244,6 +257,7 @@ function CuentasPorPagar() {
         setModalNuevo(false)
         setFormPrestamo({
           prestamista: "",
+          tipo_deuda: "FINANCIEROS",
           monto_original: "",
           plazos_meses: "6",
           frecuencia: "MENSUAL",
@@ -363,6 +377,20 @@ function CuentasPorPagar() {
     }
   }
 
+  // Mensaje explicativo para cada tipo de deuda
+  const obtenerMensajeTipoDeuda = (tipo) => {
+    switch (tipo) {
+      case "PROVEEDORES":
+        return "Haz seleccionado Préstamo de Proveedores: Hace énfasis en financiamiento o crédito directo de materia prima, insumos y mercancía para la operación."
+      case "FINANCIEROS":
+        return "Haz seleccionado Créditos Financieros: Relacionado con préstamos, líneas de crédito o financiamientos otorgados por instituciones bancarias y financieras."
+      case "DIVERSOS":
+        return "Haz seleccionado Créditos Diversos: Aplica para deudas con acreedores varios, préstamos de socios, terceros o financiamientos que no corresponden a proveedores ni bancos."
+      default:
+        return ""
+    }
+  }
+
   return (
     <div style={styles.page}>
       
@@ -409,7 +437,7 @@ function CuentasPorPagar() {
         </div>
       </div>
 
-      {/* CONTENEDOR PRINCIPAL QUE OCUPA TODO EL ANCHO */}
+      {/* CONTENEDOR PRINCIPAL */}
       <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '28px', width: '100%', alignItems: 'start' }}>
         
         {/* BARRA LATERAL IZQUIERDA */}
@@ -419,14 +447,14 @@ function CuentasPorPagar() {
           </div>
 
           <button style={{ ...styles.botonAccion, width: '100%', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} onClick={() => setModalNuevo(true)}>
-            ➕ Registrar préstamo
+            ➕ Registrar pasivo / deuda
           </button>
 
-          <h3 style={styles.subTitle}>Préstamos activos</h3>
+          <h3 style={styles.subTitle}>Deudas activas</h3>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {prestamos.length === 0 ? (
-              <p style={{ fontSize: '13px', color: '#64748B', margin: 0 }}>No hay préstamos registrados.</p>
+              <p style={{ fontSize: '13px', color: '#64748B', margin: 0 }}>No hay deudas registradas.</p>
             ) : (
               prestamos.map((p) => {
                 const totalPagado = Number(p.monto_pagado || 0)
@@ -436,7 +464,7 @@ function CuentasPorPagar() {
 
                 return (
                   <div key={p.id_prestamo} style={{ padding: '12px', border: '1px solid #E2E8F0', borderRadius: '8px', backgroundColor: '#F8FAFC' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
                       <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', color: '#1E293B', cursor: 'pointer', fontWeight: '600', flex: 1, overflow: 'hidden' }}>
                         <input
                           type="checkbox"
@@ -457,7 +485,13 @@ function CuentasPorPagar() {
                       </button>
                     </div>
 
-                    {/* BARRA DE PROGRESO CON COLOR DEL PRÉSTAMO */}
+                    {p.tipo_deuda && (
+                      <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748B', marginLeft: '24px', marginBottom: '6px' }}>
+                        [{p.tipo_deuda}]
+                      </div>
+                    )}
+
+                    {/* BARRA DE PROGRESO */}
                     <div style={{ width: '100%', height: '6px', backgroundColor: '#E2E8F0', borderRadius: '3px', overflow: 'hidden', marginTop: '6px' }}>
                       <div style={{ width: `${pct}%`, height: '100%', backgroundColor: colorHex, borderRadius: '3px' }} />
                     </div>
@@ -475,7 +509,6 @@ function CuentasPorPagar() {
         {/* CALENDARIO MENSUAL PRINCIPAL */}
         <div style={styles.cardPanel}>
           
-          {/* CONTROL Y FILTRO DEL MES */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
             <h2 style={{ margin: 0, fontSize: '22px', color: '#1E293B', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span>📅</span> {nombresMeses[mesSeleccionado]} {anioSeleccionado}
@@ -518,7 +551,6 @@ function CuentasPorPagar() {
             </div>
           </div>
 
-          {/* CABECERA DÍAS DE LA SEMANA */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', backgroundColor: '#8B1E1E', color: '#FFFFFF', borderRadius: '8px 8px 0 0', fontWeight: '700', fontSize: '13px', textAlign: 'center', padding: '12px 0', letterSpacing: '0.5px' }}>
             <span>LUN</span>
             <span>MAR</span>
@@ -529,7 +561,6 @@ function CuentasPorPagar() {
             <span>DOM</span>
           </div>
 
-          {/* GRILLA DE CELDAS DEL MES */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderLeft: '1px solid #E2E8F0', borderBottom: '1px solid #E2E8F0', borderRadius: '0 0 8px 8px', overflow: 'hidden' }}>
             {diasCalendario.map((fechaObj, idx) => {
               if (!fechaObj) {
@@ -573,7 +604,6 @@ function CuentasPorPagar() {
                     </span>
                   </div>
 
-                  {/* EVENTOS DEL DÍA */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {eventosDelDia.map((ev, evIdx) => {
                       const esVencido = ev.fecha_programada < hoyISO && ev.estatus_prestamo !== 'LIQUIDADO' && !ev.pagado
@@ -617,7 +647,6 @@ function CuentasPorPagar() {
                             Cuota #{ev.numero_periodo}: <strong style={{ color: '#0F172A' }}>${Number(ev.monto_sugerido).toLocaleString()}</strong>
                           </div>
 
-                          {/* ESTATUS DE PAGO */}
                           {ev.pagado ? (
                             <div style={{ color: '#16A34A', fontWeight: '700', fontSize: '10px', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '3px' }}>
                               ✓ Abonado
@@ -645,26 +674,75 @@ function CuentasPorPagar() {
 
       </div>
 
-      {/* MODAL NUEVO PRÉSTAMO */}
+      {/* MODAL NUEVA DEUDA / PRÉSTAMO */}
       {modalNuevo && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={styles.modalBox}>
-            <h3 style={{ margin: '0 0 20px 0', color: '#8B1E1E', fontSize: '18px', fontWeight: '700' }}>➕ Registrar Nuevo Préstamo</h3>
+            <h3 style={{ margin: '0 0 20px 0', color: '#8B1E1E', fontSize: '18px', fontWeight: '700' }}>➕ Registrar Nueva Deuda</h3>
             <form onSubmit={handleCrearPrestamo}>
+
+              {/* TIPO DE DEUDA CON AVISO DINÁMICO */}
               <div style={{ marginBottom: '16px' }}>
-                <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Acreedor / Prestamista *</label>
+                <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Tipo de Deuda *</label>
+                <select
+                  style={styles.field}
+                  required
+                  value={formPrestamo.tipo_deuda}
+                  onChange={(e) => setFormPrestamo({ ...formPrestamo, tipo_deuda: e.target.value })}
+                >
+                  <option value="FINANCIEROS">Créditos Financieros</option>
+                  <option value="PROVEEDORES">Préstamo de Proveedores</option>
+                  <option value="DIVERSOS">Créditos Diversos</option>
+                </select>
+
+                {/* MENSAJE EXPLICATIVO SEGÚN LA ELECCIÓN */}
+                <div style={styles.infoBox}>
+                  ℹ️ {obtenerMensajeTipoDeuda(formPrestamo.tipo_deuda)}
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Acreedor / Prestamista / Banco *</label>
                 <input
                   style={styles.field}
                   required
-                  placeholder="Ej. BANCO / YADESA"
+                  placeholder="Ej. BBVA, Cemix, Socio X"
                   value={formPrestamo.prestamista}
                   onChange={(e) => setFormPrestamo({ ...formPrestamo, prestamista: e.target.value })}
                 />
               </div>
 
+              {/* MÉTODO DE RECEPCIÓN DEL DINERO */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Monto del préstamo *</label>
+                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>¿Cómo ingresó el dinero? *</label>
+                  <select
+                    style={styles.field}
+                    required
+                    value={formPrestamo.cuenta_destino}
+                    onChange={(e) => setFormPrestamo({ ...formPrestamo, cuenta_destino: e.target.value })}
+                  >
+                    <option value="TRANSFERENCIA">Transferencia</option>
+                    <option value="EFECTIVO">Efectivo</option>
+                  </select>
+                </div>
+
+                {formPrestamo.cuenta_destino === "TRANSFERENCIA" && (
+                  <div>
+                    <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Cuenta bancaria destino</label>
+                    <input
+                      style={styles.field}
+                      placeholder="Ej. BBVA Fiscal"
+                      value={formPrestamo.cuenta_bancaria_destino}
+                      onChange={(e) => setFormPrestamo({ ...formPrestamo, cuenta_bancaria_destino: e.target.value })}
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                <div>
+                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Monto total ($) *</label>
                   <input
                     type="number"
                     style={styles.field}
@@ -708,7 +786,7 @@ function CuentasPorPagar() {
 
               <div style={{ display: 'flex', gap: '12px' }}>
                 <button type="submit" style={{ ...styles.botonAccion, flex: 1 }}>
-                  Guardar Préstamo
+                  Guardar Deuda
                 </button>
                 <button type="button" style={{ ...styles.botonOutlined, backgroundColor: '#F1F5F9', borderColor: '#CBD5E1', color: '#475569' }} onClick={() => setModalNuevo(false)}>
                   Cancelar
@@ -724,9 +802,8 @@ function CuentasPorPagar() {
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={styles.modalBox}>
             <h3 style={{ margin: '0 0 8px 0', color: '#8B1E1E', fontSize: '18px', fontWeight: '700' }}>💲 Registrar Abono</h3>
-            <p style={{ fontSize: '14px', color: '#64748B', margin: '0 0 12px 0' }}>Préstamo: <strong style={{ color: '#0F172A' }}>{modalAbono.prestamista}</strong></p>
+            <p style={{ fontSize: '14px', color: '#64748B', margin: '0 0 12px 0' }}>Acreedor: <strong style={{ color: '#0F172A' }}>{modalAbono.prestamista}</strong></p>
 
-            {/* AVISO SI YA TIENE ABONO REGISTRADO */}
             {eventos.find(ev => ev.id_prestamo === modalAbono.id_prestamo && ev.numero_periodo === modalAbono.numero_periodo)?.pagado && (
               <div style={{ backgroundColor: '#FEF3C7', border: '1px solid #F59E0B', color: '#B45309', padding: '8px 12px', borderRadius: '6px', fontSize: '12px', marginBottom: '16px', fontWeight: '600' }}>
                 ℹ️ Esta cuota ya cuenta con un pago registrado. El importe ingresado se sumará como un abono adicional.
@@ -777,7 +854,7 @@ function CuentasPorPagar() {
             <h3 style={{ margin: '0 0 20px 0', color: '#8B1E1E', fontSize: '18px', fontWeight: '700' }}>📋 Historial de Abonos</h3>
             
             {historialAbonos.length === 0 ? (
-              <p style={{ fontSize: '14px', color: '#64748B', margin: '20px 0' }}>Sin pagos registrados para este préstamo.</p>
+              <p style={{ fontSize: '14px', color: '#64748B', margin: '20px 0' }}>Sin pagos registrados para esta deuda.</p>
             ) : (
               <div style={{ maxHeight: '280px', overflowY: 'auto', border: '1px solid #E2E8F0', borderRadius: '6px', marginBottom: '20px' }}>
                 <table style={{ width: '100%', fontSize: '13px', borderCollapse: 'collapse' }}>
