@@ -4709,14 +4709,27 @@ app.post('/api/prestamos', async (req, res) => {
   }
 });
 
+
 // 2. OBTENER PRÉSTAMOS ACTIVOS Y CALENDARIO
 app.get('/api/prestamos', async (req, res) => {
   try {
-    const [prestamos] = await db.query(
-      `SELECT * FROM prestamos ORDER BY estatus ASC, fecha_registro DESC`
-    );
+    // 1. Obtener los préstamos junto con la suma total abonada (monto_pagado)
+    const [prestamos] = await db.query(`
+      SELECT 
+        p.*,
+        COALESCE(SUM(a.monto_abonado), 0) AS monto_pagado
+      FROM prestamos p
+      LEFT JOIN prestamos_abonos a ON p.id_prestamo = a.id_prestamo
+      GROUP BY p.id_prestamo
+      ORDER BY p.estatus ASC, p.fecha_registro DESC
+    `);
 
-    // Formatear/Generar los eventos esperados del calendario por cada préstamo
+    // 2. Obtener todos los abonos registrados para verificar qué periodos ya fueron pagados
+    const [abonos] = await db.query(`SELECT id_prestamo, numero_periodo, monto_abonado FROM prestamos_abonos`);
+
+    // Crear un Mapa/Set rápido para saber si un período de un préstamo específico ya se pagó
+    const abonosMap = new Set(abonos.map(a => `${a.id_prestamo}_${a.numero_periodo}`));
+
     const eventosCalendario = [];
 
     prestamos.forEach((p) => {
@@ -4724,6 +4737,7 @@ app.get('/api/prestamos', async (req, res) => {
 
       for (let i = 0; i < p.plazos_meses; i++) {
         const fechaEvento = new Date(fechaBase);
+        const numeroPeriodo = i + 1;
         
         // Calcular fecha según frecuencia
         if (p.frecuencia === 'SEMANAL') {
@@ -4735,14 +4749,20 @@ app.get('/api/prestamos', async (req, res) => {
           fechaEvento.setMonth(fechaBase.getMonth() + i);
         }
 
+        // Verificar si este periodo específico ya tiene un abono registrado
+        const estaAbonado = abonosMap.has(`${p.id_prestamo}_${numeroPeriodo}`);
+
         eventosCalendario.push({
           id_prestamo: p.id_prestamo,
           prestamista: p.prestamista,
-          numero_periodo: i + 1,
+          numero_periodo: numeroPeriodo,
           monto_sugerido: p.monto_cuota_sugerida,
           fecha_programada: fechaEvento.toISOString().split('T')[0],
           color: p.color_identificador,
-          estatus_prestamo: p.estatus
+          estatus_prestamo: p.estatus,
+          // Propiedad clave para que el frontend marque la cuota como pagada/abonada:
+          pagado: estaAbonado,
+          estatus_cuota: estaAbonado ? 'ABONADO' : 'PENDIENTE'
         });
       }
     });
@@ -4753,6 +4773,7 @@ app.get('/api/prestamos', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 // 3. REGISTRAR ABONO Y VINCULAR CON FLUJO DE EGRESOS
 app.post('/api/prestamos/abono', async (req, res) => {
