@@ -4653,7 +4653,7 @@ app.get('/produccion/:fecha', async (req, res) => {
 app.post('/api/prestamos', async (req, res) => {
   const {
     prestamista,
-    tipo_deuda, // 👈 NUEVO CAMPO
+    tipo_deuda = 'FINANCIEROS',
     monto_original,
     plazos_meses,
     frecuencia = 'MENSUAL',
@@ -4667,10 +4667,14 @@ app.post('/api/prestamos', async (req, res) => {
     const monto_cuota_sugerida = Number(monto_original) / Number(plazos_meses);
     const saldo_pendiente = monto_original;
 
+    // 🟢 LÓGICA AUTOMÁTICA DE CLASIFICACIÓN DE PASIVO
+    const clasificacion_pasivo = Number(plazos_meses) <= 12 ? 'CIRCULANTE' : 'FIJO';
+
     const query = `
       INSERT INTO prestamos (
         prestamista, 
         tipo_deuda, 
+        clasificacion_pasivo, 
         monto_original, 
         saldo_pendiente, 
         plazos_meses, 
@@ -4680,12 +4684,13 @@ app.post('/api/prestamos', async (req, res) => {
         color_identificador, 
         cuenta_destino, 
         cuenta_bancaria_destino
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     await db.query(query, [
       prestamista,
-      tipo_deuda, // 👈 SE AGREGA AL ARRAY DE VALORES
+      tipo_deuda,
+      clasificacion_pasivo, // 👈 SE GUARDA AUTOMÁTICAMENTE
       monto_original,
       saldo_pendiente,
       plazos_meses,
@@ -4703,8 +4708,6 @@ app.post('/api/prestamos', async (req, res) => {
     res.status(500).json({ error: "Error al registrar la deuda" });
   }
 });
-
-
 
 
 // 2. OBTENER PRÉSTAMOS ACTIVOS Y CALENDARIO
