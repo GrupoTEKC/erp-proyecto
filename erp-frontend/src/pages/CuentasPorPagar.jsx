@@ -179,6 +179,26 @@ const styles = {
     fontSize: '13px',
     marginTop: '10px',
     lineHeight: '1.4'
+  },
+  badgeCirculante: {
+    display: 'inline-block',
+    backgroundColor: '#DCFCE7',
+    color: '#15803D',
+    fontSize: '11px',
+    fontWeight: '700',
+    padding: '2px 8px',
+    borderRadius: '4px',
+    border: '1px solid #86EFAC'
+  },
+  badgeFijo: {
+    display: 'inline-block',
+    backgroundColor: '#DBEAFE',
+    color: '#1D4ED8',
+    fontSize: '11px',
+    fontWeight: '700',
+    padding: '2px 8px',
+    borderRadius: '4px',
+    border: '1px solid #93C5FD'
   }
 }
 
@@ -188,6 +208,9 @@ function CuentasPorPagar() {
   const [prestamos, setPrestamos] = useState([])
   const [eventos, setEventos] = useState([])
   const [cargando, setCargando] = useState(true)
+
+  // Filtro de Pasivos (TODOS, CIRCULANTES, FIJOS)
+  const [filtroTipoPasivo, setFiltroTipoPasivo] = useState("TODOS")
 
   // Modales
   const [modalNuevo, setModalNuevo] = useState(false)
@@ -329,6 +352,16 @@ function CuentasPorPagar() {
     }
   }
 
+  // Filtrado de préstamos según la clasificación
+  const prestamosFiltrados = prestamos.filter((p) => {
+    const plazos = Number(p.plazos_meses || 0)
+    if (filtroTipoPasivo === "CIRCULANTES") return plazos <= 12
+    if (filtroTipoPasivo === "FIJOS") return plazos > 12
+    return true
+  })
+
+  const idsPrestamosVisibles = prestamosFiltrados.map((p) => p.id_prestamo)
+
   // Lógica de Generación de Días para Calendario Mensual
   const nombresMeses = [
     "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -446,21 +479,39 @@ function CuentasPorPagar() {
             <img src={logo} alt="Logo" style={{ height: 128, objectFit: "contain" }} />
           </div>
 
-          <button style={{ ...styles.botonAccion, width: '100%', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} onClick={() => setModalNuevo(true)}>
+          <button style={{ ...styles.botonAccion, width: '100%', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} onClick={() => setModalNuevo(true)}>
             ➕ Registrar pasivo / deuda
           </button>
+
+          {/* COMPONENTE DE FILTRO DE PASIVOS */}
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ fontSize: '12px', fontWeight: '700', color: '#64748B', display: 'block', marginBottom: '6px', textTransform: 'uppercase' }}>
+              Clasificación de pasivo
+            </label>
+            <select
+              style={{ ...styles.selectFiltro, width: '100%' }}
+              value={filtroTipoPasivo}
+              onChange={(e) => setFiltroTipoPasivo(e.target.value)}
+            >
+              <option value="TODOS">TODOS (Circulantes y Fijos)</option>
+              <option value="CIRCULANTES">PASIVOS CIRCULANTES (≤ 12 meses)</option>
+              <option value="FIJOS">PASIVOS FIJOS (&gt; 12 meses)</option>
+            </select>
+          </div>
 
           <h3 style={styles.subTitle}>Deudas activas</h3>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {prestamos.length === 0 ? (
-              <p style={{ fontSize: '13px', color: '#64748B', margin: 0 }}>No hay deudas registradas.</p>
+            {prestamosFiltrados.length === 0 ? (
+              <p style={{ fontSize: '13px', color: '#64748B', margin: 0 }}>No hay deudas en esta clasificación.</p>
             ) : (
-              prestamos.map((p) => {
+              prestamosFiltrados.map((p) => {
                 const totalPagado = Number(p.monto_pagado || 0)
                 const totalMonto = Number(p.monto_original || 1)
                 const pct = Math.min(100, Math.round((totalPagado / totalMonto) * 100))
                 const colorHex = p.color_identificador || '#8B1E1E'
+                const plazos = Number(p.plazos_meses || 0)
+                const esCirculante = plazos <= 12
 
                 return (
                   <div key={p.id_prestamo} style={{ padding: '12px', border: '1px solid #E2E8F0', borderRadius: '8px', backgroundColor: '#F8FAFC' }}>
@@ -485,11 +536,17 @@ function CuentasPorPagar() {
                       </button>
                     </div>
 
-                    {p.tipo_deuda && (
-                      <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748B', marginLeft: '24px', marginBottom: '6px' }}>
-                        [{p.tipo_deuda}]
-                      </div>
-                    )}
+                    {/* BADGES / ETIQUETAS VISUALES */}
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginLeft: '24px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                      {p.tipo_deuda && (
+                        <span style={{ fontSize: '10px', fontWeight: '700', color: '#64748B' }}>
+                          [{p.tipo_deuda}]
+                        </span>
+                      )}
+                      <span style={esCirculante ? styles.badgeCirculante : styles.badgeFijo}>
+                        {esCirculante ? "CIRCULANTE" : "FIJO"}
+                      </span>
+                    </div>
 
                     {/* BARRA DE PROGRESO */}
                     <div style={{ width: '100%', height: '6px', backgroundColor: '#E2E8F0', borderRadius: '3px', overflow: 'hidden', marginTop: '6px' }}>
@@ -575,7 +632,11 @@ function CuentasPorPagar() {
               const isoFecha = `${y}-${m}-${d}`
 
               const esHoy = isoFecha === hoyISO
-              const eventosDelDia = eventos.filter(ev => ev.fecha_programada === isoFecha && prestamosSeleccionados.includes(ev.id_prestamo))
+              const eventosDelDia = eventos.filter(ev => 
+                ev.fecha_programada === isoFecha && 
+                prestamosSeleccionados.includes(ev.id_prestamo) &&
+                idsPrestamosVisibles.includes(ev.id_prestamo)
+              )
 
               return (
                 <div
@@ -760,6 +821,16 @@ function CuentasPorPagar() {
                     value={formPrestamo.plazos_meses}
                     onChange={(e) => setFormPrestamo({ ...formPrestamo, plazos_meses: e.target.value })}
                   />
+                  {/* BADGE DINÁMICO SEGÚN PLAZO */}
+                  {formPrestamo.plazos_meses !== "" && (
+                    <div style={{ marginTop: '6px' }}>
+                      {Number(formPrestamo.plazos_meses) <= 12 ? (
+                        <span style={styles.badgeCirculante}>🟢 Pasivo Circulante (Corto Plazo)</span>
+                      ) : (
+                        <span style={styles.badgeFijo}>🔵 Pasivo Fijo (Largo Plazo)</span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
