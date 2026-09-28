@@ -352,11 +352,11 @@ function CuentasPorPagar() {
     }
   }
 
-  // Filtrado de préstamos según la clasificación
+  // Filtrado de préstamos según la clasificación calculada en el Backend (dinámica según abonos abonados)
   const prestamosFiltrados = prestamos.filter((p) => {
-    const plazos = Number(p.plazos_meses || 0)
-    if (filtroTipoPasivo === "CIRCULANTES") return plazos <= 12
-    if (filtroTipoPasivo === "FIJOS") return plazos > 12
+    const clasificacion = p.clasificacion_pasivo || (Number(p.plazos_restantes ?? p.plazos_meses) <= 12 ? 'CIRCULANTE' : 'FIJO')
+    if (filtroTipoPasivo === "CIRCULANTES") return clasificacion === 'CIRCULANTE'
+    if (filtroTipoPasivo === "FIJOS") return clasificacion === 'FIJO'
     return true
   })
 
@@ -494,8 +494,8 @@ function CuentasPorPagar() {
               onChange={(e) => setFiltroTipoPasivo(e.target.value)}
             >
               <option value="TODOS">TODOS (Circulantes y Fijos)</option>
-              <option value="CIRCULANTES">PASIVOS CIRCULANTES (≤ 12 meses)</option>
-              <option value="FIJOS">PASIVOS FIJOS (&gt; 12 meses)</option>
+              <option value="CIRCULANTES">PASIVOS CIRCULANTES (≤ 12 meses restantes)</option>
+              <option value="FIJOS">PASIVOS FIJOS (&gt; 12 meses restantes)</option>
             </select>
           </div>
 
@@ -510,8 +510,7 @@ function CuentasPorPagar() {
                 const totalMonto = Number(p.monto_original || 1)
                 const pct = Math.min(100, Math.round((totalPagado / totalMonto) * 100))
                 const colorHex = p.color_identificador || '#8B1E1E'
-                const plazos = Number(p.plazos_meses || 0)
-                const esCirculante = plazos <= 12
+                const esCirculante = p.clasificacion_pasivo === 'CIRCULANTE' || (Number(p.plazos_restantes ?? p.plazos_meses) <= 12)
 
                 return (
                   <div key={p.id_prestamo} style={{ padding: '12px', border: '1px solid #E2E8F0', borderRadius: '8px', backgroundColor: '#F8FAFC' }}>
