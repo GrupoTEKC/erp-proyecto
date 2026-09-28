@@ -4713,16 +4713,30 @@ app.post('/api/prestamos', async (req, res) => {
 // 2. OBTENER PRÉSTAMOS ACTIVOS Y CALENDARIO
 app.get('/api/prestamos', async (req, res) => {
   try {
-    // 1. Obtener los préstamos junto con la suma total abonada (monto_pagado)
+    // 1. Obtener los préstamos junto con la suma abonada y el conteo de periodos pagados
     const [prestamos] = await db.query(`
       SELECT 
         p.*,
-        COALESCE(SUM(a.monto_abonado), 0) AS monto_pagado
+        COALESCE(SUM(a.monto_abonado), 0) AS monto_pagado,
+        COUNT(DISTINCT a.numero_periodo) AS total_abonos
       FROM prestamos p
       LEFT JOIN prestamos_abonos a ON p.id_prestamo = a.id_prestamo
       GROUP BY p.id_prestamo
       ORDER BY p.estatus ASC, p.fecha_registro DESC
     `);
+
+    // Recalcular la clasificación de pasivo según los meses/periodos restantes
+    const prestamosProcesados = prestamos.map(p => {
+      const plazosTotales = Number(p.plazos_meses || 0);
+      const abonosRealizados = Number(p.total_abonos || 0);
+      const plazosRestantes = Math.max(0, plazosTotales - abonosRealizados);
+
+      return {
+        ...p,
+        plazos_restantes: plazosRestantes,
+        clasificacion_pasivo: plazosRestantes <= 12 ? 'CIRCULANTE' : 'FIJO'
+      };
+    });
 
     // 2. Obtener todos los abonos registrados para verificar qué periodos ya fueron pagados
     const [abonos] = await db.query(`SELECT id_prestamo, numero_periodo, monto_abonado FROM prestamos_abonos`);
@@ -4732,7 +4746,7 @@ app.get('/api/prestamos', async (req, res) => {
 
     const eventosCalendario = [];
 
-    prestamos.forEach((p) => {
+    prestamosProcesados.forEach((p) => {
       const fechaBase = new Date(p.fecha_primer_pago);
 
       for (let i = 0; i < p.plazos_meses; i++) {
@@ -4767,12 +4781,13 @@ app.get('/api/prestamos', async (req, res) => {
       }
     });
 
-    res.json({ prestamos, eventosCalendario });
+    res.json({ prestamos: prestamosProcesados, eventosCalendario });
   } catch (err) {
     console.error('Error al consultar préstamos:', err);
     res.status(500).json({ error: err.message });
   }
 });
+
 
 
 // 3. REGISTRAR ABONO Y VINCULAR CON FLUJO DE EGRESOS
@@ -4849,13 +4864,22 @@ app.post('/api/prestamos/abono', async (req, res) => {
       [resEgreso.insertId, idAbono]
     );
 
-    // D) Actualizar saldo del préstamo y cambiar a LIQUIDADO si llega a 0
+    // D) Actualizar saldo del préstamo, clasificación de pasivo y estatus a LIQUIDADO si llega a 0
     const nuevoSaldo = Math.max(0, parseFloat(prestamo.saldo_pendiente) - abonoNum);
     const nuevoEstatus = nuevoSaldo === 0 ? 'LIQUIDADO' : 'ACTIVO';
 
+    // Obtener total de abonos para actualizar clasificación en BD
+    const [[{ total_abonos }]] = await conn.query(
+      `SELECT COUNT(DISTINCT numero_periodo) AS total_abonos FROM prestamos_abonos WHERE id_prestamo = ?`,
+      [id_prestamo]
+    );
+
+    const plazosRestantes = Math.max(0, Number(prestamo.plazos_meses) - Number(total_abonos));
+    const nuevaClasificacion = plazosRestantes <= 12 ? 'CIRCULANTE' : 'FIJO';
+
     await conn.query(
-      `UPDATE prestamos SET saldo_pendiente = ?, estatus = ? WHERE id_prestamo = ?`,
-      [nuevoSaldo, nuevoEstatus, id_prestamo]
+      `UPDATE prestamos SET saldo_pendiente = ?, estatus = ?, clasificacion_pasivo = ? WHERE id_prestamo = ?`,
+      [nuevoSaldo, nuevoEstatus, nuevaClasificacion, id_prestamo]
     );
 
     await conn.commit();
