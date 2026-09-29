@@ -219,6 +219,9 @@ function CuentasPorPagar() {
   const [historialAbonos, setHistorialAbonos] = useState([])
   const [prestamosSeleccionados, setPrestamosSeleccionados] = useState([])
 
+  // Modal de Advertencia de Sobrepago
+  const [modalSobrepago, setModalSobrepago] = useState(null)
+
   // Estado del mes/año seleccionado para el calendario
   const hoy = new Date()
   const [mesSeleccionado, setMesSeleccionado] = useState(hoy.getMonth())
@@ -296,14 +299,8 @@ function CuentasPorPagar() {
     }
   }
 
-  // Registrar Abono
-  const handleRegistrarAbono = async (e) => {
-    e.preventDefault()
-    if (!formAbono.responsable_pago.trim()) {
-      alert("El responsable es obligatorio.")
-      return
-    }
-
+  // Registrar Abono (Petición principal y Reintento con flag)
+  const ejecutarAbono = async (permitirSobrepago = false) => {
     try {
       const res = await fetch(`${API}/api/prestamos/abono`, {
         method: "POST",
@@ -311,11 +308,21 @@ function CuentasPorPagar() {
         body: JSON.stringify({
           id_prestamo: modalAbono.id_prestamo,
           numero_periodo: modalAbono.numero_periodo || 1,
-          ...formAbono
+          ...formAbono,
+          permitir_sobrepago: permitirSobrepago
         })
       })
 
+      const data = await res.json()
+
+      // Si se requiere confirmación por sobrepago
+      if (!res.ok && data.requiere_confirmacion) {
+        setModalSobrepago(data)
+        return
+      }
+
       if (res.ok) {
+        setModalSobrepago(null)
         setModalAbono(null)
         setFormAbono({
           monto_abonado: "",
@@ -326,10 +333,25 @@ function CuentasPorPagar() {
           fecha_abono: new Date().toISOString().split('T')[0]
         })
         cargarDatos()
+      } else {
+        alert(data.error || "Ocurrió un error al registrar el abono.")
       }
     } catch (err) {
       console.error(err)
     }
+  }
+
+  const handleRegistrarAbono = (e) => {
+    e.preventDefault()
+    if (!formAbono.responsable_pago.trim()) {
+      alert("El responsable es obligatorio.")
+      return
+    }
+    ejecutarAbono(false)
+  }
+
+  const handleConfirmarSobrepago = () => {
+    ejecutarAbono(true)
   }
 
   // Ver Historial
@@ -757,7 +779,7 @@ function CuentasPorPagar() {
 
                 {/* MENSAJE EXPLICATIVO SEGÚN LA ELECCIÓN */}
                 <div style={styles.infoBox}>
-                  ℹ️ {obtenerMensajeTipoDeuda(formPrestamo.tipo_deuda)}
+                  ℹ️️ {obtenerMensajeTipoDeuda(formPrestamo.tipo_deuda)}
                 </div>
               </div>
 
@@ -913,6 +935,42 @@ function CuentasPorPagar() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL ADVERTENCIA DE SOBREPAGO */}
+      {modalSobrepago && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
+          <div style={{ ...styles.modalBox, borderLeft: '6px solid #D97706' }}>
+            <h3 style={{ margin: '0 0 12px 0', color: '#B45309', fontSize: '18px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              ⚠️ Confirmación de Sobrepago
+            </h3>
+            
+            <p style={{ fontSize: '14px', color: '#334155', lineHeight: '1.5', marginBottom: '16px' }}>
+              El monto ingresado (<strong>${Number(modalSobrepago.monto_ingresado).toLocaleString()}</strong>) excede la cuota esperada (<strong>${Number(modalSobrepago.cuota_esperada).toLocaleString()}</strong>) o el saldo restante del préstamo (<strong>${Number(modalSobrepago.saldo_pendiente).toLocaleString()}</strong>).
+            </p>
+
+            <div style={{ backgroundColor: '#FEF3C7', border: '1px solid #FCD34D', color: '#92400E', padding: '12px', borderRadius: '6px', fontSize: '13px', marginBottom: '20px', lineHeight: '1.4' }}>
+              Si confirmas esta operación, el saldo sobrante cubrirá automáticamente las cuotas posteriores en el calendario.
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                type="button"
+                style={{ ...styles.botonAccion, backgroundColor: '#D97706', flex: 1 }}
+                onClick={handleConfirmarSobrepago}
+              >
+                Sí, confirmar sobrepago
+              </button>
+              <button
+                type="button"
+                style={{ ...styles.botonOutlined, backgroundColor: '#F1F5F9', borderColor: '#CBD5E1', color: '#475569' }}
+                onClick={() => setModalSobrepago(null)}
+              >
+                Cancelar
+              </button>
+            </div>
           </div>
         </div>
       )}
