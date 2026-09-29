@@ -4710,7 +4710,6 @@ app.post('/api/prestamos', async (req, res) => {
 });
 
 
-// 2. OBTENER PRÉSTAMOS ACTIVOS Y CALENDARIO
 app.get('/api/prestamos', async (req, res) => {
   try {
     // 1. Obtener los préstamos junto con la suma abonada y el conteo de periodos pagados
@@ -4738,16 +4737,17 @@ app.get('/api/prestamos', async (req, res) => {
       };
     });
 
-    // 2. Obtener todos los abonos registrados para verificar qué periodos ya fueron pagados
+    // 2. Obtener todos los abonos registrados por periodo para el mapa
     const [abonos] = await db.query(`SELECT id_prestamo, numero_periodo, monto_abonado FROM prestamos_abonos`);
-
-    // Crear un Mapa/Set rápido para saber si un período de un préstamo específico ya se pagó
     const abonosMap = new Set(abonos.map(a => `${a.id_prestamo}_${a.numero_periodo}`));
 
     const eventosCalendario = [];
 
     prestamosProcesados.forEach((p) => {
       const fechaBase = new Date(p.fecha_primer_pago);
+      const cuotaMonto = parseFloat(p.monto_cuota_sugerida || 0);
+      let bolsaAbonadaDisponible = parseFloat(p.monto_pagado || 0);
+      const esPrestamoLiquidado = p.estatus === 'LIQUIDADO' || parseFloat(p.saldo_pendiente) === 0;
 
       for (let i = 0; i < p.plazos_meses; i++) {
         const fechaEvento = new Date(fechaBase);
@@ -4763,8 +4763,14 @@ app.get('/api/prestamos', async (req, res) => {
           fechaEvento.setMonth(fechaBase.getMonth() + i);
         }
 
-        // Verificar si este periodo específico ya tiene un abono registrado
-        const estaAbonado = abonosMap.has(`${p.id_prestamo}_${numeroPeriodo}`);
+        // Evaluar si esta cuota individual está saldada (ya sea por su registro único, por cobertura de sobrepago acumulado, o préstamo liquidado)
+        let estaAbonado = abonosMap.has(`${p.id_prestamo}_${numeroPeriodo}`);
+
+        if (!estaAbonado) {
+          if (esPrestamoLiquidado || bolsaAbonadaDisponible >= (numeroPeriodo * cuotaMonto)) {
+            estaAbonado = true;
+          }
+        }
 
         eventosCalendario.push({
           id_prestamo: p.id_prestamo,
@@ -4774,7 +4780,6 @@ app.get('/api/prestamos', async (req, res) => {
           fecha_programada: fechaEvento.toISOString().split('T')[0],
           color: p.color_identificador,
           estatus_prestamo: p.estatus,
-          // Propiedad clave para que el frontend marque la cuota como pagada/abonada:
           pagado: estaAbonado,
           estatus_cuota: estaAbonado ? 'ABONADO' : 'PENDIENTE'
         });
@@ -4789,8 +4794,7 @@ app.get('/api/prestamos', async (req, res) => {
 });
 
 
-
-// 3. REGISTRAR ABONO Y VINCULAR CON FLUJO DE EGRESOS
+// 3. REGISTRAR ABONO Y VINCULAR CON FLUJO DE EGRESOS (CON GUARDRAIL DE SOBREPAGO)
 app.post('/api/prestamos/abono', async (req, res) => {
   const conn = await db.getConnection();
   try {
@@ -4803,7 +4807,8 @@ app.post('/api/prestamos/abono', async (req, res) => {
       responsable_pago,
       num_comprobante,
       fecha_abono,
-      id_categoria_egreso // ID de la categoría "Cuentas por Pagar"
+      id_categoria_egreso,
+      permitir_sobrepago // FLAG DE SEGURIDAD (boolean: true / false)
     } = req.body;
 
     if (!id_prestamo || !monto_abonado || !origen_pago || !responsable_pago || !fecha_abono) {
@@ -4817,9 +4822,33 @@ app.post('/api/prestamos/abono', async (req, res) => {
     // A) Obtener datos del préstamo actual
     const [rowsP] = await conn.query(`SELECT * FROM prestamos WHERE id_prestamo = ? FOR UPDATE`, [id_prestamo]);
     if (!rowsP.length) {
-      throw new Error('Préstamo no encontrado');
+      await conn.rollback();
+      return res.status(404).json({ error: 'Préstamo no encontrado' });
     }
     const prestamo = rowsP[0];
+
+    const saldoPendienteActual = parseFloat(prestamo.saldo_pendiente);
+    const cuotaSugerida = parseFloat(prestamo.monto_cuota_sugerida);
+
+    // =========================================================================
+    // GUARDRAIL / SEGURO EN BACKEND DE SOBREPAGO
+    // =========================================================================
+    // Detectamos si el abono supera la cuota sugerida O supera la deuda total restante
+    const excedeCuota = abonoNum > cuotaSugerida;
+    const excedeDeudaTotal = abonoNum > saldoPendienteActual;
+
+    if ((excedeCuota || excedeDeudaTotal) && !permitir_sobrepago) {
+      await conn.rollback();
+      return res.status(400).json({
+        requiere_confirmacion: true,
+        code: 'EXCEEDS_EXPECTED_AMOUNT',
+        monto_ingresado: abonoNum,
+        cuota_esperada: cuotaSugerida,
+        saldo_pendiente: saldoPendienteActual,
+        error: `El abono de $${abonoNum.toFixed(2)} excede el monto esperado ($${cuotaSugerida.toFixed(2)}). Requiere confirmación explícita.`
+      });
+    }
+    // =========================================================================
 
     // B) Registrar el abono en prestamos_abonos
     const [resAbono] = await conn.query(
@@ -4848,7 +4877,7 @@ app.post('/api/prestamos/abono', async (req, res) => {
        (id_categoria, monto, origen_pago, cuenta_bancaria, concepto, num_comprobante, id_prestamo_abono)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
-        id_categoria_egreso || 1, // Si no se envía ID, puedes asignar un ID por defecto de Cuentas por pagar
+        id_categoria_egreso || 1,
         abonoNum,
         origen_pago,
         cuenta_bancaria_salida || null,
@@ -4864,8 +4893,8 @@ app.post('/api/prestamos/abono', async (req, res) => {
       [resEgreso.insertId, idAbono]
     );
 
-    // D) Actualizar saldo del préstamo, clasificación de pasivo y estatus a LIQUIDADO si llega a 0
-    const nuevoSaldo = Math.max(0, parseFloat(prestamo.saldo_pendiente) - abonoNum);
+    // D) Actualizar saldo del préstamo, clasificación de pasivo y estatus a LIQUIDADO si llega a <= 0
+    const nuevoSaldo = Math.max(0, saldoPendienteActual - abonoNum);
     const nuevoEstatus = nuevoSaldo === 0 ? 'LIQUIDADO' : 'ACTIVO';
 
     // Obtener total de abonos para actualizar clasificación en BD
@@ -4883,7 +4912,12 @@ app.post('/api/prestamos/abono', async (req, res) => {
     );
 
     await conn.commit();
-    res.json({ success: true, id_abono: idAbono, nuevo_saldo: nuevoSaldo, estatus: nuevoEstatus });
+    res.json({ 
+      success: true, 
+      id_abono: idAbono, 
+      nuevo_saldo: nuevoSaldo, 
+      estatus: nuevoEstatus 
+    });
   } catch (err) {
     await conn.rollback();
     console.error('Error al registrar abono:', err);
@@ -4892,6 +4926,9 @@ app.post('/api/prestamos/abono', async (req, res) => {
     conn.release();
   }
 });
+
+
+
 
 // 4. HISTORIAL DE ABONOS DE UN PRÉSTAMO
 app.get('/api/prestamos/:id/historial', async (req, res) => {
