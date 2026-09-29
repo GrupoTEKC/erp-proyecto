@@ -779,7 +779,7 @@ function CuentasPorPagar() {
 
                 {/* MENSAJE EXPLICATIVO SEGÚN LA ELECCIÓN */}
                 <div style={styles.infoBox}>
-                  ℹ️️ {obtenerMensajeTipoDeuda(formPrestamo.tipo_deuda)}
+                  ℹ {obtenerMensajeTipoDeuda(formPrestamo.tipo_deuda)}
                 </div>
               </div>
 
@@ -913,6 +913,35 @@ function CuentasPorPagar() {
                   value={formAbono.monto_abonado}
                   onChange={(e) => setFormAbono({ ...formAbono, monto_abonado: e.target.value })}
                 />
+              </div>
+
+              {/* ORIGEN DEL PAGO Y CUENTA DE SALIDA */}
+              <div style={{ display: 'grid', gridTemplateColumns: formAbono.origen_pago === 'TRANSFERENCIA' ? '1fr 1fr' : '1fr', gap: '16px', marginBottom: '16px' }}>
+                <div>
+                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Método de pago *</label>
+                  <select
+                    style={styles.field}
+                    required
+                    value={formAbono.origen_pago}
+                    onChange={(e) => setFormAbono({ ...formAbono, origen_pago: e.target.value })}
+                  >
+                    <option value="EFECTIVO">Efectivo</option>
+                    <option value="TRANSFERENCIA">Transferencia</option>
+                  </select>
+                </div>
+
+                {formAbono.origen_pago === "TRANSFERENCIA" && (
+                  <div>
+                    <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>¿Desde qué cuenta? *</label>
+                    <input
+                      style={styles.field}
+                      required
+                      placeholder="Ej. Banamex / Fiscal"
+                      value={formAbono.cuenta_bancaria_salida}
+                      onChange={(e) => setFormAbono({ ...formAbono, cuenta_bancaria_salida: e.target.value })}
+                    />
+                  </div>
+                )}
               </div>
 
               <div style={{ marginBottom: '24px' }}>
