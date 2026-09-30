@@ -436,7 +436,7 @@ function CuentasPorPagar() {
   const obtenerMensajeTipoDeuda = (tipo) => {
     switch (tipo) {
       case "PROVEEDORES":
-        return "Haz seleccionado préstamo de proveedores: Hace énfasis en financiamiento o crédito directo de materia prima, insumos y mercancía para la operación."
+        return "Haz seleccionado proveedores: Hace énfasis en financiamiento o crédito directo de materia prima, insumos y mercancía para la operación."
       case "FINANCIEROS":
         return "Haz seleccionado créditos financieros: Relacionado con préstamos, líneas de crédito o financiamientos otorgados por instituciones bancarias y financieras."
       case "DIVERSOS":
@@ -516,8 +516,8 @@ function CuentasPorPagar() {
               onChange={(e) => setFiltroTipoPasivo(e.target.value)}
             >
               <option value="TODOS">TODOS (Circulantes y Fijos)</option>
-              <option value="CIRCULANTES">PASIVOS CIRCULANTES (≤ 12 meses restantes)</option>
-              <option value="FIJOS">PASIVOS FIJOS (&gt; 12 meses restantes)</option>
+              <option value="CIRCULANTES">PASIVOS CIRCULANTES (< ò = a 12 meses)</option>
+              <option value="FIJOS">PASIVOS FIJOS (> a 12 meses)</option>
             </select>
           </div>
 
@@ -760,7 +760,7 @@ function CuentasPorPagar() {
       {modalNuevo && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={styles.modalBox}>
-            <h3 style={{ margin: '0 0 20px 0', color: '#8B1E1E', fontSize: '18px', fontWeight: '700' }}>➕ Registrar nueva deuda</h3>
+            <h3 style={{ margin: '0 0 20px 0', color: '#8B1E1E', fontSize: '18px', fontWeight: '700' }}>➕ Registrar credito/prestamo</h3>
             <form onSubmit={handleCrearPrestamo}>
 
               {/* TIPO DE DEUDA CON AVISO DINÁMICO */}
@@ -772,9 +772,9 @@ function CuentasPorPagar() {
                   value={formPrestamo.tipo_deuda}
                   onChange={(e) => setFormPrestamo({ ...formPrestamo, tipo_deuda: e.target.value })}
                 >
-                  <option value="FINANCIEROS">Créditos financieros</option>
-                  <option value="PROVEEDORES">Préstamo de proveedores</option>
-                  <option value="DIVERSOS">Créditos diversos</option>
+                  <option value="FINANCIEROS">CREDITOS FINANCIEROS</option>
+                  <option value="PROVEEDORES">PROVEEDORES</option>
+                  <option value="DIVERSOS">CREDITOS DIVERSOS</option>
                 </select>
 
                 {/* MENSAJE EXPLICATIVO SEGÚN LA ELECCIÓN */}
@@ -788,7 +788,7 @@ function CuentasPorPagar() {
                 <input
                   style={styles.field}
                   required
-                  placeholder="Ej. BBVA, Cemix, Socio X"
+                  placeholder="Ej. Limon"
                   value={formPrestamo.prestamista}
                   onChange={(e) => setFormPrestamo({ ...formPrestamo, prestamista: e.target.value })}
                 />
@@ -824,7 +824,7 @@ function CuentasPorPagar() {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Monto otorgado ($) *</label>
+                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Monto de credito($) *</label>
                   <input
                     type="number"
                     style={styles.field}
@@ -834,7 +834,7 @@ function CuentasPorPagar() {
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Plazo (meses) *</label>
+                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Numero de mensualidades*</label>
                   <input
                     type="number"
                     style={styles.field}
@@ -846,9 +846,9 @@ function CuentasPorPagar() {
                   {formPrestamo.plazos_meses !== "" && (
                     <div style={{ marginTop: '6px' }}>
                       {Number(formPrestamo.plazos_meses) <= 12 ? (
-                        <span style={styles.badgeCirculante}>🟢 Pasivo Circulante (Corto Plazo)</span>
+                        <span style={styles.badgeCirculante}>🟢 Pasivo circulante (Corto plazo)</span>
                       ) : (
-                        <span style={styles.badgeFijo}>🔵 Pasivo Fijo (Largo Plazo)</span>
+                        <span style={styles.badgeFijo}>🔵 Pasivo fijo (Largo plazo)</span>
                       )}
                     </div>
                   )}
@@ -878,7 +878,7 @@ function CuentasPorPagar() {
 
               <div style={{ display: 'flex', gap: '12px' }}>
                 <button type="submit" style={{ ...styles.botonAccion, flex: 1 }}>
-                  Guardar deuda
+                  Guardar
                 </button>
                 <button type="button" style={{ ...styles.botonOutlined, backgroundColor: '#F1F5F9', borderColor: '#CBD5E1', color: '#475569' }} onClick={() => setModalNuevo(false)}>
                   Cancelar
@@ -957,7 +957,7 @@ function CuentasPorPagar() {
 
               <div style={{ display: 'flex', gap: '12px' }}>
                 <button type="submit" style={{ ...styles.botonAccion, flex: 1 }}>
-                  Confirmar Pago
+                  Confirmar pago
                 </button>
                 <button type="button" style={{ ...styles.botonOutlined, backgroundColor: '#F1F5F9', borderColor: '#CBD5E1', color: '#475569' }} onClick={() => setModalAbono(null)}>
                   Cancelar
@@ -973,7 +973,7 @@ function CuentasPorPagar() {
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
           <div style={{ ...styles.modalBox, borderLeft: '6px solid #D97706' }}>
             <h3 style={{ margin: '0 0 12px 0', color: '#B45309', fontSize: '18px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              ⚠️ Confirmación de Sobrepago
+              ⚠️ Confirmación de sobrepago
             </h3>
             
             <p style={{ fontSize: '14px', color: '#334155', lineHeight: '1.5', marginBottom: '16px' }}>
