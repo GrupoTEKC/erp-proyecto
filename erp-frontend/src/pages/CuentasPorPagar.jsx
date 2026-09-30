@@ -502,7 +502,7 @@ function CuentasPorPagar() {
           </div>
 
           <button style={{ ...styles.botonAccion, width: '100%', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} onClick={() => setModalNuevo(true)}>
-            ➕ Registrar pasivo / deuda
+            ➕ Registrar credito/prestamo
           </button>
 
           {/* COMPONENTE DE FILTRO DE PASIVOS */}
