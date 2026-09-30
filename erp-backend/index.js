@@ -4635,26 +4635,29 @@ app.get('/produccion/:fecha', async (req, res) => {
   }
 })
 
-
 // Endpoint POST /api/prestamos
 app.post('/api/prestamos', async (req, res) => {
   const {
     prestamista,
     tipo_deuda = 'FINANCIEROS',
-    monto_original,
-    plazos_meses,
+    monto_original,          // Capital real recibido en Caja/Banco (ej. 10.00)
+    monto_cuota_sugerida,    // Cuota negociada por periodo (ej. 1.30)
+    plazos_meses,            // Número de pagos (ej. 10)
     frecuencia = 'MENSUAL',
     fecha_primer_pago,
-    color_identificador,
-    cuenta_destino, // 'EFECTIVO' o 'TRANSFERENCIA'
+    color_identificador = '#007bff',
+    cuenta_destino,          // 'EFECTIVO' o 'TRANSFERENCIA'
     cuenta_bancaria_destino
   } = req.body;
 
   try {
-    const monto_cuota_sugerida = Number(monto_original) / Number(plazos_meses);
-    const saldo_pendiente = monto_original;
+    // 1. Lógica financiera: Deuda total con intereses
+    const monto_total_pagar = Number(monto_cuota_sugerida) * Number(plazos_meses);
+    
+    // 2. El saldo pendiente arranca con el valor total a pagar
+    const saldo_pendiente = monto_total_pagar;
 
-    // 🟢 LÓGICA AUTOMÁTICA DE CLASIFICACIÓN DE PASIVO
+    // 3. Clasificación automática de pasivo
     const clasificacion_pasivo = Number(plazos_meses) <= 12 ? 'CIRCULANTE' : 'FIJO';
 
     const query = `
@@ -4663,6 +4666,7 @@ app.post('/api/prestamos', async (req, res) => {
         tipo_deuda, 
         clasificacion_pasivo, 
         monto_original, 
+        monto_total_pagar,
         saldo_pendiente, 
         plazos_meses, 
         frecuencia, 
@@ -4671,22 +4675,23 @@ app.post('/api/prestamos', async (req, res) => {
         color_identificador, 
         cuenta_destino, 
         cuenta_bancaria_destino
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     await db.query(query, [
       prestamista,
       tipo_deuda,
-      clasificacion_pasivo, // 👈 SE GUARDA AUTOMÁTICAMENTE
-      monto_original,
-      saldo_pendiente,
+      clasificacion_pasivo,
+      monto_original,          // $10.00 -> Para caja/bancos
+      monto_total_pagar,       // $13.00 -> Deuda total contrato
+      saldo_pendiente,         // $13.00 -> Saldo inicial que irá bajando
       plazos_meses,
       frecuencia,
-      monto_cuota_sugerida,
+      monto_cuota_sugerida,    // $1.30 -> Abono por período
       fecha_primer_pago,
       color_identificador,
       cuenta_destino,
-      cuenta_bancaria_destino
+      cuenta_bancaria_destino || null
     ]);
 
     res.status(201).json({ message: "Deuda registrada exitosamente" });
