@@ -516,8 +516,8 @@ function CuentasPorPagar() {
               onChange={(e) => setFiltroTipoPasivo(e.target.value)}
             >
              <option value="TODOS">TODOS (Circulantes y Fijos)</option>
-             <option value="CIRCULANTES">PASIVOS CIRCULANTES (&lt; ó = a 12 meses)</option>
-             <option value="FIJOS">PASIVOS FIJOS (&gt; a 12 meses)</option>
+             <option value="CIRCULANTES">PASIVOS CIRCULANTES (menor o = a 12 meses)</option>
+             <option value="FIJOS">PASIVOS FIJOS (mayor a 12 meses)</option>
             </select>
           </div>
 
