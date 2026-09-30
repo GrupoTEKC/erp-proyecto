@@ -2768,6 +2768,7 @@ app.get('/pagos/:id_pedido', async (req, res) => {
 })
 
 
+// =============================
 // 📊 CAJA Y FLUJO DE CAJA (EN TIEMPO REAL)
 // =============================
 
@@ -2805,22 +2806,20 @@ app.get('/api/caja/resumen', async (req, res) => {
       [fechaInicio, fechaInicio]
     );
 
-    // C) Sumar EGRESOS DEFINITIVOS (Gastos) + GASTOS TEMPORALES PENDIENTES + ABONOS A PRÉSTAMOS
+    // C) Sumar EGRESOS DEFINITIVOS (Flujo Egresos) + GASTOS TEMPORALES PENDIENTES
+    // Se removió el bloque UNION ALL con prestamos_abonos para evitar la doble contabilización.
     const [egresos] = await db.query(
       `SELECT 
         SUM(CASE WHEN UPPER(origen_pago) = 'EFECTIVO' THEN monto ELSE 0 END) AS total_egreso_efectivo,
         SUM(CASE WHEN UPPER(origen_pago) = 'TRANSFERENCIA' THEN monto ELSE 0 END) AS total_egreso_banco
        FROM (
-         -- 1. Gastos definitivos
+         -- 1. Egresos definitivos (Incluye gastos generales Y abonos a préstamos registrados en flujo_egresos)
          SELECT CAST(origen_pago AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS origen_pago, monto FROM flujo_egresos WHERE fecha_captura >= ?
          UNION ALL
          -- 2. Entregas de dinero pendiente por comprobar (reducen la caja activa)
          SELECT CAST(origen_pago AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS origen_pago, monto_entregado AS monto FROM gastos_temporales WHERE estatus = 'PENDIENTE' AND fecha_entrega >= ?
-         UNION ALL
-         -- 3. Abonos realizados a préstamos
-         SELECT CAST(origen_pago AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS origen_pago, monto_abonado AS monto FROM prestamos_abonos WHERE fecha_abono >= ?
        ) AS egresos_totales`,
-      [fechaInicio, fechaInicio, fechaInicio]
+      [fechaInicio, fechaInicio]
     );
 
     // D) Cálculo de Saldos
@@ -2843,6 +2842,7 @@ app.get('/api/caja/resumen', async (req, res) => {
 
 
     // E) Lista de movimientos unificada
+    // Se eliminó la subconsulta SELECT de prestamos_abonos. Ahora sólo se pasa fechaInicio 4 veces como argumento.
     const [movimientos] = await db.query(
       `(SELECT 
           p.id_pago AS id,
@@ -2902,11 +2902,11 @@ app.get('/api/caja/resumen', async (req, res) => {
 
        UNION ALL
 
-       -- EGRESO 1: Flujo de Egresos (Gastos Generales)
+       -- EGRESO 1: Flujo de Egresos (Cubre Gastos Generales Y Abonos a Préstamos)
        (SELECT 
           e.id_egreso AS id,
           'EGRESO' COLLATE utf8mb4_unicode_ci AS tipo,
-          CAST(e.concepto AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS tienda, -- <--- AQUÍ: Desglose del gasto
+          CAST(e.concepto AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS tienda,
           CAST(NULL AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS tipo_pedido,
           CAST(CONCAT('Gasto - ', e.concepto) AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS concepto,
           CAST(e.monto AS DECIMAL(10,2)) AS monto,
@@ -2917,27 +2917,11 @@ app.get('/api/caja/resumen', async (req, res) => {
 
        UNION ALL
 
-       -- EGRESO 2: Abonos a Préstamos
-       (SELECT 
-          pa.id_abono AS id,
-          'EGRESO' COLLATE utf8mb4_unicode_ci AS tipo,
-          CAST(CONCAT('Abono Préstamo (', pr.prestamista, ')') AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS tienda, -- <--- AQUÍ: Desglose del abono
-          CAST('ABONO PRÉSTAMO' AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS tipo_pedido,
-          CAST(CONCAT('Abono Préstamo (', pr.prestamista, ') - Periodo ', pa.numero_periodo) AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS concepto,
-          CAST(pa.monto_abonado AS DECIMAL(10,2)) AS monto,
-          CAST(pa.origen_pago AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS forma_pago,
-          pa.fecha_abono AS fecha
-        FROM prestamos_abonos pa
-        INNER JOIN prestamos pr ON pa.id_prestamo = pr.id_prestamo
-        WHERE pa.fecha_abono >= ?)
-
-       UNION ALL
-
-       -- EGRESO 3: Gastos Temporales Pendientes
+       -- EGRESO 2: Gastos Temporales Pendientes
        (SELECT 
           gt.id_temporal AS id,
           'GASTO TEMPORAL' COLLATE utf8mb4_unicode_ci AS tipo,
-          CAST(CONCAT(gt.concepto, ' (', emp.nombre, ')') AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS tienda, -- <--- AQUÍ: Desglose temporal
+          CAST(CONCAT(gt.concepto, ' (', emp.nombre, ')') AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS tienda,
           CAST(NULL AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS tipo_pedido,
           CAST(CONCAT('Pendiente (', emp.nombre, ') - ', gt.concepto) AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS concepto,
           CAST(gt.monto_entregado AS DECIMAL(10,2)) AS monto,
@@ -2948,9 +2932,8 @@ app.get('/api/caja/resumen', async (req, res) => {
         WHERE gt.estatus = 'PENDIENTE' AND gt.fecha_entrega >= ?)
 
        ORDER BY fecha DESC`,
-      [fechaInicio, fechaInicio, fechaInicio, fechaInicio, fechaInicio]
+      [fechaInicio, fechaInicio, fechaInicio, fechaInicio]
     );
-    
     
     res.json({
       ok: true,
@@ -2976,6 +2959,7 @@ app.get('/api/caja/resumen', async (req, res) => {
   }
 });
 
+// 2. REGISTRAR UN EGRESO GENERAL
 app.post('/api/egresos', async (req, res) => {
   try {
     const {
@@ -2990,7 +2974,8 @@ app.post('/api/egresos', async (req, res) => {
       id_unidad_relacionada,
       id_ruta_relacionada,
       concepto,
-      num_comprobante
+      num_comprobante,
+      id_prestamo_abono
     } = req.body;
 
     if (!id_categoria || !monto || !origen_pago || !concepto) {
@@ -3002,8 +2987,8 @@ app.post('/api/egresos', async (req, res) => {
         id_categoria, monto, origen_pago, cuenta_bancaria,
         id_producto_relacionado, id_empleado, empleado_relacionado,
         unidad_relacionada, id_unidad_relacionada, id_ruta_relacionada,
-        concepto, num_comprobante
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        concepto, num_comprobante, id_prestamo_abono
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id_categoria,
         monto,
@@ -3016,7 +3001,8 @@ app.post('/api/egresos', async (req, res) => {
         id_unidad_relacionada || null,
         id_ruta_relacionada || null,
         concepto,
-        num_comprobante || null
+        num_comprobante || null,
+        id_prestamo_abono || null
       ]
     );
 
@@ -3030,6 +3016,7 @@ app.post('/api/egresos', async (req, res) => {
     res.status(500).json({ ok: false, error: err.message });
   }
 });
+
 
 
 
