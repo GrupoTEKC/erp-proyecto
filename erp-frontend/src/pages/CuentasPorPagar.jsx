@@ -232,6 +232,7 @@ function CuentasPorPagar() {
     prestamista: "",
     tipo_deuda: "FINANCIEROS",
     monto_original: "",
+    monto_cuota_sugerida: "",
     plazos_meses: "6",
     frecuencia: "MENSUAL",
     fecha_primer_pago: new Date().toISOString().split('T')[0],
@@ -248,6 +249,15 @@ function CuentasPorPagar() {
     num_comprobante: "",
     fecha_abono: new Date().toISOString().split('T')[0]
   })
+
+  // CÁLCULOS DINÁMICOS PARA FORMULARIO PRÉSTAMO
+  const montoOriginalNum = Number(formPrestamo.monto_original) || 0
+  const montoCuotaNum = Number(formPrestamo.monto_cuota_sugerida) || 0
+  const plazosMesesNum = Number(formPrestamo.plazos_meses) || 0
+
+  const montoTotalPagar = montoCuotaNum * plazosMesesNum
+  const interesGenerado = montoTotalPagar - montoOriginalNum
+  const esValidoGuardar = montoOriginalNum > 0 && plazosMesesNum > 0 && montoCuotaNum > 0 && montoTotalPagar >= montoOriginalNum
 
   // Cargar Préstamos
   const cargarDatos = async () => {
@@ -273,6 +283,8 @@ function CuentasPorPagar() {
   // Guardar Préstamo
   const handleCrearPrestamo = async (e) => {
     e.preventDefault()
+    if (!esValidoGuardar) return;
+
     try {
       const res = await fetch(`${API}/api/prestamos`, {
         method: "POST",
@@ -285,6 +297,7 @@ function CuentasPorPagar() {
           prestamista: "",
           tipo_deuda: "FINANCIEROS",
           monto_original: "",
+          monto_cuota_sugerida: "",
           plazos_meses: "6",
           frecuencia: "MENSUAL",
           fecha_primer_pago: new Date().toISOString().split('T')[0],
@@ -822,23 +835,41 @@ function CuentasPorPagar() {
                 )}
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+              {/* CAMPOS FINANCIEROS CON CÁLCULOS */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Monto de credito($) *</label>
+                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Monto recibido ($) *</label>
                   <input
                     type="number"
+                    step="0.01"
                     style={styles.field}
                     required
+                    placeholder="Ej. 10.00"
                     value={formPrestamo.monto_original}
                     onChange={(e) => setFormPrestamo({ ...formPrestamo, monto_original: e.target.value })}
                   />
                 </div>
+
                 <div>
-                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Numero de mensualidades*</label>
+                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Cuota fija / abono ($) *</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    style={styles.field}
+                    required
+                    placeholder="Ej. 1.30"
+                    value={formPrestamo.monto_cuota_sugerida}
+                    onChange={(e) => setFormPrestamo({ ...formPrestamo, monto_cuota_sugerida: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>N° de mensualidades *</label>
                   <input
                     type="number"
                     style={styles.field}
                     required
+                    placeholder="Ej. 10"
                     value={formPrestamo.plazos_meses}
                     onChange={(e) => setFormPrestamo({ ...formPrestamo, plazos_meses: e.target.value })}
                   />
@@ -846,14 +877,45 @@ function CuentasPorPagar() {
                   {formPrestamo.plazos_meses !== "" && (
                     <div style={{ marginTop: '6px' }}>
                       {Number(formPrestamo.plazos_meses) <= 12 ? (
-                        <span style={styles.badgeCirculante}>🟢 Pasivo circulante (Corto plazo)</span>
+                        <span style={styles.badgeCirculante}>🟢 Pasivo circulante</span>
                       ) : (
-                        <span style={styles.badgeFijo}>🔵 Pasivo fijo (Largo plazo)</span>
+                        <span style={styles.badgeFijo}>🔵 Pasivo fijo</span>
                       )}
                     </div>
                   )}
                 </div>
               </div>
+
+              {/* RESUMEN DE CÁLCULO Y VALIDACIÓN DINÁMICA */}
+              {montoOriginalNum > 0 && montoCuotaNum > 0 && plazosMesesNum > 0 && (
+                <div style={{
+                  backgroundColor: montoTotalPagar >= montoOriginalNum ? '#F0FDF4' : '#FEF2F2',
+                  borderLeft: `4px solid ${montoTotalPagar >= montoOriginalNum ? '#16A34A' : '#DC2626'}`,
+                  color: montoTotalPagar >= montoOriginalNum ? '#166534' : '#991B1B',
+                  padding: '12px',
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  marginBottom: '16px',
+                  lineHeight: '1.5'
+                }}>
+                  <div>
+                    El monto que te prestaron es de <strong>${montoOriginalNum.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</strong>.
+                  </div>
+                  <div>
+                    El monto que tienes que pagar en total es de <strong>${montoTotalPagar.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</strong> ({plazosMesesNum} pagos de${montoCuotaNum.toLocaleString('es-MX', { minimumFractionDigits: 2 })}).
+                  </div>
+                  {interesGenerado > 0 && (
+                    <div style={{ fontSize: '12px', marginTop: '4px', fontWeight: '600' }}>
+                      Interés/Costo total del financiamiento: ${interesGenerado.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    </div>
+                  )}
+                  {montoTotalPagar < montoOriginalNum && (
+                    <div style={{ fontSize: '12px', marginTop: '4px', fontWeight: '700', color: '#DC2626' }}>
+                      ⚠️ La deuda total a pagar no puede ser menor al monto prestado.
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
                 <div>
@@ -877,7 +939,16 @@ function CuentasPorPagar() {
               </div>
 
               <div style={{ display: 'flex', gap: '12px' }}>
-                <button type="submit" style={{ ...styles.botonAccion, flex: 1 }}>
+                <button
+                  type="submit"
+                  disabled={!esValidoGuardar}
+                  style={{
+                    ...styles.botonAccion,
+                    flex: 1,
+                    opacity: esValidoGuardar ? 1 : 0.5,
+                    cursor: esValidoGuardar ? 'pointer' : 'not-allowed'
+                  }}
+                >
                   Guardar
                 </button>
                 <button type="button" style={{ ...styles.botonOutlined, backgroundColor: '#F1F5F9', borderColor: '#CBD5E1', color: '#475569' }} onClick={() => setModalNuevo(false)}>
