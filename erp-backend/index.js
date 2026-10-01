@@ -4427,12 +4427,8 @@ app.post('/programaciones/:id/enviar', async (req, res) => {
 
 // PUT: Actualizar cantidad final y precio unitario desde el Modal de Cuentas por Cobrar
 app.put('/api/cuentas-por-cobrar/actualizar-renglon', async (req, res) => {
-  let connection;
+  const conn = await db.getConnection()
   try {
-    // 1. Obtener la conexión usando tu variable global o importada (ej. dbPool o db)
-    // Asegúrate de usar el mismo nombre con el que creaste tu pool de MySQL al inicio de index.js
-    connection = await pool.getConnection();
-
     const { 
       tipo_origen,         // 'pedido' o 'rezagado'
       id_entrega_detalle,  // id_detalle de la tabla entrega_detalle (para pedidos normales)
@@ -4441,87 +4437,82 @@ app.put('/api/cuentas-por-cobrar/actualizar-renglon', async (req, res) => {
       id_producto,         // ID del producto a modificar
       cantidad_final,      // Nueva cantidad final
       precio_unitario      // Nuevo precio unitario
-    } = req.body;
+    } = req.body
 
-    await connection.beginTransaction();
+    await conn.beginTransaction()
 
     if (tipo_origen === 'rezagado') {
       // 1A. Si es un Pedido Rezagado, actualizamos directamente en pedido_rezagado_detalle
-      await connection.query(
-        `UPDATE pedido_rezagado_detalle 
-         SET cantidad = ?, precio_unitario = ? 
-         WHERE id_detalle = ?`,
-        [cantidad_final, precio_unitario, id_rezagado_detalle]
-      );
+      await conn.query(`
+        UPDATE pedido_rezagado_detalle 
+        SET cantidad = ?, precio_unitario = ? 
+        WHERE id_detalle = ?
+      `, [cantidad_final, precio_unitario, id_rezagado_detalle])
 
       // 2A. Recalcular y actualizar el Total general del Pedido Rezagado
-      await connection.query(
-        `UPDATE pedidos_rezagados 
-         SET total = (
-           SELECT COALESCE(SUM(cantidad * precio_unitario), 0) 
-           FROM pedido_rezagado_detalle 
-           WHERE id_rezagado = ?
-         ) 
-         WHERE id_rezagado = ?`,
-        [id_pedido, id_pedido]
-      );
+      await conn.query(`
+        UPDATE pedidos_rezagados 
+        SET total = (
+          SELECT COALESCE(SUM(cantidad * precio_unitario), 0) 
+          FROM pedido_rezagado_detalle 
+          WHERE id_rezagado = ?
+        ) 
+        WHERE id_rezagado = ?
+      `, [id_pedido, id_pedido])
 
     } else {
       // 1B. Si es un Pedido Normal, actualizamos cantidad_final en entrega_detalle
       if (id_entrega_detalle) {
-        await connection.query(
-          `UPDATE entrega_detalle 
-           SET cantidad_final = ? 
-           WHERE id_detalle = ?`,
-          [cantidad_final, id_entrega_detalle]
-        );
+        await conn.query(`
+          UPDATE entrega_detalle 
+          SET cantidad_final = ? 
+          WHERE id_detalle = ?
+        `, [cantidad_final, id_entrega_detalle])
       }
 
       // 2B. Actualizamos el precio_unitario en pedido_detalle para ese producto y pedido
-      await connection.query(
-        `UPDATE pedido_detalle 
-         SET precio_unitario = ? 
-         WHERE id_pedido = ? AND id_producto = ?`,
-        [precio_unitario, id_pedido, id_producto]
-      );
+      await conn.query(`
+        UPDATE pedido_detalle 
+        SET precio_unitario = ? 
+        WHERE id_pedido = ? AND id_producto = ?
+      `, [precio_unitario, id_pedido, id_producto])
 
-      // 3B. Recalcular el Total del Pedido Normal sin duplicar renglones por JOINs
-      await connection.query(
-        `UPDATE pedidos p
-         SET total = (
-           SELECT COALESCE(
-             SUM(
-               COALESCE(
-                 (
-                   SELECT ed.cantidad_final 
-                   FROM entrega_detalle ed
-                   INNER JOIN entregas e ON e.id_entrega = ed.id_entrega
-                   WHERE e.id_pedido = pd.id_pedido AND ed.id_producto = pd.id_producto
-                   LIMIT 1
-                 ),
-                 pd.cantidad
-               ) * pd.precio_unitario
-             ), 0
-           )
-           FROM pedido_detalle pd
-           WHERE pd.id_pedido = ?
-         )
-         WHERE p.id_pedido = ?`,
-        [id_pedido, id_pedido]
-      );
+      // 3B. Recalcular el Total del Pedido Normal tomando la cantidad final de entregas o la cantidad del pedido
+      await conn.query(`
+        UPDATE pedidos p
+        SET total = (
+          SELECT COALESCE(
+            SUM(
+              COALESCE(
+                (
+                  SELECT ed.cantidad_final 
+                  FROM entrega_detalle ed
+                  INNER JOIN entregas e ON e.id_entrega = ed.id_entrega
+                  WHERE e.id_pedido = pd.id_pedido AND ed.id_producto = pd.id_producto
+                  LIMIT 1
+                ),
+                pd.cantidad
+              ) * pd.precio_unitario
+            ), 0
+          )
+          FROM pedido_detalle pd
+          WHERE pd.id_pedido = ?
+        )
+        WHERE p.id_pedido = ?
+      `, [id_pedido, id_pedido])
     }
 
-    await connection.commit();
-    res.json({ success: true, message: 'Renglón y total actualizados correctamente' });
+    await conn.commit()
+    res.json({ success: true, message: 'Renglón y total actualizados correctamente' })
 
-  } catch (error) {
-    if (connection) await connection.rollback();
-    console.error('Error al actualizar renglón de la nota:', error);
-    res.status(500).json({ success: false, error: 'Error interno del servidor al actualizar el renglón' });
+  } catch (err) {
+    await conn.rollback()
+    console.error('Error al actualizar renglón de la nota:', err)
+    res.status(500).json({ success: false, error: err.message })
   } finally {
-    if (connection) connection.release();
+    conn.release()
   }
-});
+})
 
 
 app.post('/produccion', async (req, res) => {
