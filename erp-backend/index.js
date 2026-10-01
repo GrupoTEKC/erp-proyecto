@@ -4425,80 +4425,39 @@ app.post('/programaciones/:id/enviar', async (req, res) => {
 })
 
 
-app.put('/api/cuentas-por-cobrar/actualizar-renglon', async (req, res) => {
-  const connection = await db.getConnection(); // Para manejar la transacción completa
+app.get('/pedidos/:id_pedido/detalle-nota', async (req, res) => {
   try {
-    const { 
-      id_pedido, 
-      id_entrega, 
-      id_producto, 
-      cantidad_final, 
-      precio_unitario 
-    } = req.body;
+    const { id_pedido } = req.params;
+    const [rows] = await db.query(`
+      SELECT 
+        e.id_entrega,           -- 👈 AGREGAR ESTE CAMPO OBLIGATORIAMENTE
+        ed.id_producto,
+        p.nombre AS producto,
+        ed.cantidad_final,
+        pd.precio_unitario,
+        (ed.cantidad_final * pd.precio_unitario) AS subtotal,
+        ped.total AS total_nota_actualizado,
+        c.nombre AS cliente,
+        e.folio AS folio_entrega,
+        e.fecha_salida,
+        e.fecha_entrega
+      FROM entregas e
+      JOIN entrega_detalle ed ON e.id_entrega = ed.id_entrega
+      JOIN pedido_detalle pd ON e.id_pedido = pd.id_pedido AND ed.id_producto = pd.id_producto
+      JOIN productos p ON ed.id_producto = p.id_producto
+      JOIN pedidos ped ON e.id_pedido = ped.id_pedido
+      JOIN clientes c ON ped.id_cliente = c.id_cliente
+      WHERE e.id_pedido = ?
+    `, [id_pedido]);
 
-    // 1. Validar que vengan las llaves primarias del renglón
-    if (!id_pedido || !id_entrega || !id_producto) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Faltan parámetros obligatorios (id_pedido, id_entrega o id_producto)' 
-      });
-    }
-
-    await connection.beginTransaction();
-
-    // 2. Si enviaron cantidad_final, actualizar entrega_detalle
-    if (cantidad_final !== undefined && cantidad_final !== null) {
-      await connection.query(`
-        UPDATE entrega_detalle 
-        SET cantidad_final = ? 
-        WHERE id_entrega = ? AND id_producto = ?
-      `, [Number(cantidad_final), id_entrega, id_producto]);
-    }
-
-    // 3. Si enviaron precio_unitario, actualizar pedido_detalle
-    if (precio_unitario !== undefined && precio_unitario !== null) {
-      await connection.query(`
-        UPDATE pedido_detalle 
-        SET precio_unitario = ? 
-        WHERE id_pedido = ? AND id_producto = ?
-      `, [Number(precio_unitario), id_pedido, id_producto]);
-    }
-
-    // 4. Recalcular el total del pedido específico usando la fórmula confirmada
-    await connection.query(`
-      UPDATE pedidos p
-      JOIN (
-          SELECT 
-              e.id_pedido,
-              SUM(ed.cantidad_final * pd.precio_unitario) AS total_calculado
-          FROM entregas e
-          JOIN entrega_detalle ed ON e.id_entrega = ed.id_entrega
-          JOIN pedido_detalle pd ON e.id_pedido = pd.id_pedido AND ed.id_producto = pd.id_producto
-          WHERE e.id_pedido = ?
-            AND ed.cantidad_final IS NOT NULL 
-            AND ed.cantidad_final > 0
-          GROUP BY e.id_pedido
-      ) calc ON p.id_pedido = calc.id_pedido
-      SET p.total = calc.total_calculado
-      WHERE p.id_pedido = ?
-    `, [id_pedido, id_pedido]);
-
-    await connection.commit();
-
-    res.json({ 
-      success: true, 
-      ok: true, 
-      message: 'Renglón y total del pedido actualizados correctamente' 
-    });
-
+    res.json(rows);
   } catch (error) {
-    await connection.rollback();
-    console.error('Error al actualizar renglón:', error);
-    res.status(500).json({ success: false, error: error.message });
-  } finally {
-    connection.release();
+    console.error('Error al obtener detalle de nota:', error);
+    res.status(500).json({ error: error.message });
   }
 });
+
+
 
 app.post('/produccion', async (req, res) => {
   try {
