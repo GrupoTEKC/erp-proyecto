@@ -261,53 +261,57 @@ function Pagos() {
     })
   }
 
+
   const guardarEdicionRenglon = async (item) => {
-    if (!item.id_entrega || !item.id_producto || !pedidoSeleccionadoNota?.id_pedido) {
-      alert("Error: Faltan llaves primarias del renglón (id_pedido, id_entrega o id_producto).")
+  if (!item.id_entrega || !item.id_producto || !pedidoSeleccionadoNota?.id_pedido) {
+    alert("Error: Faltan llaves primarias del renglón (id_pedido, id_entrega o id_producto).")
+    return
+  }
+
+  setGuardandoRenglon(true)
+
+  try {
+    // 1. Se remueve "/api" para coincidir con el Backend
+    const response = await fetch(`${API}/cuentas-por-cobrar/actualizar-renglon`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id_pedido: pedidoSeleccionadoNota.id_pedido,
+        id_entrega: item.id_entrega,
+        id_producto: item.id_producto,
+        cantidad_final: Number(valoresEdit.cantidad_final),
+        precio_unitario: Number(valoresEdit.precio_unitario)
+      })
+    })
+
+    const result = await response.json()
+
+    // 2. Se valida response.ok sin exigir result.success
+    if (!response.ok) {
+      alert(result.error || "Error al actualizar el renglón")
       return
     }
 
-    setGuardandoRenglon(true)
+    alert("Renglón y total actualizados correctamente ✅")
+    setEditandoIndex(null)
 
-    try {
-      const response = await fetch(`${API}/api/cuentas-por-cobrar/actualizar-renglon`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id_pedido: pedidoSeleccionadoNota.id_pedido,
-          id_entrega: item.id_entrega,
-          id_producto: item.id_producto,
-          cantidad_final: Number(valoresEdit.cantidad_final),
-          precio_unitario: Number(valoresEdit.precio_unitario)
-        })
-      })
+    // Recargar modal de la nota
+    const res = await fetch(`${API}/pedidos/${pedidoSeleccionadoNota.id_pedido}/detalle-nota`)
+    const data = await res.json()
+    setDetalleNota(Array.isArray(data) ? data : [])
 
-      const result = await response.json()
-
-      if (!response.ok || !result.success) {
-        alert(result.error || "Error al actualizar el renglón")
-        return
-      }
-
-      alert("Renglón y total actualizados correctamente ✅")
-      setEditandoIndex(null)
-
-      // Recargar modal de la nota
-      const res = await fetch(`${API}/pedidos/${pedidoSeleccionadoNota.id_pedido}/detalle-nota`)
-      const data = await res.json()
-      setDetalleNota(Array.isArray(data) ? data : [])
-
-      // Recargar lista de pedidos
-      if (clienteSeleccionado) {
-        cargarPedidos(clienteSeleccionado)
-      }
-    } catch (error) {
-      console.error("Error al guardar edición:", error)
-      alert("Error de conexión al guardar el renglón")
-    } finally {
-      setGuardandoRenglon(false)
+    // Recargar lista de pedidos
+    if (clienteSeleccionado) {
+      cargarPedidos(clienteSeleccionado)
     }
+  } catch (error) {
+    console.error("Error al guardar edición:", error)
+    alert("Error de conexión al guardar el renglón")
+  } finally {
+    setGuardandoRenglon(false)
   }
+}
+  
 
   const setPagoField = (id, field, value) => {
     setPagosData(prev => ({
