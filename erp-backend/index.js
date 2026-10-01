@@ -4427,39 +4427,6 @@ app.post('/programaciones/:id/enviar', async (req, res) => {
 })
 
 
-app.get('/pedidos/:id_pedido/detalle-nota', async (req, res) => {
-  try {
-    const { id_pedido } = req.params;
-    const [rows] = await db.query(`
-      SELECT 
-        e.id_entrega,           -- 👈 AGREGAR ESTE CAMPO OBLIGATORIAMENTE
-        ed.id_producto,
-        p.nombre AS producto,
-        ed.cantidad_final,
-        pd.precio_unitario,
-        (ed.cantidad_final * pd.precio_unitario) AS subtotal,
-        ped.total AS total_nota_actualizado,
-        c.nombre AS cliente,
-        e.folio AS folio_entrega,
-        e.fecha_salida,
-        e.fecha_entrega
-      FROM entregas e
-      JOIN entrega_detalle ed ON e.id_entrega = ed.id_entrega
-      JOIN pedido_detalle pd ON e.id_pedido = pd.id_pedido AND ed.id_producto = pd.id_producto
-      JOIN productos p ON ed.id_producto = p.id_producto
-      JOIN pedidos ped ON e.id_pedido = ped.id_pedido
-      JOIN clientes c ON ped.id_cliente = c.id_cliente
-      WHERE e.id_pedido = ?
-    `, [id_pedido]);
-
-    res.json(rows);
-  } catch (error) {
-    console.error('Error al obtener detalle de nota:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-
 
 app.post('/produccion', async (req, res) => {
   try {
