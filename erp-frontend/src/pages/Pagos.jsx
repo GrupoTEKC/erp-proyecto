@@ -272,7 +272,7 @@ function Pagos() {
     setEditPrecio("")
   }
 
-  // 💾 Guardar cambios enviando PUT al backend
+
   const guardarEdicionRenglon = async (item) => {
     if (editCantidad === "" || editPrecio === "" || Number(editCantidad) < 0 || Number(editPrecio) < 0) {
       alert("Por favor ingresa valores válidos para cantidad y precio.")
@@ -285,8 +285,9 @@ function Pagos() {
 
     const bodyData = {
       tipo_origen: esRezagado ? "rezagado" : "pedido",
-      id_entrega_detalle: item.id_entrega_detalle || null,
+      id_entrega_detalle: item.id_entrega_detalle || item.id_detalle || null,
       id_rezagado_detalle: item.id_rezagado_detalle || item.id_detalle || null,
+      id_detalle: item.id_detalle || item.id_entrega_detalle || item.id_rezagado_detalle || null,
       id_pedido: esRezagado ? pedidoSeleccionadoNota.id_rezagado : pedidoSeleccionadoNota.id_pedido,
       id_producto: item.id_producto,
       cantidad_final: Number(editCantidad),
@@ -302,7 +303,7 @@ function Pagos() {
 
       const data = await res.json()
 
-      if (!res.ok || !data.success) {
+      if (!res.ok || (!data.success && !data.ok)) {
         alert(data.error || "Error al actualizar el renglón")
         return
       }
@@ -322,7 +323,10 @@ function Pagos() {
       setGuardandoRenglon(false)
     }
   }
-
+  
+  
+  
+  
   const setPagoField = (id, field, value) => {
     setPagosData(prev => ({
       ...prev,
