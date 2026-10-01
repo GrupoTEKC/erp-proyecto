@@ -4425,32 +4425,35 @@ app.post('/programaciones/:id/enviar', async (req, res) => {
 })
 
 
-// PUT: Actualizar cantidad final y precio unitario desde el Modal de Cuentas por Cobrar
+// PUT: Actualizar cantidad final y precio unitario desde Cuentas por Cobrar
 app.put('/api/cuentas-por-cobrar/actualizar-renglon', async (req, res) => {
-  const conn = await db.getConnection()
   try {
     const { 
       tipo_origen,         // 'pedido' o 'rezagado'
-      id_entrega_detalle,  // id_detalle de la tabla entrega_detalle (para pedidos normales)
-      id_rezagado_detalle, // id_detalle de la tabla pedido_rezagado_detalle (para rezagados)
+      id_entrega_detalle,  // id_detalle de entrega_detalle
+      id_rezagado_detalle, // id_detalle de pedido_rezagado_detalle
       id_pedido,           // id_pedido o id_rezagado
       id_producto,         // ID del producto a modificar
       cantidad_final,      // Nueva cantidad final
       precio_unitario      // Nuevo precio unitario
     } = req.body
 
-    await conn.beginTransaction()
+    // Validaciones básicas de entrada
+    if (!id_pedido || !id_producto) {
+      return res.status(400).json({ error: 'Faltan parámetros obligatorios (id_pedido o id_producto)' })
+    }
 
     if (tipo_origen === 'rezagado') {
-      // 1A. Si es un Pedido Rezagado, actualizamos directamente en pedido_rezagado_detalle
-      await conn.query(`
+      // 1A. Si es Rezagado, actualizar directamente en pedido_rezagado_detalle
+      const idDetalleRezagado = id_rezagado_detalle || req.body.id_detalle
+      await db.query(`
         UPDATE pedido_rezagado_detalle 
         SET cantidad = ?, precio_unitario = ? 
         WHERE id_detalle = ?
-      `, [cantidad_final, precio_unitario, id_rezagado_detalle])
+      `, [cantidad_final, precio_unitario, idDetalleRezagado])
 
-      // 2A. Recalcular y actualizar el Total general del Pedido Rezagado
-      await conn.query(`
+      // 2A. Recalcular total del Pedido Rezagado
+      await db.query(`
         UPDATE pedidos_rezagados 
         SET total = (
           SELECT COALESCE(SUM(cantidad * precio_unitario), 0) 
@@ -4461,24 +4464,34 @@ app.put('/api/cuentas-por-cobrar/actualizar-renglon', async (req, res) => {
       `, [id_pedido, id_pedido])
 
     } else {
-      // 1B. Si es un Pedido Normal, actualizamos cantidad_final en entrega_detalle
-      if (id_entrega_detalle) {
-        await conn.query(`
+      // 1B. Si es Pedido Normal, actualizar entrega_detalle (apoyando id_entrega_detalle o id_detalle)
+      const idDetalleEntrega = id_entrega_detalle || req.body.id_detalle
+
+      if (idDetalleEntrega) {
+        await db.query(`
           UPDATE entrega_detalle 
           SET cantidad_final = ? 
           WHERE id_detalle = ?
-        `, [cantidad_final, id_entrega_detalle])
+        `, [cantidad_final, idDetalleEntrega])
+      } else {
+        // Respuesto por si el frontend no manda el id_detalle de la entrega, busca por id_entrega + id_producto
+        await db.query(`
+          UPDATE entrega_detalle ed
+          INNER JOIN entregas e ON e.id_entrega = ed.id_entrega
+          SET ed.cantidad_final = ?
+          WHERE e.id_pedido = ? AND ed.id_producto = ?
+        `, [cantidad_final, id_pedido, id_producto])
       }
 
-      // 2B. Actualizamos el precio_unitario en pedido_detalle para ese producto y pedido
-      await conn.query(`
+      // 2B. Actualizar precio unitario en pedido_detalle
+      await db.query(`
         UPDATE pedido_detalle 
         SET precio_unitario = ? 
         WHERE id_pedido = ? AND id_producto = ?
       `, [precio_unitario, id_pedido, id_producto])
 
-      // 3B. Recalcular el Total del Pedido Normal tomando la cantidad final de entregas o la cantidad del pedido
-      await conn.query(`
+      // 3B. Recalcular Total General del Pedido Normal
+      await db.query(`
         UPDATE pedidos p
         SET total = (
           SELECT COALESCE(
@@ -4502,15 +4515,11 @@ app.put('/api/cuentas-por-cobrar/actualizar-renglon', async (req, res) => {
       `, [id_pedido, id_pedido])
     }
 
-    await conn.commit()
-    res.json({ success: true, message: 'Renglón y total actualizados correctamente' })
+    res.json({ ok: true, message: 'Renglón y total actualizados correctamente' })
 
   } catch (err) {
-    await conn.rollback()
-    console.error('Error al actualizar renglón de la nota:', err)
-    res.status(500).json({ success: false, error: err.message })
-  } finally {
-    conn.release()
+    console.error('Error al actualizar renglón:', err)
+    res.status(500).json({ error: err.message })
   }
 })
 
