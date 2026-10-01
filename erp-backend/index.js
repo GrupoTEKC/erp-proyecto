@@ -4427,8 +4427,12 @@ app.post('/programaciones/:id/enviar', async (req, res) => {
 
 // PUT: Actualizar cantidad final y precio unitario desde el Modal de Cuentas por Cobrar
 app.put('/api/cuentas-por-cobrar/actualizar-renglon', async (req, res) => {
-  const connection = await pool.getConnection(); // O tu cliente MySQL de conexión
+  let connection;
   try {
+    // 1. Obtener la conexión usando tu variable global o importada (ej. dbPool o db)
+    // Asegúrate de usar el mismo nombre con el que creaste tu pool de MySQL al inicio de index.js
+    connection = await pool.getConnection();
+
     const { 
       tipo_origen,         // 'pedido' o 'rezagado'
       id_entrega_detalle,  // id_detalle de la tabla entrega_detalle (para pedidos normales)
@@ -4481,16 +4485,25 @@ app.put('/api/cuentas-por-cobrar/actualizar-renglon', async (req, res) => {
         [precio_unitario, id_pedido, id_producto]
       );
 
-      // 3B. Recalcular el Total del Pedido Normal tomando la cantidad final de entregas o la cantidad del pedido
+      // 3B. Recalcular el Total del Pedido Normal sin duplicar renglones por JOINs
       await connection.query(
         `UPDATE pedidos p
          SET total = (
-           SELECT COALESCE(SUM(
-             COALESCE(ed.cantidad_final, pd.cantidad) * pd.precio_unitario
-           ), 0)
+           SELECT COALESCE(
+             SUM(
+               COALESCE(
+                 (
+                   SELECT ed.cantidad_final 
+                   FROM entrega_detalle ed
+                   INNER JOIN entregas e ON e.id_entrega = ed.id_entrega
+                   WHERE e.id_pedido = pd.id_pedido AND ed.id_producto = pd.id_producto
+                   LIMIT 1
+                 ),
+                 pd.cantidad
+               ) * pd.precio_unitario
+             ), 0
+           )
            FROM pedido_detalle pd
-           LEFT JOIN entregas e ON e.id_pedido = pd.id_pedido
-           LEFT JOIN entrega_detalle ed ON ed.id_entrega = e.id_entrega AND ed.id_producto = pd.id_producto
            WHERE pd.id_pedido = ?
          )
          WHERE p.id_pedido = ?`,
@@ -4502,11 +4515,11 @@ app.put('/api/cuentas-por-cobrar/actualizar-renglon', async (req, res) => {
     res.json({ success: true, message: 'Renglón y total actualizados correctamente' });
 
   } catch (error) {
-    await connection.rollback();
+    if (connection) await connection.rollback();
     console.error('Error al actualizar renglón de la nota:', error);
     res.status(500).json({ success: false, error: 'Error interno del servidor al actualizar el renglón' });
   } finally {
-    connection.release();
+    if (connection) connection.release();
   }
 });
 
