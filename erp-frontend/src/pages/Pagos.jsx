@@ -141,6 +141,10 @@ function Pagos() {
   const [pedidoSeleccionadoNota, setPedidoSeleccionadoNota] = useState(null)
   const [cargandoNota, setCargandoNota] = useState(false)
   
+  // Estado para la edición de renglones en la Nota
+  const [edicionNota, setEdicionNota] = useState({})
+  const [guardandoRenglon, setGuardandoRenglon] = useState(null)
+
   const [detalles, setDetalles] = useState([])
   const [verDetalles, setVerDetalles] = useState(null)
   const [mostrarCrear, setMostrarCrear] = useState(false)
@@ -237,12 +241,82 @@ function Pagos() {
     try {
       const res = await fetch(`${API}/pedidos/${pedido.id_pedido}/detalle-nota`)
       const data = await res.json()
-      setDetalleNota(Array.isArray(data) ? data : [])
+      const listaDetalle = Array.isArray(data) ? data : []
+      setDetalleNota(listaDetalle)
+
+      // Inicializar estado editable por producto
+      const mapaEdicion = {}
+      listaDetalle.forEach(item => {
+        mapaEdicion[item.id_producto] = {
+          cantidad_final: item.cantidad_final,
+          precio_unitario: item.precio_unitario
+        }
+      })
+      setEdicionNota(mapaEdicion)
     } catch (error) {
       console.error("Error al cargar detalle de la nota:", error)
       setDetalleNota([])
     } finally {
       setCargandoNota(false)
+    }
+  }
+
+  const handleCambioEdicion = (id_producto, campo, valor) => {
+    setEdicionNota(prev => ({
+      ...prev,
+      [id_producto]: {
+        ...prev[id_producto],
+        [campo]: valor
+      }
+    }))
+  }
+
+  const guardarRenglonNota = async (item) => {
+    const idProd = item.id_producto
+    const datosEditados = edicionNota[idProd] || {}
+
+    if (!datosEditados.cantidad_final || Number(datosEditados.cantidad_final) <= 0) {
+      alert("La cantidad debe ser mayor a 0")
+      return
+    }
+
+    if (!datosEditados.precio_unitario || Number(datosEditados.precio_unitario) < 0) {
+      alert("El precio unitario no es válido")
+      return
+    }
+
+    setGuardandoRenglon(idProd)
+
+    try {
+      const res = await fetch(`${API}/api/cuentas-por-cobrar/actualizar-renglon`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id_pedido: pedidoSeleccionadoNota.id_pedido,
+          id_entrega: item.id_entrega,
+          id_producto: idProd,
+          cantidad_final: datosEditados.cantidad_final,
+          precio_unitario: datosEditados.precio_unitario
+        })
+      })
+
+      const responseData = await res.json()
+
+      if (res.ok && responseData.success) {
+        alert("Renglón y total actualizados ✅")
+        // Recargar modal de la nota y lista principal de pedidos
+        await abrirModalNota(pedidoSeleccionadoNota)
+        if (clienteSeleccionado) {
+          cargarPedidos(clienteSeleccionado)
+        }
+      } else {
+        alert(responseData.error || "Error al actualizar el renglón")
+      }
+    } catch (error) {
+      console.error("Error en la petición:", error)
+      alert("Error de conexión al guardar el renglón")
+    } finally {
+      setGuardandoRenglon(null)
     }
   }
 
@@ -382,7 +456,6 @@ function Pagos() {
     }
   }
   
- // ✅ AHORA (incluye p.id_rezagado para que filtre correctamente pedidos rezagados)
   const pedidosFiltrados = pedidos
     .filter(p =>
       `${p.folio || p.id_pedido || p.id_rezagado}`.toLowerCase().includes(busquedaFolio.toLowerCase())
@@ -609,7 +682,6 @@ function Pagos() {
             ].filter(Boolean).join(' - ')}
           </h3>
 
-          
           <input
             placeholder="Buscar folio..."
             value={busquedaFolio}
@@ -1122,7 +1194,7 @@ function Pagos() {
         </div>
       )}
 
-      {/* ⬇️ MODAL NOTA (DENTRO DEL CONTENEDOR PRINCIPAL) ⬇️ */}
+      {/* ⬇️ MODAL NOTA (CON EDICIÓN DIRECTA EN CADA RENGLÓN) ⬇️ */}
       {mostrarModalNota && (
         <div style={styles.overlay}>
           <div style={{
@@ -1133,7 +1205,7 @@ function Pagos() {
             backgroundColor: '#fff',
             padding: '24px',
             borderRadius: '8px',
-            width: '650px',
+            width: '750px',
             maxWidth: '95%',
             maxHeight: '90vh',
             overflowY: 'auto',
@@ -1165,33 +1237,100 @@ function Pagos() {
                       <tr style={{ background: '#8B1E1E', color: '#fff', fontSize: '14px' }}>
                         <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'left' }}>Producto</th>
                         <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>Cant. Final</th>
-                        <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'right' }}>Precio Unit.</th>
+                        <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>Precio Unit.</th>
                         <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'right' }}>Subtotal</th>
+                        <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>Acción</th>
                       </tr>
                     </thead>
                     <tbody>
                       {detalleNota.length === 0 ? (
                         <tr>
-                          <td colSpan="4" style={{ textAlign: 'center', padding: '15px' }}>
+                          <td colSpan="5" style={{ textAlign: 'center', padding: '15px' }}>
                             No se encontraron productos registrados para este pedido.
                           </td>
                         </tr>
                       ) : (
                         detalleNota.map((item, index) => {
-                          const cant = Number(item.cantidad_final || 0);
-                          const precio = Number(item.precio_unitario || 0);
-                          const subtotal = cant * precio;
+                          const datosRenglon = edicionNota[item.id_producto] || {
+                            cantidad_final: item.cantidad_final,
+                            precio_unitario: item.precio_unitario
+                          }
+                          const cant = Number(datosRenglon.cantidad_final || 0)
+                          const precio = Number(datosRenglon.precio_unitario || 0)
+                          const subtotal = cant * precio
+                          const estaCargando = guardandoRenglon === item.id_producto
 
                           return (
                             <tr key={index} style={{ backgroundColor: index % 2 === 0 ? '#ffffff' : '#f9f9f9', fontSize: '14px' }}>
                               <td style={{ padding: '8px 10px', border: '1px solid #ddd', fontWeight: '500' }}>{item.producto}</td>
-                              <td style={{ padding: '8px 10px', border: '1px solid #ddd', textAlign: 'center' }}>{cant}</td>
-                              <td style={{ padding: '8px 10px', border: '1px solid #ddd', textAlign: 'right' }}>${precio.toFixed(2)}</td>
+                              
+                              {/* Cantidad Final editable con input estilizado */}
+                              <td style={{ padding: '8px 10px', border: '1px solid #ddd', textAlign: 'center' }}>
+                                <input
+                                  type="number"
+                                  value={datosRenglon.cantidad_final ?? ''}
+                                  onChange={e => handleCambioEdicion(item.id_producto, 'cantidad_final', e.target.value)}
+                                  style={{
+                                    width: '70px',
+                                    padding: '5px',
+                                    borderRadius: '4px',
+                                    border: '1px solid #8B1E1E',
+                                    textAlign: 'center',
+                                    fontWeight: 'bold'
+                                  }}
+                                />
+                              </td>
+
+                              {/* Precio Unitario editable con input estilizado */}
+                              <td style={{ padding: '8px 10px', border: '1px solid #ddd', textAlign: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}>
+                                  <span>$</span>
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    value={datosRenglon.precio_unitario ?? ''}
+                                    onChange={e => handleCambioEdicion(item.id_producto, 'precio_unitario', e.target.value)}
+                                    style={{
+                                      width: '80px',
+                                      padding: '5px',
+                                      borderRadius: '4px',
+                                      border: '1px solid #8B1E1E',
+                                      textAlign: 'right',
+                                      fontWeight: 'bold'
+                                    }}
+                                  />
+                                </div>
+                              </td>
+
                               <td style={{ padding: '8px 10px', border: '1px solid #ddd', textAlign: 'right', fontWeight: 'bold' }}>
                                 ${subtotal.toFixed(2)}
                               </td>
+
+                              {/* Botón funcional de Guardar por renglón */}
+                              <td style={{ padding: '8px 10px', border: '1px solid #ddd', textAlign: 'center' }}>
+                                <button
+                                  onClick={() => guardarRenglonNota(item)}
+                                  disabled={estaCargando}
+                                  title="Guardar cambios de esta fila"
+                                  style={{
+                                    backgroundColor: estaCargando ? '#ccc' : '#071849',
+                                    color: '#fff',
+                                    border: 'none',
+                                    padding: '6px 12px',
+                                    borderRadius: '6px',
+                                    cursor: estaCargando ? 'not-allowed' : 'pointer',
+                                    fontSize: '14px',
+                                    fontWeight: 'bold',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px'
+                                  }}
+                                >
+                                  {estaCargando ? '⏳' : '💾'}
+                                </button>
+                              </td>
                             </tr>
-                          );
+                          )
                         })
                       )}
                     </tbody>
@@ -1200,7 +1339,7 @@ function Pagos() {
                         <td colSpan="3" style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'right', fontSize: '15px' }}>
                           TOTAL DE LA NOTA:
                         </td>
-                        <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'right', color: '#8B1E1E', fontSize: '16px' }}>
+                        <td colSpan="2" style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'right', color: '#8B1E1E', fontSize: '16px' }}>
                           ${(detalleNota[0]?.total_nota_actualizado ? Number(detalleNota[0].total_nota_actualizado) : 0).toFixed(2)}
                         </td>
                       </tr>
