@@ -4425,7 +4425,6 @@ app.post('/programaciones/:id/enviar', async (req, res) => {
 })
 
 
-// PUT: Actualizar cantidad final y precio unitario desde Cuentas por Cobrar
 app.put('/api/cuentas-por-cobrar/actualizar-renglon', async (req, res) => {
   try {
     const { 
@@ -4440,7 +4439,7 @@ app.put('/api/cuentas-por-cobrar/actualizar-renglon', async (req, res) => {
 
     // Validaciones básicas de entrada
     if (!id_pedido || !id_producto) {
-      return res.status(400).json({ error: 'Faltan parámetros obligatorios (id_pedido o id_producto)' })
+      return res.status(400).json({ success: false, error: 'Faltan parámetros obligatorios (id_pedido o id_producto)' })
     }
 
     if (tipo_origen === 'rezagado') {
@@ -4464,7 +4463,7 @@ app.put('/api/cuentas-por-cobrar/actualizar-renglon', async (req, res) => {
       `, [id_pedido, id_pedido])
 
     } else {
-      // 1B. Si es Pedido Normal, actualizar entrega_detalle (apoyando id_entrega_detalle o id_detalle)
+      // 1B. Si es Pedido Normal, actualizar entrega_detalle
       const idDetalleEntrega = id_entrega_detalle || req.body.id_detalle
 
       if (idDetalleEntrega) {
@@ -4474,7 +4473,7 @@ app.put('/api/cuentas-por-cobrar/actualizar-renglon', async (req, res) => {
           WHERE id_detalle = ?
         `, [cantidad_final, idDetalleEntrega])
       } else {
-        // Respuesto por si el frontend no manda el id_detalle de la entrega, busca por id_entrega + id_producto
+        // Respaldo por si el frontend no manda el id_detalle de la entrega
         await db.query(`
           UPDATE entrega_detalle ed
           INNER JOIN entregas e ON e.id_entrega = ed.id_entrega
@@ -4515,13 +4514,16 @@ app.put('/api/cuentas-por-cobrar/actualizar-renglon', async (req, res) => {
       `, [id_pedido, id_pedido])
     }
 
-    res.json({ ok: true, message: 'Renglón y total actualizados correctamente' })
+    res.json({ success: true, ok: true, message: 'Renglón y total actualizados correctamente' })
 
   } catch (err) {
     console.error('Error al actualizar renglón:', err)
-    res.status(500).json({ error: err.message })
+    res.status(500).json({ success: false, error: err.message })
   }
 })
+
+
+
 
 
 app.post('/produccion', async (req, res) => {
