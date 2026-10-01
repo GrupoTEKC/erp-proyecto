@@ -140,6 +140,12 @@ function Pagos() {
   const [detalleNota, setDetalleNota] = useState([])
   const [pedidoSeleccionadoNota, setPedidoSeleccionadoNota] = useState(null)
   const [cargandoNota, setCargandoNota] = useState(false)
+
+  // ✏️️ Estados para edición de renglón dentro del modal
+  const [editandoIndex, setEditandoIndex] = useState(null)
+  const [editCantidad, setEditCantidad] = useState("")
+  const [editPrecio, setEditPrecio] = useState("")
+  const [guardandoRenglon, setGuardandoRenglon] = useState(false)
   
   const [detalles, setDetalles] = useState([])
   const [verDetalles, setVerDetalles] = useState(null)
@@ -229,20 +235,91 @@ function Pagos() {
     )
   }
 
-  const abrirModalNota = async (pedido) => {
-    setPedidoSeleccionadoNota(pedido)
-    setMostrarModalNota(true)
-    setCargandoNota(true)
-    
+  const cargarDetalleNota = async (pedido) => {
     try {
-      const res = await fetch(`${API}/pedidos/${pedido.id_pedido}/detalle-nota`)
+      const res = await fetch(`${API}/pedidos/${pedido.id_pedido || pedido.id_rezagado}/detalle-nota`)
       const data = await res.json()
       setDetalleNota(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error("Error al cargar detalle de la nota:", error)
       setDetalleNota([])
+    }
+  }
+
+  const abrirModalNota = async (pedido) => {
+    setPedidoSeleccionadoNota(pedido)
+    setMostrarModalNota(true)
+    setCargandoNota(true)
+    setEditandoIndex(null)
+    
+    try {
+      await cargarDetalleNota(pedido)
     } finally {
       setCargandoNota(false)
+    }
+  }
+
+  // ✏️ Activar modo edición para una fila específica
+  const iniciarEdicion = (item, index) => {
+    setEditandoIndex(index)
+    setEditCantidad(item.cantidad_final ?? item.cantidad ?? 0)
+    setEditPrecio(item.precio_unitario ?? 0)
+  }
+
+  const cancelarEdicion = () => {
+    setEditandoIndex(null)
+    setEditCantidad("")
+    setEditPrecio("")
+  }
+
+  // 💾 Guardar cambios enviando PUT al backend
+  const guardarEdicionRenglon = async (item) => {
+    if (editCantidad === "" || editPrecio === "" || Number(editCantidad) < 0 || Number(editPrecio) < 0) {
+      alert("Por favor ingresa valores válidos para cantidad y precio.")
+      return
+    }
+
+    setGuardandoRenglon(true)
+
+    const esRezagado = pedidoSeleccionadoNota.tipo === "rezagado"
+
+    const bodyData = {
+      tipo_origen: esRezagado ? "rezagado" : "pedido",
+      id_entrega_detalle: item.id_entrega_detalle || null,
+      id_rezagado_detalle: item.id_rezagado_detalle || item.id_detalle || null,
+      id_pedido: esRezagado ? pedidoSeleccionadoNota.id_rezagado : pedidoSeleccionadoNota.id_pedido,
+      id_producto: item.id_producto,
+      cantidad_final: Number(editCantidad),
+      precio_unitario: Number(editPrecio)
+    }
+
+    try {
+      const res = await fetch(`${API}/api/cuentas-por-cobrar/actualizar-renglon`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bodyData)
+      })
+
+      const data = await res.json()
+
+      if (!res.ok || !data.success) {
+        alert(data.error || "Error al actualizar el renglón")
+        return
+      }
+
+      alert("Renglón actualizado correctamente ✅")
+      setEditandoIndex(null)
+
+      // Recargar la nota y la lista de pedidos del cliente para actualizar saldos y totales en tiempo real
+      await cargarDetalleNota(pedidoSeleccionadoNota)
+      if (clienteSeleccionado) {
+        await cargarPedidos(clienteSeleccionado)
+      }
+    } catch (error) {
+      console.error("Error al actualizar el renglón:", error)
+      alert("Error de conexión al intentar actualizar el renglón.")
+    } finally {
+      setGuardandoRenglon(false)
     }
   }
 
@@ -382,7 +459,6 @@ function Pagos() {
     }
   }
   
- // ✅ AHORA (incluye p.id_rezagado para que filtre correctamente pedidos rezagados)
   const pedidosFiltrados = pedidos
     .filter(p =>
       `${p.folio || p.id_pedido || p.id_rezagado}`.toLowerCase().includes(busquedaFolio.toLowerCase())
@@ -406,6 +482,16 @@ function Pagos() {
     setResultadosBusqueda(filtrados)
   }
   
+  // Cálculo del total acumulado de la nota dentro del modal
+  const totalNotaCalculado = detalleNota.reduce((acc, item, idx) => {
+    if (editandoIndex === idx) {
+      return acc + (Number(editCantidad) * Number(editPrecio))
+    }
+    const cant = Number(item.cantidad_final ?? item.cantidad ?? 0)
+    const prec = Number(item.precio_unitario ?? 0)
+    return acc + (cant * prec)
+  }, 0)
+
   return (
     <div style={styles.page}>
       {!menuAbierto && (
@@ -579,7 +665,7 @@ function Pagos() {
             style={styles.field}
           />
 
-        {clientes.map(c => {
+          {clientes.map(c => {
             const etiquetaCliente = [
               `${c.nombre || ''} ${c.apellido1 || ''}`.trim(),
               c.nombre_tienda,
@@ -609,7 +695,6 @@ function Pagos() {
             ].filter(Boolean).join(' - ')}
           </h3>
 
-          
           <input
             placeholder="Buscar folio..."
             value={busquedaFolio}
@@ -1122,7 +1207,7 @@ function Pagos() {
         </div>
       )}
 
-      {/* ⬇️ MODAL NOTA (DENTRO DEL CONTENEDOR PRINCIPAL) ⬇️ */}
+      {/* ⬇️ MODAL NOTA CON INTEGRACIÓN DE EDICIÓN CON LÁPIZ/BOTÓN ⬇️ */}
       {mostrarModalNota && (
         <div style={styles.overlay}>
           <div style={{
@@ -1133,7 +1218,7 @@ function Pagos() {
             backgroundColor: '#fff',
             padding: '24px',
             borderRadius: '8px',
-            width: '650px',
+            width: '720px',
             maxWidth: '95%',
             maxHeight: '90vh',
             overflowY: 'auto',
@@ -1141,7 +1226,7 @@ function Pagos() {
             zIndex: 1000
           }}>
             <h2 style={{ color: '#8B1E1E', marginBottom: '15px', borderBottom: '2px solid #8B1E1E', paddingBottom: '8px' }}>
-              Detalles de la Nota (Pedido #{pedidoSeleccionadoNota?.id_pedido})
+              Detalles de la Nota (Pedido #{pedidoSeleccionadoNota?.id_pedido || pedidoSeleccionadoNota?.id_rezagado})
             </h2>
 
             {cargandoNota ? (
@@ -1150,7 +1235,7 @@ function Pagos() {
               <>
                 <div style={{ background: '#f8f9fa', padding: '12px 16px', borderRadius: '6px', marginBottom: '15px', fontSize: '14px', border: '1px solid #e9ecef' }}>
                   <p style={{ margin: '4px 0' }}><strong>Cliente:</strong> {detalleNota[0]?.cliente || pedidoSeleccionadoNota?.cliente || 'N/A'}</p>
-                  <p style={{ margin: '4px 0' }}><strong>Folio Entrega:</strong> {detalleNota[0]?.folio_entrega || 'N/A'}</p>
+                  <p style={{ margin: '4px 0' }}><strong>Folio Entrega:</strong> {detalleNota[0]?.folio_entrega || pedidoSeleccionadoNota?.folio || 'N/A'}</p>
                   <p style={{ margin: '4px 0' }}>
                     <strong>Fecha Salida (Embarque):</strong> {detalleNota[0]?.fecha_salida ? new Date(detalleNota[0].fecha_salida).toLocaleString('es-MX') : 'N/A'}
                   </p>
@@ -1167,31 +1252,121 @@ function Pagos() {
                         <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>Cant. Final</th>
                         <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'right' }}>Precio Unit.</th>
                         <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'right' }}>Subtotal</th>
+                        <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>Acción</th>
                       </tr>
                     </thead>
                     <tbody>
                       {detalleNota.length === 0 ? (
                         <tr>
-                          <td colSpan="4" style={{ textAlign: 'center', padding: '15px' }}>
+                          <td colSpan="5" style={{ textAlign: 'center', padding: '15px' }}>
                             No se encontraron productos registrados para este pedido.
                           </td>
                         </tr>
                       ) : (
                         detalleNota.map((item, index) => {
-                          const cant = Number(item.cantidad_final || 0);
-                          const precio = Number(item.precio_unitario || 0);
-                          const subtotal = cant * precio;
+                          const estaEditando = editandoIndex === index
+                          const cant = estaEditando ? Number(editCantidad) : Number(item.cantidad_final ?? item.cantidad ?? 0)
+                          const precio = estaEditando ? Number(editPrecio) : Number(item.precio_unitario ?? 0)
+                          const subtotal = cant * precio
 
                           return (
-                            <tr key={index} style={{ backgroundColor: index % 2 === 0 ? '#ffffff' : '#f9f9f9', fontSize: '14px' }}>
-                              <td style={{ padding: '8px 10px', border: '1px solid #ddd', fontWeight: '500' }}>{item.producto}</td>
-                              <td style={{ padding: '8px 10px', border: '1px solid #ddd', textAlign: 'center' }}>{cant}</td>
-                              <td style={{ padding: '8px 10px', border: '1px solid #ddd', textAlign: 'right' }}>${precio.toFixed(2)}</td>
+                            <tr key={index} style={{ backgroundColor: estaEditando ? '#fffde7' : (index % 2 === 0 ? '#ffffff' : '#f9f9f9'), fontSize: '14px' }}>
+                              <td style={{ padding: '8px 10px', border: '1px solid #ddd', fontWeight: '500' }}>
+                                {item.producto || item.nombre_producto}
+                              </td>
+
+                              {/* Cantidad Final */}
+                              <td style={{ padding: '8px 10px', border: '1px solid #ddd', textAlign: 'center' }}>
+                                {estaEditando ? (
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={editCantidad}
+                                    onChange={e => setEditCantidad(e.target.value)}
+                                    style={{ width: '70px', padding: '4px', textAlign: 'center', borderRadius: '4px', border: '1px solid #8B1E1E' }}
+                                  />
+                                ) : (
+                                  cant
+                                )}
+                              </td>
+
+                              {/* Precio Unitario */}
+                              <td style={{ padding: '8px 10px', border: '1px solid #ddd', textAlign: 'right' }}>
+                                {estaEditando ? (
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={editPrecio}
+                                    onChange={e => setEditPrecio(e.target.value)}
+                                    style={{ width: '80px', padding: '4px', textAlign: 'right', borderRadius: '4px', border: '1px solid #8B1E1E' }}
+                                  />
+                                ) : (
+                                  `$${precio.toFixed(2)}`
+                                )}
+                              </td>
+
+                              {/* Subtotal */}
                               <td style={{ padding: '8px 10px', border: '1px solid #ddd', textAlign: 'right', fontWeight: 'bold' }}>
                                 ${subtotal.toFixed(2)}
                               </td>
+
+                              {/* Botones Lápiz / Guardar / Cancelar */}
+                              <td style={{ padding: '8px 10px', border: '1px solid #ddd', textAlign: 'center' }}>
+                                {estaEditando ? (
+                                  <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
+                                    <button
+                                      disabled={guardandoRenglon}
+                                      onClick={() => guardarEdicionRenglon(item)}
+                                      title="Guardar cambios"
+                                      style={{
+                                        backgroundColor: '#2e7d32',
+                                        color: '#fff',
+                                        border: 'none',
+                                        padding: '4px 8px',
+                                        borderRadius: '4px',
+                                        cursor: 'pointer',
+                                        fontSize: '12px'
+                                      }}
+                                    >
+                                      {guardandoRenglon ? '...' : '💾'}
+                                    </button>
+                                    <button
+                                      onClick={cancelarEdicion}
+                                      title="Cancelar"
+                                      style={{
+                                        backgroundColor: '#c62828',
+                                        color: '#fff',
+                                        border: 'none',
+                                        padding: '4px 8px',
+                                        borderRadius: '4px',
+                                        cursor: 'pointer',
+                                        fontSize: '12px'
+                                      }}
+                                    >
+                                      ✖
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => iniciarEdicion(item, index)}
+                                    title="Editar renglón"
+                                    style={{
+                                      backgroundColor: '#f59e0b',
+                                      color: '#fff',
+                                      border: 'none',
+                                      padding: '4px 8px',
+                                      borderRadius: '4px',
+                                      cursor: 'pointer',
+                                      fontSize: '14px'
+                                    }}
+                                  >
+                                    ✏️
+                                  </button>
+                                )}
+                              </td>
                             </tr>
-                          );
+                          )
                         })
                       )}
                     </tbody>
@@ -1200,8 +1375,8 @@ function Pagos() {
                         <td colSpan="3" style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'right', fontSize: '15px' }}>
                           TOTAL DE LA NOTA:
                         </td>
-                        <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'right', color: '#8B1E1E', fontSize: '16px' }}>
-                          ${(detalleNota[0]?.total_nota_actualizado ? Number(detalleNota[0].total_nota_actualizado) : 0).toFixed(2)}
+                        <td colSpan="2" style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'right', color: '#8B1E1E', fontSize: '16px' }}>
+                          ${totalNotaCalculado.toFixed(2)}
                         </td>
                       </tr>
                     </tfoot>
