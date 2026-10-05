@@ -1780,8 +1780,6 @@ app.get('/pedidos/:id/detalle-nota', async (req, res) => {
     const [filas] = await db.query(
       `SELECT 
           p.id_pedido,
-          e.id_entrega,    -- 👈 Agregar para que el cliente lo reciba
-          ed.id_producto,   -- 👈 Agregar para que el cliente lo reciba
           e.folio AS folio_entrega,
           c.nombre AS cliente,
           e.fecha_salida,
@@ -4425,8 +4423,6 @@ app.post('/programaciones/:id/enviar', async (req, res) => {
     conn.release()
   }
 })
-
-
 
 app.post('/produccion', async (req, res) => {
   try {
