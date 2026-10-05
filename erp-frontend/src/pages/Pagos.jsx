@@ -145,6 +145,10 @@ function Pagos() {
   const [valoresEdit, setValoresEdit] = useState({ cantidad_final: "", precio_unitario: "" })
   const [guardandoRenglon, setGuardandoRenglon] = useState(false)
 
+  // BÚSQUEDA DENTRO DEL MODAL NOTA
+  const [busquedaNotaProd, setBusquedaNotaProd] = useState("")
+  const [resultadosNotaProd, setResultadosNotaProd] = useState([])
+
   const [detalles, setDetalles] = useState([])
   const [verDetalles, setVerDetalles] = useState(null)
   const [mostrarCrear, setMostrarCrear] = useState(false)
@@ -238,6 +242,8 @@ function Pagos() {
     setMostrarModalNota(true)
     setCargandoNota(true)
     setEditandoIndex(null)
+    setBusquedaNotaProd("")
+    setResultadosNotaProd([])
     
     try {
       const res = await fetch(`${API}/pedidos/${pedido.id_pedido}/detalle-nota`)
@@ -251,6 +257,53 @@ function Pagos() {
     }
   }
 
+  // BÚSQUEDA DE PRODUCTOS EN EL MODAL DE NOTA
+  const buscarProductoModal = (texto) => {
+    setBusquedaNotaProd(texto)
+    if (!texto.trim()) {
+      setResultadosNotaProd([])
+      return
+    }
+
+    const filtrados = productosCatalogo.filter(p =>
+      p.nombre.toLowerCase().includes(texto.toLowerCase())
+    )
+    setResultadosNotaProd(filtrados)
+  }
+
+  // AGREGAR UN PRODUCTO NUEVO A LA LISTA Y PONERLO EN MODO EDICIÓN
+  const agregarProductoANota = (prod) => {
+    const yaExiste = detalleNota.some(item => item.id_producto === prod.id_producto)
+    if (yaExiste) {
+      alert("Este producto ya está en la nota. Modifica su cantidad en la tabla.")
+      return
+    }
+
+    const idEntregaRef = detalleNota[0]?.id_entrega || null
+
+    const nuevoRenglon = {
+      id_entrega: idEntregaRef,
+      id_producto: prod.id_producto,
+      producto: prod.nombre,
+      cantidad_final: 1,
+      precio_unitario: prod.precio || 0,
+      esNuevo: true
+    }
+
+    const nuevaLista = [...detalleNota, nuevoRenglon]
+    setDetalleNota(nuevaLista)
+
+    const nuevoIndex = nuevaLista.length - 1
+    setEditandoIndex(nuevoIndex)
+    setValoresEdit({
+      cantidad_final: 1,
+      precio_unitario: prod.precio || 0
+    })
+
+    setBusquedaNotaProd("")
+    setResultadosNotaProd([])
+  }
+
   // FUNCIONES DE EDICIÓN DE RENGLÓN EN EL MODAL DE NOTA
   const iniciarEdicionRenglon = (index, item) => {
     setEditandoIndex(index)
@@ -261,15 +314,24 @@ function Pagos() {
   }
 
   const cancelarEdicionRenglon = () => {
+    if (detalleNota[editandoIndex]?.esNuevo) {
+      setDetalleNota(detalleNota.filter((_, i) => i !== editandoIndex))
+    }
     setEditandoIndex(null)
   }
 
   const guardarEdicionRenglon = async (item) => {
     setGuardandoRenglon(true)
 
+    const endpoint = item.esNuevo
+      ? `${API}/cuentas-por-cobrar/agregar-producto`
+      : `${API}/cuentas-por-cobrar/actualizar-renglon`
+
+    const method = item.esNuevo ? "POST" : "PUT"
+
     try {
-      const response = await fetch(`${API}/cuentas-por-cobrar/actualizar-renglon`, {
-        method: "PUT",
+      const response = await fetch(endpoint, {
+        method: method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id_pedido: pedidoSeleccionadoNota.id_pedido,
@@ -282,11 +344,11 @@ function Pagos() {
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}))
-        alert(errData.error || "Error al actualizar el renglón en el servidor")
+        alert(errData.error || "Error al procesar el renglón en el servidor")
         return
       }
 
-      alert("Renglón actualizado correctamente ✅")
+      alert(item.esNuevo ? "Producto agregado correctamente ✅" : "Renglón actualizado correctamente ✅")
       setEditandoIndex(null)
 
       // Recargar el detalle de la nota para ver subtotales y totales actualizados
@@ -929,7 +991,7 @@ function Pagos() {
                   marginBottom: 15
                 }}
               >
-                ⚠️️ MUY IMPORTANTE – PATRÓN YAHIR
+                ⚠ MUY IMPORTANTE – PATRÓN YAHIR
               </div>
 
               <div
@@ -1181,7 +1243,7 @@ function Pagos() {
         </div>
       )}
 
-      {/* ⬇️ MODAL NOTA (CON EDICIÓN DE CANTIDAD Y PRECIO) ⬇️ */}
+      {/* ⬇️ MODAL NOTA (CON BUSCADOR Y EDICIÓN DE CANTIDAD Y PRECIO) ⬇️ */}
       {mostrarModalNota && (
         <div style={styles.overlay}>
           <div style={{
@@ -1216,6 +1278,52 @@ function Pagos() {
                   <p style={{ margin: '4px 0' }}>
                     <strong>Fecha Registro Entrega:</strong> {detalleNota[0]?.fecha_entrega ? new Date(detalleNota[0].fecha_entrega).toLocaleString('es-MX') : 'N/A'}
                   </p>
+                </div>
+
+                {/* BUSCADOR DE PRODUCTOS DENTRO DEL MODAL */}
+                <div style={{ marginBottom: '15px', background: '#f5f5f5', padding: '12px', borderRadius: '6px', border: '1px solid #ddd' }}>
+                  <label style={{ fontWeight: 'bold', fontSize: '14px', color: '#071849', display: 'block', marginBottom: '5px' }}>
+                    ➕ Agregar producto a la nota:
+                  </label>
+                  <input
+                    placeholder="Buscar producto para agregar..."
+                    value={busquedaNotaProd}
+                    onChange={e => buscarProductoModal(e.target.value)}
+                    style={{ ...styles.field, maxWidth: '100%' }}
+                  />
+
+                  {resultadosNotaProd.length > 0 && (
+                    <div style={{ marginTop: '8px', maxHeight: '150px', overflowY: 'auto', background: '#fff', border: '1px solid #ccc', borderRadius: '4px' }}>
+                      {resultadosNotaProd.map((prod) => (
+                        <div
+                          key={prod.id_producto}
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '8px 12px',
+                            borderBottom: '1px solid #eee'
+                          }}
+                        >
+                          <span style={{ fontSize: '14px', fontWeight: '500' }}>{prod.nombre}</span>
+                          <button
+                            onClick={() => agregarProductoANota(prod)}
+                            style={{
+                              backgroundColor: '#071849',
+                              color: '#fff',
+                              border: 'none',
+                              padding: '4px 10px',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '12px'
+                            }}
+                          >
+                            Agregar
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div style={{ overflowX: 'auto' }}>
@@ -1322,7 +1430,13 @@ function Pagos() {
                           TOTAL DE LA NOTA:
                         </td>
                         <td colSpan="2" style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'left', color: '#8B1E1E', fontSize: '16px' }}>
-                          ${(detalleNota[0]?.total_nota_actualizado ? Number(detalleNota[0].total_nota_actualizado) : 0).toFixed(2)}
+                          ${(
+                            detalleNota.reduce((acc, curr) => {
+                              const cant = Number(curr.cantidad_final || 0);
+                              const prec = Number(curr.precio_unitario || 0);
+                              return acc + (cant * prec);
+                            }, 0)
+                          ).toFixed(2)}
                         </td>
                       </tr>
                     </tfoot>
