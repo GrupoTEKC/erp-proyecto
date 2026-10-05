@@ -1782,8 +1782,8 @@ app.get('/pedidos/:id/detalle-nota', async (req, res) => {
     const [filas] = await db.query(
       `SELECT 
           p.id_pedido,
-          e.id_entrega,     -- 👈 VITAL: Necesario para identificar la entrega al editar
-          ed.id_producto,   -- 👈 VITAL: Necesario para identificar el producto al editar
+          e.id_entrega,     
+          ed.id_producto, 
           e.folio AS folio_entrega,
           c.nombre AS cliente,
           e.fecha_salida,
@@ -1839,6 +1839,49 @@ app.put('/cuentas-por-cobrar/actualizar-renglon', async (req, res) => {
     res.json({ message: "Renglón actualizado correctamente" });
   } catch (error) {
     console.error("Error al actualizar renglón:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+// 3. AGREGAR NUEVO PRODUCTO AL PEDIDO Y ENTREGA (Sin duplicados)
+app.post('/cuentas-por-cobrar/agregar-producto', async (req, res) => {
+  const { id_pedido, id_entrega, id_producto, cantidad_final, precio_unitario } = req.body;
+
+  if (!id_pedido || !id_entrega || !id_producto || cantidad_final === undefined || precio_unitario === undefined) {
+    return res.status(400).json({ error: "Faltan parámetros obligatorios." });
+  }
+
+  try {
+    // 1. Validar si el producto ya existe en el pedido/entrega
+    const [existente] = await db.query(
+      `SELECT id_producto FROM entrega_detalle WHERE id_entrega = ? AND id_producto = ?`,
+      [id_entrega, id_producto]
+    );
+
+    if (existente.length > 0) {
+      return res.status(400).json({ 
+        error: "El producto ya existe en esta nota. Usa la opción de modificar cantidad/precio en la tabla." 
+      });
+    }
+
+    // 2. Insertar en entrega_detalle
+    await db.query(
+      `INSERT INTO entrega_detalle (id_entrega, id_producto, cantidad_pedida, cantidad_entregada, cantidad_final)
+       VALUES (?, ?, 0, 0, ?)`,
+      [id_entrega, id_producto, cantidad_final]
+    );
+
+    // 3. Insertar en pedido_detalle
+    await db.query(
+      `INSERT INTO pedido_detalle (id_pedido, id_producto, cantidad, precio_unitario)
+       VALUES (?, ?, ?, ?)`,
+      [id_pedido, id_producto, cantidad_final, precio_unitario]
+    );
+
+    res.json({ message: "Producto agregado correctamente al pedido y entrega." });
+  } catch (error) {
+    console.error("Error al agregar producto:", error);
     res.status(500).json({ error: error.message });
   }
 });
