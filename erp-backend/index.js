@@ -1774,12 +1774,16 @@ app.post('/pedidos/modificar', async (req, res) => {
   }
 })
 
+
+// 1. OBTENER DETALLE DE LA NOTA (Incluye id_entrega e id_producto)
 app.get('/pedidos/:id/detalle-nota', async (req, res) => {
   const { id } = req.params;
   try {
     const [filas] = await db.query(
       `SELECT 
           p.id_pedido,
+          e.id_entrega,     -- 👈 VITAL: Necesario para identificar la entrega al editar
+          ed.id_producto,   -- 👈 VITAL: Necesario para identificar el producto al editar
           e.folio AS folio_entrega,
           c.nombre AS cliente,
           e.fecha_salida,
@@ -1803,6 +1807,39 @@ app.get('/pedidos/:id/detalle-nota', async (req, res) => {
   } catch (error) {
     console.error("Error al obtener detalle de nota:", error);
     res.status(500).json({ error: "Error interno del servidor al consultar la nota" });
+  }
+});
+
+
+// 2. ACTUALIZAR CANTIDAD Y PRECIO
+app.put('/cuentas-por-cobrar/actualizar-renglon', async (req, res) => {
+  const { id_pedido, id_entrega, id_producto, cantidad_final, precio_unitario } = req.body;
+
+  if (!id_entrega || !id_producto || !id_pedido) {
+    return res.status(400).json({ error: "Faltan parámetros obligatorios (id_pedido, id_entrega o id_producto)." });
+  }
+
+  try {
+    // Actualiza la columna 'cantidad_final' en entrega_detalle
+    await db.query(
+      `UPDATE entrega_detalle 
+       SET cantidad_final = ? 
+       WHERE id_entrega = ? AND id_producto = ?`,
+      [cantidad_final, id_entrega, id_producto]
+    );
+
+    // Actualiza la columna 'precio_unitario' en pedido_detalle
+    await db.query(
+      `UPDATE pedido_detalle 
+       SET precio_unitario = ? 
+       WHERE id_pedido = ? AND id_producto = ?`,
+      [precio_unitario, id_pedido, id_producto]
+    );
+
+    res.json({ message: "Renglón actualizado correctamente" });
+  } catch (error) {
+    console.error("Error al actualizar renglón:", error);
+    res.status(500).json({ error: error.message });
   }
 });
 
