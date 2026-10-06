@@ -51,6 +51,8 @@ function ControlEnviosDetalle() {
       const inicializados = data.map(p => ({
         ...p,
         folio: '',
+        // 🔹 Se preserva fecha_salida proveniente del objeto 'p'
+        fecha_salida: p.fecha_salida,
         // 🔹 Se agrega .filter() justo antes del .map() de productos:
         productos: p.productos
           .filter(prod => Number(prod.cantidad_entregada) > 0 || prod.tipo === 'agregado')
@@ -352,7 +354,8 @@ if (entregado > embarcado) {
 
             <div>
               <b>{p.cliente}</b> | {p.tienda}<br />
-              Ruta: {p.ruta}
+              Ruta: {p.ruta}<br />
+              <b>Fecha de Salida:</b> {p.fecha_salida ? new Date(p.fecha_salida).toLocaleString() : 'N/A'}
             </div>
 
             <input
