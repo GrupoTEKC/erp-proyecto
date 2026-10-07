@@ -314,15 +314,24 @@ const imprimirMultiples = async () => {
         listaChoferes = chData
       }
 
-     // 🟢 Permitir imprimir todos los pedidos seleccionados (excepto cancelados)
-const pedidosValidos = pedidos
-  .filter(p => pedidosSeleccionados.includes(p.id_pedido))
-  .filter(p => (p.estado || '').toLowerCase() !== 'cancelado');
+     // Filtrar solo los pedidos válidos según la regla estricta (Bodega = pagado / Normal = en_ruta)
+      const pedidosValidos = pedidos
+        .filter(p => pedidosSeleccionados.includes(p.id_pedido))
+        .filter(p => {
+          const isVentaBodega = Number(p.id_cliente) === 234 || Number(p.cliente_id) === 234;
+          const estado = (p.estado || '').toLowerCase();
+          
+          if (isVentaBodega) {
+            return estado === 'pagado';
+          } else {
+            return estado === 'en_ruta' || estado === 'en ruta';
+          }
+        });
 
-if (pedidosValidos.length === 0) {
-  alert("Selecciona al menos un pedido válido (no cancelado) para imprimir.");
-  return;
-}
+      if (pedidosValidos.length === 0) {
+        alert("No hay pedidos elegibles para imprimir en tu selección.\n\n- Pedidos normales: Deben estar EN RUTA.\n- Venta en Bodega: Debe estar PAGADO.");
+        return;
+      }
       
       // Agrupar por chofer, unidad y fecha
       const grupos = {}
@@ -569,12 +578,12 @@ const imprimirPreviaMultiples = async () => {
   try {
     // 1. Filtrar SOLO pedidos seleccionados que estén en 'pendiente' o 'programado'
     const pedidosValidos = pedidos
-    .filter(p => pedidosSeleccionados.includes(p.id_pedido))
-    .filter(p => p.estado !== 'cancelado')
+      .filter(p => pedidosSeleccionados.includes(p.id_pedido))
+      .filter(p => p.estado === 'pendiente' || p.estado === 'programado')
 
     if (pedidosValidos.length === 0) {
-    alert("Selecciona al menos un pedido válido (no cancelado) para realizar la impresión previa.")
-    return
+      alert("Selecciona al menos un pedido PENDIENTE o PROGRAMADO para realizar la impresión previa.")
+      return
     }
 
     // 2. Traer el detalle de los pedidos seleccionados desde el Backend
@@ -1457,7 +1466,19 @@ return (
                   type="checkbox" 
                   checked={pedidosSeleccionados.includes(p.id_pedido)} 
                   onChange={() => togglePedido(p.id_pedido)} 
-                  disabled={(p.estado || '').toLowerCase() === 'cancelado'} 
+                  disabled={(() => {
+                  const isVentaBodega = Number(p.id_cliente) === 234 || Number(p.cliente_id) === 234;
+                  const estado = (p.estado || '').toLowerCase();
+
+                   // 1. Venta en Bodega: SOLO se permite 'pagado'
+                  if (isVentaBodega) {
+                  return estado !== 'pagado';
+                  } 
+                  // 2. Pedidos Normales: Se permite 'en_ruta' (o 'en ruta'), 'pendiente' y 'programado'
+                  else {
+                  return !['en_ruta', 'en ruta', 'pendiente', 'programado'].includes(estado);
+                  }
+                  })()} 
                   />
                     
                     <strong>ID:</strong> {p.id_pedido} <br />
