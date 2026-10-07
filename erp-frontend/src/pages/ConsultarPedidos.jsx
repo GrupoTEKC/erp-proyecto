@@ -578,12 +578,12 @@ const imprimirPreviaMultiples = async () => {
   try {
     // 1. Filtrar SOLO pedidos seleccionados que estén en 'pendiente' o 'programado'
     const pedidosValidos = pedidos
-      .filter(p => pedidosSeleccionados.includes(p.id_pedido))
-      .filter(p => p.estado === 'pendiente' || p.estado === 'programado')
+    .filter(p => pedidosSeleccionados.includes(p.id_pedido))
+    .filter(p => p.estado !== 'cancelado')
 
     if (pedidosValidos.length === 0) {
-      alert("Selecciona al menos un pedido PENDIENTE o PROGRAMADO para realizar la impresión previa.")
-      return
+    alert("Selecciona al menos un pedido válido (no cancelado) para realizar la impresión previa.")
+    return
     }
 
     // 2. Traer el detalle de los pedidos seleccionados desde el Backend
