@@ -1438,6 +1438,8 @@ app.put('/pedidos/:id/entregar', async (req, res) => {
   }
 })
 
+
+
 // =============================
 // DETALLE DE PEDIDO
 // =============================
@@ -1485,9 +1487,10 @@ LEFT JOIN programacion_detalle prd
   ON prd.id_programacion = pp.id_programacion
   AND prd.id_producto = pd.id_producto
 
+-- 🟢 1. Se expande el filtro para incluir 'pagado' o cualquier estado de entrega que no sea cancelado
 LEFT JOIN entregas e
   ON e.id_pedido = pd.id_pedido
-  AND e.estado IN ('en_ruta','entregado')
+  AND e.estado != 'cancelado'
 
 LEFT JOIN entrega_detalle ed
   ON ed.id_entrega = e.id_entrega
@@ -1499,7 +1502,9 @@ LEFT JOIN choferes ch
 LEFT JOIN unidades u
   ON u.id_unidad = COALESCE(e.id_unidad, pp.id_unidad)
 
+-- 🟢 2. Garantiza que el pedido consultado no esté cancelado
 WHERE pd.id_pedido = ?
+  AND pe.estado != 'cancelado'
     `, [id])
 
     res.json(rows)
@@ -1507,6 +1512,9 @@ WHERE pd.id_pedido = ?
     res.status(500).json({ error: err.message })
   }
 })
+
+
+
 
 // =============================
 // CANCELAR PEDIDO
