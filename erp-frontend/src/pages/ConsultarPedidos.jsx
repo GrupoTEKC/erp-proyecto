@@ -314,24 +314,15 @@ const imprimirMultiples = async () => {
         listaChoferes = chData
       }
 
-     // Filtrar solo los pedidos válidos según la regla estricta (Bodega = pagado / Normal = en_ruta)
-      const pedidosValidos = pedidos
-        .filter(p => pedidosSeleccionados.includes(p.id_pedido))
-        .filter(p => {
-          const isVentaBodega = Number(p.id_cliente) === 234 || Number(p.cliente_id) === 234;
-          const estado = (p.estado || '').toLowerCase();
-          
-          if (isVentaBodega) {
-            return estado === 'pagado';
-          } else {
-            return estado === 'en_ruta' || estado === 'en ruta';
-          }
-        });
+     // 🟢 Permitir imprimir todos los pedidos seleccionados (excepto cancelados)
+const pedidosValidos = pedidos
+  .filter(p => pedidosSeleccionados.includes(p.id_pedido))
+  .filter(p => (p.estado || '').toLowerCase() !== 'cancelado');
 
-      if (pedidosValidos.length === 0) {
-        alert("No hay pedidos elegibles para imprimir en tu selección.\n\n- Pedidos normales: Deben estar EN RUTA.\n- Venta en Bodega: Debe estar PAGADO.");
-        return;
-      }
+if (pedidosValidos.length === 0) {
+  alert("Selecciona al menos un pedido válido (no cancelado) para imprimir.");
+  return;
+}
       
       // Agrupar por chofer, unidad y fecha
       const grupos = {}
