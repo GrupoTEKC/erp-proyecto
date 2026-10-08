@@ -1888,37 +1888,67 @@ app.post('/cuentas-por-cobrar/agregar-producto', async (req, res) => {
 });
 
 
+
 app.get('/pedidos/folios-control', async (req, res) => {
   try {
-    // 1. Obtener entregas con folios asignados, uniendo pedidos y clientes
+    // 1. Obtener entregas (normales) + pedidos rezagados con folios asignados
     const [registrados] = await db.query(`
       SELECT 
         e.folio,
         CAST(REGEXP_REPLACE(e.folio, '[^0-9]', '') AS UNSIGNED) AS num_folio,
         p.id_pedido,
+        NULL AS id_rezagado,
         p.total,
         e.fecha_salida,
         p.estado,
         CONCAT(IFNULL(c.nombre, ''), ' ', IFNULL(c.apellido1, '')) AS cliente,
-        c.nombre_tienda
+        c.nombre_tienda,
+        'normal' AS tipo_pedido
       FROM entregas e
       INNER JOIN pedidos p ON e.id_pedido = p.id_pedido
       LEFT JOIN clientes c ON p.id_cliente = c.id_cliente
       WHERE e.folio IS NOT NULL 
         AND e.folio != ''
         AND e.folio REGEXP '[0-9]'
+
+      UNION ALL
+
+      SELECT 
+        r.folio,
+        CAST(REGEXP_REPLACE(r.folio, '[^0-9]', '') AS UNSIGNED) AS num_folio,
+        NULL AS id_pedido,
+        r.id_rezagado,
+        r.total,
+        r.fecha_rezagada AS fecha_salida,
+        r.estado,
+        CONCAT(IFNULL(c.nombre, ''), ' ', IFNULL(c.apellido1, '')) AS cliente,
+        c.nombre_tienda,
+        'rezagado' AS tipo_pedido
+      FROM pedidos_rezagados r
+      LEFT JOIN clientes c ON c.id_cliente = r.id_cliente
+      WHERE r.folio IS NOT NULL 
+        AND r.folio != ''
+        AND r.folio REGEXP '[0-9]'
+
       ORDER BY num_folio ASC
     `);
 
-    // 2. Extraer min y max numérico descartando folios vacíos o ceros
+    // 2. Extraer min y max numérico combinando ambas fuentes
     const [rangos] = await db.query(`
       SELECT 
-        MIN(CAST(REGEXP_REPLACE(folio, '[^0-9]', '') AS UNSIGNED)) AS min_folio,
-        MAX(CAST(REGEXP_REPLACE(folio, '[^0-9]', '') AS UNSIGNED)) AS max_folio
-      FROM entregas
-      WHERE folio IS NOT NULL 
-        AND folio != '' 
-        AND folio REGEXP '[0-9]'
+        MIN(num_folio) AS min_folio,
+        MAX(num_folio) AS max_folio
+      FROM (
+        SELECT CAST(REGEXP_REPLACE(folio, '[^0-9]', '') AS UNSIGNED) AS num_folio
+        FROM entregas
+        WHERE folio IS NOT NULL AND folio != '' AND folio REGEXP '[0-9]'
+        
+        UNION ALL
+        
+        SELECT CAST(REGEXP_REPLACE(folio, '[^0-9]', '') AS UNSIGNED) AS num_folio
+        FROM pedidos_rezagados
+        WHERE folio IS NOT NULL AND folio != '' AND folio REGEXP '[0-9]'
+      ) AS folios_totales
     `);
 
     res.json({
@@ -1930,6 +1960,7 @@ app.get('/pedidos/folios-control', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
 
 // =============================
 // CHOFERES
