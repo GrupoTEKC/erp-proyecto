@@ -1924,16 +1924,16 @@ app.get('/pedidos/folios-control', async (req, res) => {
     // 1. Obtener entregas (normales) + pedidos rezagados con folios asignados
     const [registrados] = await db.query(`
       SELECT 
-        e.folio,
+        CAST(e.folio AS CHAR) COLLATE utf8mb4_unicode_ci AS folio,
         CAST(REGEXP_REPLACE(e.folio, '[^0-9]', '') AS UNSIGNED) AS num_folio,
         p.id_pedido,
         NULL AS id_rezagado,
         p.total,
         e.fecha_salida,
-        p.estado,
-        CONCAT(IFNULL(c.nombre, ''), ' ', IFNULL(c.apellido1, '')) AS cliente,
-        c.nombre_tienda,
-        'normal' AS tipo_pedido
+        CAST(p.estado AS CHAR) COLLATE utf8mb4_unicode_ci AS estado,
+        CAST(CONCAT(IFNULL(c.nombre, ''), ' ', IFNULL(c.apellido1, '')) AS CHAR) COLLATE utf8mb4_unicode_ci AS cliente,
+        CAST(c.nombre_tienda AS CHAR) COLLATE utf8mb4_unicode_ci AS nombre_tienda,
+        'normal' COLLATE utf8mb4_unicode_ci AS tipo_pedido
       FROM entregas e
       INNER JOIN pedidos p ON e.id_pedido = p.id_pedido
       LEFT JOIN clientes c ON p.id_cliente = c.id_cliente
@@ -1944,16 +1944,16 @@ app.get('/pedidos/folios-control', async (req, res) => {
       UNION ALL
 
       SELECT 
-        r.folio,
+        CAST(r.folio AS CHAR) COLLATE utf8mb4_unicode_ci AS folio,
         CAST(REGEXP_REPLACE(r.folio, '[^0-9]', '') AS UNSIGNED) AS num_folio,
         NULL AS id_pedido,
         r.id_rezagado,
         r.total,
         r.fecha_rezagada AS fecha_salida,
-        r.estado,
-        CONCAT(IFNULL(c.nombre, ''), ' ', IFNULL(c.apellido1, '')) AS cliente,
-        c.nombre_tienda,
-        'rezagado' AS tipo_pedido
+        CAST(r.estado AS CHAR) COLLATE utf8mb4_unicode_ci AS estado,
+        CAST(CONCAT(IFNULL(c.nombre, ''), ' ', IFNULL(c.apellido1, '')) AS CHAR) COLLATE utf8mb4_unicode_ci AS cliente,
+        CAST(c.nombre_tienda AS CHAR) COLLATE utf8mb4_unicode_ci AS nombre_tienda,
+        'rezagado' COLLATE utf8mb4_unicode_ci AS tipo_pedido
       FROM pedidos_rezagados r
       LEFT JOIN clientes c ON c.id_cliente = r.id_cliente
       WHERE r.folio IS NOT NULL 
@@ -1963,7 +1963,7 @@ app.get('/pedidos/folios-control', async (req, res) => {
       ORDER BY num_folio ASC
     `);
 
-    // 2. Extraer min y max numérico combinando ambas tablas
+    // 2. Extraer min y max numérico (Mantiene intacta la lógica de REGEXP_REPLACE pero unificando ambas tablas)
     const [rangos] = await db.query(`
       SELECT 
         MIN(num_folio) AS min_folio,
@@ -1990,6 +1990,8 @@ app.get('/pedidos/folios-control', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+
 
 // =============================
 // CHOFERES
