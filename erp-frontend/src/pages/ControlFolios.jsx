@@ -105,7 +105,7 @@ export default function ControlFolios() {
         const minCalculado = numerosValidos.length > 0 ? Math.min(...numerosValidos) : 0;
         const maxCalculado = numerosValidos.length > 0 ? Math.max(...numerosValidos) : 0;
 
-        // Si el backend envía 0 en min_folio, forzar el uso del mínimo real calculado
+        // Si el backend envía 0 en min_folio, forzar el uso del mínimo real calculated
         const minBackend = parseInt(data.min_folio, 10);
         const maxBackend = parseInt(data.max_folio, 10);
 
@@ -201,7 +201,7 @@ export default function ControlFolios() {
       ) : (
         <>
           {/* Panel de Métricas / Alertas */}
-          <div style={{ display: "flex", gap: "15px", flexWrap: "wrap", marginBottom: "20px" }}>
+          <div style={{ display: "flex", gap: "15px", flexWrap: "wrap", marginBottom: "15px" }}>
             <div style={{ ...styles.cardMetric, backgroundColor: "#071849" }}>
               <div style={{ fontSize: "12px", opacity: 0.9 }}>RANGO ANALIZADO</div>
               <div style={{ fontSize: "20px", fontWeight: "bold", marginTop: 4 }}>
@@ -220,6 +220,19 @@ export default function ControlFolios() {
                 ⚠️ {totalFaltantes}
               </div>
             </div>
+          </div>
+
+          {/* Nota Informativa para el usuario */}
+          <div style={{
+            backgroundColor: "#e3f2fd",
+            borderLeft: "4px solid #1976d2",
+            padding: "10px 15px",
+            borderRadius: "4px",
+            marginBottom: "20px",
+            fontSize: "13px",
+            color: "#0d47a1"
+          }}>
+            ℹ️ <strong>Nota:</strong> El sistema arrancó desde el folio <strong>6687</strong>.
           </div>
 
           {/* Filtros de Rango y Modos de Vista */}
@@ -458,4 +471,3 @@ export default function ControlFolios() {
     </div>
   );
 }
-
