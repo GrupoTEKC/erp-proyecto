@@ -232,7 +232,7 @@ export default function ControlFolios() {
             fontSize: "13px",
             color: "#0d47a1"
           }}>
-            ℹ️ <strong>Nota:</strong> El sistema arrancó desde el folio <strong>6687</strong>.
+            ℹ️ <strong>Nota:</strong> El sistema arrancó desde el folio <strong>6687</strong>, Favor de definir su rango en el filtro que se encuentra abajo.
           </div>
 
           {/* Filtros de Rango y Modos de Vista */}
