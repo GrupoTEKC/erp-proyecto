@@ -1113,6 +1113,37 @@ app.get('/pedidos-rezagados/cliente/:id_cliente', async (req, res) => {
   }
 })
 
+
+// =============================
+// DETALLE DE PEDIDO REZAGADO
+// =============================
+app.get('/pedidos-rezagados/:id/detalle', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await db.query(`
+      SELECT 
+        prd.id_detalle,
+        prd.id_rezagado,
+        prd.id_producto,
+        prd.cantidad,
+        prd.precio_unitario,
+        prd.subtotal,
+        p.nombre AS producto,
+        p.unidad_medida
+      FROM pedido_rezagado_detalle prd
+      INNER JOIN productos p ON p.id_producto = prd.id_producto
+      WHERE prd.id_rezagado = ?
+    `, [id]);
+
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+
+
 app.get('/pagos/rezagado/:id_rezagado', async (req, res) => {
   try {
 
