@@ -1919,7 +1919,6 @@ app.post('/cuentas-por-cobrar/agregar-producto', async (req, res) => {
 });
 
 
-
 app.get('/pedidos/folios-control', async (req, res) => {
   try {
     // 1. Obtener entregas (normales) + pedidos rezagados con folios asignados
@@ -1964,7 +1963,7 @@ app.get('/pedidos/folios-control', async (req, res) => {
       ORDER BY num_folio ASC
     `);
 
-    // 2. Extraer min y max numérico combinando ambas fuentes
+    // 2. Extraer min y max numérico combinando ambas tablas
     const [rangos] = await db.query(`
       SELECT 
         MIN(num_folio) AS min_folio,
@@ -1991,7 +1990,6 @@ app.get('/pedidos/folios-control', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-
 
 // =============================
 // CHOFERES
