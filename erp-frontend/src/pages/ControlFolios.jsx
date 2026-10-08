@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "../assets/TRANSPARENTE.png";
@@ -75,8 +74,10 @@ export default function ControlFolios() {
   // Filtro de vista: "todos", "faltantes", "registrados"
   const [filtro, setFiltro] = useState("todos");
 
-  // Modal de detalles de folio
+  // Modal de detalles de folio y sus productos
   const [folioSeleccionado, setFolioSeleccionado] = useState(null);
+  const [detalleProductos, setDetalleProductos] = useState([]);
+  const [loadingDetalle, setLoadingDetalle] = useState(false);
 
   useEffect(() => {
     fetch(`${API}/pedidos/folios-control`)
@@ -122,6 +123,25 @@ export default function ControlFolios() {
       .catch(err => console.error("Error al cargar folios:", err))
       .finally(() => setLoading(false));
   }, []);
+
+  // Función al hacer clic en una tarjeta registrada (Carga detalle dinámicamente)
+  const seleccionarFolio = (itemDatos) => {
+    setFolioSeleccionado(itemDatos);
+    setDetalleProductos([]);
+    setLoadingDetalle(true);
+
+    const esRezagado = itemDatos.tipo_pedido === 'rezagado';
+    const idParam = esRezagado ? itemDatos.id_rezagado : itemDatos.id_pedido;
+    const urlDetalle = esRezagado
+      ? `${API}/pedidos-rezagados/${idParam}/detalle`
+      : `${API}/pedidos/${idParam}/detalle`;
+
+    fetch(urlDetalle)
+      .then(res => res.json())
+      .then(prodData => setDetalleProductos(Array.isArray(prodData) ? prodData : []))
+      .catch(err => console.error("Error al cargar detalle:", err))
+      .finally(() => setLoadingDetalle(false));
+  };
 
   // Generación y cálculo de folios del rango
   const { listaFolios, totalRegistrados, totalFaltantes } = useMemo(() => {
@@ -299,7 +319,7 @@ export default function ControlFolios() {
                       color: "#1b5e20",
                       border: "2px solid #a5d6a7"
                     }}
-                    onClick={() => setFolioSeleccionado(item.datos)}
+                    onClick={() => seleccionarFolio(item.datos)}
                   >
                     <span style={{ fontSize: "11px", opacity: 0.8 }}>FOLIO</span>
                     #{item.numFolio}
@@ -343,8 +363,10 @@ export default function ControlFolios() {
             background: "#fff",
             padding: "24px",
             borderRadius: "8px",
-            width: "420px",
+            width: "480px",
             maxWidth: "90%",
+            maxHeight: "90vh",
+            overflowY: "auto",
             boxShadow: "0 10px 30px rgba(0,0,0,0.2)"
           }}>
             <h3 style={{ color: "#8B1E1E", marginTop: 0, borderBottom: "2px solid #8B1E1E", paddingBottom: "8px" }}>
@@ -352,7 +374,13 @@ export default function ControlFolios() {
             </h3>
 
             <div style={{ fontSize: "14px", lineHeight: "1.8", color: "#333" }}>
-              <p style={{ margin: "4px 0" }}><strong>Pedido #:</strong> {folioSeleccionado.id_pedido}</p>
+              <p style={{ margin: "4px 0" }}>
+                <strong>
+                  {folioSeleccionado.tipo_pedido === 'rezagado' ? 'ID Rezagado:' : 'Pedido #:'}
+                </strong> {
+                  folioSeleccionado.tipo_pedido === 'rezagado' ? folioSeleccionado.id_rezagado : folioSeleccionado.id_pedido
+                }
+              </p>
               <p style={{ margin: "4px 0" }}><strong>Cliente:</strong> {folioSeleccionado.cliente || "N/A"}</p>
               <p style={{ margin: "4px 0" }}><strong>Tienda:</strong> {folioSeleccionado.nombre_tienda || "N/A"}</p>
               <p style={{ margin: "4px 0" }}>
@@ -370,6 +398,42 @@ export default function ControlFolios() {
                   })
                 } MXN
               </p>
+            </div>
+
+            {/* Detalle de Productos */}
+            <div style={{ marginTop: "15px", borderTop: "1px solid #ddd", paddingTop: "10px" }}>
+              <h4 style={{ margin: "0 0 8px 0", fontSize: "13px", color: "#071849" }}>Productos de la Orden:</h4>
+              {loadingDetalle ? (
+                <p style={{ fontSize: "12px", color: "#666", fontStyle: "italic" }}>Cargando productos...</p>
+              ) : detalleProductos.length > 0 ? (
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                  <thead>
+                    <tr style={{ background: "#f5f5f5", textAlign: "left" }}>
+                      <th style={{ padding: "5px", border: "1px solid #ccc" }}>Producto</th>
+                      <th style={{ padding: "5px", border: "1px solid #ccc", textAlign: "center" }}>Cant.</th>
+                      <th style={{ padding: "5px", border: "1px solid #ccc", textAlign: "right" }}>P. Unit</th>
+                      <th style={{ padding: "5px", border: "1px solid #ccc", textAlign: "right" }}>Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {detalleProductos.map((p, idx) => {
+                      const cant = Number(p.cantidad || p.cantidad_pedida || 0);
+                      const pu = Number(p.precio_unitario || p.precio || 0);
+                      const sub = Number(p.subtotal || (cant * pu));
+                      return (
+                        <tr key={idx}>
+                          <td style={{ padding: "5px", border: "1px solid #ccc" }}>{p.producto || p.nombre || 'N/A'}</td>
+                          <td style={{ padding: "5px", border: "1px solid #ccc", textAlign: "center" }}>{cant}</td>
+                          <td style={{ padding: "5px", border: "1px solid #ccc", textAlign: "right" }}>${pu.toFixed(2)}</td>
+                          <td style={{ padding: "5px", border: "1px solid #ccc", textAlign: "right" }}>${sub.toFixed(2)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              ) : (
+                <p style={{ fontSize: "12px", color: "#888", fontStyle: "italic" }}>Sin detalle de productos disponible.</p>
+              )}
             </div>
 
             <div style={{ marginTop: "20px", textAlign: "right" }}>
@@ -394,3 +458,4 @@ export default function ControlFolios() {
     </div>
   );
 }
+
