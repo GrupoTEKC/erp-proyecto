@@ -74,8 +74,10 @@ export default function ControlFolios() {
   // Filtro de vista: "todos", "faltantes", "registrados"
   const [filtro, setFiltro] = useState("todos");
 
-  // Modal de detalles de folio
+  // Modal de detalles de folio y sus productos
   const [folioSeleccionado, setFolioSeleccionado] = useState(null);
+  const [detalleProductos, setDetalleProductos] = useState([]);
+  const [loadingDetalle, setLoadingDetalle] = useState(false);
 
   useEffect(() => {
     fetch(`${API}/pedidos/folios-control`)
@@ -91,7 +93,6 @@ export default function ControlFolios() {
         if (listaRegistrados.length > 0) {
           listaRegistrados.forEach(item => {
             const numFolio = parseInt(item.folio, 10);
-            // Solo tomar en cuenta folios numéricos mayores a 0
             if (!isNaN(numFolio) && numFolio > 0) {
               mapa.set(numFolio, item);
               numerosValidos.push(numFolio);
@@ -99,11 +100,9 @@ export default function ControlFolios() {
           });
         }
 
-        // Calcular min y max descartando ceros
         const minCalculado = numerosValidos.length > 0 ? Math.min(...numerosValidos) : 0;
         const maxCalculado = numerosValidos.length > 0 ? Math.max(...numerosValidos) : 0;
 
-        // Si el backend envía 0 en min_folio, forzar el uso del mínimo real calculado
         const minBackend = parseInt(data.min_folio, 10);
         const maxBackend = parseInt(data.max_folio, 10);
 
@@ -114,13 +113,33 @@ export default function ControlFolios() {
         setMinFolio(minFinal);
         setMaxFolio(maxFinal);
 
-        // Precargar automáticamente el rango positivo real
         setRangoInicio(minFinal);
         setRangoFin(maxFinal);
       })
       .catch(err => console.error("Error al cargar folios:", err))
       .finally(() => setLoading(false));
   }, []);
+
+  // Cargar productos del detalle al seleccionar un folio (Normal o Rezagado)
+  const abrirModalFolio = (datosFolio) => {
+    setFolioSeleccionado(datosFolio);
+    setDetalleProductos([]);
+    setLoadingDetalle(true);
+
+    const esRezagado = datosFolio.tipo_pedido === 'rezagado';
+    const idConsulta = esRezagado ? datosFolio.id_rezagado : datosFolio.id_pedido;
+    const urlEndpoint = esRezagado
+      ? `${API}/pedidos-rezagados/${idConsulta}/detalle`
+      : `${API}/pedidos/${idConsulta}/detalle`;
+
+    fetch(urlEndpoint)
+      .then(res => res.json())
+      .then(productos => {
+        setDetalleProductos(Array.isArray(productos) ? productos : []);
+      })
+      .catch(err => console.error("Error al cargar el detalle del pedido:", err))
+      .finally(() => setLoadingDetalle(false));
+  };
 
   // Generación y cálculo de folios del rango
   const { listaFolios, totalRegistrados, totalFaltantes } = useMemo(() => {
@@ -289,20 +308,23 @@ export default function ControlFolios() {
           <div style={styles.grid}>
             {listaFiltrada.map(item => {
               if (item.existe) {
+                const esRezagado = item.datos?.tipo_pedido === 'rezagado';
                 return (
                   <div
                     key={item.numFolio}
                     style={{
                       ...styles.boxFolio,
-                      backgroundColor: "#e8f5e9",
-                      color: "#1b5e20",
-                      border: "2px solid #a5d6a7"
+                      backgroundColor: esRezagado ? "#fff3e0" : "#e8f5e9",
+                      color: esRezagado ? "#e65100" : "#1b5e20",
+                      border: esRezagado ? "2px solid #ffe0b2" : "2px solid #a5d6a7"
                     }}
-                    onClick={() => setFolioSeleccionado(item.datos)}
+                    onClick={() => abrirModalFolio(item.datos)}
                   >
                     <span style={{ fontSize: "11px", opacity: 0.8 }}>FOLIO</span>
                     #{item.numFolio}
-                    <span style={{ fontSize: "10px", marginTop: 2 }}>✅ OK</span>
+                    <span style={{ fontSize: "10px", marginTop: 2, fontWeight: "bold" }}>
+                      {esRezagado ? "⏳ REZAGADO" : "✅ OK"}
+                    </span>
                   </div>
                 );
               }
@@ -342,26 +364,47 @@ export default function ControlFolios() {
             background: "#fff",
             padding: "24px",
             borderRadius: "8px",
-            width: "420px",
-            maxWidth: "90%",
+            width: "500px",
+            maxWidth: "92%",
+            maxHeight: "90vh",
+            overflowY: "auto",
             boxShadow: "0 10px 30px rgba(0,0,0,0.2)"
           }}>
-            <h3 style={{ color: "#8B1E1E", marginTop: 0, borderBottom: "2px solid #8B1E1E", paddingBottom: "8px" }}>
-              Detalles del Folio #{folioSeleccionado.folio}
-            </h3>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "2px solid #8B1E1E", paddingBottom: "8px" }}>
+              <h3 style={{ color: "#8B1E1E", margin: 0 }}>
+                Detalles del Folio #{folioSeleccionado.folio}
+              </h3>
+              <span style={{
+                fontSize: "11px",
+                fontWeight: "bold",
+                padding: "3px 8px",
+                borderRadius: "4px",
+                backgroundColor: folioSeleccionado.tipo_pedido === 'rezagado' ? '#ffe0b2' : '#c8e6c9',
+                color: folioSeleccionado.tipo_pedido === 'rezagado' ? '#e65100' : '#2e7d32'
+              }}>
+                {folioSeleccionado.tipo_pedido === 'rezagado' ? 'REZAGADO' : 'NORMAL'}
+              </span>
+            </div>
 
-            <div style={{ fontSize: "14px", lineHeight: "1.8", color: "#333" }}>
-              <p style={{ margin: "4px 0" }}><strong>Pedido #:</strong> {folioSeleccionado.id_pedido}</p>
-              <p style={{ margin: "4px 0" }}><strong>Cliente:</strong> {folioSeleccionado.cliente || "N/A"}</p>
-              <p style={{ margin: "4px 0" }}><strong>Tienda:</strong> {folioSeleccionado.nombre_tienda || "N/A"}</p>
-              <p style={{ margin: "4px 0" }}>
-                <strong>Fecha Salida:</strong> {
+            <div style={{ fontSize: "13px", lineHeight: "1.7", color: "#333", marginTop: "12px" }}>
+              <p style={{ margin: "3px 0" }}>
+                <strong>{folioSeleccionado.tipo_pedido === 'rezagado' ? 'ID Rezagado:' : 'Pedido #:'}</strong> {
+                  folioSeleccionado.tipo_pedido === 'rezagado' ? folioSeleccionado.id_rezagado : folioSeleccionado.id_pedido
+                }
+              </p>
+              <p style={{ margin: "3px 0" }}><strong>Cliente:</strong> {folioSeleccionado.cliente || "N/A"}</p>
+              <p style={{ margin: "3px 0" }}><strong>Tienda:</strong> {folioSeleccionado.nombre_tienda || "N/A"}</p>
+              <p style={{ margin: "3px 0" }}>
+                <strong>Fecha Salida / Registro:</strong> {
                   folioSeleccionado.fecha_salida
-                    ? new Date(folioSeleccionado.fecha_salida).toLocaleString("es-MX")
+                    ? new Date(folioSeleccionado.fecha_salida).toLocaleDateString("es-MX")
                     : "N/A"
                 }
               </p>
-              <p style={{ margin: "4px 0" }}>
+              <p style={{ margin: "3px 0" }}>
+                <strong>Estado:</strong> <span style={{ textTransform: "uppercase", fontWeight: "bold" }}>{folioSeleccionado.estado || "N/A"}</span>
+              </p>
+              <p style={{ margin: "3px 0" }}>
                 <strong>Monto Total:</strong> ${
                   Number(folioSeleccionado.total || 0).toLocaleString("es-MX", {
                     minimumFractionDigits: 2,
@@ -369,6 +412,43 @@ export default function ControlFolios() {
                   })
                 } MXN
               </p>
+            </div>
+
+            {/* Tabla de Productos del Detalle */}
+            <div style={{ marginTop: "15px", borderTop: "1px solid #eee", paddingTop: "10px" }}>
+              <h4 style={{ margin: "0 0 8px 0", fontSize: "14px", color: "#071849" }}>Productos en la Orden:</h4>
+              
+              {loadingDetalle ? (
+                <p style={{ fontSize: "12px", color: "#666", textStyle: "italic" }}>Cargando productos...</p>
+              ) : detalleProductos.length > 0 ? (
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                  <thead>
+                    <tr style={{ background: "#f5f5f5", textAlign: "left" }}>
+                      <th style={{ padding: "6px", border: "1px solid #ddd" }}>Producto</th>
+                      <th style={{ padding: "6px", border: "1px solid #ddd", textAlign: "center" }}>Cant.</th>
+                      <th style={{ padding: "6px", border: "1px solid #ddd", textAlign: "right" }}>P. Unit</th>
+                      <th style={{ padding: "6px", border: "1px solid #ddd", textAlign: "right" }}>Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {detalleProductos.map((prod, idx) => {
+                      const cant = Number(prod.cantidad || prod.cantidad_pedida || 0);
+                      const pu = Number(prod.precio_unitario || prod.precio || 0);
+                      const sub = Number(prod.subtotal || (cant * pu));
+                      return (
+                        <tr key={idx}>
+                          <td style={{ padding: "6px", border: "1px solid #ddd" }}>{prod.producto || prod.nombre || 'N/A'}</td>
+                          <td style={{ padding: "6px", border: "1px solid #ddd", textAlign: "center" }}>{cant}</td>
+                          <td style={{ padding: "6px", border: "1px solid #ddd", textAlign: "right" }}>${pu.toFixed(2)}</td>
+                          <td style={{ padding: "6px", border: "1px solid #ddd", textAlign: "right" }}>${sub.toFixed(2)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              ) : (
+                <p style={{ fontSize: "12px", color: "#888" }}>Sin detalles de productos disponibles.</p>
+              )}
             </div>
 
             <div style={{ marginTop: "20px", textAlign: "right" }}>
@@ -393,3 +473,5 @@ export default function ControlFolios() {
     </div>
   );
 }
+
+
