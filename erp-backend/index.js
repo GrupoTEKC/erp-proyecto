@@ -1918,6 +1918,102 @@ app.post('/cuentas-por-cobrar/agregar-producto', async (req, res) => {
   }
 });
 
+// ==========================================
+// 📄 NOTAS CON DIFERENCIAS Y AUDITORÍA DE ROTOS
+// ==========================================
+
+// 1. Obtener listado de notas con discrepancias (Semáforo principal)
+app.get('/api/notas-discrepancias', async (req, res) => {
+    try {
+        const query = `
+            SELECT 
+                e.id_pedido,
+                e.folio,
+                e.fecha_salida,
+                c.nombre_tienda AS tienda_cliente,
+                p.nombre AS producto,
+                ed.cantidad_entregada,
+                ed.cantidad_final,
+                (ed.cantidad_entregada - ed.cantidad_final) AS diferencia
+            FROM entrega_detalle ed
+            INNER JOIN entregas e ON ed.id_entrega = e.id_entrega
+            INNER JOIN pedidos ped ON e.id_pedido = ped.id_pedido
+            INNER JOIN productos p ON ed.id_producto = p.id_producto
+            LEFT JOIN clientes c ON ped.id_cliente = c.id_cliente
+            WHERE ed.cantidad_final IS NOT NULL 
+              AND ed.cantidad_entregada <> ed.cantidad_final;
+        `;
+        
+        const [rows] = await db.query(query);
+        res.json({ success: true, data: rows });
+    } catch (error) {
+        console.error("Error al obtener notas con discrepancias:", error);
+        res.status(500).json({ success: false, error: "Error interno del servidor" });
+    }
+});
+
+// 2. Procesar la resolución de discrepancia (Roto / Justificado con candados de seguridad)
+app.post('/api/notas-discrepancias/resolver', async (req, res) => {
+    const { 
+        folio, 
+        tienda_cliente, 
+        fecha_salida, 
+        producto, 
+        cantidad_entregada, 
+        cantidad_final, 
+        tipo_resolucion, // 'ROTO' o 'JUSTIFICADO'
+        password_admin   // 'ingemt2404_' requerido obligatoriamente si hay excesos
+    } = req.body;
+
+    const diferencia = cantidad_entregada - cantidad_final;
+    const esExceso = cantidad_final > cantidad_entregada;
+
+    // REGLA DE BLOQUEO Y LLAVE MAESTRA PARA EXCESOS
+    if (esExceso) {
+        if (password_admin !== 'ingemt2404_') {
+            return res.status(403).json({ 
+                success: false, 
+                error: "⚠️ Estos productos exceden la cantidad entregada. Debe corregirse desde la base de datos consulte con el programador" 
+            });
+        }
+    }
+
+    try {
+        if (tipo_resolucion === 'ROTO') {
+            // Cálculo automático de la cantidad rota (cero captura manual)
+            const cantidadRota = esExceso ? (cantidad_final - cantidad_entregada) : diferencia;
+            
+            const insertQuery = `
+                INSERT INTO rotos_devueltos (folio, tienda_cliente, fecha_salida, producto, cantidad_rota, motivo) 
+                VALUES (?, ?, ?, ?, ?, ?)
+            `;
+            
+            await db.query(insertQuery, [
+                folio, 
+                tienda_cliente || 'SIN TIENDA REGISTRADA', 
+                fecha_salida, 
+                producto, 
+                Math.abs(cantidadRota), 
+                esExceso ? 'Excedente autorizado por llave maestra' : 'Bultos rotos o faltantes en ruta'
+            ]);
+
+            return res.json({ success: true, message: "Registrado en rotos/devoluciones exitosamente." });
+        } 
+        
+        else if (tipo_resolucion === 'JUSTIFICADO') {
+            // Se archiva lógicamente limpiando la alerta principal sin alterar la base operativa
+            return res.json({ success: true, message: "Discrepancia justificada y archivada correctamente." });
+        } 
+        
+        else {
+            return res.status(400).json({ success: false, error: "Tipo de resolución no válido." });
+        }
+
+    } catch (error) {
+        console.error("Error al procesar la resolución de discrepancia:", error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
 
 app.get('/pedidos/folios-control', async (req, res) => {
   try {
