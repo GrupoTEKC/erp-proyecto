@@ -1940,6 +1940,7 @@ app.get('/api/notas-discrepancias', async (req, res) => {
               AND ed.cantidad_entregada <> ed.cantidad_final
               AND e.fecha_salida >= '2026-08-01 00:00:00'; -- 👈 Filtro agregado aquí
         `;
+      
         
         const [rows] = await db.query(query);
         res.json({ success: true, data: rows });
