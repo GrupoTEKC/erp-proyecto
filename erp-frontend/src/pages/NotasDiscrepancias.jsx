@@ -203,8 +203,8 @@ function NotasDiscrepancias() {
           style={{
             margin: 0,
             color: "#8B1E1E",
-            fontSize: "26px",
-            fontWeight: "bold",
+            fontSize: "52px", // 👈 Cambiado al doble de grande (52px)
+            fontWeight: "bold", // 👈 En negrita
             letterSpacing: "1px",
             textAlign: "center"
           }}
@@ -223,7 +223,12 @@ function NotasDiscrepancias() {
         />
         <button
           onClick={cargarDiscrepancias}
-          style={{ ...styles.botonAccion, marginTop: 0, backgroundColor: '#071849' }}
+          style={{ 
+            ...styles.botonAccion, 
+            marginTop: 0, 
+            backgroundColor: '#071849', 
+            fontWeight: 'bold' // 👈 Letras en negrita agregadas aquí
+          }}
         >
           🔄 Actualizar / Recargar
         </button>
