@@ -1918,11 +1918,7 @@ app.post('/cuentas-por-cobrar/agregar-producto', async (req, res) => {
   }
 });
 
-// ==========================================
-// 📄 NOTAS CON DIFERENCIAS Y AUDITORÍA DE ROTOS
-// ==========================================
 
-// 1. Obtener listado de notas con discrepancias (Semáforo principal)
 app.get('/api/notas-discrepancias', async (req, res) => {
     try {
         const query = `
@@ -1941,7 +1937,8 @@ app.get('/api/notas-discrepancias', async (req, res) => {
             INNER JOIN productos p ON ed.id_producto = p.id_producto
             LEFT JOIN clientes c ON ped.id_cliente = c.id_cliente
             WHERE ed.cantidad_final IS NOT NULL 
-              AND ed.cantidad_entregada <> ed.cantidad_final;
+              AND ed.cantidad_entregada <> ed.cantidad_final
+              AND e.fecha_salida >= '2026-08-01 00:00:00'; -- 👈 Filtro agregado aquí
         `;
         
         const [rows] = await db.query(query);
@@ -1951,6 +1948,7 @@ app.get('/api/notas-discrepancias', async (req, res) => {
         res.status(500).json({ success: false, error: "Error interno del servidor" });
     }
 });
+
 
 // 2. Procesar la resolución de discrepancia (Roto / Justificado con candados de seguridad)
 app.post('/api/notas-discrepancias/resolver', async (req, res) => {
