@@ -22,7 +22,8 @@ import ControlFolios from './pages/ControlFolios'
 import FlujoCaja from './pages/FlujoCaja'
 import Viaticos from './pages/Viaticos'
 import CuentasPorPagarLogin from './pages/CuentasPorPagarLogin'
-import CuentasPorPagar from './pages/CuentasPorPagar' // 👈 1. IMPORTACIÓN AGREGADA
+import CuentasPorPagar from './pages/CuentasPorPagar'
+import NotasDiscrepancias from './pages/NotasDiscrepancias' // 👈 1. IMPORTACIÓN AGREGADA
 
 function App() {
   return (
@@ -51,7 +52,7 @@ function App() {
 
         {/* 💳 🔐 LOGIN Y PANTALLA CUENTAS POR PAGAR */}
         <Route path="/cuentas-por-pagar-login" element={<CuentasPorPagarLogin />} />
-        <Route path="/cuentas-por-pagar" element={<CuentasPorPagar />} /> {/* 👈 2. RUTA AGREGADA */}
+        <Route path="/cuentas-por-pagar" element={<CuentasPorPagar />} />
 
         {/* 💵 PAGOS */}
         <Route path="/pagos" element={<Pagos />} />
@@ -78,6 +79,9 @@ function App() {
 
         {/* ✈️ VIÁTICOS */}
         <Route path="/viaticos" element={<Viaticos />} /> 
+
+        {/* 📄 NOTAS CON DIFERENCIAS */}
+        <Route path="/notas-discrepancias" element={<NotasDiscrepancias />} /> 
       </Routes>
     </div>
   )
