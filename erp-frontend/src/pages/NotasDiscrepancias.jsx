@@ -239,7 +239,7 @@ function NotasDiscrepancias() {
             textAlign: "center"
           }}
         >
-          NOTAS CON DIFERENCIAS ⚠️
+          NOTAS CON DIFERENCIAS
         </h1>
       </div>
 
