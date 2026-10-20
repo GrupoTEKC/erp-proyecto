@@ -78,7 +78,13 @@ function NotasDiscrepancias() {
       const res = await fetch(`${API}/api/notas-discrepancias`)
       const data = await res.json()
       if (data.success) {
-        setDiscrepancias(Array.isArray(data.data) ? data.data : [])
+        // Filtrar opcionalmente también en frontend de agosto de 2026 en adelante (1 de agosto de 2026)
+        const fechaLimite = new Date("2026-08-01T00:00:00")
+        const listaFiltradaFecha = (Array.isArray(data.data) ? data.data : []).filter(item => {
+          if (!item.fecha_salida) return false
+          return new Date(item.fecha_salida) >= fechaLimite
+        })
+        setDiscrepancias(listaFiltradaFecha)
       } else {
         setDiscrepancias([])
       }
@@ -203,8 +209,8 @@ function NotasDiscrepancias() {
           style={{
             margin: 0,
             color: "#8B1E1E",
-            fontSize: "48px", // 👈 Cambiado al doble de grande (52px)
-            fontWeight: "bold", // 👈 En negrita
+            fontSize: "48px",
+            fontWeight: "bold",
             letterSpacing: "1px",
             textAlign: "center"
           }}
@@ -223,11 +229,11 @@ function NotasDiscrepancias() {
         />
         <button
           onClick={cargarDiscrepancias}
-          style={{ 
-            ...styles.botonAccion, 
-            marginTop: 0, 
-            backgroundColor: '#071849', 
-            fontWeight: 'bold' // 👈 Letras en negrita agregadas aquí
+          style={{
+            ...styles.botonAccion,
+            marginTop: 0,
+            backgroundColor: '#071849',
+            fontWeight: 'bold'
           }}
         >
           🔄 Actualizar
@@ -239,7 +245,7 @@ function NotasDiscrepancias() {
         <p style={{ textAlign: 'center', padding: '20px' }}>Cargando notas con discrepancias...</p>
       ) : discrepanciasFiltradas.length === 0 ? (
         <div style={{ padding: '20px', backgroundColor: '#d4edda', color: '#155724', borderRadius: '6px', textAlign: 'center', fontWeight: 'bold' }}>
-          ✅ ¡Excelente! No hay notas con discrepancias pendientes por revisar.
+          ✅ ¡Excelente! No hay notas con discrepancias pendientes por revisar desde agosto de 2026.
         </div>
       ) : (
         discrepanciasFiltradas.map((item, index) => {
@@ -354,7 +360,7 @@ function NotasDiscrepancias() {
                   checked={tipoResolucion === 'ROTO'}
                   onChange={e => setTipoResolucion(e.target.value)}
                 />
-                🔴 <strong>Marcar como Roto</strong> 
+                🔴 <strong>Marcar como Roto</strong>
               </label>
 
               <label style={{ cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -365,7 +371,7 @@ function NotasDiscrepancias() {
                   checked={tipoResolucion === 'JUSTIFICADO'}
                   onChange={e => setTipoResolucion(e.target.value)}
                 />
-                🟡 <strong>Marcar como justificado</strong> 
+                🟡 <strong>Marcar como justificado</strong>
               </label>
             </div>
 
