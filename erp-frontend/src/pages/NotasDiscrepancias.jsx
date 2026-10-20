@@ -22,11 +22,19 @@ const styles = {
   },
   field: {
     width: '100%',
-    maxWidth: '400px',
+    maxWidth: '300px',
     padding: '10px',
     borderRadius: '6px',
     border: '1px solid #8B1E1E',
     marginTop: '5px'
+  },
+  dateField: {
+    padding: '8px 10px',
+    borderRadius: '6px',
+    border: '1px solid #8B1E1E',
+    fontSize: '13px',
+    backgroundColor: '#fff',
+    color: '#333'
   },
   cardDiscrepancia: {
     border: '1px solid #ddd',
@@ -61,6 +69,10 @@ function NotasDiscrepancias() {
   const [loading, setLoading] = useState(false)
   const [busquedaFolio, setBusquedaFolio] = useState("")
 
+  // ESTADOS PARA EL FILTRO DE FECHAS PERSONALIZADO
+  const [fechaInicio, setFechaInicio] = useState("2026-08-01") // Valor inicial predeterminado por defecto
+  const [fechaFin, setFechaFin] = useState("") // Vacío por defecto para abarcar hasta el día actual si se desea
+
   // ESTADOS DEL MODAL DE REVISIÓN
   const [modalAbierto, setModalAbierto] = useState(false)
   const [itemSeleccionado, setItemSeleccionado] = useState(null)
@@ -70,7 +82,7 @@ function NotasDiscrepancias() {
   const [successMsg, setSuccessMsg] = useState('')
   const [procesando, setProcesando] = useState(false)
 
-  // Cargar notas con discrepancias desde el backend
+  // Cargar notas con discrepancias desde el backend (Trae todo y deja que el usuario filtre por fechas en vivo)
   const cargarDiscrepancias = async () => {
     setLoading(true)
     setErrorMsg('')
@@ -78,13 +90,7 @@ function NotasDiscrepancias() {
       const res = await fetch(`${API}/api/notas-discrepancias`)
       const data = await res.json()
       if (data.success) {
-        // Filtrar opcionalmente también en frontend de agosto de 2026 en adelante (1 de agosto de 2026)
-        const fechaLimite = new Date("2026-08-01T00:00:00")
-        const listaFiltradaFecha = (Array.isArray(data.data) ? data.data : []).filter(item => {
-          if (!item.fecha_salida) return false
-          return new Date(item.fecha_salida) >= fechaLimite
-        })
-        setDiscrepancias(listaFiltradaFecha)
+        setDiscrepancias(Array.isArray(data.data) ? data.data : [])
       } else {
         setDiscrepancias([])
       }
@@ -169,11 +175,29 @@ function NotasDiscrepancias() {
     }
   }
 
-  const discrepanciasFiltradas = discrepancias.filter(item =>
-    `${item.folio || ''} ${item.tienda_cliente || ''} ${item.producto || ''}`
+  // FILTRADO COMBINADO: Por Texto (Folio/Tienda/Producto) y por Rango de Fechas dinámico
+  const discrepanciasFiltradas = discrepancias.filter(item => {
+    const cumpleTexto = `${item.folio || ''} ${item.tienda_cliente || ''} ${item.producto || ''}`
       .toLowerCase()
       .includes(busquedaFolio.toLowerCase())
-  )
+
+    if (!item.fecha_salida) return false
+    const fechaItem = new Date(item.fecha_salida)
+
+    // Validar Fecha Inicio si está seleccionada
+    if (fechaInicio) {
+      const inicio = new Date(fechaInicio + "T00:00:00")
+      if (fechaItem < inicio) return false
+    }
+
+    // Validar Fecha Fin si está seleccionada
+    if (fechaFin) {
+      const fin = new Date(fechaFin + "T23:59:59")
+      if (fechaItem > fin) return false
+    }
+
+    return cumpleTexto
+  })
 
   return (
     <div style={styles.page}>
@@ -219,14 +243,44 @@ function NotasDiscrepancias() {
         </h1>
       </div>
 
-      {/* BARRA DE ACCIÓN Y BÚSQUEDA */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
+      {/* BARRA DE BÚSQUEDA Y FILTRO DE FECHAS PERSONALIZADO */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginBottom: '20px', 
+        flexWrap: 'wrap', 
+        gap: '12px',
+        backgroundColor: '#f8f9fa',
+        padding: '12px 16px',
+        borderRadius: '8px',
+        border: '1px solid #e9ecef'
+      }}>
         <input
           placeholder="Buscar por folio, tienda o producto..."
           value={busquedaFolio}
           onChange={e => setBusquedaFolio(e.target.value)}
           style={{ ...styles.field, marginTop: 0 }}
         />
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#444' }}>Desde:</span>
+          <input
+            type="date"
+            value={fechaInicio}
+            onChange={e => setFechaInicio(e.target.value)}
+            style={styles.dateField}
+          />
+
+          <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#444' }}>Hasta:</span>
+          <input
+            type="date"
+            value={fechaFin}
+            onChange={e => setFechaFin(e.target.value)}
+            style={styles.dateField}
+          />
+        </div>
+
         <button
           onClick={cargarDiscrepancias}
           style={{
@@ -245,7 +299,7 @@ function NotasDiscrepancias() {
         <p style={{ textAlign: 'center', padding: '20px' }}>Cargando notas con discrepancias...</p>
       ) : discrepanciasFiltradas.length === 0 ? (
         <div style={{ padding: '20px', backgroundColor: '#d4edda', color: '#155724', borderRadius: '6px', textAlign: 'center', fontWeight: 'bold' }}>
-          ✅ ¡Excelente! No hay notas con discrepancias pendientes por revisar desde agosto de 2026.
+          ✅ ¡Excelente! No hay notas con discrepancias que coincidan con los filtros de búsqueda o fechas seleccionados.
         </div>
       ) : (
         discrepanciasFiltradas.map((item, index) => {
