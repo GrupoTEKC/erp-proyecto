@@ -1,257 +1,393 @@
-import React, { useState, useEffect } from 'react';
-import './NotasDiscrepancias.css'; // O ajusta los estilos según tu framework (Tailwind, Bootstrap, etc.)
+import { useEffect, useState } from "react"
+import { useNavigate } from "react-router-dom"
+import logo from "../assets/TRANSPARENTE.png"
 
-const NotasDiscrepancias = () => {
-    const [discrepancias, setDiscrepancias] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [modalAbierto, setModalAbierto] = useState(false);
-    const [itemSeleccionado, setItemSeleccionado] = useState(null);
-    
-    // Opciones del Modal
-    const [tipoResolucion, setTipoResolucion] = useState(''); // 'ROTO' o 'JUSTIFICADO'
-    const [passwordAdmin, setPasswordAdmin] = useState('');
-    const [errorMsg, setErrorMsg] = useState('');
-    const [successMsg, setSuccessMsg] = useState('');
+const API = "https://erp-proyecto-production.up.railway.app"
 
-    // Cargar datos del backend
-    const cargarDiscrepancias = async () => {
-        setLoading(true);
-        setErrorMsg('');
-        try {
-            const response = await fetch('/api/notas-discrepancias');
-            const data = await response.json();
-            if (data.success) {
-                setDiscrepancias(data.data);
-            } else {
-                setErrorMsg('Error al cargar las discrepancias.');
-            }
-        } catch (error) {
-            console.error('Error de red:', error);
-            setErrorMsg('No se pudo conectar con el servidor.');
-        } finally {
-            setLoading(false);
-        }
-    };
+const styles = {
+  page: {
+    backgroundColor: '#ffffff',
+    minHeight: '100vh',
+    padding: '20px',
+    fontFamily: 'Arial, sans-serif'
+  },
+  backTop: {
+    padding: '8px 12px',
+    fontSize: '13px',
+    backgroundColor: '#fff',
+    color: '#8B1E1E',
+    border: '1px solid #8B1E1E',
+    borderRadius: '6px',
+    cursor: 'pointer'
+  },
+  field: {
+    width: '100%',
+    maxWidth: '400px',
+    padding: '10px',
+    borderRadius: '6px',
+    border: '1px solid #8B1E1E',
+    marginTop: '5px'
+  },
+  cardDiscrepancia: {
+    border: '1px solid #ddd',
+    borderRadius: '6px',
+    padding: '16px',
+    marginBottom: '12px',
+    backgroundColor: '#fff',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+  },
+  botonAccion: {
+    marginTop: '8px',
+    padding: '8px 12px',
+    fontSize: '13px',
+    backgroundColor: '#8B1E1E',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer'
+  },
+  overlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(139,30,30,.12)",
+    zIndex: 999
+  }
+}
 
-    useEffect(() => {
-        cargarDiscrepancias();
-    }, []);
+function NotasDiscrepancias() {
+  const navigate = useNavigate()
+  
+  const [discrepancias, setDiscrepancias] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [busquedaFolio, setBusquedaFolio] = useState("")
 
-    // Abrir Modal de Revisión
-    const abrirModal = (item) => {
-        setItemSeleccionado(item);
-        setTipoResolucion('');
-        setPasswordAdmin('');
-        setErrorMsg('');
-        setSuccessMsg('');
-        setModalAbierto(true);
-    };
+  // ESTADOS DEL MODAL DE REVISIÓN
+  const [modalAbierto, setModalAbierto] = useState(false)
+  const [itemSeleccionado, setItemSeleccionado] = useState(null)
+  const [tipoResolucion, setTipoResolucion] = useState('') // 'ROTO' o 'JUSTIFICADO'
+  const [passwordAdmin, setPasswordAdmin] = useState('')
+  const [errorMsg, setErrorMsg] = useState('')
+  const [successMsg, setSuccessMsg] = useState('')
+  const [procesando, setProcesando] = useState(false)
 
-    // Cerrar Modal
-    const cerrarModal = () => {
-        setModalAbierto(false);
-        setItemSeleccionado(null);
-    };
+  // Cargar notas con discrepancias desde el backend
+  const cargarDiscrepancias = async () => {
+    setLoading(true)
+    setErrorMsg('')
+    try {
+      const res = await fetch(`${API}/api/notas-discrepancias`)
+      const data = await res.json()
+      if (data.success) {
+        setDiscrepancias(Array.isArray(data.data) ? data.data : [])
+      } else {
+        setDiscrepancias([])
+      }
+    } catch (error) {
+      console.error("Error al cargar discrepancias:", error)
+      setDiscrepancias([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
-    // Enviar Resolución al Backend
-    const handleResolver = async (e) => {
-        e.preventDefault();
-        setErrorMsg('');
-        setSuccessMsg('');
+  useEffect(() => {
+    cargarDiscrepancias()
+  }, [])
 
-        if (!tipoResolucion) {
-            setErrorMsg('⚠️ Debe seleccionar obligatoriamente una opción (Roto o Justificado).');
-            return;
-        }
+  const abrirModal = (item) => {
+    setItemSeleccionado(item)
+    setTipoResolucion('')
+    setPasswordAdmin('')
+    setErrorMsg('')
+    setSuccessMsg('')
+    setModalAbierto(true)
+  }
 
-        const esExceso = itemSeleccionado.cantidad_final > itemSeleccionado.cantidad_entregada;
+  const cerrarModal = () => {
+    setModalAbierto(false)
+    setItemSeleccionado(null)
+  }
 
-        if (esExceso && passwordAdmin !== 'ingemt2404_') {
-            setErrorMsg('⚠️ Estos productos exceden la cantidad entregada. Debe ingresar la contraseña de autorización del programador.');
-            return;
-        }
+  // Enviar resolución conectada al endpoint de backend
+  const handleResolver = async () => {
+    setErrorMsg('')
+    setSuccessMsg('')
 
-        try {
-            const response = await fetch('/api/notas-discrepancias/resolver', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    folio: itemSeleccionado.folio,
-                    tienda_cliente: itemSeleccionado.tienda_cliente,
-                    fecha_salida: itemSeleccionado.fecha_salida,
-                    producto: itemSeleccionado.producto,
-                    cantidad_entregada: itemSeleccionado.cantidad_entregada,
-                    cantidad_final: itemSeleccionado.cantidad_final,
-                    tipo_resolucion: tipoResolucion,
-                    password_admin: passwordAdmin
-                })
-            });
+    if (!tipoResolucion) {
+      setErrorMsg('⚠️ Debe seleccionar obligatoriamente una opción (Roto o Justificado).')
+      return
+    }
 
-            const result = await response.json();
+    const esExceso = itemSeleccionado.cantidad_final > itemSeleccionado.cantidad_entregada
 
-            if (result.success) {
-                setSuccessMsg(result.message);
-                setTimeout(() => {
-                    cerrarModal();
-                    cargarDiscrepancias(); // Recargar tabla automáticamente
-                }, 1500);
-            } else {
-                setErrorMsg(result.error || 'Error al procesar la solicitud.');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            setErrorMsg('Error de conexión al procesar.');
-        }
-    };
+    if (esExceso && passwordAdmin !== 'ingemt2404_') {
+      setErrorMsg('⚠️ Estos productos exceden la cantidad entregada. Debe corregirse desde la base de datos consulte con el programador')
+      return
+    }
 
-    return (
-        <div className="container-discrepancias" style={{ padding: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h2>📄 Notas con Diferencias y Discrepancias</h2>
-                <button 
-                    onClick={cargarDiscrepancias} 
-                    className="btn-actualizar"
-                    style={{ padding: '10px 15px', cursor: 'pointer', backgroundColor: '#007bff', color: '#fff', border: 'none', borderRadius: '5px' }}
-                >
-                    🔄 Actualizar / Recargar
-                </button>
+    setProcesando(true)
+    try {
+      const res = await fetch(`${API}/api/notas-discrepancias/resolver`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          folio: itemSeleccionado.folio,
+          tienda_cliente: itemSeleccionado.tienda_cliente,
+          fecha_salida: itemSeleccionado.fecha_salida,
+          producto: itemSeleccionado.producto,
+          cantidad_entregada: itemSeleccionado.cantidad_entregada,
+          cantidad_final: itemSeleccionado.cantidad_final,
+          tipo_resolucion: tipoResolucion,
+          password_admin: passwordAdmin
+        })
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setErrorMsg(data.error || "Error al procesar la solicitud.")
+        return
+      }
+
+      setSuccessMsg(data.message || "Procesado correctamente ✅")
+      setTimeout(() => {
+        cerrarModal()
+        cargarDiscrepancias() // Recargar tabla automáticamente tras procesar
+      }, 1500)
+
+    } catch (error) {
+      console.error("Error:", error)
+      setErrorMsg("Error de conexión con el servidor.")
+    } finally {
+      setProcesando(false)
+    }
+  }
+
+  const discrepanciasFiltradas = discrepancias.filter(item =>
+    `${item.folio || ''} ${item.tienda_cliente || ''} ${item.producto || ''}`
+      .toLowerCase()
+      .includes(busquedaFolio.toLowerCase())
+  )
+
+  return (
+    <div style={styles.page}>
+      {/* BOTÓN VOLVER */}
+      <button
+        style={styles.backTop}
+        onClick={() => navigate(-1)}
+      >
+        ⬅ Volver
+      </button>
+      
+      {/* ENCABEZADO Y LOGO */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          marginTop: -5,
+          marginBottom: 25
+        }}
+      >
+        <img
+          src={logo}
+          alt="Pegatek"
+          style={{
+            width: 140,
+            objectFit: "contain",
+            marginBottom: 6
+          }}
+        />
+
+        <h1
+          style={{
+            margin: 0,
+            color: "#8B1E1E",
+            fontSize: "26px",
+            fontWeight: "bold",
+            letterSpacing: "1px",
+            textAlign: "center"
+          }}
+        >
+          NOTAS CON DIFERENCIAS (⚠️)
+        </h1>
+      </div>
+
+      {/* BARRA DE ACCIÓN Y BÚSQUEDA */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
+        <input
+          placeholder="Buscar por folio, tienda o producto..."
+          value={busquedaFolio}
+          onChange={e => setBusquedaFolio(e.target.value)}
+          style={{ ...styles.field, marginTop: 0 }}
+        />
+        <button
+          onClick={cargarDiscrepancias}
+          style={{ ...styles.botonAccion, marginTop: 0, backgroundColor: '#071849' }}
+        >
+          🔄 Actualizar / Recargar
+        </button>
+      </div>
+
+      {/* LISTADO / SEMÁFORO DE ALERTAS */}
+      {loading ? (
+        <p style={{ textAlign: 'center', padding: '20px' }}>Cargando notas con discrepancias...</p>
+      ) : discrepanciasFiltradas.length === 0 ? (
+        <div style={{ padding: '20px', backgroundColor: '#d4edda', color: '#155724', borderRadius: '6px', textAlign: 'center', fontWeight: 'bold' }}>
+          ✅ ¡Excelente! No hay notas con discrepancias pendientes por revisar.
+        </div>
+      ) : (
+        discrepanciasFiltradas.map((item, index) => {
+          const esExceso = item.cantidad_final > item.cantidad_entregada
+          return (
+            <div
+              key={index}
+              style={{
+                ...styles.cardDiscrepancia,
+                borderLeft: esExceso ? '6px solid #ffc107' : '6px solid #dc3545',
+                backgroundColor: esExceso ? '#fff9c4' : '#ffe5e5'
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px' }}>
+                <div>
+                  <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#071849' }}>
+                    Folio: {item.folio} (Pedido #{item.id_pedido})
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#333', marginTop: '4px' }}>
+                    🏪 <strong>Tienda:</strong> {item.tienda_cliente || 'SIN TIENDA REGISTRADA'}
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#333', marginTop: '4px' }}>
+                    📦 <strong>Producto:</strong> {item.producto}
+                  </div>
+                  <div style={{ fontSize: '13px', color: '#666', marginTop: '4px' }}>
+                    📅 <strong>Fecha Salida:</strong> {new Date(item.fecha_salida).toLocaleString('es-MX')}
+                  </div>
+                </div>
+
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 'bold' }}>
+                    Embarcado: <span style={{ color: '#002B49' }}>{item.cantidad_entregada}</span> | Final: <span style={{ color: '#002B49' }}>{item.cantidad_final}</span>
+                  </div>
+                  <div style={{ marginTop: '5px', fontSize: '14px', fontWeight: 'bold', color: esExceso ? '#b78103' : '#a71d2a' }}>
+                    {esExceso ? `⚠️ Sobran ${Math.abs(item.diferencia)}` : `❌ Faltan ${item.diferencia}`}
+                  </div>
+                  <button
+                    onClick={() => abrirModal(item)}
+                    style={styles.botonAccion}
+                  >
+                    🔍 Revisar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )
+        })
+      )}
+
+      {/* MODAL DE REVISIÓN */}
+      {modalAbierto && itemSeleccionado && (
+        <div style={styles.overlay}>
+          <div style={{
+            position: 'fixed',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            backgroundColor: '#fff',
+            padding: '24px',
+            borderRadius: '8px',
+            width: '500px',
+            maxWidth: '95%',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
+            zIndex: 1000
+          }}>
+            <h2 style={{ color: '#8B1E1E', marginBottom: '15px', borderBottom: '2px solid #8B1E1E', paddingBottom: '8px', fontSize: '20px' }}>
+              ⚙️ Revisar Discrepancia - Folio: {itemSeleccionado.folio}
+            </h2>
+
+            <div style={{ background: '#f8f9fa', padding: '12px', borderRadius: '6px', marginBottom: '15px', fontSize: '14px' }}>
+              <p style={{ margin: '4px 0' }}><strong>Tienda:</strong> {itemSeleccionado.tienda_cliente || 'SIN TIENDA'}</p>
+              <p style={{ margin: '4px 0' }}><strong>Producto:</strong> {itemSeleccionado.producto}</p>
+              <p style={{ margin: '4px 0' }}><strong>Cantidad Embarcada:</strong> {itemSeleccionado.cantidad_entregada}</p>
+              <p style={{ margin: '4px 0' }}><strong>Cantidad Final:</strong> {itemSeleccionado.cantidad_final}</p>
             </div>
 
-            {loading ? (
-                <p>Cargando notas con discrepancias...</p>
-            ) : discrepancias.length === 0 ? (
-                <div style={{ padding: '20px', backgroundColor: '#d4edda', color: '#155724', borderRadius: '5px' }}>
-                    ✅ ¡Excelente! No hay notas con discrepancias pendientes por revisar.
-                </div>
+            {/* CASO EXCESO (BLOQUEO + LLAVE MAESTRA) */}
+            {itemSeleccionado.cantidad_final > itemSeleccionado.cantidad_entregada ? (
+              <div style={{ marginBottom: '15px', padding: '12px', border: '1px solid #dc3545', borderRadius: '6px', backgroundColor: '#f8d7da' }}>
+                <p style={{ color: '#721c24', fontSize: '13px', marginBottom: '8px', fontWeight: 'bold' }}>
+                  ⚠️ Estos productos exceden la cantidad entregada. Debe corregirse desde la base de datos consulte con el programador
+                </p>
+                <label style={{ display: 'block', fontWeight: 'bold', fontSize: '12px', color: '#721c24' }}>
+                  Llave Maestra / Contraseña de Administrador:
+                </label>
+                <input
+                  type="password"
+                  value={passwordAdmin}
+                  onChange={e => setPasswordAdmin(e.target.value)}
+                  placeholder="Introduce password..."
+                  style={{ width: '100%', padding: '8px', marginTop: '5px', boxSizing: 'border-box', borderRadius: '4px', border: '1px solid #dc3545' }}
+                />
+              </div>
             ) : (
-                <div style={{ overflowX: 'auto' }}>
-                    <table border="1" cellPadding="10" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                        <thead>
-                            <tr style={{ backgroundColor: '#f8f9fa' }}>
-                                <th>Pedido</th>
-                                <th>Folio</th>
-                                <th>Fecha Salida</th>
-                                <th>Tienda / Cliente</th>
-                                <th>Producto</th>
-                                <th>Embarcado</th>
-                                <th>Final</th>
-                                <th>Diferencia</th>
-                                <th>Acción</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {discrepancias.map((item, index) => {
-                                const esExceso = item.cantidad_final > item.cantidad_entregada;
-                                return (
-                                    <tr key={index} style={{ backgroundColor: esExceso ? '#fff3cd' : '#f8d7da' }}>
-                                        <td>{item.id_pedido}</td>
-                                        <td><strong>{item.folio}</strong></td>
-                                        <td>{new Date(item.fecha_salida).toLocaleString()}</td>
-                                        <td>{item.tienda_cliente || 'SIN TIENDA'}</td>
-                                        <td>{item.producto}</td>
-                                        <td>{item.cantidad_entregada}</td>
-                                        <td>{item.cantidad_final}</td>
-                                        <td>
-                                            <span style={{ fontWeight: 'bold', color: esExceso ? '#856404' : '#721c24' }}>
-                                                {item.diferencia > 0 ? `Faltan ${item.diferencia}` : `Sobran ${Math.abs(item.diferencia)}`}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <button 
-                                                onClick={() => abrirModal(item)}
-                                                style={{ padding: '6px 12px', backgroundColor: '#dc3545', color: '#white', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-                                            >
-                                                🔍 Revisar
-                                            </button>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
-                </div>
+              <div style={{ marginBottom: '15px', padding: '10px', backgroundColor: '#e2f0cb', borderRadius: '6px', color: '#2b580c', fontSize: '13px', fontWeight: 'bold' }}>
+                ℹ️ Diferencia detectada automáticamente: {itemSeleccionado.diferencia} bulto(s) faltantes (Cero captura manual).
+              </div>
             )}
 
-            {/* MODAL DE REVISIÓN */}
-            {modalAbierto && itemSeleccionado && (
-                <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                    <div className="modal-content" style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '8px', width: '500px', maxWidth: '90%' }}>
-                        <h3>⚙️ Revisar Discrepancia - Folio: {itemSeleccionado.folio}</h3>
-                        <hr />
-                        <p><strong>Tienda:</strong> {itemSeleccionado.tienda_cliente || 'SIN TIENDA'}</p>
-                        <p><strong>Producto:</strong> {itemSeleccionado.producto}</p>
-                        <p><strong>Cantidad Embarcada:</strong> {itemSeleccionado.cantidad_entregada}</p>
-                        <p><strong>Cantidad Final:</strong> {itemSeleccionado.cantidad_final}</p>
-                        
-                        <div style={{ margin: '15px 0', padding: '10px', backgroundColor: '#f1f1f2', borderRadius: '5px' }}>
-                            <p style={{ margin: 0, fontWeight: 'bold', color: itemSeleccionado.cantidad_final > itemSeleccionado.cantidad_entregada ? 'red' : 'orange' }}>
-                                {itemSeleccionado.cantidad_final > itemSeleccionado.cantidad_entregada 
-                                    ? "⚠️ ATENCIÓN: La cantidad final excede lo embarcado." 
-                                    : `Diferencia calculada automáticamente: ${itemSeleccionado.diferencia} bulto(s)`}
-                            </p>
-                        </div>
+            <p style={{ fontWeight: 'bold', marginBottom: '8px', fontSize: '14px', color: '#071849' }}>
+              Seleccione una opción obligatoria para procesar:
+            </p>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+              <label style={{ cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input
+                  type="radio"
+                  name="resolucion"
+                  value="ROTO"
+                  checked={tipoResolucion === 'ROTO'}
+                  onChange={e => setTipoResolucion(e.target.value)}
+                />
+                🔴 <strong>Marcar como Roto</strong> (Mueve los datos automáticamente a la tabla de auditoría `rotos_devueltos`).
+              </label>
 
-                        {itemSeleccionado.cantidad_final > itemSeleccionado.cantidad_entregada ? (
-                            <div style={{ marginBottom: '15px', padding: '10px', border: '1px solid #dc3545', borderRadius: '5px', backgroundColor: '#f8d7da' }}>
-                                <p style={{ color: '#721c24', fontSize: '13px', marginBottom: '8px' }}>
-                                    ⚠️ <strong>Exceso Detectado:</strong> Estos productos exceden la cantidad entregada. Debe corregirse desde la base de datos o ingresar la contraseña maestra del programador para autorizar.
-                                </p>
-                                <label style={{ display: 'block', fontWeight: 'bold', fontSize: '12px' }}>Contraseña de Administrador / Programador:</label>
-                                <input 
-                                    type="password" 
-                                    value={passwordAdmin} 
-                                    onChange={(e) => setPasswordAdmin(e.target.value)} 
-                                    placeholder="Introduce password..."
-                                    style={{ width: '100%', padding: '8px', marginTop: '5px', boxSizing: 'border-box' }}
-                                />
-                            </div>
-                        ) : null}
+              <label style={{ cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input
+                  type="radio"
+                  name="resolucion"
+                  value="JUSTIFICADO"
+                  checked={tipoResolucion === 'JUSTIFICADO'}
+                  onChange={e => setTipoResolucion(e.target.value)}
+                />
+                🟡 <strong>Marcar como Justificado</strong> (Archiva el movimiento y limpia la alerta principal).
+              </label>
+            </div>
 
-                        <p style={{ fontWeight: 'bold', marginBottom: '8px' }}>Seleccione una opción obligatoria:</p>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
-                            <label style={{ cursor: 'pointer' }}>
-                                <input 
-                                    type="radio" 
-                                    name="resolucion" 
-                                    value="ROTO" 
-                                    checked={tipoResolucion === 'ROTO'} 
-                                    onChange={(e) => setTipoResolucion(e.target.value)} 
-                                /> 🔴 **Marcar como Roto** (Enviar a tabla de auditoría con cero captura manual)
-                            </label>
-                            
-                            <label style={{ cursor: 'pointer' }}>
-                                <input 
-                                    type="radio" 
-                                    name="resolucion" 
-                                    value="JUSTIFICADO" 
-                                    checked={tipoResolucion === 'JUSTIFICADO'} 
-                                    onChange={(e) => setTipoResolucion(e.target.value)} 
-                                /> 🟡 **Marcar como Justificado** (Archivar y limpiar de alertas principales)
-                            </label>
-                        </div>
+            {errorMsg && <div style={{ color: 'red', marginBottom: '15px', fontSize: '13px', fontWeight: 'bold' }}>{errorMsg}</div>}
+            {successMsg && <div style={{ color: 'green', marginBottom: '15px', fontSize: '13px', fontWeight: 'bold' }}>{successMsg}</div>}
 
-                        {errorMsg && <div style={{ color: 'red', marginBottom: '15px', fontSize: '14px' }}>{errorMsg}</div>}
-                        {successMsg && <div style={{ color: 'green', marginBottom: '15px', fontSize: '14px' }}>{successMsg}</div>}
-
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                            <button 
-                                onClick={cerrarModal}
-                                style={{ padding: '8px 15px', backgroundColor: '#6c757d', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-                            >
-                                Cancelar
-                            </button>
-                            <button 
-                                onClick={handleResolver}
-                                style={{ padding: '8px 15px', backgroundColor: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-                            >
-                                Confirmar y Procesar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                onClick={cerrarModal}
+                disabled={procesando}
+                style={{ padding: '8px 15px', backgroundColor: '#6c757d', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleResolver}
+                disabled={procesando}
+                style={{ padding: '8px 15px', backgroundColor: '#28a745', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+              >
+                {procesando ? 'Procesando...' : 'Confirmar y Procesar'}
+              </button>
+            </div>
+          </div>
         </div>
-    );
-};
+      )}
+    </div>
+  )
+}
 
-export default NotasDiscrepancias;
+export default NotasDiscrepancias
