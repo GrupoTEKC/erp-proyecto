@@ -203,13 +203,13 @@ function NotasDiscrepancias() {
           style={{
             margin: 0,
             color: "#8B1E1E",
-            fontSize: "52px", // 👈 Cambiado al doble de grande (52px)
+            fontSize: "48px", // 👈 Cambiado al doble de grande (52px)
             fontWeight: "bold", // 👈 En negrita
             letterSpacing: "1px",
             textAlign: "center"
           }}
         >
-          NOTAS CON DIFERENCIAS (⚠️)
+          NOTAS CON DIFERENCIAS ⚠️
         </h1>
       </div>
 
@@ -230,7 +230,7 @@ function NotasDiscrepancias() {
             fontWeight: 'bold' // 👈 Letras en negrita agregadas aquí
           }}
         >
-          🔄 Actualizar / Recargar
+          🔄 Actualizar
         </button>
       </div>
 
@@ -280,7 +280,7 @@ function NotasDiscrepancias() {
                     onClick={() => abrirModal(item)}
                     style={styles.botonAccion}
                   >
-                    🔍 Revisar
+                    🔍 Ver detalles
                   </button>
                 </div>
               </div>
@@ -314,8 +314,8 @@ function NotasDiscrepancias() {
             <div style={{ background: '#f8f9fa', padding: '12px', borderRadius: '6px', marginBottom: '15px', fontSize: '14px' }}>
               <p style={{ margin: '4px 0' }}><strong>Tienda:</strong> {itemSeleccionado.tienda_cliente || 'SIN TIENDA'}</p>
               <p style={{ margin: '4px 0' }}><strong>Producto:</strong> {itemSeleccionado.producto}</p>
-              <p style={{ margin: '4px 0' }}><strong>Cantidad Embarcada:</strong> {itemSeleccionado.cantidad_entregada}</p>
-              <p style={{ margin: '4px 0' }}><strong>Cantidad Final:</strong> {itemSeleccionado.cantidad_final}</p>
+              <p style={{ margin: '4px 0' }}><strong>Cantidad embarcada:</strong> {itemSeleccionado.cantidad_entregada}</p>
+              <p style={{ margin: '4px 0' }}><strong>Cantidad final:</strong> {itemSeleccionado.cantidad_final}</p>
             </div>
 
             {/* CASO EXCESO (BLOQUEO + LLAVE MAESTRA) */}
@@ -325,13 +325,13 @@ function NotasDiscrepancias() {
                   ⚠️ Estos productos exceden la cantidad entregada. Debe corregirse desde la base de datos consulte con el programador
                 </p>
                 <label style={{ display: 'block', fontWeight: 'bold', fontSize: '12px', color: '#721c24' }}>
-                  Llave Maestra / Contraseña de Administrador:
+                  Para liberar este folio como justificado, ingrese la contraseña de administrador:
                 </label>
                 <input
                   type="password"
                   value={passwordAdmin}
                   onChange={e => setPasswordAdmin(e.target.value)}
-                  placeholder="Introduce password..."
+                  placeholder="Introduce contraseña..."
                   style={{ width: '100%', padding: '8px', marginTop: '5px', boxSizing: 'border-box', borderRadius: '4px', border: '1px solid #dc3545' }}
                 />
               </div>
@@ -354,7 +354,7 @@ function NotasDiscrepancias() {
                   checked={tipoResolucion === 'ROTO'}
                   onChange={e => setTipoResolucion(e.target.value)}
                 />
-                🔴 <strong>Marcar como Roto</strong> (Mueve los datos automáticamente a la tabla de auditoría `rotos_devueltos`).
+                🔴 <strong>Marcar como Roto</strong> 
               </label>
 
               <label style={{ cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -365,7 +365,7 @@ function NotasDiscrepancias() {
                   checked={tipoResolucion === 'JUSTIFICADO'}
                   onChange={e => setTipoResolucion(e.target.value)}
                 />
-                🟡 <strong>Marcar como Justificado</strong> (Archiva el movimiento y limpia la alerta principal).
+                🟡 <strong>Marcar como justificado</strong> 
               </label>
             </div>
 
