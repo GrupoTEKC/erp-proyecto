@@ -56,6 +56,53 @@ const styles = {
     cursor: 'pointer',
     fontWeight: 'bold',
     fontSize: '13px'
+  },
+  hamburger: {
+    position: "fixed",
+    top: 18,
+    right: 18,
+    background: "transparent",
+    border: "none",
+    color: "#C62828",
+    fontSize: 30,
+    cursor: "pointer",
+    zIndex: 1001,
+    padding: 0,
+    lineHeight: 1
+  },
+  menu: {
+    position: "fixed",
+    top: 0,
+    right: 0,
+    width: 290,
+    height: "100%",
+    background: "#ffffff",
+    color: "#222",
+    boxShadow: "-8px 0 25px rgba(0,0,0,.18)",
+    padding: "20px 18px",
+    zIndex: 1000,
+    transition: "transform .25s ease"
+  },
+  menuItem: {
+    width: "100%",
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    padding: "14px 12px",
+    marginBottom: 8,
+    background: "#fff",
+    color: "#333",
+    border: "none",
+    borderBottom: "1px solid #ececec",
+    fontSize: "17px",
+    cursor: "pointer",
+    textAlign: "left"
+  },
+  overlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(139,30,30,.12)",
+    zIndex: 999
   }
 };
 
@@ -78,6 +125,9 @@ export default function ControlFolios() {
   const [folioSeleccionado, setFolioSeleccionado] = useState(null);
   const [detalleProductos, setDetalleProductos] = useState([]);
   const [loadingDetalle, setLoadingDetalle] = useState(false);
+
+  // Estado del Menú Hamburguesa
+  const [menuAbierto, setMenuAbierto] = useState(false);
 
   useEffect(() => {
     fetch(`${API}/pedidos/folios-control`)
@@ -184,6 +234,83 @@ export default function ControlFolios() {
 
   return (
     <div style={styles.page}>
+      {/* Botón Hamburguesa */}
+      {!menuAbierto && (
+        <button
+          style={styles.hamburger}
+          onClick={() => setMenuAbierto(true)}
+        >
+          ☰
+        </button>
+      )}
+
+      {/* Menú Lateral Desplegable */}
+      {menuAbierto && (
+        <>
+          <div
+            style={styles.overlay}
+            onClick={() => setMenuAbierto(false)}
+          />
+
+          <div style={styles.menu}>
+            <h3
+              style={{
+                margin: 0,
+                paddingBottom: 18,
+                marginBottom: 18,
+                borderBottom: "1px solid #E5E5E5",
+                fontSize: 24,
+                color: "#8B1E1E",
+                fontWeight: "700"
+              }}
+            >
+              ☰ MENÚ
+            </h3>
+
+            <button
+              style={styles.menuItem}
+              onClick={() => {
+                setMenuAbierto(false);
+                navigate("/");
+              }}
+            >
+              <span style={{ color: "#C62828" }}>🏠</span>
+              Inicio
+            </button>
+
+            <button
+              style={styles.menuItem}
+              onClick={() => {
+                setMenuAbierto(false);
+                navigate("/control-folios");
+              }}
+            >
+              <span style={{ color: "#C62828" }}>📋</span>
+              Control de folios
+            </button>
+
+            <button
+              style={styles.menuItem}
+              onClick={() => {
+                setMenuAbierto(false);
+                navigate("/notas-discrepancias");
+              }}
+            >
+              <span style={{ color: "#C62828" }}>📄</span>
+              Notas con diferencias (⚠️)
+            </button>
+
+            <button
+              style={styles.menuItem}
+              onClick={() => setMenuAbierto(false)}
+            >
+              <span style={{ color: "#C62828" }}>✖</span>
+              Salir del menú
+            </button>
+          </div>
+        </>
+      )}
+
       <button style={styles.backTop} onClick={() => navigate("/")}>
         ⬅ Volver al inicio
       </button>
