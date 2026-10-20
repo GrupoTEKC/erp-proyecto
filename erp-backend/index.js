@@ -1938,7 +1938,7 @@ app.get('/api/notas-discrepancias', async (req, res) => {
             LEFT JOIN clientes c ON ped.id_cliente = c.id_cliente
             WHERE ed.cantidad_final IS NOT NULL 
               AND ed.cantidad_entregada <> ed.cantidad_final
-              AND e.fecha_salida >= '2026-08-01 00:00:00'; -- 👈 Filtro agregado aquí
+              AND e.fecha_salida >= '2026-08-01 00:00:00';
         `;
       
         
