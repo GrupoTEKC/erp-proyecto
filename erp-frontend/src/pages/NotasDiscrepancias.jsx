@@ -397,7 +397,7 @@ function NotasDiscrepancias() {
               </div>
             ) : (
               <div style={{ marginBottom: '15px', padding: '10px', backgroundColor: '#e2f0cb', borderRadius: '6px', color: '#2b580c', fontSize: '13px', fontWeight: 'bold' }}>
-                ℹ️ Diferencia detectada automáticamente: {itemSeleccionado.diferencia} bulto(s) faltantes (Cero captura manual).
+                ℹ️ Diferencia detectada: {itemSeleccionado.diferencia} bulto(s) faltantes.
               </div>
             )}
 
