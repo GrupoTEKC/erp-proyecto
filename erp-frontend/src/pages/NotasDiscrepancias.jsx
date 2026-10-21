@@ -137,15 +137,22 @@ function NotasDiscrepancias() {
       return
     }
 
+
     setProcesando(true)
     try {
+      // 🛠️ Convertir la fecha de formato ISO a formato MySQL (YYYY-MM-DD HH:mm:ss)
+      const fechaOriginal = new Date(itemSeleccionado.fecha_salida);
+      const fechaMySQL = !isNaN(fechaOriginal.getTime()) 
+        ? fechaOriginal.toISOString().slice(0, 19).replace('T', ' ') 
+        : itemSeleccionado.fecha_salida;
+
       const res = await fetch(`${API}/api/notas-discrepancias/resolver`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           folio: itemSeleccionado.folio,
           tienda_cliente: itemSeleccionado.tienda_cliente,
-          fecha_salida: itemSeleccionado.fecha_salida,
+          fecha_salida: fechaMySQL, // 👈 Aquí mandamos la fecha formateada sin la 'T' ni la 'Z'
           producto: itemSeleccionado.producto,
           cantidad_entregada: itemSeleccionado.cantidad_entregada,
           cantidad_final: itemSeleccionado.cantidad_final,
@@ -154,6 +161,8 @@ function NotasDiscrepancias() {
         })
       })
 
+      
+    
       const data = await res.json()
 
       if (!res.ok) {
