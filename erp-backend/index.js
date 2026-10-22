@@ -1919,9 +1919,7 @@ app.post('/cuentas-por-cobrar/agregar-producto', async (req, res) => {
 });
 
 
-// ==========================================================
-// 1. OBTENER NOTAS CON DISCREPANCIAS (Oculta Rotos y Justificados)
-// ==========================================================
+
 app.get('/api/notas-discrepancias', async (req, res) => {
     try {
         const query = `
@@ -1941,16 +1939,16 @@ app.get('/api/notas-discrepancias', async (req, res) => {
             LEFT JOIN clientes c ON ped.id_cliente = c.id_cliente
             WHERE ed.cantidad_final IS NOT NULL 
               AND ed.cantidad_entregada <> ed.cantidad_final
-              AND e.fecha_salida >= '2026-08-01 00:00:00'
-              -- 🟢 CANDADO 1: Ocultar si ya está en rotos_devueltos
+              AND e.fecha_salida >= '2026-06-01 00:00:00'
               AND NOT EXISTS (
                   SELECT 1 FROM rotos_devueltos rd 
-                  WHERE rd.folio = e.folio AND rd.producto = p.nombre
+                  WHERE TRIM(rd.folio) = TRIM(e.folio) 
+                    AND TRIM(LOWER(rd.producto)) = TRIM(LOWER(p.nombre))
               )
-              -- 🟢 CANDADO 2: Ocultar si ya está en justificados_devueltos
               AND NOT EXISTS (
                   SELECT 1 FROM justificados_devueltos jd 
-                  WHERE jd.folio = e.folio AND jd.producto = p.nombre
+                  WHERE TRIM(jd.folio) = TRIM(e.folio) 
+                    AND TRIM(LOWER(jd.producto)) = TRIM(LOWER(p.nombre))
               );
         `;
       
