@@ -1978,10 +1978,17 @@ app.post('/api/notas-discrepancias/resolver', async (req, res) => {
     }
 
     try {
-        if (tipo_resolucion === 'ROTO') {
+
+      if (tipo_resolucion === 'ROTO') {
             // Cálculo automático de la cantidad rota (cero captura manual)
             const cantidadRota = esExceso ? (cantidad_final - cantidad_entregada) : diferencia;
             
+            // CONVERSIÓN OBLIGATORIA: Limpiamos el formato ISO ('2026-08-03T15:40:44.000Z') 
+            // a formato MySQL estricto ('2026-08-03 15:40:44')
+            const fechaLimpia = fecha_salida 
+                ? new Date(fecha_salida).toISOString().slice(0, 19).replace('T', ' ') 
+                : null;
+
             const insertQuery = `
                 INSERT INTO rotos_devueltos (folio, tienda_cliente, fecha_salida, producto, cantidad_rota, motivo) 
                 VALUES (?, ?, ?, ?, ?, ?)
@@ -1990,15 +1997,15 @@ app.post('/api/notas-discrepancias/resolver', async (req, res) => {
             await db.query(insertQuery, [
                 folio, 
                 tienda_cliente || 'SIN TIENDA REGISTRADA', 
-                fecha_salida, 
+                fechaLimpia, // <-- Usamos la fecha limpia sin 'T' ni 'Z'
                 producto, 
                 Math.abs(cantidadRota), 
                 esExceso ? 'Excedente autorizado por llave maestra' : 'Bultos rotos o faltantes en ruta'
             ]);
 
             return res.json({ success: true, message: "Registrado en rotos/devoluciones exitosamente." });
-        } 
-        
+        }
+      
         else if (tipo_resolucion === 'JUSTIFICADO') {
             // Se archiva lógicamente limpiando la alerta principal sin alterar la base operativa
             return res.json({ success: true, message: "Discrepancia justificada y archivada correctamente." });
