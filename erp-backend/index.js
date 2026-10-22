@@ -1919,6 +1919,9 @@ app.post('/cuentas-por-cobrar/agregar-producto', async (req, res) => {
 });
 
 
+// ==========================================================
+// 1. OBTENER NOTAS CON DISCREPANCIAS (Oculta Rotos y Justificados)
+// ==========================================================
 app.get('/api/notas-discrepancias', async (req, res) => {
     try {
         const query = `
@@ -1938,10 +1941,19 @@ app.get('/api/notas-discrepancias', async (req, res) => {
             LEFT JOIN clientes c ON ped.id_cliente = c.id_cliente
             WHERE ed.cantidad_final IS NOT NULL 
               AND ed.cantidad_entregada <> ed.cantidad_final
-              AND e.fecha_salida >= '2026-08-01 00:00:00';
+              AND e.fecha_salida >= '2026-08-01 00:00:00'
+              -- 🟢 CANDADO 1: Ocultar si ya está en rotos_devueltos
+              AND NOT EXISTS (
+                  SELECT 1 FROM rotos_devueltos rd 
+                  WHERE rd.folio = e.folio AND rd.producto = p.nombre
+              )
+              -- 🟢 CANDADO 2: Ocultar si ya está en justificados_devueltos
+              AND NOT EXISTS (
+                  SELECT 1 FROM justificados_devueltos jd 
+                  WHERE jd.folio = e.folio AND jd.producto = p.nombre
+              );
         `;
       
-        
         const [rows] = await db.query(query);
         res.json({ success: true, data: rows });
     } catch (error) {
@@ -1951,6 +1963,9 @@ app.get('/api/notas-discrepancias', async (req, res) => {
 });
 
 
+// ==========================================================
+// 2. PROCESAR RESOLUCIÓN (ROTO o JUSTIFICADO con auditoría)
+// ==========================================================
 app.post('/api/notas-discrepancias/resolver', async (req, res) => {
     const { 
         folio, 
@@ -1977,26 +1992,33 @@ app.post('/api/notas-discrepancias/resolver', async (req, res) => {
     }
 
     try {
-        // 🔒 CANDADO: Verificar si este folio y producto ya fueron registrados en rotos_devueltos usando 'id'
-        const [existente] = await db.query(
+        // 🔒 CANDADO: Verificar si este folio y producto ya fueron registrados previamente en ROTOS
+        const [existenteRoto] = await db.query(
             `SELECT id FROM rotos_devueltos WHERE folio = ? AND producto = ?`, 
             [folio, producto]
         );
 
-        if (existente.length > 0) {
+        // 🔒 CANDADO: Verificar si este folio y producto ya fueron registrados previamente en JUSTIFICADOS
+        const [existenteJustificado] = await db.query(
+            `SELECT id FROM justificados_devueltos WHERE folio = ? AND producto = ?`, 
+            [folio, producto]
+        );
+
+        if (existenteRoto.length > 0 || existenteJustificado.length > 0) {
             return res.status(400).json({ 
                 success: false, 
-                error: "⚠️ Este folio y producto ya fueron registrados previamente en devoluciones/rotos." 
+                error: "⚠️ Este folio y producto ya fueron registrados y resueltos previamente." 
             });
         }
 
-        if (tipo_resolucion === 'ROTO') {
-            const cantidadRota = esExceso ? (cantidad_final - cantidad_entregada) : diferencia;
-            
-            const fechaLimpia = fecha_salida 
-                ? new Date(fecha_salida).toISOString().slice(0, 19).replace('T', ' ') 
-                : null;
+        // Limpieza de fecha para formato MySQL estricto
+        const fechaLimpia = fecha_salida 
+            ? new Date(fecha_salida).toISOString().slice(0, 19).replace('T', ' ') 
+            : null;
+        
+        const cantidadAfectada = esExceso ? (cantidad_final - cantidad_entregada) : diferencia;
 
+        if (tipo_resolucion === 'ROTO') {
             const insertQuery = `
                 INSERT INTO rotos_devueltos (folio, tienda_cliente, fecha_salida, producto, cantidad_rota, motivo) 
                 VALUES (?, ?, ?, ?, ?, ?)
@@ -2007,7 +2029,7 @@ app.post('/api/notas-discrepancias/resolver', async (req, res) => {
                 tienda_cliente || 'SIN TIENDA REGISTRADA', 
                 fechaLimpia, 
                 producto, 
-                Math.abs(cantidadRota), 
+                Math.abs(cantidadAfectada), 
                 esExceso ? 'Excedente autorizado por llave maestra' : 'Bultos rotos o faltantes en ruta'
             ]);
 
@@ -2015,7 +2037,21 @@ app.post('/api/notas-discrepancias/resolver', async (req, res) => {
         } 
         
         else if (tipo_resolucion === 'JUSTIFICADO') {
-            return res.json({ success: true, message: "Discrepancia justificada y archivada correctamente." });
+            const insertQuery = `
+                INSERT INTO justificados_devueltos (folio, tienda_cliente, fecha_salida, producto, cantidad_rota, motivo) 
+                VALUES (?, ?, ?, ?, ?, ?)
+            `;
+            
+            await db.query(insertQuery, [
+                folio, 
+                tienda_cliente || 'SIN TIENDA REGISTRADA', 
+                fechaLimpia, 
+                producto, 
+                Math.abs(cantidadAfectada), 
+                esExceso ? 'Excedente justificado por administración' : 'Discrepancia justificada y archivada'
+            ]);
+
+            return res.json({ success: true, message: "Discrepancia justificada y guardada en auditoría correctamente." });
         } 
         
         else {
