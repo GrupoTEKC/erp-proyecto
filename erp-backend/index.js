@@ -1950,8 +1950,6 @@ app.get('/api/notas-discrepancias', async (req, res) => {
     }
 });
 
-
-// 2. Procesar la resolución de discrepancia (Roto / Justificado con candados de seguridad)
 app.post('/api/notas-discrepancias/resolver', async (req, res) => {
     const { 
         folio, 
@@ -1978,13 +1976,22 @@ app.post('/api/notas-discrepancias/resolver', async (req, res) => {
     }
 
     try {
+        // 🔒 CANDADO 1: Verificar si este folio y producto ya fueron resueltos/registrados antes
+        const [existente] = await db.query(
+            `SELECT id_roto FROM rotos_devueltos WHERE folio = ? AND producto = ?`, 
+            [folio, producto]
+        );
 
-      if (tipo_resolucion === 'ROTO') {
-            // Cálculo automático de la cantidad rota (cero captura manual)
+        if (existente.length > 0) {
+            return res.status(400).json({ 
+                success: false, 
+                error: "⚠️ Este folio y producto ya fueron registrados previamente en devoluciones/rotos." 
+            });
+        }
+
+        if (tipo_resolucion === 'ROTO') {
             const cantidadRota = esExceso ? (cantidad_final - cantidad_entregada) : diferencia;
             
-            // CONVERSIÓN OBLIGATORIA: Limpiamos el formato ISO ('2026-08-03T15:40:44.000Z') 
-            // a formato MySQL estricto ('2026-08-03 15:40:44')
             const fechaLimpia = fecha_salida 
                 ? new Date(fecha_salida).toISOString().slice(0, 19).replace('T', ' ') 
                 : null;
@@ -1997,17 +2004,18 @@ app.post('/api/notas-discrepancias/resolver', async (req, res) => {
             await db.query(insertQuery, [
                 folio, 
                 tienda_cliente || 'SIN TIENDA REGISTRADA', 
-                fechaLimpia, // <-- Usamos la fecha limpia sin 'T' ni 'Z'
+                fechaLimpia, 
                 producto, 
                 Math.abs(cantidadRota), 
                 esExceso ? 'Excedente autorizado por llave maestra' : 'Bultos rotos o faltantes en ruta'
             ]);
 
             return res.json({ success: true, message: "Registrado en rotos/devoluciones exitosamente." });
-        }
-      
+        } 
+        
         else if (tipo_resolucion === 'JUSTIFICADO') {
-            // Se archiva lógicamente limpiando la alerta principal sin alterar la base operativa
+            // Si es justificado, aquí puedes actualizar una bandera o simplemente dejarlo pasar 
+            // para que tu consulta principal lo ignore (por ejemplo, guardando el registro con motivo de justificación)
             return res.json({ success: true, message: "Discrepancia justificada y archivada correctamente." });
         } 
         
