@@ -1950,6 +1950,7 @@ app.get('/api/notas-discrepancias', async (req, res) => {
     }
 });
 
+
 app.post('/api/notas-discrepancias/resolver', async (req, res) => {
     const { 
         folio, 
@@ -1976,9 +1977,9 @@ app.post('/api/notas-discrepancias/resolver', async (req, res) => {
     }
 
     try {
-        // 🔒 CANDADO 1: Verificar si este folio y producto ya fueron resueltos/registrados antes
+        // 🔒 CANDADO: Verificar si este folio y producto ya fueron registrados en rotos_devueltos usando 'id'
         const [existente] = await db.query(
-            `SELECT id_roto FROM rotos_devueltos WHERE folio = ? AND producto = ?`, 
+            `SELECT id FROM rotos_devueltos WHERE folio = ? AND producto = ?`, 
             [folio, producto]
         );
 
@@ -2014,8 +2015,6 @@ app.post('/api/notas-discrepancias/resolver', async (req, res) => {
         } 
         
         else if (tipo_resolucion === 'JUSTIFICADO') {
-            // Si es justificado, aquí puedes actualizar una bandera o simplemente dejarlo pasar 
-            // para que tu consulta principal lo ignore (por ejemplo, guardando el registro con motivo de justificación)
             return res.json({ success: true, message: "Discrepancia justificada y archivada correctamente." });
         } 
         
@@ -2028,6 +2027,7 @@ app.post('/api/notas-discrepancias/resolver', async (req, res) => {
         res.status(500).json({ success: false, error: error.message });
     }
 });
+
 
 app.get('/pedidos/folios-control', async (req, res) => {
   try {
