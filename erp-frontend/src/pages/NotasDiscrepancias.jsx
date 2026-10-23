@@ -387,6 +387,8 @@ function NotasDiscrepancias() {
               <p style={{ margin: '4px 0' }}><strong>Cantidad final:</strong> {itemSeleccionado.cantidad_final}</p>
             </div>
 
+
+
             {/* CASO EXCESO (BLOQUEO + LLAVE MAESTRA) */}
             {itemSeleccionado.cantidad_final > itemSeleccionado.cantidad_entregada ? (
               <div style={{ marginBottom: '15px', padding: '12px', border: '1px solid #dc3545', borderRadius: '6px', backgroundColor: '#f8d7da' }}>
@@ -408,6 +410,8 @@ function NotasDiscrepancias() {
                 />
               </div>
             ) : (
+          
+            
               <div style={{ marginBottom: '15px', padding: '10px', backgroundColor: '#e2f0cb', borderRadius: '6px', color: '#2b580c', fontSize: '13px', fontWeight: 'bold' }}>
                 ℹ️ Diferencia detectada: {itemSeleccionado.diferencia} bulto(s) faltantes.
               </div>
