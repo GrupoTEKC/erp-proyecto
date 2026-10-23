@@ -20,6 +20,16 @@ function Produccion() {
   const [inventarioCapturado, setInventarioCapturado] = useState(false)
   const [calendario, setCalendario] = useState({})
 
+  // 🧭 ESTADO PARA EL MENÚ SUPERIOR (VISTAS)
+  const [vistaActiva, setVistaActiva] = useState('produccion') // 'produccion' | 'rotos'
+
+  // 🔴 ESTADOS PARA EL HISTORIAL DE ROTOS EN PRODUCCIÓN
+  const [historialRotos, setHistorialRotos] = useState([])
+  const [mesRotos, setMesRotos] = useState("todos")
+  const [busquedaDetalleRotos, setBusquedaDetalleRotos] = useState("")
+  const [fechaInicioRotos, setFechaInicioRotos] = useState("")
+  const [fechaFinRotos, setFechaFinRotos] = useState("")
+
   // Estados para el Modal y Formulario de Mermas
   const [mostrarModalMerma, setMostrarModalMerma] = useState(false)
   const [mermaForm, setMermaForm] = useState({
@@ -46,13 +56,12 @@ function Produccion() {
       } else {
         setSalidasReporte([])
       }
-    // ✅ CORRECTO
-} catch (err) {
-  console.error('Error al consultar salidas:', err)
-  setSalidasReporte([])
-} finally {
-  setCargandoSalidas(false)
-}
+    } catch (err) {
+      console.error('Error al consultar salidas:', err)
+      setSalidasReporte([])
+    } finally {
+      setCargandoSalidas(false)
+    }
   }
 
   // REPORTE DE PRODUCCIÓN
@@ -98,6 +107,7 @@ function Produccion() {
       setBloqueado(val.faltaAyer)
 
       await cargarCalendario()
+      await cargarDatosRotos() // 🔴 Cargar datos de rotos al iniciar
       if (!val.faltaAyer) {
         await cargarDatos()
         await cargarStock()
@@ -109,6 +119,21 @@ function Produccion() {
       alert('Error inicial')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const cargarDatosRotos = async () => {
+    try {
+      const res = await fetch(`${API}/api/rotos-devueltos/historial`)
+      const data = await res.json()
+      if (data.success) {
+        setHistorialRotos(Array.isArray(data.data) ? data.data : [])
+      } else {
+        setHistorialRotos([])
+      }
+    } catch (err) {
+      console.error('Error al cargar historial de rotos:', err)
+      setHistorialRotos([])
     }
   }
 
@@ -250,7 +275,6 @@ function Produccion() {
     p.nombre.toLowerCase().includes(busqueda.toLowerCase())
   )
 
-  // FIX: Se usa 'stock' para buscar todos los productos en Inventario Inicial
   const filtradosInv = stock.filter(p =>
     p.nombre.toLowerCase().includes(busquedaInv.toLowerCase())
   )
@@ -410,7 +434,6 @@ function Produccion() {
  const handleGuardarMerma = async (e) => {
   e.preventDefault()
 
-  // 🛑 Validación estricta: Producto, cantidad mayor a 0 y motivo obligatorio (sin espacios vacíos)
   if (!mermaForm.id_producto || !mermaForm.cantidad || Number(mermaForm.cantidad) <= 0) {
     alert('Por favor selecciona un producto e ingresa una cantidad válida mayor a 0.')
     return
@@ -430,7 +453,7 @@ function Produccion() {
         id_producto: Number(mermaForm.id_producto),
         tipo_merma: mermaForm.tipo_merma,
         cantidad: Number(mermaForm.cantidad),
-        motivo: mermaForm.motivo.trim() // ✅ Se envían los datos limpios sin espacios extras
+        motivo: mermaForm.motivo.trim()
       })
     })
 
@@ -488,6 +511,50 @@ function Produccion() {
       </div>
     )
   }
+
+  // 🧮 LÓGICA DE FILTRADO Y RESUMEN PARA LAS TABLAS DE ROTOS
+  const rotosFiltradosPorMes = historialRotos.filter(row => {
+    if (mesRotos === "todos") return true
+    if (!row.fecha_salida) return false
+    return row.fecha_salida.startsWith(mesRotos)
+  })
+
+  const resumenRotosDinamico = (() => {
+    const mapa = {}
+    rotosFiltradosPorMes.forEach(item => {
+      const prod = item.producto
+      if (!mapa[prod]) {
+        mapa[prod] = { producto: prod, total_acumulado: 0, foliosSet: new Set() }
+      }
+      mapa[prod].total_acumulado += Number(item.cantidad_rota || 0)
+      mapa[prod].foliosSet.add(item.folio)
+    })
+    return Object.values(mapa)
+      .map(item => ({ ...item, total_folios: item.foliosSet.size }))
+      .sort((a, b) => b.total_acumulado - a.total_acumulado)
+  })()
+
+  const totalGeneralRotos = resumenRotosDinamico.reduce((acc, curr) => acc + curr.total_acumulado, 0)
+
+  const rotosDetalleFiltrado = historialRotos.filter(row => {
+    const textoMatch = `${row.folio || ''} ${row.tienda_cliente || ''}`
+      .toLowerCase()
+      .includes(busquedaDetalleRotos.toLowerCase())
+
+    if (!textoMatch) return false
+    if (!row.fecha_salida) return true
+
+    const fechaItem = new Date(row.fecha_salida)
+    if (fechaInicioRotos) {
+      const inicio = new Date(fechaInicioRotos + "T00:00:00")
+      if (fechaItem < inicio) return false
+    }
+    if (fechaFinRotos) {
+      const fin = new Date(fechaFinRotos + "T23:59:59")
+      if (fechaItem > fin) return false
+    }
+    return true
+  })
   
   return (
     <div style={styles.page}>
@@ -506,700 +573,847 @@ function Produccion() {
         <img src={logo} alt="logo" style={styles.logo} />
       </div>
 
-      <div style={{ marginBottom: 30 }}>
-        {/* 🔽 SELECTOR DE MES */}
-        <select
-          value={mesSeleccionado}
-          onChange={(e) => setMesSeleccionado(e.target.value)}
-          style={{ padding: 8, marginBottom: 10 }}
+      {/* 🧭 MENÚ DE NAVEGACIÓN SUPERIOR ESTILIZADO Y DELGADO */}
+      <div style={styles.navBar}>
+        <button 
+          style={styles.navTab(vistaActiva === 'produccion')}
+          onClick={() => setVistaActiva('produccion')}
         >
-          {Object.keys(calendario).map(m => (
-            <option key={m} value={m}>
-              {new Date(anioActual, m - 1).toLocaleString('es-MX', { month: 'long' })} {anioActual}
-            </option>
-          ))}
-        </select>
+          📊 Módulo principal
+        </button>
+        <button 
+          style={styles.navTab(vistaActiva === 'rotos')}
+          onClick={() => setVistaActiva('rotos')}
+        >
+          🔴 Historial de bultos rotos
+        </button>
+      </div>
 
-        {/* 📅 TITULO */}
-        <h3 style={{ textTransform: 'capitalize' }}>
-          {new Date(anioActual, mesSeleccionado - 1).toLocaleString('es-MX', { month: 'long' })} {anioActual}
-        </h3>
-
-        {/* 📅 CALENDARIO */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(7, 40px)',
-          gap: 5,
-          marginTop: 10
-        }}>
-          {/* DÍAS */}
-          {['L','M','M','J','V','S','D'].map(d => (
-            <div key={d} style={{ fontWeight: 'bold', textAlign: 'center' }}>
-              {d}
-            </div>
-          ))}
-
-          {/* ESPACIOS VACÍOS */}
-          {Array.from({ length: offset }).map((_, i) => (
-            <div key={'vacio-' + i}></div>
-          ))}
-        
-          {/* DÍAS DEL MES */}
-          {diasMes.map(d => (
-            <div
-              key={d.fecha}
-              title={d.fecha}
-              onClick={() => setFecha(d.fecha)}
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 8,
-                backgroundColor: d.capturado ? '#16a34a' : '#dc2626',
-                color: '#fff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                fontWeight: 'bold',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                border: fecha === d.fecha ? '3px solid #000' : 'none'
-              }}
+      {/* ======================================================== */}
+      {/* VISTA 1: MÓDULO PRINCIPAL DE PRODUCCIÓN (ORIGINAL) */}
+      {/* ======================================================== */}
+      {vistaActiva === 'produccion' && (
+        <>
+          <div style={{ marginBottom: 30 }}>
+            {/* 🔽 SELECTOR DE MES */}
+            <select
+              value={mesSeleccionado}
+              onChange={(e) => setMesSeleccionado(e.target.value)}
+              style={{ padding: 8, marginBottom: 10 }}
             >
-              {d.dia}
-            </div>
-          ))}
-        </div>
-      </div> {/* FIX: Solo un Cierre de div aquí */}
+              {Object.keys(calendario).map(m => (
+                <option key={m} value={m}>
+                  {new Date(anioActual, m - 1).toLocaleString('es-MX', { month: 'long' })} {anioActual}
+                </option>
+              ))}
+            </select>
 
-      <h2 style={{ ...styles.title, marginTop: 30 }}>
-        CONSULTA TU PRODUCCIÓN
-      </h2>
+            {/* 📅 TITULO */}
+            <h3 style={{ textTransform: 'capitalize' }}>
+              {new Date(anioActual, mesSeleccionado - 1).toLocaleString('es-MX', { month: 'long' })} {anioActual}
+            </h3>
 
-      <div
-        style={{
-          display: 'flex',
-          gap: 15,
-          flexWrap: 'wrap',
-          alignItems: 'end',
-          marginBottom: 20
-        }}
-      >
-        <div>
-          <label style={styles.filtroLabel}>
-            Fecha inicial
-          </label>
-          <input
-            type="date"
-            value={fechaInicio}
-            onChange={(e) => setFechaInicio(e.target.value)}
-            style={{
-              padding: 8,
-              border: '1px solid #ccc',
-              borderRadius: 6,
-              fontWeight: 'bold'
-            }}
-          />
-        </div>
+            {/* 📅 CALENDARIO */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(7, 40px)',
+              gap: 5,
+              marginTop: 10
+            }}>
+              {/* DÍAS */}
+              {['L','M','M','J','V','S','D'].map(d => (
+                <div key={d} style={{ fontWeight: 'bold', textAlign: 'center' }}>
+                  {d}
+                </div>
+              ))}
 
-        <div>
-          <label style={styles.filtroLabel}>
-            Fecha final
-          </label>
-          <input
-            type="date"
-            value={fechaFin}
-            onChange={(e) => setFechaFin(e.target.value)}
-            style={{
-              padding: 8,
-              border: '1px solid #ccc',
-              borderRadius: 6,
-              fontWeight: 'bold'
-            }}
-          />
-        </div>
-
-        <div>
-          <label style={styles.filtroLabel}>
-            Seleccionar productos
-          </label>
-
-          <details style={{ minWidth: 250 }}>
-            <summary
-              style={{
-                padding: 8,
-                border: '1px solid #ccc',
-                borderRadius: 6,
-                cursor: 'pointer',
-                background: '#fff'
-              }}
-            >
-              Seleccionar productos 
-            </summary>
-
-            <div
-              style={{
-                border: '1px solid #ccc',
-                maxHeight: 200,
-                overflowY: 'auto',
-                padding: 10,
-                background: '#fff'
-              }}
-            >
-              {/* FIX: Se usa 'stock' para traer todos los productos */}
-              {stock.map(p => (
-                <label
-                  key={p.id_producto}
+              {/* ESPACIOS VACÍOS */}
+              {Array.from({ length: offset }).map((_, i) => (
+                <div key={'vacio-' + i}></div>
+              ))}
+            
+              {/* DÍAS DEL MES */}
+              {diasMes.map(d => (
+                <div
+                  key={d.fecha}
+                  title={d.fecha}
+                  onClick={() => setFecha(d.fecha)}
                   style={{
-                    display: 'block',
-                    marginBottom: 5
+                    width: 40,
+                    height: 40,
+                    borderRadius: 8,
+                    backgroundColor: d.capturado ? '#16a34a' : '#dc2626',
+                    color: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                    border: fecha === d.fecha ? '3px solid #000' : 'none'
                   }}
                 >
-                  <input
-                    type="checkbox"
-                    checked={productoReporte.includes(
-                      String(p.id_producto)
-                    )}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setProductoReporte([
-                          ...productoReporte,
-                          String(p.id_producto)
-                        ])
-                      } else {
-                        setProductoReporte(
-                          productoReporte.filter(
-                            id => id !== String(p.id_producto)
-                          )
-                        )
-                      }
-                    }}
-                  />
-                  {' '}
-                  {p.nombre}
-                </label>
+                  {d.dia}
+                </div>
               ))}
             </div>
-          </details>
-        </div>
-
-        <button
-          style={styles.save}
-          onClick={consultarReporte}
-        >
-          CONSULTAR
-        </button>
-
-        <button
-          style={styles.save}
-          onClick={exportarExcel}
-        >
-          DESCARGAR EXCEL
-        </button>
-      </div>
-
-      <table style={styles.table}>
-        <thead>
-          <tr>
-            <th style={styles.th}>Fecha</th>
-            <th style={styles.th}>Producto</th>
-            <th style={styles.th}>Cantidad</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {reporte.map((r, i) => (
-            <tr
-              key={i}
-              style={{
-                backgroundColor:
-                  i % 2 === 0
-                    ? '#ffffff'
-                    : '#fafafa',
-                borderBottom: '1px solid #ececec'
-              }}
-            >
-              <td style={styles.td}>
-                {fechaBonita(r.fecha)}
-              </td>
-              <td style={styles.td}>{r.nombre}</td>
-              <td style={styles.td}>{r.cantidad}</td>
-            </tr>
-          ))}
-        </tbody>
-
-        <tfoot>
-          <tr
-            style={{
-              background: '#8B1E1E',
-              color: '#fff',
-              fontWeight: 'bold'
-            }}
-          >
-            <td colSpan="2">
-              TOTAL
-            </td>
-            <td style={{ textAlign: 'center' }}>
-              {totalReporte}
-            </td>
-          </tr>
-        </tfoot>
-      </table>
-            
-      <div
-        style={{
-          marginTop: 20,
-          background: '#fff3cd',
-          border: '1px solid #ffe69c',
-          color: '#664d03',
-          padding: '12px 15px',
-          borderRadius: 8,
-          marginBottom: 20,
-          fontSize: 15,
-          lineHeight: 1.5
-        }}
-      >
-        ⚠️ Solo cuando aparezca el mensaje <strong>"Producción guardada correctamente en el servidor"</strong> la captura queda registrada en el sistema. Si aparece un error o se pierde la conexión, la producción no se considera guardada.
-      </div>
-
-      <h2 style={styles.title}>PRODUCCIÓN DIARIA</h2>
-
-      <div style={styles.top}>
-        <label>Fecha:</label>
-        <input
-          type="date"
-          value={fecha}
-          disabled
-          style={{
-            fontWeight: 'bold',
-            fontSize: 16,
-            padding: 6
-          }}
-        />
-      </div>
-
-      {/* 🔍 BUSCADOR PRODUCCIÓN */}
-      <input
-        placeholder="Buscar producto..."
-        value={busqueda}
-        onChange={(e) => setBusqueda(e.target.value)}
-        style={{ ...styles.input, marginBottom: 10 }}
-      />
-
-      <div style={{ maxHeight: 150, overflow: 'auto', marginBottom: 20 }}>
-        {filtrados.map(p => (
-          <div
-            key={p.id_producto}
-            onClick={() => agregarProducto(p)}
-            style={{
-              padding: 8,
-              borderBottom: '1px solid #ddd',
-              cursor: 'pointer'
-            }}
-          >
-            {p.nombre}
           </div>
-        ))}
-      </div>
 
-      {/* 📦 TABLA SELECCIONADOS */}
-      <table style={styles.table}>
-        <thead>
-          <tr>
-            <th>Producto</th>
-            <th>Cantidad</th>
-          </tr>
-        </thead>
-        <tbody>
-          {seleccionados.map((p, i) => (
-            <tr key={p.id_producto}>
-              <td>{p.nombre}</td>
-              <td>
-                <input
-                  type="number"
-                  value={p.producido}
-                  onChange={(e) => handleCantidad(i, e.target.value)}
-                  style={styles.input}
-                />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      
-      <div style={{ marginTop: 20, textAlign: 'right' }}>
-        <button style={styles.save} onClick={confirmarGuardar}>
-          Guardar Producción
-        </button>
-      </div>
-      
-      <h2 style={{ ...styles.title, marginTop: 40 }}>
-        INVENTARIO INICIAL
-      </h2>
-
-      {/* 🔍 BUSCADOR INVENTARIO INICIAL */}
-      <input
-        placeholder="Buscar producto..."
-        value={busquedaInv}
-        onChange={(e) => setBusquedaInv(e.target.value)}
-        style={{ ...styles.input, marginBottom: 10 }}
-      />
-
-      {inventarioCapturado && (
-        <div
-          style={{
-            marginBottom: 15,
-            padding: '12px',
-            background: '#fff3cd',
-            border: '1px solid #ffe69c',
-            color: '#856404',
-            borderRadius: 6,
-            fontWeight: 'bold'
-          }}
-        >
-          ⚠️ El inventario inicial de este mes ya fue capturado. Por favor consulte con el programador antes de realizar cualquier modificación.
-        </div>
-      )}
-
-      {busquedaInv.trim() !== '' && (
-        <div
-          style={{
-            maxHeight: 150,
-            overflow: 'auto',
-            marginBottom: 20,
-            border: '1px solid #ccc',
-            borderRadius: 6,
-            background: '#fff'
-          }}
-        >
-          {filtradosInv.map(p => (
-            <div
-              key={p.id_producto}
-              onClick={() => {
-                agregarProductoInv(p)
-                setBusquedaInv('')
-              }}
-              style={{
-                padding: 8,
-                borderBottom: '1px solid #ddd',
-                cursor: 'pointer'
-              }}
-            >
-              {p.nombre}
-            </div>
-          ))}
-        </div>
-      )}
-
-      <table style={styles.table}>
-        <thead>
-          <tr>
-            <th>Producto</th>
-            <th>Cantidad</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {invSeleccionados.map((p, i) => (
-            <tr key={p.id_producto}>
-              <td>{p.nombre}</td>
-
-              <td>
-                <input
-                  type="number"
-                  value={p.cantidad}
-                  onChange={(e) =>
-                    handleCantidadInv(i, e.target.value)
-                  }
-                  style={styles.input}
-                />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-            
-      <div style={{ marginTop: 20, textAlign: 'right' }}>
-        <button style={styles.save} onClick={confirmarGuardarInv}>
-          Guardar Inventario Inicial
-        </button>
-      </div>
-
-      <div style={{ marginTop: 40 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-          <h2 style={styles.title}>INVENTARIO ACTUAL / STOCK</h2>
-          <button 
-            type="button" 
-            style={styles.save}
-            onClick={() => setMostrarModalMerma(true)}
-          >
-            + Registrar Merma
-          </button>
-        </div>
-
-        <table style={styles.table}>
-          <thead>
-            <tr>
-              <th style={styles.th}>Productos</th>
-              <th style={styles.th}>Inv. Inicial</th> 
-              <th style={styles.th}>Producido</th>
-              <th style={styles.th}>Embarcado</th>
-              <th style={styles.th}>Merma en producción</th>
-              <th style={styles.th}>Merma de almacén</th>
-              <th style={styles.th}>Stock</th>
-            </tr>
-          </thead>
-          <tbody>
-            {stock.map(p => {
-              const mermaProd = Number(p.merma_produccion || 0)
-              const mermaAlm = Number(p.merma_almacen || 0)
-// ✅ Solo se resta mermaAlm; mermaProd solo se almacena en la variable para mostrarse en la columna
-              const stockFinal = Number(p.inicial || 0) + Number(p.producido || 0) - Number(p.salidas || 0) - mermaAlm
-              return (
-                <tr key={p.id_producto}>
-                  <td style={{
-                    ...styles.td,
-                    textAlign: 'left',
-                    fontWeight: 'bold'
-                  }}>
-                    {p.nombre}
-                  </td>
-                  <td style={styles.td}>{p.inicial || 0}</td>
-                  <td style={styles.td}>{p.producido || 0}</td>
-                  <td style={styles.td}>{p.salidas || 0}</td>
-                  
-                  <td style={styles.td}>{mermaProd}</td>
-                  <td style={styles.td}>{mermaAlm}</td>
-
-                  <td style={{
-                    ...styles.td,
-                    color: stockFinal < 0 ? 'red' : 'black',
-                    fontWeight: 'bold'
-                  }}>
-                    {stockFinal}
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-
-        {/* 🚚 CONSULTOR DE SALIDAS (PEDIDOS ENTREGADOS) */}
-        <div style={{ marginTop: 40, marginBottom: 40, padding: 20, backgroundColor: '#fff', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-          <h2 style={{ color: '#8B1E1E', fontSize: 20, marginBottom: 15, display: 'flex', alignItems: 'center', gap: 10 }}>
-            🚚 CONSULTA DE SALIDAS (ENTREGAS)
+          <h2 style={{ ...styles.title, marginTop: 30 }}>
+            CONSULTA TU PRODUCCIÓN
           </h2>
 
-          <div style={{ display: 'flex', gap: 15, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 20 }}>
+          <div
+            style={{
+              display: 'flex',
+              gap: 15,
+              flexWrap: 'wrap',
+              alignItems: 'end',
+              marginBottom: 20
+            }}
+          >
             <div>
-              <label style={{ fontWeight: 'bold', fontSize: 14, display: 'block', marginBottom: 5 }}>Fecha Inicial:</label>
-              <input 
-                type="date" 
-                value={fechaSalidaInicio} 
-                onChange={(e) => setFechaSalidaInicio(e.target.value)} 
-                style={{ padding: 8, borderRadius: 6, border: '1px solid #ccc', fontWeight: 'bold' }} 
+              <label style={styles.filtroLabel}>
+                Fecha inicial
+              </label>
+              <input
+                type="date"
+                value={fechaInicio}
+                onChange={(e) => setFechaInicio(e.target.value)}
+                style={{
+                  padding: 8,
+                  border: '1px solid #ccc',
+                  borderRadius: 6,
+                  fontWeight: 'bold'
+                }}
               />
             </div>
 
             <div>
-              <label style={{ fontWeight: 'bold', fontSize: 14, display: 'block', marginBottom: 5 }}>Fecha Final:</label>
-              <input 
-                type="date" 
-                value={fechaSalidaFin} 
-                onChange={(e) => setFechaSalidaFin(e.target.value)} 
-                style={{ padding: 8, borderRadius: 6, border: '1px solid #ccc', fontWeight: 'bold' }} 
+              <label style={styles.filtroLabel}>
+                Fecha final
+              </label>
+              <input
+                type="date"
+                value={fechaFin}
+                onChange={(e) => setFechaFin(e.target.value)}
+                style={{
+                  padding: 8,
+                  border: '1px solid #ccc',
+                  borderRadius: 6,
+                  fontWeight: 'bold'
+                }}
               />
             </div>
 
-            <button 
-              onClick={consultarSalidas}
-              disabled={cargandoSalidas}
-              style={{ 
-                padding: '9px 18px', 
-                background: cargandoSalidas ? '#ccc' : '#8B1E1E', 
-                color: '#fff', 
-                border: 'none', 
-                borderRadius: 6, 
-                cursor: cargandoSalidas ? 'not-allowed' : 'pointer', 
-                fontWeight: 'bold' 
-              }}
+            <div>
+              <label style={styles.filtroLabel}>
+                Seleccionar productos
+              </label>
+
+              <details style={{ minWidth: 250 }}>
+                <summary
+                  style={{
+                    padding: 8,
+                    border: '1px solid #ccc',
+                    borderRadius: 6,
+                    cursor: 'pointer',
+                    background: '#fff'
+                  }}
+                >
+                  Seleccionar productos 
+                </summary>
+
+                <div
+                  style={{
+                    border: '1px solid #ccc',
+                    maxHeight: 200,
+                    overflowY: 'auto',
+                    padding: 10,
+                    background: '#fff'
+                  }}
+                >
+                  {stock.map(p => (
+                    <label
+                      key={p.id_producto}
+                      style={{
+                        display: 'block',
+                        marginBottom: 5
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={productoReporte.includes(
+                          String(p.id_producto)
+                        )}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setProductoReporte([
+                              ...productoReporte,
+                              String(p.id_producto)
+                            ])
+                          } else {
+                            setProductoReporte(
+                              productoReporte.filter(
+                                id => id !== String(p.id_producto)
+                              )
+                            )
+                          }
+                        }}
+                      />
+                      {' '}
+                      {p.nombre}
+                    </label>
+                  ))}
+                </div>
+              </details>
+            </div>
+
+            <button
+              style={styles.save}
+              onClick={consultarReporte}
             >
-              {cargandoSalidas ? 'CARGANDO...' : 'CONSULTAR SALIDAS'}
+              CONSULTAR
+            </button>
+
+            <button
+              style={styles.save}
+              onClick={exportarExcel}
+            >
+              DESCARGAR EXCEL
             </button>
           </div>
 
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 10 }}>
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.th}>Fecha</th>
+                <th style={styles.th}>Producto</th>
+                <th style={styles.th}>Cantidad</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {reporte.map((r, i) => (
+                <tr
+                  key={i}
+                  style={{
+                    backgroundColor:
+                      i % 2 === 0
+                        ? '#ffffff'
+                        : '#fafafa',
+                    borderBottom: '1px solid #ececec'
+                  }}
+                >
+                  <td style={styles.td}>
+                    {fechaBonita(r.fecha)}
+                  </td>
+                  <td style={styles.td}>{r.nombre}</td>
+                  <td style={styles.td}>{r.cantidad}</td>
+                </tr>
+              ))}
+            </tbody>
+
+            <tfoot>
+              <tr
+                style={{
+                  background: '#8B1E1E',
+                  color: '#fff',
+                  fontWeight: 'bold'
+                }}
+              >
+                <td colSpan="2">
+                  TOTAL
+                </td>
+                <td style={{ textAlign: 'center' }}>
+                  {totalReporte}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+                
+          <div
+            style={{
+              marginTop: 20,
+              background: '#fff3cd',
+              border: '1px solid #ffe69c',
+              color: '#664d03',
+              padding: '12px 15px',
+              borderRadius: 8,
+              marginBottom: 20,
+              fontSize: 15,
+              lineHeight: 1.5
+            }}
+          >
+            ⚠️ Solo cuando aparezca el mensaje <strong>"Producción guardada correctamente en el servidor"</strong> la captura queda registrada en el sistema. Si aparece un error o se pierde la conexión, la producción no se considera guardada.
+          </div>
+
+          <h2 style={styles.title}>PRODUCCIÓN DIARIA</h2>
+
+          <div style={styles.top}>
+            <label>Fecha:</label>
+            <input
+              type="date"
+              value={fecha}
+              disabled
+              style={{
+                fontWeight: 'bold',
+                fontSize: 16,
+                padding: 6
+              }}
+            />
+          </div>
+
+          {/* 🔍 BUSCADOR PRODUCCIÓN */}
+          <input
+            placeholder="Buscar producto..."
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            style={{ ...styles.input, marginBottom: 10 }}
+          />
+
+          <div style={{ maxHeight: 150, overflow: 'auto', marginBottom: 20 }}>
+            {filtrados.map(p => (
+              <div
+                key={p.id_producto}
+                onClick={() => agregarProducto(p)}
+                style={{
+                  padding: 8,
+                  borderBottom: '1px solid #ddd',
+                  cursor: 'pointer'
+                }}
+              >
+                {p.nombre}
+              </div>
+            ))}
+          </div>
+
+          {/* 📦 TABLA SELECCIONADOS */}
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Cantidad</th>
+              </tr>
+            </thead>
+            <tbody>
+              {seleccionados.map((p, i) => (
+                <tr key={p.id_producto}>
+                  <td>{p.nombre}</td>
+                  <td>
+                    <input
+                      type="number"
+                      value={p.producido}
+                      onChange={(e) => handleCantidad(i, e.target.value)}
+                      style={styles.input}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          
+          <div style={{ marginTop: 20, textAlign: 'right' }}>
+            <button style={styles.save} onClick={confirmarGuardar}>
+              Guardar Producción
+            </button>
+          </div>
+          
+          <h2 style={{ ...styles.title, marginTop: 40 }}>
+            INVENTARIO INICIAL
+          </h2>
+
+          {/* 🔍 BUSCADOR INVENTARIO INICIAL */}
+          <input
+            placeholder="Buscar producto..."
+            value={busquedaInv}
+            onChange={(e) => setBusquedaInv(e.target.value)}
+            style={{ ...styles.input, marginBottom: 10 }}
+          />
+
+          {inventarioCapturado && (
+            <div
+              style={{
+                marginBottom: 15,
+                padding: '12px',
+                background: '#fff3cd',
+                border: '1px solid #ffe69c',
+                color: '#856404',
+                borderRadius: 6,
+                fontWeight: 'bold'
+              }}
+            >
+              ⚠️ El inventario inicial de este mes ya fue capturado. Por favor consulte con el programador antes de realizar cualquier modificación.
+            </div>
+          )}
+
+          {busquedaInv.trim() !== '' && (
+            <div
+              style={{
+                maxHeight: 150,
+                overflow: 'auto',
+                marginBottom: 20,
+                border: '1px solid #ccc',
+                borderRadius: 6,
+                background: '#fff'
+              }}
+            >
+              {filtradosInv.map(p => (
+                <div
+                  key={p.id_producto}
+                  onClick={() => {
+                    agregarProductoInv(p)
+                    setBusquedaInv('')
+                  }}
+                  style={{
+                    padding: 8,
+                    borderBottom: '1px solid #ddd',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {p.nombre}
+                </div>
+              ))}
+            </div>
+          )}
+
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Cantidad</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {invSeleccionados.map((p, i) => (
+                <tr key={p.id_producto}>
+                  <td>{p.nombre}</td>
+
+                  <td>
+                    <input
+                      type="number"
+                      value={p.cantidad}
+                      onChange={(e) =>
+                        handleCantidadInv(i, e.target.value)
+                      }
+                      style={styles.input}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+                
+          <div style={{ marginTop: 20, textAlign: 'right' }}>
+            <button style={styles.save} onClick={confirmarGuardarInv}>
+              Guardar Inventario Inicial
+            </button>
+          </div>
+
+          <div style={{ marginTop: 40 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+              <h2 style={styles.title}>INVENTARIO ACTUAL / STOCK</h2>
+              <button 
+                type="button" 
+                style={styles.save}
+                onClick={() => setMostrarModalMerma(true)}
+              >
+                + Registrar Merma
+              </button>
+            </div>
+
+            <table style={styles.table}>
               <thead>
-                <tr style={{ background: '#8B1E1E', color: '#fff' }}>
-                  <th style={{ padding: 10, border: '1px solid #ddd' }}>Fecha Salida</th>
-                  <th style={{ padding: 10, border: '1px solid #ddd' }}>Nº Pedido</th>
-                  <th style={{ padding: 10, border: '1px solid #ddd' }}>Estado</th>
-                  <th style={{ padding: 10, border: '1px solid #ddd' }}>Cliente</th>
-                  <th style={{ padding: 10, border: '1px solid #ddd' }}>Tienda</th>
-                  <th style={{ padding: 10, border: '1px solid #ddd' }}>Productos / Cantidad</th>
-                  <th style={{ padding: 10, border: '1px solid #ddd' }}>Municipio</th>
+                <tr>
+                  <th style={styles.th}>Productos</th>
+                  <th style={styles.th}>Inv. Inicial</th> 
+                  <th style={styles.th}>Producido</th>
+                  <th style={styles.th}>Embarcado</th>
+                  <th style={styles.th}>Merma en producción</th>
+                  <th style={styles.th}>Merma de almacén</th>
+                  <th style={styles.th}>Stock</th>
                 </tr>
               </thead>
               <tbody>
-                {salidasReporte.length === 0 ? (
-                  <tr>
-                    <td colSpan="7" style={{ padding: 20, textAlign: 'center', color: '#666', border: '1px solid #ddd' }}>
-                      No hay salidas registradas en las fechas seleccionadas.
-                    </td>
-                  </tr>
-                ) : (
-                  salidasReporte.map((item, idx) => {
-                    let productosLista = [];
-                    try {
-                      productosLista = typeof item.productos === 'string' ? JSON.parse(item.productos) : (item.productos || []);
-                    } catch (e) {
-                      productosLista = [];
-                    }
-                    const fechaLimpia = item.fecha_salida ? item.fecha_salida.split('T')[0] : 'N/A';
-                    
-                    const estadoActual = item.estado_pedido || item.estado_entrega || 'pendiente';
-                    let badgeBg = '#6c757d';
-                    let estadoTexto = estadoActual.toUpperCase().replace('_', ' ');
+                {stock.map(p => {
+                  const mermaProd = Number(p.merma_produccion || 0)
+                  const mermaAlm = Number(p.merma_almacen || 0)
+                  const stockFinal = Number(p.inicial || 0) + Number(p.producido || 0) - Number(p.salidas || 0) - mermaAlm
+                  return (
+                    <tr key={p.id_producto}>
+                      <td style={{
+                        ...styles.td,
+                        textAlign: 'left',
+                        fontWeight: 'bold'
+                      }}>
+                        {p.nombre}
+                      </td>
+                      <td style={styles.td}>{p.inicial || 0}</td>
+                      <td style={styles.td}>{p.producido || 0}</td>
+                      <td style={styles.td}>{p.salidas || 0}</td>
+                      
+                      <td style={styles.td}>{mermaProd}</td>
+                      <td style={styles.td}>{mermaAlm}</td>
 
-                    if (estadoActual === 'en_ruta') {
-                      badgeBg = '#d97706';
-                    } else if (estadoActual === 'entregado') {
-                      badgeBg = '#2563eb';
-                    } else if (estadoActual === 'pagado') {
-                      badgeBg = '#16a34a';
-                    }
-
-                    return (
-                      <tr key={item.id_pedido || idx} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#fafafa' }}>
-                        <td style={{ padding: 10, border: '1px solid #ddd', textAlign: 'center', fontWeight: 'bold' }}>
-                          {fechaLimpia}
-                        </td>
-                        <td style={{ padding: 10, border: '1px solid #ddd', textAlign: 'center', fontWeight: 'bold', color: '#071849' }}>
-                          #{item.id_pedido}
-                        </td>
-                        
-                        <td style={{ padding: 10, border: '1px solid #ddd', textAlign: 'center' }}>
-                          <span style={{
-                            backgroundColor: badgeBg,
-                            color: '#fff',
-                            padding: '4px 10px',
-                            borderRadius: '12px',
-                            fontSize: '12px',
-                            fontWeight: 'bold',
-                            display: 'inline-block'
-                          }}>
-                            {estadoTexto}
-                          </span>
-                        </td>
-
-                        <td style={{ padding: 10, border: '1px solid #ddd' }}>{item.cliente || 'N/A'}</td>
-                        <td style={{ padding: 10, border: '1px solid #ddd' }}>{item.tienda || 'N/A'}</td>
-                        <td style={{ padding: 10, border: '1px solid #ddd' }}>
-                          {Array.isArray(productosLista) && productosLista.length > 0 ? (
-                            productosLista.map((p, pIdx) => (
-                              <div key={pIdx} style={{ marginBottom: 3 }}>
-                                • <strong>{p.producto || p.nombre}</strong>: <span style={{ color: '#8B1E1E', fontWeight: 'bold' }}>{p.cantidad}</span>
-                              </div>
-                            ))
-                          ) : (
-                            <span>Sin detalles</span>
-                          )}
-                        </td>
-                        <td style={{ padding: 10, border: '1px solid #ddd', textAlign: 'center' }}>{item.municipio || 'N/A'}</td>
-                      </tr>
-                    );
-                  })
-                )}
+                      <td style={{
+                        ...styles.td,
+                        color: stockFinal < 0 ? 'red' : 'black',
+                        fontWeight: 'bold'
+                      }}>
+                        {stockFinal}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
-          </div>
-        </div> 
-{/* 🔴 MODAL DE REGISTRO DE MERMA */}
-        {mostrarModalMerma && (
-          <div style={styles.overlay}>
-            <div style={{ ...styles.modal, width: 450, textAlign: 'left' }}>
-              <h2 style={{ color: vino, marginBottom: 15 }}>Registrar Merma</h2>
 
-              <form onSubmit={handleGuardarMerma}>
-                <div style={{ marginBottom: 12 }}>
-                  <label style={{ display: 'block', fontWeight: 'bold', marginBottom: 5 }}>Producto:</label>
-                  <select
-                    value={mermaForm.id_producto}
-                    onChange={(e) => setMermaForm({ ...mermaForm, id_producto: e.target.value })}
-                    required
-                    style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
-                  >
-                    <option value="">-- Selecciona un producto --</option>
-                    {stock.map((p) => (
-                      <option key={p.id_producto} value={p.id_producto}>
-                        {p.nombre}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+            {/* 🚚 CONSULTOR DE SALIDAS (PEDIDOS ENTREGADOS) */}
+            <div style={{ marginTop: 40, marginBottom: 40, padding: 20, backgroundColor: '#fff', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+              <h2 style={{ color: '#8B1E1E', fontSize: 20, marginBottom: 15, display: 'flex', alignItems: 'center', gap: 10 }}>
+                🚚 CONSULTA DE SALIDAS (ENTREGAS)
+              </h2>
 
-                <div style={{ marginBottom: 12 }}>
-                  <label style={{ display: 'block', fontWeight: 'bold', marginBottom: 5 }}>Tipo de Merma:</label>
-                  <select
-                    value={mermaForm.tipo_merma}
-                    onChange={(e) => setMermaForm({ ...mermaForm, tipo_merma: e.target.value })}
-                    style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
-                  >
-                    <option value="produccion">Producción</option>
-                    <option value="almacen">Almacén</option>
-                  </select>
-                </div>
-
-                <div style={{ marginBottom: 12 }}>
-                  <label style={{ display: 'block', fontWeight: 'bold', marginBottom: 5 }}>Cantidad:</label>
-                  <input
-                    type="number"
-                    min="1"
-                    placeholder="Ej: 10"
-                    value={mermaForm.cantidad}
-                    onChange={(e) => setMermaForm({ ...mermaForm, cantidad: e.target.value })}
-                    required
-                    style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
+              <div style={{ display: 'flex', gap: 15, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 20 }}>
+                <div>
+                  <label style={{ fontWeight: 'bold', fontSize: 14, display: 'block', marginBottom: 5 }}>Fecha Inicial:</label>
+                  <input 
+                    type="date" 
+                    value={fechaSalidaInicio} 
+                    onChange={(e) => setFechaSalidaInicio(e.target.value)} 
+                    style={{ padding: 8, borderRadius: 6, border: '1px solid #ccc', fontWeight: 'bold' }} 
                   />
                 </div>
 
-                {/* ✅ MOTIVO OBLIGATORIO */}
-                <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: 'block', fontWeight: 'bold', marginBottom: 5 }}>
-                    Motivo / Observación <span style={{ color: 'red' }}>*</span>:
-                  </label>
-                  <textarea
-                    placeholder="Escribe la causa de la pérdida (obligatorio)..."
-                    value={mermaForm.motivo}
-                    onChange={(e) => setMermaForm({ ...mermaForm, motivo: e.target.value })}
-                    rows="3"
-                    required
-                    style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
+                <div>
+                  <label style={{ fontWeight: 'bold', fontSize: 14, display: 'block', marginBottom: 5 }}>Fecha Final:</label>
+                  <input 
+                    type="date" 
+                    value={fechaSalidaFin} 
+                    onChange={(e) => setFechaSalidaFin(e.target.value)} 
+                    style={{ padding: 8, borderRadius: 6, border: '1px solid #ccc', fontWeight: 'bold' }} 
                   />
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-                  <button
-                    type="button"
-                    onClick={() => setMostrarModalMerma(false)}
-                    disabled={guardandoMerma}
-                    style={styles.cancel}
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={guardandoMerma}
-                    style={styles.save}
-                  >
-                    {guardandoMerma ? 'Guardando...' : 'Guardar Merma'}
-                  </button>
-                </div>
-              </form>
+                <button 
+                  onClick={consultarSalidas}
+                  disabled={cargandoSalidas}
+                  style={{ 
+                    padding: '9px 18px', 
+                    background: cargandoSalidas ? '#ccc' : '#8B1E1E', 
+                    color: '#fff', 
+                    border: 'none', 
+                    borderRadius: 6, 
+                    cursor: cargandoSalidas ? 'not-allowed' : 'pointer', 
+                    fontWeight: 'bold' 
+                  }}
+                >
+                  {cargandoSalidas ? 'CARGANDO...' : 'CONSULTAR SALIDAS'}
+                </button>
+              </div>
+
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 10 }}>
+                  <thead>
+                    <tr style={{ background: '#8B1E1E', color: '#fff' }}>
+                      <th style={{ padding: 10, border: '1px solid #ddd' }}>Fecha Salida</th>
+                      <th style={{ padding: 10, border: '1px solid #ddd' }}>Nº Pedido</th>
+                      <th style={{ padding: 10, border: '1px solid #ddd' }}>Estado</th>
+                      <th style={{ padding: 10, border: '1px solid #ddd' }}>Cliente</th>
+                      <th style={{ padding: 10, border: '1px solid #ddd' }}>Tienda</th>
+                      <th style={{ padding: 10, border: '1px solid #ddd' }}>Productos / Cantidad</th>
+                      <th style={{ padding: 10, border: '1px solid #ddd' }}>Municipio</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {salidasReporte.length === 0 ? (
+                      <tr>
+                        <td colSpan="7" style={{ padding: 20, textAlign: 'center', color: '#666', border: '1px solid #ddd' }}>
+                          No hay salidas registradas en las fechas seleccionadas.
+                        </td>
+                      </tr>
+                    ) : (
+                      salidasReporte.map((item, idx) => {
+                        let productosLista = [];
+                        try {
+                          productosLista = typeof item.productos === 'string' ? JSON.parse(item.productos) : (item.productos || []);
+                        } catch (e) {
+                          productosLista = [];
+                        }
+                        const fechaLimpia = item.fecha_salida ? item.fecha_salida.split('T')[0] : 'N/A';
+                        
+                        const estadoActual = item.estado_pedido || item.estado_entrega || 'pendiente';
+                        let badgeBg = '#6c757d';
+                        let estadoTexto = estadoActual.toUpperCase().replace('_', ' ');
+
+                        if (estadoActual === 'en_ruta') {
+                          badgeBg = '#d97706';
+                        } else if (estadoActual === 'entregado') {
+                          badgeBg = '#2563eb';
+                        } else if (estadoActual === 'pagado') {
+                          badgeBg = '#16a34a';
+                        }
+
+                        return (
+                          <tr key={item.id_pedido || idx} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#fafafa' }}>
+                            <td style={{ padding: 10, border: '1px solid #ddd', textAlign: 'center', fontWeight: 'bold' }}>
+                              {fechaLimpia}
+                            </td>
+                            <td style={{ padding: 10, border: '1px solid #ddd', textAlign: 'center', fontWeight: 'bold', color: '#071849' }}>
+                              #{item.id_pedido}
+                            </td>
+                            
+                            <td style={{ padding: 10, border: '1px solid #ddd', textAlign: 'center' }}>
+                              <span style={{
+                                backgroundColor: badgeBg,
+                                color: '#fff',
+                                padding: '4px 10px',
+                                borderRadius: '12px',
+                                fontSize: '12px',
+                                fontWeight: 'bold',
+                                display: 'inline-block'
+                              }}>
+                                {estadoTexto}
+                              </span>
+                            </td>
+
+                            <td style={{ padding: 10, border: '1px solid #ddd' }}>{item.cliente || 'N/A'}</td>
+                            <td style={{ padding: 10, border: '1px solid #ddd' }}>{item.tienda || 'N/A'}</td>
+                            <td style={{ padding: 10, border: '1px solid #ddd' }}>
+                              {Array.isArray(productosLista) && productosLista.length > 0 ? (
+                                productosLista.map((p, pIdx) => (
+                                  <div key={pIdx} style={{ marginBottom: 3 }}>
+                                    • <strong>{p.producto || p.nombre}</strong>: <span style={{ color: '#8B1E1E', fontWeight: 'bold' }}>{p.cantidad}</span>
+                                  </div>
+                                ))
+                              ) : (
+                                <span>Sin detalles</span>
+                              )}
+                            </td>
+                            <td style={{ padding: 10, border: '1px solid #ddd', textAlign: 'center' }}>{item.municipio || 'N/A'}</td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
-        )}
-      </div>
+        </>
+      )}
+
+      {/* ======================================================== */}
+      {/* VISTA 2: HISTORIAL DE BULTOS ROTOS (LAS DOS TABLAS) */}
+      {/* ======================================================== */}
+      {vistaActiva === 'rotos' && (
+        <div style={{ marginTop: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
+            <h2 style={{ color: '#8B1E1E', fontSize: '22px', margin: 0 }}>🔴 Resumen de bultos rotos</h2>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#444' }}>Filtrar por mes:</label>
+              <select 
+                value={mesRotos} 
+                onChange={e => setMesRotos(e.target.value)}
+                style={styles.dateField}
+              >
+                <option value="todos">📅 Todos los meses</option>
+                <option value="2026-10">Octubre 2026</option>
+                <option value="2026-09">Septiembre 2026</option>
+                <option value="2026-08">Agosto 2026</option>
+              </select>
+            </div>
+          </div>
+
+          {/* TABLA 1: RESUMEN ACUMULADO */}
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.th}>Producto</th>
+                <th style={styles.th}>Total de rotos por producto</th>
+                <th style={styles.th}>Numero de folios afectados</th>
+              </tr>
+            </thead>
+            <tbody>
+              {resumenRotosDinamico.length === 0 ? (
+                <tr><td colSpan="3" style={{ ...styles.td, textAlign: 'center' }}>No hay registros para este mes.</td></tr>
+              ) : (
+                resumenRotosDinamico.map((row, idx) => (
+                  <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#fafafa' }}>
+                    <td style={{ ...styles.td, textAlign: 'left', fontWeight: 'bold' }}>{row.producto}</td>
+                    <td style={{ ...styles.td, color: '#dc3545', fontWeight: 'bold' }}>{row.total_acumulado} pzas</td>
+                    <td style={styles.td}>{row.total_folios} folio(s)</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+            {resumenRotosDinamico.length > 0 && (
+              <tfoot>
+                <tr style={{ background: '#f1f3f5', fontWeight: 'bold', color: '#071849' }}>
+                  <td style={{ ...styles.td, textAlign: 'right' }}>TOTAL GENERAL:</td>
+                  <td style={{ ...styles.td, color: '#dc3545' }}>{totalGeneralRotos} pzas</td>
+                  <td style={styles.td}></td>
+                </tr>
+              </tfoot>
+            )}
+          </table>
+
+          {/* BARRA DE FILTROS PARA EL DESGLOSE */}
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            marginTop: '30px', 
+            marginBottom: '10px', 
+            flexWrap: 'wrap', 
+            gap: '12px',
+            backgroundColor: '#f8f9fa',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            border: '1px solid #e9ecef'
+          }}>
+            <h2 style={{ color: '#8B1E1E', fontSize: '22px', margin: 0 }}>📋 Desglose de incidencias por folio</h2>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              <input
+                placeholder="Buscar folio o tienda..."
+                value={busquedaDetalleRotos}
+                onChange={e => setBusquedaDetalleRotos(e.target.value)}
+                style={{ ...styles.input, marginTop: 0, maxWidth: '220px' }}
+              />
+              <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#444' }}>Desde:</span>
+              <input
+                type="date"
+                value={fechaInicioRotos}
+                onChange={e => setFechaInicioRotos(e.target.value)}
+                style={styles.dateField}
+              />
+              <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#444' }}>Hasta:</span>
+              <input
+                type="date"
+                value={fechaFinRotos}
+                onChange={e => setFechaFinRotos(e.target.value)}
+                style={styles.dateField}
+              />
+            </div>
+          </div>
+
+          {/* TABLA 2: DESGLOSE DETALLADO */}
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.th}>Folio</th>
+                <th style={styles.th}>Tienda</th>
+                <th style={styles.th}>Fecha salida</th>
+                <th style={styles.th}>Producto</th>
+                <th style={styles.th}>Cant. Bultos rotos</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rotosDetalleFiltrado.length === 0 ? (
+                <tr><td colSpan="5" style={{ ...styles.td, textAlign: 'center' }}>Sin movimientos registrados que coincidan con la búsqueda.</td></tr>
+              ) : (
+                rotosDetalleFiltrado.map((row) => (
+                  <tr key={row.id}>
+                    <td style={{ ...styles.td, fontWeight: 'bold' }}>{row.folio}</td>
+                    <td style={styles.td}>{row.tienda_cliente}</td>
+                    <td style={styles.td}>{new Date(row.fecha_salida).toLocaleString('es-MX')}</td>
+                    <td style={styles.td}>{row.producto}</td>
+                    <td style={{ ...styles.td, color: '#dc3545', fontWeight: 'bold' }}>{row.cantidad_rota}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* 🔴 MODAL DE REGISTRO DE MERMA */}
+      {mostrarModalMerma && (
+        <div style={styles.overlay}>
+          <div style={{ ...styles.modal, width: 450, textAlign: 'left' }}>
+            <h2 style={{ color: vino, marginBottom: 15 }}>Registrar Merma</h2>
+
+            <form onSubmit={handleGuardarMerma}>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: 5 }}>Producto:</label>
+                <select
+                  value={mermaForm.id_producto}
+                  onChange={(e) => setMermaForm({ ...mermaForm, id_producto: e.target.value })}
+                  required
+                  style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
+                >
+                  <option value="">-- Selecciona un producto --</option>
+                  {stock.map((p) => (
+                    <option key={p.id_producto} value={p.id_producto}>
+                      {p.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: 5 }}>Tipo de Merma:</label>
+                <select
+                  value={mermaForm.tipo_merma}
+                  onChange={(e) => setMermaForm({ ...mermaForm, tipo_merma: e.target.value })}
+                  style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
+                >
+                  <option value="produccion">Producción</option>
+                  <option value="almacen">Almacén</option>
+                </select>
+              </div>
+
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: 5 }}>Cantidad:</label>
+                <input
+                  type="number"
+                  min="1"
+                  placeholder="Ej: 10"
+                  value={mermaForm.cantidad}
+                  onChange={(e) => setMermaForm({ ...mermaForm, cantidad: e.target.value })}
+                  required
+                  style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: 5 }}>
+                  Motivo / Observación <span style={{ color: 'red' }}>*</span>:
+                </label>
+                <textarea
+                  placeholder="Escribe la causa de la pérdida (obligatorio)..."
+                  value={mermaForm.motivo}
+                  onChange={(e) => setMermaForm({ ...mermaForm, motivo: e.target.value })}
+                  rows="3"
+                  required
+                  style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => setMostrarModalMerma(false)}
+                  disabled={guardandoMerma}
+                  style={styles.cancel}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={guardandoMerma}
+                  style={styles.save}
+                >
+                  {guardandoMerma ? 'Guardando...' : 'Guardar Merma'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -1314,6 +1528,35 @@ const styles = {
     color: '#8B1E1E',
     marginBottom: 5,
     display: 'block'
+  },
+  // 🧭 Estilos para el menú superior delgado
+  navBar: {
+    display: 'flex',
+    gap: '8px',
+    marginBottom: '20px',
+    borderBottom: '1px solid #dee2e6',
+    paddingBottom: '8px',
+    justifyContent: 'center',
+    flexWrap: 'wrap'
+  },
+  navTab: (activa) => ({
+    padding: '6px 14px',
+    fontSize: '14px',
+    fontWeight: 'bold',
+    backgroundColor: activa ? '#8B1E1E' : '#f8f9fa',
+    color: activa ? '#fff' : '#495057',
+    border: activa ? '1px solid #8B1E1E' : '1px solid #ced4da',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease'
+  }),
+  dateField: {
+    padding: '8px 10px',
+    borderRadius: '6px',
+    border: '1px solid #8B1E1E',
+    fontSize: '13px',
+    backgroundColor: '#fff',
+    color: '#333'
   }
 }
 
