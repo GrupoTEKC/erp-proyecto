@@ -681,7 +681,7 @@ function NotasDiscrepancias() {
       {vistaActiva === 'justificados' && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
-            <h2 style={{ color: '#071849', fontSize: '22px', margin: 0 }}>🟡 Resumen de productos justificados</h2>
+            <h2 style={{ color: '#071849', fontSize: '22px', margin: 0 }}>🟡 Resumende bultos justificados</h2>
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#444' }}>Filtrar por mes:</label>
@@ -702,8 +702,8 @@ function NotasDiscrepancias() {
             <thead>
               <tr>
                 <th style={styles.thStyle}>Producto</th>
-                <th style={styles.thStyle}>Bultos justificado</th>
-                <th style={styles.thStyle}>Folios afectados</th>
+                <th style={styles.thStyle}>Total de justificados por producto</th>
+                <th style={styles.thStyle}>Numero de folios afectados</th>
               </tr>
             </thead>
             <tbody>
@@ -743,7 +743,7 @@ function NotasDiscrepancias() {
             borderRadius: '8px',
             border: '1px solid #e9ecef'
           }}>
-            <h2 style={{ color: '#071849', fontSize: '22px', margin: 0 }}>📋 Detalle Completo de Justificados por Folio</h2>
+            <h2 style={{ color: '#071849', fontSize: '22px', margin: 0 }}>📋 Desglose de incidencias por folio</h2>
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
               <input
@@ -773,11 +773,10 @@ function NotasDiscrepancias() {
             <thead>
               <tr>
                 <th style={styles.thStyle}>Folio</th>
-                <th style={styles.thStyle}>Tienda / Cliente</th>
-                <th style={styles.thStyle}>Fecha Salida</th>
+                <th style={styles.thStyle}>Tienda</th>
+                <th style={styles.thStyle}>Fecha salida</th>
                 <th style={styles.thStyle}>Producto</th>
-                <th style={styles.thStyle}>Cantidad Ajustada</th>
-                <th style={styles.thStyle}>Motivo</th>
+                <th style={styles.thStyle}>Cant. Bultos ajustados</th>
               </tr>
             </thead>
             <tbody>
@@ -791,7 +790,6 @@ function NotasDiscrepancias() {
                     <td style={styles.tdStyle}>{new Date(row.fecha_salida).toLocaleString('es-MX')}</td>
                     <td style={styles.tdStyle}>{row.producto}</td>
                     <td style={{ ...styles.tdStyle, color: '#2b580c', fontWeight: 'bold' }}>{row.cantidad_rota}</td>
-                    <td style={styles.tdStyle}>{row.motivo}</td>
                   </tr>
                 ))
               )}
@@ -819,7 +817,7 @@ function NotasDiscrepancias() {
             zIndex: 1000
           }}>
             <h2 style={{ color: '#8B1E1E', marginBottom: '15px', borderBottom: '2px solid #8B1E1E', paddingBottom: '8px', fontSize: '20px' }}>
-              ⚙️ Revisar Discrepancia - Folio: {itemSeleccionado.folio}
+              ⚙️ Revisar discrepancia - Folio: {itemSeleccionado.folio}
             </h2>
 
             <div style={{ background: '#f8f9fa', padding: '12px', borderRadius: '6px', marginBottom: '15px', fontSize: '14px' }}>
@@ -876,7 +874,7 @@ function NotasDiscrepancias() {
                   checked={tipoResolucion === 'ROTO'}
                   onChange={e => setTipoResolucion(e.target.value)}
                 />
-                🔴 <strong>Marcar como Roto</strong>
+                🔴 <strong>Marcar como roto</strong>
               </label>
 
               <label style={{ cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
