@@ -4,63 +4,118 @@ import logo from "../assets/TRANSPARENTE.png"
 
 const API = "https://erp-proyecto-production.up.railway.app"
 
+// 🎨 ESTILOS ACTUALIZADOS SEGÚN TU SOLICITUD
+const vino = '#8B1E1E'
+
 const styles = {
   page: {
-    backgroundColor: '#ffffff',
-    minHeight: '100vh',
-    padding: '20px',
-    fontFamily: 'Arial, sans-serif'
+    padding: 20,
+    width: '85%',
+    margin: '0 auto',
+    textAlign: 'left'
   },
-  backTop: {
-    padding: '8px 12px',
-    fontSize: '13px',
-    backgroundColor: '#fff',
-    color: '#8B1E1E',
-    border: '1px solid #8B1E1E',
-    borderRadius: '6px',
-    cursor: 'pointer'
+  title: {
+    color: '#071849'
   },
-  field: {
+  top: {
+    marginBottom: 20,
+    display: 'flex',
+    gap: 10,
+    alignItems: 'center'
+  },
+  table: {
     width: '100%',
-    maxWidth: '300px',
-    padding: '10px',
-    borderRadius: '6px',
-    border: '1px solid #8B1E1E',
-    marginTop: '5px'
+    borderCollapse: 'collapse',
+    border: '1px solid #ccc',
+    marginTop: 10
   },
-  dateField: {
-    padding: '8px 10px',
-    borderRadius: '6px',
-    border: '1px solid #8B1E1E',
-    fontSize: '13px',
-    backgroundColor: '#fff',
-    color: '#333'
+  input: {
+    width: '100%',
+    padding: 6
   },
-  cardDiscrepancia: {
-    border: '1px solid #ddd',
-    borderRadius: '6px',
-    padding: '16px',
-    marginBottom: '12px',
-    backgroundColor: '#fff',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+  buttons: {
+    marginTop: 20,
+    display: 'flex',
+    gap: 10
   },
-  botonAccion: {
-    marginTop: '8px',
-    padding: '8px 12px',
-    fontSize: '13px',
-    backgroundColor: '#8B1E1E',
+  save: {
+    background: vino,
     color: '#fff',
     border: 'none',
-    borderRadius: '6px',
+    padding: 10,
+    borderRadius: 6,
     cursor: 'pointer'
   },
-  overlay: {
-    position: "fixed",
-    inset: 0,
-    background: "rgba(139,30,30,.12)",
-    zIndex: 999
+  cancel: {
+    background: '#fff',
+    color: vino,
+    border: `1px solid ${vino}`,
+    padding: 10,
+    borderRadius: 6,
+    cursor: 'pointer'
+  }, 
+  th: {
+    textAlign: 'center',
+    padding: 10,
+    border: '1px solid #ccc',
+    background: '#f5f5f5'
   },
-  // 🧭 Menú estilizado más delgado y estilizado
+  td: {
+    textAlign: 'center',
+    padding: 10,
+    border: '1px solid #ccc'
+  },
+  logo: {
+    height: 170
+  },
+  mainTitle: {
+    color: vino,
+    fontSize: 48,
+    fontWeight: '900',
+    letterSpacing: 2
+  },
+  header: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 30
+  },
+  overlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999
+  },
+  modal: {
+    background: '#fff',
+    padding: 30,
+    borderRadius: 10,
+    width: 400,
+    textAlign: 'center',
+    boxShadow: '0 0 20px rgba(0,0,0,0.3)'
+  },
+  modalBtn: {
+    marginTop: 20,
+    padding: 10,
+    background: '#8B1E1E',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 6,
+    cursor: 'pointer'
+  },
+  filtroLabel: {
+    fontWeight: '700',
+    color: '#8B1E1E',
+    marginBottom: 5,
+    display: 'block'
+  },
+  // 🧭 Estilos para el menú superior delgado
   navBar: {
     display: 'flex',
     gap: '8px',
@@ -81,6 +136,41 @@ const styles = {
     cursor: 'pointer',
     transition: 'all 0.2s ease'
   }),
+  dateField: {
+    padding: '8px 10px',
+    borderRadius: '6px',
+    border: '1px solid #8B1E1E',
+    fontSize: '13px',
+    backgroundColor: '#fff',
+    color: '#333'
+  },
+  // Clases auxiliares para mantener compatibilidad con las tablas y campos existentes
+  field: {
+    width: '100%',
+    maxWidth: '300px',
+    padding: '8px 10px',
+    borderRadius: '6px',
+    border: '1px solid #8B1E1E',
+    marginTop: '5px'
+  },
+  cardDiscrepancia: {
+    border: '1px solid #ddd',
+    borderRadius: '6px',
+    padding: '16px',
+    marginBottom: '12px',
+    backgroundColor: '#fff',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+  },
+  botonAccion: {
+    marginTop: '8px',
+    padding: '8px 12px',
+    fontSize: '13px',
+    backgroundColor: '#8B1E1E',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer'
+  },
   tablaContenedor: {
     width: '100%',
     borderCollapse: 'collapse',
@@ -383,44 +473,23 @@ function NotasDiscrepancias() {
     <div style={styles.page}>
       {/* BOTÓN VOLVER */}
       <button
-        style={styles.backTop}
+        style={styles.cancel}
         onClick={() => navigate(-1)}
       >
         ⬅ Volver
       </button>
       
       {/* ENCABEZADO Y LOGO */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          marginTop: -5,
-          marginBottom: 15
-        }}
-      >
+      <div style={styles.header}>
+        <div></div>
+        <h1 style={styles.mainTitle}>
+          NOTAS CON DIFERENCIAS
+        </h1>
         <img
           src={logo}
           alt="Pegatek"
-          style={{
-            width: 140,
-            objectFit: "contain",
-            marginBottom: 6
-          }}
+          style={styles.logo}
         />
-
-        <h1
-          style={{
-            margin: 0,
-            color: "#8B1E1E",
-            fontSize: "48px",
-            fontWeight: "bold",
-            letterSpacing: "1px",
-            textAlign: "center"
-          }}
-        >
-          NOTAS CON DIFERENCIAS
-        </h1>
       </div>
 
       {/* 🧭 MENÚ DE NAVEGACIÓN SUPERIOR (PESTAÑAS ESTILIZADAS) */}
