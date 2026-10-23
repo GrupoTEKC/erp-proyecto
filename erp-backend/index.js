@@ -1919,7 +1919,9 @@ app.post('/cuentas-por-cobrar/agregar-producto', async (req, res) => {
 });
 
 
-
+// ==========================================================
+// 1. OBTENER NOTAS CON DISCREPANCIAS (Con cotejamientos seguros)
+// ==========================================================
 app.get('/api/notas-discrepancias', async (req, res) => {
     try {
         const query = `
@@ -1940,16 +1942,19 @@ app.get('/api/notas-discrepancias', async (req, res) => {
             WHERE ed.cantidad_final IS NOT NULL 
               AND ed.cantidad_entregada <> ed.cantidad_final
               AND e.fecha_salida >= '2026-06-01 00:00:00'
+              -- 🟢 Filtro 1: Excluir si ya está en rotos_devueltos (Con cotejamiento seguro)
               AND NOT EXISTS (
                   SELECT 1 FROM rotos_devueltos rd 
-                  WHERE TRIM(rd.folio) = TRIM(e.folio) 
-                    AND TRIM(LOWER(rd.producto)) = TRIM(LOWER(p.nombre))
+                  WHERE TRIM(rd.folio) COLLATE utf8mb4_unicode_ci = TRIM(e.folio) COLLATE utf8mb4_unicode_ci
+                    AND TRIM(LOWER(rd.producto)) COLLATE utf8mb4_unicode_ci = TRIM(LOWER(p.nombre)) COLLATE utf8mb4_unicode_ci
               )
+              -- 🟢 Filtro 2: Excluir si ya está en justificados_devueltos (Con cotejamiento seguro)
               AND NOT EXISTS (
                   SELECT 1 FROM justificados_devueltos jd 
-                  WHERE TRIM(jd.folio) = TRIM(e.folio) 
-                    AND TRIM(LOWER(jd.producto)) = TRIM(LOWER(p.nombre))
-              );
+                  WHERE TRIM(jd.folio) COLLATE utf8mb4_unicode_ci = TRIM(e.folio) COLLATE utf8mb4_unicode_ci
+                    AND TRIM(LOWER(jd.producto)) COLLATE utf8mb4_unicode_ci = TRIM(LOWER(p.nombre)) COLLATE utf8mb4_unicode_ci
+              )
+            LIMIT 0, 50000;
         `;
       
         const [rows] = await db.query(query);
@@ -1960,6 +1965,10 @@ app.get('/api/notas-discrepancias', async (req, res) => {
     }
 });
 
+
+// ==========================================================
+// 2. PROCESAR RESOLUCIÓN (ROTO o JUSTIFICADO con guardado e inserción)
+// ==========================================================
 app.post('/api/notas-discrepancias/resolver', async (req, res) => {
     const { 
         folio, 
@@ -1986,26 +1995,33 @@ app.post('/api/notas-discrepancias/resolver', async (req, res) => {
     }
 
     try {
-        // 🔒 CANDADO: Verificar si este folio y producto ya fueron registrados en rotos_devueltos usando 'id'
-        const [existente] = await db.query(
+        // 🔒 CANDADO 1: Verificar si ya existe en rotos_devueltos
+        const [existenteRoto] = await db.query(
             `SELECT id FROM rotos_devueltos WHERE folio = ? AND producto = ?`, 
             [folio, producto]
         );
 
-        if (existente.length > 0) {
+        // 🔒 CANDADO 2: Verificar si ya existe en justificados_devueltos
+        const [existenteJustificado] = await db.query(
+            `SELECT id FROM justificados_devueltos WHERE folio = ? AND producto = ?`, 
+            [folio, producto]
+        );
+
+        if (existenteRoto.length > 0 || existenteJustificado.length > 0) {
             return res.status(400).json({ 
                 success: false, 
-                error: "⚠️ Este folio y producto ya fueron registrados previamente en devoluciones/rotos." 
+                error: "⚠️ Este folio y producto ya fueron registrados y resueltos previamente." 
             });
         }
 
-        if (tipo_resolucion === 'ROTO') {
-            const cantidadRota = esExceso ? (cantidad_final - cantidad_entregada) : diferencia;
-            
-            const fechaLimpia = fecha_salida 
-                ? new Date(fecha_salida).toISOString().slice(0, 19).replace('T', ' ') 
-                : null;
+        // Limpieza de fecha para formato MySQL estricto
+        const fechaLimpia = fecha_salida 
+            ? new Date(fecha_salida).toISOString().slice(0, 19).replace('T', ' ') 
+            : null;
+        
+        const cantidadAfectada = esExceso ? (cantidad_final - cantidad_entregada) : diferencia;
 
+        if (tipo_resolucion === 'ROTO') {
             const insertQuery = `
                 INSERT INTO rotos_devueltos (folio, tienda_cliente, fecha_salida, producto, cantidad_rota, motivo) 
                 VALUES (?, ?, ?, ?, ?, ?)
@@ -2016,7 +2032,7 @@ app.post('/api/notas-discrepancias/resolver', async (req, res) => {
                 tienda_cliente || 'SIN TIENDA REGISTRADA', 
                 fechaLimpia, 
                 producto, 
-                Math.abs(cantidadRota), 
+                Math.abs(cantidadAfectada), 
                 esExceso ? 'Excedente autorizado por llave maestra' : 'Bultos rotos o faltantes en ruta'
             ]);
 
@@ -2024,7 +2040,21 @@ app.post('/api/notas-discrepancias/resolver', async (req, res) => {
         } 
         
         else if (tipo_resolucion === 'JUSTIFICADO') {
-            return res.json({ success: true, message: "Discrepancia justificada y archivada correctamente." });
+            const insertQuery = `
+                INSERT INTO justificados_devueltos (folio, tienda_cliente, fecha_salida, producto, cantidad_rota, motivo) 
+                VALUES (?, ?, ?, ?, ?, ?)
+            `;
+            
+            await db.query(insertQuery, [
+                folio, 
+                tienda_cliente || 'SIN TIENDA REGISTRADA', 
+                fechaLimpia, 
+                producto, 
+                Math.abs(cantidadAfectada), 
+                esExceso ? 'Excedente justificado por administración' : 'Discrepancia justificada y archivada'
+            ]);
+
+            return res.json({ success: true, message: "Discrepancia justificada y guardada en auditoría correctamente." });
         } 
         
         else {
@@ -2036,6 +2066,7 @@ app.post('/api/notas-discrepancias/resolver', async (req, res) => {
         res.status(500).json({ success: false, error: error.message });
     }
 });
+
 
 app.get('/pedidos/folios-control', async (req, res) => {
   try {
