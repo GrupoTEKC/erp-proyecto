@@ -429,19 +429,19 @@ function NotasDiscrepancias() {
           style={styles.navTab(vistaActiva === 'alertas')}
           onClick={() => setVistaActiva('alertas')}
         >
-          🔍 Alertas Pendientes
+          🔍 Alertas pendientes
         </button>
         <button 
           style={styles.navTab(vistaActiva === 'rotos')}
           onClick={() => setVistaActiva('rotos')}
         >
-          🔴 Historial de Rotos
+          🔴 Historial de rotos
         </button>
         <button 
           style={styles.navTab(vistaActiva === 'justificados')}
           onClick={() => setVistaActiva('justificados')}
         >
-          🟡 Historial de Justificados
+          🟡 Historial de justificados
         </button>
       </div>
 
@@ -530,7 +530,7 @@ function NotasDiscrepancias() {
                         📦 <strong>Producto:</strong> {item.producto}
                       </div>
                       <div style={{ fontSize: '13px', color: '#666', marginTop: '4px' }}>
-                        📅 <strong>Fecha Salida:</strong> {new Date(item.fecha_salida).toLocaleString('es-MX')}
+                        📅 <strong>Fecha salida:</strong> {new Date(item.fecha_salida).toLocaleString('es-MX')}
                       </div>
                     </div>
 
@@ -556,27 +556,23 @@ function NotasDiscrepancias() {
         </>
       )}
 
-      {/* ======================================================== */}
-      {/* VISTA 2: HISTORIAL DE ROTOS */}
-      {/* ======================================================== */}
+     
       {vistaActiva === 'rotos' && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
-            <h2 style={{ color: '#8B1E1E', fontSize: '22px', margin: 0 }}>🔴 Resumen Acumulado por Producto (Rotos / Faltantes)</h2>
+            <h2 style={{ color: '#8B1E1E', fontSize: '22px', margin: 0 }}>🔴 Resumen de bultos rotos </h2>
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#444' }}>Filtrar por Mes:</label>
+              <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#444' }}>Filtrar por mes:</label>
               <select 
                 value={mesRotos} 
                 onChange={e => setMesRotos(e.target.value)}
                 style={styles.dateField}
               >
-                <option value="todos">📅 Todos los Meses</option>
+                <option value="todos">📅 Todos los meses</option>
                 <option value="2026-10">Octubre 2026</option>
                 <option value="2026-09">Septiembre 2026</option>
                 <option value="2026-08">Agosto 2026</option>
-                <option value="2026-07">Julio 2026</option>
-                <option value="2026-06">Junio 2026</option>
               </select>
             </div>
           </div>
@@ -585,8 +581,8 @@ function NotasDiscrepancias() {
             <thead>
               <tr>
                 <th style={styles.thStyle}>Producto</th>
-                <th style={styles.thStyle}>Total Acumulado Roto/Faltante</th>
-                <th style={styles.thStyle}>Folios Afectados (Cantidad)</th>
+                <th style={styles.thStyle}>Total de rotos por producto</th>
+                <th style={styles.thStyle}>Numero de folios afectados</th>
               </tr>
             </thead>
             <tbody>
@@ -626,7 +622,7 @@ function NotasDiscrepancias() {
             borderRadius: '8px',
             border: '1px solid #e9ecef'
           }}>
-            <h2 style={{ color: '#8B1E1E', fontSize: '22px', margin: 0 }}>📋 Detalle Completo de Rotos por Folio</h2>
+            <h2 style={{ color: '#8B1E1E', fontSize: '22px', margin: 0 }}>📋 Desglose de incidencias por folio</h2>
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
               <input
@@ -656,11 +652,10 @@ function NotasDiscrepancias() {
             <thead>
               <tr>
                 <th style={styles.thStyle}>Folio</th>
-                <th style={styles.thStyle}>Tienda / Cliente</th>
-                <th style={styles.thStyle}>Fecha Salida</th>
+                <th style={styles.thStyle}>Tienda</th>
+                <th style={styles.thStyle}>Fecha salida</th>
                 <th style={styles.thStyle}>Producto</th>
-                <th style={styles.thStyle}>Cantidad Rota</th>
-                <th style={styles.thStyle}>Motivo</th>
+                <th style={styles.thStyle}>Cant. Bultos rotos</th>
               </tr>
             </thead>
             <tbody>
@@ -674,7 +669,6 @@ function NotasDiscrepancias() {
                     <td style={styles.tdStyle}>{new Date(row.fecha_salida).toLocaleString('es-MX')}</td>
                     <td style={styles.tdStyle}>{row.producto}</td>
                     <td style={{ ...styles.tdStyle, color: '#dc3545', fontWeight: 'bold' }}>{row.cantidad_rota}</td>
-                    <td style={styles.tdStyle}>{row.motivo}</td>
                   </tr>
                 ))
               )}
@@ -683,27 +677,23 @@ function NotasDiscrepancias() {
         </div>
       )}
 
-      {/* ======================================================== */}
-      {/* VISTA 3: HISTORIAL DE JUSTIFICADOS */}
-      {/* ======================================================== */}
+      
       {vistaActiva === 'justificados' && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
-            <h2 style={{ color: '#071849', fontSize: '22px', margin: 0 }}>🟡 Resumen Acumulado por Producto (Justificados)</h2>
+            <h2 style={{ color: '#071849', fontSize: '22px', margin: 0 }}>🟡 Resumen de productos justificados</h2>
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#444' }}>Filtrar por Mes:</label>
+              <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#444' }}>Filtrar por mes:</label>
               <select 
                 value={mesJustificados} 
                 onChange={e => setMesJustificados(e.target.value)}
                 style={styles.dateField}
               >
-                <option value="todos">📅 Todos los Meses</option>
+                <option value="todos">📅 Todos los meses</option>
                 <option value="2026-10">Octubre 2026</option>
                 <option value="2026-09">Septiembre 2026</option>
                 <option value="2026-08">Agosto 2026</option>
-                <option value="2026-07">Julio 2026</option>
-                <option value="2026-06">Junio 2026</option>
               </select>
             </div>
           </div>
@@ -712,8 +702,8 @@ function NotasDiscrepancias() {
             <thead>
               <tr>
                 <th style={styles.thStyle}>Producto</th>
-                <th style={styles.thStyle}>Total Acumulado Justificado</th>
-                <th style={styles.thStyle}>Folios Afectados (Cantidad)</th>
+                <th style={styles.thStyle}>Bultos justificado</th>
+                <th style={styles.thStyle}>Folios afectados</th>
               </tr>
             </thead>
             <tbody>
