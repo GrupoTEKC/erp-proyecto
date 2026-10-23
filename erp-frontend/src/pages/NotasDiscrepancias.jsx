@@ -101,6 +101,12 @@ const styles = {
     borderBottom: '1px solid #dee2e6',
     fontSize: '14px',
     color: '#333'
+  },
+  tfootStyle: {
+    backgroundColor: '#f1f3f5',
+    fontWeight: 'bold',
+    fontSize: '14px',
+    color: '#071849'
   }
 }
 
@@ -116,11 +122,13 @@ function NotasDiscrepancias() {
 
   // ESTADOS PARA HISTORIALES (ROTOS / JUSTIFICADOS)
   const [historialRotos, setHistorialRotos] = useState([])
-  const [resumenRotos, setResumenRotos] = useState([])
   const [historialJustificados, setHistorialJustificados] = useState([])
-  const [resumenJustificados, setResumenJustificados] = useState([])
 
-  // ESTADOS PARA EL FILTRO DE FECHAS PERSONALIZADO
+  // ESTADOS PARA FILTROS DE MES EN LOS HISTORIALES ('todos' o '2026-08', '2026-09', etc.)
+  const [mesRotos, setMesRotos] = useState("todos")
+  const [mesJustificados, setMesJustificados] = useState("todos")
+
+  // ESTADOS PARA EL FILTRO DE FECHAS PERSONALIZADO EN ALERTAS
   const [fechaInicio, setFechaInicio] = useState("2026-08-01")
   const [fechaFin, setFechaFin] = useState("")
 
@@ -153,27 +161,16 @@ function NotasDiscrepancias() {
     }
   }
 
-  // Cargar datos de historiales y resúmenes agrupados por producto
+  // Cargar datos de historiales completos
   const cargarDatosHistoricos = async () => {
     try {
-      // Rotos
       const resRotos = await fetch(`${API}/api/rotos-devueltos/historial`)
       const dataRotos = await resRotos.json()
       if (dataRotos.success) setHistorialRotos(dataRotos.data)
 
-      const resResumenR = await fetch(`${API}/api/rotos-devueltos/resumen-producto`)
-      const dataResumenR = await resResumenR.json()
-      if (dataResumenR.success) setResumenRotos(dataResumenR.data)
-
-      // Justificados
       const resJust = await fetch(`${API}/api/justificados-devueltos/historial`)
       const dataJust = await resJust.json()
       if (dataJust.success) setHistorialJustificados(dataJust.data)
-
-      const resResumenJ = await fetch(`${API}/api/justificados-devueltos/resumen-producto`)
-      const dataResumenJ = await resResumenJ.json()
-      if (dataResumenJ.success) setResumenJustificados(dataResumenJ.data)
-
     } catch (error) {
       console.error("Error al cargar datos históricos:", error)
     }
@@ -248,7 +245,7 @@ function NotasDiscrepancias() {
       setTimeout(() => {
         cerrarModal()
         cargarDiscrepancias()
-        cargarDatosHistoricos() // Refrescar historiales automáticamente
+        cargarDatosHistoricos()
       }, 1500)
 
     } catch (error) {
@@ -259,7 +256,7 @@ function NotasDiscrepancias() {
     }
   }
 
-  // FILTRADO COMBINADO
+  // FILTRADO COMBINADO DE ALERTAS
   const discrepanciasFiltradas = discrepancias.filter(item => {
     const cumpleTexto = `${item.folio || ''} ${item.tienda_cliente || ''} ${item.producto || ''}`
       .toLowerCase()
@@ -280,6 +277,55 @@ function NotasDiscrepancias() {
 
     return cumpleTexto
   })
+
+  // 🧮 LÓGICA DE FILTRADO POR MES Y AGRUPACIÓN DINÁMICA (ROTOS)
+  const rotosFiltradosPorMes = historialRotos.filter(row => {
+    if (mesRotos === "todos") return true
+    if (!row.fecha_salida) return false
+    return row.fecha_salida.startsWith(mesRotos) // Compara con '2026-10', '2026-08', etc.
+  })
+
+  // Agrupar y sumar rotos por producto en base al mes seleccionado
+  const resumenRotosDinamico = (() => {
+    const mapa = {}
+    rotosFiltradosPorMes.forEach(item => {
+      const prod = item.producto
+      if (!mapa[prod]) {
+        mapa[prod] = { producto: prod, total_acumulado: 0, foliosSet: new Set() }
+      }
+      mapa[prod].total_acumulado += Number(item.cantidad_rota || 0)
+      mapa[prod].foliosSet.add(item.folio)
+    })
+    return Object.values(mapa)
+      .map(item => ({ ...item, total_folios: item.foliosSet.size }))
+      .sort((a, b) => b.total_acumulado - a.total_acumulado)
+  })()
+
+  const totalGeneralRotos = resumenRotosDinamico.reduce((acc, curr) => acc + curr.total_acumulado, 0)
+
+  // 🧮 LÓGICA DE FILTRADO POR MES Y AGRUPACIÓN DINÁMICA (JUSTIFICADOS)
+  const justificadosFiltradosPorMes = historialJustificados.filter(row => {
+    if (mesJustificados === "todos") return true
+    if (!row.fecha_salida) return false
+    return row.fecha_salida.startsWith(mesJustificados)
+  })
+
+  const resumenJustificadosDinamico = (() => {
+    const mapa = {}
+    justificadosFiltradosPorMes.forEach(item => {
+      const prod = item.producto
+      if (!mapa[prod]) {
+        mapa[prod] = { producto: prod, total_acumulado: 0, foliosSet: new Set() }
+      }
+      mapa[prod].total_acumulado += Number(item.cantidad_rota || 0)
+      mapa[prod].foliosSet.add(item.folio)
+    })
+    return Object.values(mapa)
+      .map(item => ({ ...item, total_folios: item.foliosSet.size }))
+      .sort((a, b) => b.total_acumulado - a.total_acumulado)
+  })()
+
+  const totalGeneralJustificados = resumenJustificadosDinamico.reduce((acc, curr) => acc + curr.total_acumulado, 0)
 
   return (
     <div style={styles.page}>
@@ -352,7 +398,6 @@ function NotasDiscrepancias() {
       {/* ======================================================== */}
       {vistaActiva === 'alertas' && (
         <>
-          {/* BARRA DE BÚSQUEDA Y FILTRO DE FECHAS PERSONALIZADO */}
           <div style={{ 
             display: 'flex', 
             justifyContent: 'space-between', 
@@ -403,7 +448,6 @@ function NotasDiscrepancias() {
             </button>
           </div>
 
-          {/* LISTADO / SEMÁFORO DE ALERTAS */}
           {loading ? (
             <p style={{ textAlign: 'center', padding: '20px' }}>Cargando notas con discrepancias...</p>
           ) : discrepanciasFiltradas.length === 0 ? (
@@ -465,7 +509,27 @@ function NotasDiscrepancias() {
       {/* ======================================================== */}
       {vistaActiva === 'rotos' && (
         <div>
-          <h2 style={{ color: '#8B1E1E', fontSize: '22px', marginBottom: '10px' }}>🔴 Resumen Acumulado por Producto (Rotos / Faltantes)</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
+            <h2 style={{ color: '#8B1E1E', fontSize: '22px', margin: 0 }}>🔴 Resumen Acumulado por Producto (Rotos / Faltantes)</h2>
+            
+            {/* SELECTOR DE FILTRO POR MES */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#444' }}>Filtrar por Mes:</label>
+              <select 
+                value={mesRotos} 
+                onChange={e => setMesRotos(e.target.value)}
+                style={styles.dateField}
+              >
+                <option value="todos">📅 Todos los Meses</option>
+                <option value="2026-10">Octubre 2026</option>
+                <option value="2026-09">Septiembre 2026</option>
+                <option value="2026-08">Agosto 2026</option>
+                <option value="2026-07">Julio 2026</option>
+                <option value="2026-06">Junio 2026</option>
+              </select>
+            </div>
+          </div>
+
           <table style={styles.tablaContenedor}>
             <thead>
               <tr>
@@ -475,10 +539,10 @@ function NotasDiscrepancias() {
               </tr>
             </thead>
             <tbody>
-              {resumenRotos.length === 0 ? (
-                <tr><td colSpan="3" style={{ ...styles.tdStyle, textAlign: 'center' }}>No hay registros de rotos.</td></tr>
+              {resumenRotosDinamico.length === 0 ? (
+                <tr><td colSpan="3" style={{ ...styles.tdStyle, textAlign: 'center' }}>No hay registros para este mes.</td></tr>
               ) : (
-                resumenRotos.map((row, idx) => (
+                resumenRotosDinamico.map((row, idx) => (
                   <tr key={idx}>
                     <td style={styles.tdStyle}><strong>{row.producto}</strong></td>
                     <td style={{ ...styles.tdStyle, color: '#dc3545', fontWeight: 'bold' }}>{row.total_acumulado} pzas</td>
@@ -487,6 +551,16 @@ function NotasDiscrepancias() {
                 ))
               )}
             </tbody>
+            {/* 📊 FILA DE TOTAL GENERAL */}
+            {resumenRotosDinamico.length > 0 && (
+              <tfoot>
+                <tr>
+                  <td style={{ ...styles.tdStyle, ...styles.tfootStyle, textAlign: 'right' }}>TOTAL GENERAL:</td>
+                  <td style={{ ...styles.tdStyle, ...styles.tfootStyle, color: '#dc3545' }}>{totalGeneralRotos} pzas</td>
+                  <td style={styles.tfootStyle}></td>
+                </tr>
+              </tfoot>
+            )}
           </table>
 
           <h2 style={{ color: '#8B1E1E', fontSize: '22px', marginTop: '30px', marginBottom: '10px' }}>📋 Detalle Completo de Rotos por Folio</h2>
@@ -502,10 +576,10 @@ function NotasDiscrepancias() {
               </tr>
             </thead>
             <tbody>
-              {historialRotos.length === 0 ? (
+              {rotosFiltradosPorMes.length === 0 ? (
                 <tr><td colSpan="6" style={{ ...styles.tdStyle, textAlign: 'center' }}>Sin movimientos registrados.</td></tr>
               ) : (
-                historialRotos.map((row) => (
+                rotosFiltradosPorMes.map((row) => (
                   <tr key={row.id}>
                     <td style={styles.tdStyle}><strong>{row.folio}</strong></td>
                     <td style={styles.tdStyle}>{row.tienda_cliente}</td>
@@ -526,7 +600,27 @@ function NotasDiscrepancias() {
       {/* ======================================================== */}
       {vistaActiva === 'justificados' && (
         <div>
-          <h2 style={{ color: '#071849', fontSize: '22px', marginBottom: '10px' }}>🟡 Resumen Acumulado por Producto (Justificados)</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
+            <h2 style={{ color: '#071849', fontSize: '22px', margin: 0 }}>🟡 Resumen Acumulado por Producto (Justificados)</h2>
+            
+            {/* SELECTOR DE FILTRO POR MES */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#444' }}>Filtrar por Mes:</label>
+              <select 
+                value={mesJustificados} 
+                onChange={e => setMesJustificados(e.target.value)}
+                style={styles.dateField}
+              >
+                <option value="todos">📅 Todos los Meses</option>
+                <option value="2026-10">Octubre 2026</option>
+                <option value="2026-09">Septiembre 2026</option>
+                <option value="2026-08">Agosto 2026</option>
+                <option value="2026-07">Julio 2026</option>
+                <option value="2026-06">Junio 2026</option>
+              </select>
+            </div>
+          </div>
+
           <table style={styles.tablaContenedor}>
             <thead>
               <tr>
@@ -536,10 +630,10 @@ function NotasDiscrepancias() {
               </tr>
             </thead>
             <tbody>
-              {resumenJustificados.length === 0 ? (
-                <tr><td colSpan="3" style={{ ...styles.tdStyle, textAlign: 'center' }}>No hay registros justificados.</td></tr>
+              {resumenJustificadosDinamico.length === 0 ? (
+                <tr><td colSpan="3" style={{ ...styles.tdStyle, textAlign: 'center' }}>No hay registros para este mes.</td></tr>
               ) : (
-                resumenJustificados.map((row, idx) => (
+                resumenJustificadosDinamico.map((row, idx) => (
                   <tr key={idx}>
                     <td style={styles.tdStyle}><strong>{row.producto}</strong></td>
                     <td style={{ ...styles.tdStyle, color: '#2b580c', fontWeight: 'bold' }}>{row.total_acumulado} pzas</td>
@@ -548,6 +642,16 @@ function NotasDiscrepancias() {
                 ))
               )}
             </tbody>
+            {/* 📊 FILA DE TOTAL GENERAL */}
+            {resumenJustificadosDinamico.length > 0 && (
+              <tfoot>
+                <tr>
+                  <td style={{ ...styles.tdStyle, ...styles.tfootStyle, textAlign: 'right' }}>TOTAL GENERAL:</td>
+                  <td style={{ ...styles.tdStyle, ...styles.tfootStyle, color: '#2b580c' }}>{totalGeneralJustificados} pzas</td>
+                  <td style={styles.tfootStyle}></td>
+                </tr>
+              </tfoot>
+            )}
           </table>
 
           <h2 style={{ color: '#071849', fontSize: '22px', marginTop: '30px', marginBottom: '10px' }}>📋 Detalle Completo de Justificados por Folio</h2>
@@ -563,10 +667,10 @@ function NotasDiscrepancias() {
               </tr>
             </thead>
             <tbody>
-              {historialJustificados.length === 0 ? (
+              {justificadosFiltradosPorMes.length === 0 ? (
                 <tr><td colSpan="6" style={{ ...styles.tdStyle, textAlign: 'center' }}>Sin movimientos registrados.</td></tr>
               ) : (
-                historialJustificados.map((row) => (
+                justificadosFiltradosPorMes.map((row) => (
                   <tr key={row.id}>
                     <td style={styles.tdStyle}><strong>{row.folio}</strong></td>
                     <td style={styles.tdStyle}>{row.tienda_cliente}</td>
@@ -611,7 +715,6 @@ function NotasDiscrepancias() {
               <p style={{ margin: '4px 0' }}><strong>Cantidad final:</strong> {itemSeleccionado.cantidad_final}</p>
             </div>
 
-            {/* CASO EXCESO (BLOQUEO + LLAVE MAESTRA) */}
             {itemSeleccionado.cantidad_final > itemSeleccionado.cantidad_entregada ? (
               <div style={{ marginBottom: '15px', padding: '12px', border: '1px solid #dc3545', borderRadius: '6px', backgroundColor: '#f8d7da' }}>
                 <p style={{ color: '#721c24', fontSize: '13px', marginBottom: '8px', fontWeight: 'bold' }}>
