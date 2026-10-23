@@ -399,24 +399,25 @@ function NotasDiscrepancias() {
                   Para liberar este folio como justificado, ingrese la contraseña de administrador:
                 </label>
 
-              <input
-                  type="text"
-                  name="no_autofill_admin_key"
-                  autoComplete="off"
-                  data-lpignore="true"
-                  value={passwordAdmin}
-                  onChange={e => setPasswordAdmin(e.target.value)}
-                  placeholder="Introduce contraseña..."
-                  style={{ 
-                    width: '100%', 
-                    padding: '8px', 
-                    marginTop: '5px', 
-                    boxSizing: 'border-box', 
-                    borderRadius: '4px', 
-                    border: '1px solid #dc3545',
-                    WebkitTextSecurity: 'disc' // 🛡️ Oculta los caracteres como puntitos (••••) sin ser input password real
-                  }}
-                />
+              <form onSubmit={e => e.preventDefault()} style={{ margin: 0, padding: 0 }}>
+                
+                  <input
+                    type="password"
+                    name="admin_password"
+                    autoComplete="current-password"
+                    value={passwordAdmin}
+                    onChange={e => setPasswordAdmin(e.target.value)}
+                    placeholder="Introduce contraseña..."
+                    style={{ 
+                      width: '100%', 
+                      padding: '8px', 
+                      marginTop: '5px', 
+                      boxSizing: 'border-box', 
+                      borderRadius: '4px', 
+                      border: '1px solid #dc3545' 
+                    }}
+                  />
+                </form>
                 
               </div>
             ) : (
