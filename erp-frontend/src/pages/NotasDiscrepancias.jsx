@@ -60,23 +60,24 @@ const styles = {
     background: "rgba(139,30,30,.12)",
     zIndex: 999
   },
+  // 🧭 Menú estilizado más delgado y estilizado
   navBar: {
     display: 'flex',
-    gap: '10px',
-    marginBottom: '25px',
-    borderBottom: '2px solid #e9ecef',
-    paddingBottom: '10px',
+    gap: '8px',
+    marginBottom: '20px',
+    borderBottom: '1px solid #dee2e6',
+    paddingBottom: '8px',
     justifyContent: 'center',
     flexWrap: 'wrap'
   },
   navTab: (activa) => ({
-    padding: '10px 20px',
-    fontSize: '15px',
+    padding: '6px 14px',
+    fontSize: '14px',
     fontWeight: 'bold',
     backgroundColor: activa ? '#8B1E1E' : '#f8f9fa',
     color: activa ? '#fff' : '#495057',
     border: activa ? '1px solid #8B1E1E' : '1px solid #ced4da',
-    borderRadius: '6px',
+    borderRadius: '4px',
     cursor: 'pointer',
     transition: 'all 0.2s ease'
   }),
@@ -312,7 +313,7 @@ function NotasDiscrepancias() {
 
   const totalGeneralRotos = resumenRotosDinamico.reduce((acc, curr) => acc + curr.total_acumulado, 0)
 
-  // 🔍 FILTRADO ESPECÍFICO PARA LA TABLA DETALLADA DE ROTOS (Folio, Tienda y Fechas)
+  // 🔍 FILTRADO ESPECÍFICO PARA LA TABLA DETALLADA DE ROTOS
   const rotosDetalleFiltrado = historialRotos.filter(row => {
     const textoMatch = `${row.folio || ''} ${row.tienda_cliente || ''}`
       .toLowerCase()
@@ -357,7 +358,7 @@ function NotasDiscrepancias() {
 
   const totalGeneralJustificados = resumenJustificadosDinamico.reduce((acc, curr) => acc + curr.total_acumulado, 0)
 
-  // 🔍 FILTRADO ESPECÍFICO PARA LA TABLA DETALLADA DE JUSTIFICADOS (Folio, Tienda y Fechas)
+  // 🔍 FILTRADO ESPECÍFICO PARA LA TABLA DETALLADA DE JUSTIFICADOS
   const justificadosDetalleFiltrado = historialJustificados.filter(row => {
     const textoMatch = `${row.folio || ''} ${row.tienda_cliente || ''}`
       .toLowerCase()
@@ -422,7 +423,7 @@ function NotasDiscrepancias() {
         </h1>
       </div>
 
-      {/* 🧭 MENÚ DE NAVEGACIÓN SUPERIOR (PESTAÑAS) */}
+      {/* 🧭 MENÚ DE NAVEGACIÓN SUPERIOR (PESTAÑAS ESTILIZADAS) */}
       <div style={styles.navBar}>
         <button 
           style={styles.navTab(vistaActiva === 'alertas')}
@@ -612,7 +613,6 @@ function NotasDiscrepancias() {
             )}
           </table>
 
-          {/* 🔍 BARRA DE FILTROS PARA EL DETALLE DE ROTOS (Buscador + Rango de Fechas) */}
           <div style={{ 
             display: 'flex', 
             justifyContent: 'space-between', 
@@ -740,7 +740,6 @@ function NotasDiscrepancias() {
             )}
           </table>
 
-          {/* 🔍 BARRA DE FILTROS PARA EL DETALLE DE JUSTIFICADOS (Buscador + Rango de Fechas) */}
           <div style={{ 
             display: 'flex', 
             justifyContent: 'space-between', 
