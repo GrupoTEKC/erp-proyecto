@@ -124,9 +124,19 @@ function NotasDiscrepancias() {
   const [historialRotos, setHistorialRotos] = useState([])
   const [historialJustificados, setHistorialJustificados] = useState([])
 
-  // ESTADOS PARA FILTROS DE MES EN LOS HISTORIALES ('todos' o '2026-08', '2026-09', etc.)
+  // ESTADOS PARA FILTROS DE MES EN LOS RESÚMENES
   const [mesRotos, setMesRotos] = useState("todos")
   const [mesJustificados, setMesJustificados] = useState("todos")
+
+  // ESTADOS DE BÚSQUEDA Y FECHAS PARA LAS TABLAS DE DETALLE (ROTOS)
+  const [busquedaDetalleRotos, setBusquedaDetalleRotos] = useState("")
+  const [fechaInicioRotos, setFechaInicioRotos] = useState("")
+  const [fechaFinRotos, setFechaFinRotos] = useState("")
+
+  // ESTADOS DE BÚSQUEDA Y FECHAS PARA LAS TABLAS DE DETALLE (JUSTIFICADOS)
+  const [busquedaDetalleJust, setBusquedaDetalleJust] = useState("")
+  const [fechaInicioJust, setFechaInicioJust] = useState("")
+  const [fechaFinJust, setFechaFinJust] = useState("")
 
   // ESTADOS PARA EL FILTRO DE FECHAS PERSONALIZADO EN ALERTAS
   const [fechaInicio, setFechaInicio] = useState("2026-08-01")
@@ -282,10 +292,9 @@ function NotasDiscrepancias() {
   const rotosFiltradosPorMes = historialRotos.filter(row => {
     if (mesRotos === "todos") return true
     if (!row.fecha_salida) return false
-    return row.fecha_salida.startsWith(mesRotos) // Compara con '2026-10', '2026-08', etc.
+    return row.fecha_salida.startsWith(mesRotos)
   })
 
-  // Agrupar y sumar rotos por producto en base al mes seleccionado
   const resumenRotosDinamico = (() => {
     const mapa = {}
     rotosFiltradosPorMes.forEach(item => {
@@ -302,6 +311,27 @@ function NotasDiscrepancias() {
   })()
 
   const totalGeneralRotos = resumenRotosDinamico.reduce((acc, curr) => acc + curr.total_acumulado, 0)
+
+  // 🔍 FILTRADO ESPECÍFICO PARA LA TABLA DETALLADA DE ROTOS (Folio, Tienda y Fechas)
+  const rotosDetalleFiltrado = historialRotos.filter(row => {
+    const textoMatch = `${row.folio || ''} ${row.tienda_cliente || ''}`
+      .toLowerCase()
+      .includes(busquedaDetalleRotos.toLowerCase())
+
+    if (!textoMatch) return false
+    if (!row.fecha_salida) return true
+
+    const fechaItem = new Date(row.fecha_salida)
+    if (fechaInicioRotos) {
+      const inicio = new Date(fechaInicioRotos + "T00:00:00")
+      if (fechaItem < inicio) return false
+    }
+    if (fechaFinRotos) {
+      const fin = new Date(fechaFinRotos + "T23:59:59")
+      if (fechaItem > fin) return false
+    }
+    return true
+  })
 
   // 🧮 LÓGICA DE FILTRADO POR MES Y AGRUPACIÓN DINÁMICA (JUSTIFICADOS)
   const justificadosFiltradosPorMes = historialJustificados.filter(row => {
@@ -326,6 +356,27 @@ function NotasDiscrepancias() {
   })()
 
   const totalGeneralJustificados = resumenJustificadosDinamico.reduce((acc, curr) => acc + curr.total_acumulado, 0)
+
+  // 🔍 FILTRADO ESPECÍFICO PARA LA TABLA DETALLADA DE JUSTIFICADOS (Folio, Tienda y Fechas)
+  const justificadosDetalleFiltrado = historialJustificados.filter(row => {
+    const textoMatch = `${row.folio || ''} ${row.tienda_cliente || ''}`
+      .toLowerCase()
+      .includes(busquedaDetalleJust.toLowerCase())
+
+    if (!textoMatch) return false
+    if (!row.fecha_salida) return true
+
+    const fechaItem = new Date(row.fecha_salida)
+    if (fechaInicioJust) {
+      const inicio = new Date(fechaInicioJust + "T00:00:00")
+      if (fechaItem < inicio) return false
+    }
+    if (fechaFinJust) {
+      const fin = new Date(fechaFinJust + "T23:59:59")
+      if (fechaItem > fin) return false
+    }
+    return true
+  })
 
   return (
     <div style={styles.page}>
@@ -512,7 +563,6 @@ function NotasDiscrepancias() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
             <h2 style={{ color: '#8B1E1E', fontSize: '22px', margin: 0 }}>🔴 Resumen Acumulado por Producto (Rotos / Faltantes)</h2>
             
-            {/* SELECTOR DE FILTRO POR MES */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#444' }}>Filtrar por Mes:</label>
               <select 
@@ -551,7 +601,6 @@ function NotasDiscrepancias() {
                 ))
               )}
             </tbody>
-            {/* 📊 FILA DE TOTAL GENERAL */}
             {resumenRotosDinamico.length > 0 && (
               <tfoot>
                 <tr>
@@ -563,7 +612,46 @@ function NotasDiscrepancias() {
             )}
           </table>
 
-          <h2 style={{ color: '#8B1E1E', fontSize: '22px', marginTop: '30px', marginBottom: '10px' }}>📋 Detalle Completo de Rotos por Folio</h2>
+          {/* 🔍 BARRA DE FILTROS PARA EL DETALLE DE ROTOS (Buscador + Rango de Fechas) */}
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            marginTop: '30px', 
+            marginBottom: '10px', 
+            flexWrap: 'wrap', 
+            gap: '12px',
+            backgroundColor: '#f8f9fa',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            border: '1px solid #e9ecef'
+          }}>
+            <h2 style={{ color: '#8B1E1E', fontSize: '22px', margin: 0 }}>📋 Detalle Completo de Rotos por Folio</h2>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              <input
+                placeholder="Buscar folio o tienda..."
+                value={busquedaDetalleRotos}
+                onChange={e => setBusquedaDetalleRotos(e.target.value)}
+                style={{ ...styles.field, marginTop: 0, maxWidth: '220px' }}
+              />
+              <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#444' }}>Desde:</span>
+              <input
+                type="date"
+                value={fechaInicioRotos}
+                onChange={e => setFechaInicioRotos(e.target.value)}
+                style={styles.dateField}
+              />
+              <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#444' }}>Hasta:</span>
+              <input
+                type="date"
+                value={fechaFinRotos}
+                onChange={e => setFechaFinRotos(e.target.value)}
+                style={styles.dateField}
+              />
+            </div>
+          </div>
+
           <table style={styles.tablaContenedor}>
             <thead>
               <tr>
@@ -576,10 +664,10 @@ function NotasDiscrepancias() {
               </tr>
             </thead>
             <tbody>
-              {rotosFiltradosPorMes.length === 0 ? (
-                <tr><td colSpan="6" style={{ ...styles.tdStyle, textAlign: 'center' }}>Sin movimientos registrados.</td></tr>
+              {rotosDetalleFiltrado.length === 0 ? (
+                <tr><td colSpan="6" style={{ ...styles.tdStyle, textAlign: 'center' }}>Sin movimientos registrados que coincidan con la búsqueda.</td></tr>
               ) : (
-                rotosFiltradosPorMes.map((row) => (
+                rotosDetalleFiltrado.map((row) => (
                   <tr key={row.id}>
                     <td style={styles.tdStyle}><strong>{row.folio}</strong></td>
                     <td style={styles.tdStyle}>{row.tienda_cliente}</td>
@@ -603,7 +691,6 @@ function NotasDiscrepancias() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
             <h2 style={{ color: '#071849', fontSize: '22px', margin: 0 }}>🟡 Resumen Acumulado por Producto (Justificados)</h2>
             
-            {/* SELECTOR DE FILTRO POR MES */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#444' }}>Filtrar por Mes:</label>
               <select 
@@ -642,7 +729,6 @@ function NotasDiscrepancias() {
                 ))
               )}
             </tbody>
-            {/* 📊 FILA DE TOTAL GENERAL */}
             {resumenJustificadosDinamico.length > 0 && (
               <tfoot>
                 <tr>
@@ -654,7 +740,46 @@ function NotasDiscrepancias() {
             )}
           </table>
 
-          <h2 style={{ color: '#071849', fontSize: '22px', marginTop: '30px', marginBottom: '10px' }}>📋 Detalle Completo de Justificados por Folio</h2>
+          {/* 🔍 BARRA DE FILTROS PARA EL DETALLE DE JUSTIFICADOS (Buscador + Rango de Fechas) */}
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            marginTop: '30px', 
+            marginBottom: '10px', 
+            flexWrap: 'wrap', 
+            gap: '12px',
+            backgroundColor: '#f8f9fa',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            border: '1px solid #e9ecef'
+          }}>
+            <h2 style={{ color: '#071849', fontSize: '22px', margin: 0 }}>📋 Detalle Completo de Justificados por Folio</h2>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              <input
+                placeholder="Buscar folio o tienda..."
+                value={busquedaDetalleJust}
+                onChange={e => setBusquedaDetalleJust(e.target.value)}
+                style={{ ...styles.field, marginTop: 0, maxWidth: '220px' }}
+              />
+              <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#444' }}>Desde:</span>
+              <input
+                type="date"
+                value={fechaInicioJust}
+                onChange={e => setFechaInicioJust(e.target.value)}
+                style={styles.dateField}
+              />
+              <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#444' }}>Hasta:</span>
+              <input
+                type="date"
+                value={fechaFinJust}
+                onChange={e => setFechaFinJust(e.target.value)}
+                style={styles.dateField}
+              />
+            </div>
+          </div>
+
           <table style={styles.tablaContenedor}>
             <thead>
               <tr>
@@ -667,10 +792,10 @@ function NotasDiscrepancias() {
               </tr>
             </thead>
             <tbody>
-              {justificadosFiltradosPorMes.length === 0 ? (
-                <tr><td colSpan="6" style={{ ...styles.tdStyle, textAlign: 'center' }}>Sin movimientos registrados.</td></tr>
+              {justificadosDetalleFiltrado.length === 0 ? (
+                <tr><td colSpan="6" style={{ ...styles.tdStyle, textAlign: 'center' }}>Sin movimientos registrados que coincidan con la búsqueda.</td></tr>
               ) : (
-                justificadosFiltradosPorMes.map((row) => (
+                justificadosDetalleFiltrado.map((row) => (
                   <tr key={row.id}>
                     <td style={styles.tdStyle}><strong>{row.folio}</strong></td>
                     <td style={styles.tdStyle}>{row.tienda_cliente}</td>
