@@ -2068,6 +2068,47 @@ app.post('/api/notas-discrepancias/resolver', async (req, res) => {
 });
 
 
+
+// 📊 RESUMEN Y DETALLE DE ROTOS
+app.get('/api/rotos-devueltos/historial', async (req, res) => {
+    try {
+        const [rows] = await db.query(`SELECT id, folio, tienda_cliente, fecha_salida, producto, cantidad_rota, motivo, fecha_registro FROM rotos_devueltos ORDER BY fecha_registro DESC`);
+        res.json({ success: true, data: rows });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+app.get('/api/rotos-devueltos/resumen-producto', async (req, res) => {
+    try {
+        const [rows] = await db.query(`SELECT producto, SUM(cantidad_rota) AS total_acumulado, COUNT(DISTINCT folio) AS total_folios FROM rotos_devueltos GROUP BY producto ORDER BY total_acumulado DESC`);
+        res.json({ success: true, data: rows });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// 📊 RESUMEN Y DETALLE DE JUSTIFICADOS
+app.get('/api/justificados-devueltos/historial', async (req, res) => {
+    try {
+        const [rows] = await db.query(`SELECT id, folio, tienda_cliente, fecha_salida, producto, cantidad_rota, motivo, fecha_registro FROM justificados_devueltos ORDER BY fecha_registro DESC`);
+        res.json({ success: true, data: rows });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+app.get('/api/justificados-devueltos/resumen-producto', async (req, res) => {
+    try {
+        const [rows] = await db.query(`SELECT producto, SUM(cantidad_rota) AS total_acumulado, COUNT(DISTINCT folio) AS total_folios FROM justificados_devueltos GROUP BY producto ORDER BY total_acumulado DESC`);
+        res.json({ success: true, data: rows });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+
+
 app.get('/pedidos/folios-control', async (req, res) => {
   try {
     // 1. Obtener entregas (normales) + pedidos rezagados con folios asignados
