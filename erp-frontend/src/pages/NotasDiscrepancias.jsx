@@ -396,12 +396,15 @@ function NotasDiscrepancias() {
                 <label style={{ display: 'block', fontWeight: 'bold', fontSize: '12px', color: '#721c24' }}>
                   Para liberar este folio como justificado, ingrese la contraseña de administrador:
                 </label>
+
                 <input
-                  type="password"
-                  value={passwordAdmin}
-                  onChange={e => setPasswordAdmin(e.target.value)}
-                  placeholder="Introduce contraseña..."
-                  style={{ width: '100%', padding: '8px', marginTop: '5px', boxSizing: 'border-box', borderRadius: '4px', border: '1px solid #dc3545' }}
+                type="password"
+                name="admin_secret_pwd_field"
+                autoComplete="new-password"
+                value={passwordAdmin}
+                onChange={e => setPasswordAdmin(e.target.value)}
+                placeholder="Introduce contraseña..."
+                style={{ width: '100%', padding: '8px', marginTop: '5px', boxSizing: 'border-box', borderRadius: '4px', border: '1px solid #dc3545' }}
                 />
               </div>
             ) : (
