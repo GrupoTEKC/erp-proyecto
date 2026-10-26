@@ -396,7 +396,7 @@ function Pagos() {
 
     const metodoActual = dataPago.metodo || "efectivo"
     if (metodoActual === "efectivo" && !dataPago.nombreEntrega?.trim()) {
-      alert("Debes poner quién entrega el dinero")
+      alert("Debes seleccionar quién entrega el dinero")
       return
     }
 
@@ -864,12 +864,17 @@ function Pagos() {
                     )}
 
                     {(dataPago.metodo || "efectivo") === "efectivo" && (
-                      <input
-                        placeholder="Quién entrega"
+                      <select
                         value={dataPago.nombreEntrega || ""}
                         onChange={e => setPagoField(id, "nombreEntrega", e.target.value)}
                         style={styles.field}
-                      />
+                      >
+                        <option value="">-- Selecciona quién entrega --</option>
+                        <option value="Natanael Rivera">Natanael Rivera</option>
+                        <option value="Alejandro Fernandez">Alejandro Fernandez</option>
+                        <option value="Giovanni Alvarez">Giovanni Alvarez</option>
+                        <option value="Yahir Alvarez">Yahir Alvarez</option>
+                      </select>
                     )}
 
                     <button onClick={() => registrarPago(p)} style={styles.botonAccion}>
