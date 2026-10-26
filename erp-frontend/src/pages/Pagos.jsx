@@ -396,7 +396,7 @@ function Pagos() {
 
     const metodoActual = dataPago.metodo || "efectivo"
     if (metodoActual === "efectivo" && !dataPago.nombreEntrega?.trim()) {
-      alert("Debes poner quién entrega el dinero")
+      alert("Debes seleccionar quién entrega el dinero")
       return
     }
 
@@ -773,11 +773,11 @@ function Pagos() {
                 <b>Folio: {p.folio || p.id_pedido}</b>
                 <br />
 
-                💰 Monto total: ${p.total}
+                💰 Monto total: ${Number(p.total || 0).toLocaleString('es-MX')}
                 <br />
-                💸 Monto pagado: ${totalPagado}
+                💸 Monto pagado: ${Number(totalPagado).toLocaleString('es-MX')}
                 <br />
-                💳 Saldo pendiente: ${saldo}
+                💳 Saldo pendiente: ${Number(saldo).toLocaleString('es-MX')}
                 <br />
 
                 📦 Entregado: {
@@ -864,12 +864,17 @@ function Pagos() {
                     )}
 
                     {(dataPago.metodo || "efectivo") === "efectivo" && (
-                      <input
-                        placeholder="Quién entrega"
+                      <select
                         value={dataPago.nombreEntrega || ""}
                         onChange={e => setPagoField(id, "nombreEntrega", e.target.value)}
                         style={styles.field}
-                      />
+                      >
+                        <option value="">-- Selecciona quién entrega --</option>
+                        <option value="Natanael Rivera">Natanael Rivera</option>
+                        <option value="Alejandro Fernandez">Alejandro Fernandez</option>
+                        <option value="Giovanni Alvarez">Giovanni Alvarez</option>
+                        <option value="Yahir Alvarez">Yahir Alvarez</option>
+                      </select>
                     )}
 
                     <button onClick={() => registrarPago(p)} style={styles.botonAccion}>
@@ -883,7 +888,7 @@ function Pagos() {
                     <b>Historial:</b>
                     {detalles.map(d => (
                       <div key={d.id_pago} style={{ marginBottom: 8 }}>
-                        💰 ${d.monto} - {d.metodo}
+                        💰 ${Number(d.monto || 0).toLocaleString('es-MX')} - {d.metodo}
 
                         {d.metodo === 'transferencia' && d.cuenta_destino && (
                           <> ({d.cuenta_destino})</>
@@ -1157,7 +1162,7 @@ function Pagos() {
                 </div>
 
                 <div style={{ fontSize: 12, marginTop: 5 }}>
-                  Subtotal: ${(p.precio || 0) * (p.cantidad || 0)}
+                  Subtotal: ${Number((p.precio || 0) * (p.cantidad || 0)).toLocaleString('es-MX')}
                 </div>
               </div>
             ))}
@@ -1170,7 +1175,7 @@ function Pagos() {
                 fontSize: 26
               }}
             >
-              TOTAL: ${totalPedido.toFixed(2)}
+              TOTAL: ${Number(totalPedido).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </h3>
 
             <div style={{ display: "flex", gap: 10, marginTop: 15 }}>
@@ -1367,7 +1372,7 @@ function Pagos() {
                                     onChange={e => setValoresEdit({ ...valoresEdit, cantidad_final: e.target.value })}
                                   />
                                 ) : (
-                                  cant
+                                  Number(cant).toLocaleString('es-MX')
                                 )}
                               </td>
 
@@ -1382,13 +1387,13 @@ function Pagos() {
                                     onChange={e => setValoresEdit({ ...valoresEdit, precio_unitario: e.target.value })}
                                   />
                                 ) : (
-                                  `$${Number(precio).toFixed(2)}`
+                                  `$${Number(precio).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                                 )}
                               </td>
 
                               {/* SUBTOTAL */}
                               <td style={{ padding: '8px 10px', border: '1px solid #ddd', textAlign: 'right', fontWeight: 'bold' }}>
-                                ${subtotal.toFixed(2)}
+                                ${Number(subtotal).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </td>
 
                               {/* BOTONES DE ACCIÓN */}
@@ -1430,13 +1435,13 @@ function Pagos() {
                           TOTAL DE LA NOTA:
                         </td>
                         <td colSpan="2" style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'left', color: '#8B1E1E', fontSize: '16px' }}>
-                          ${(
+                          ${Number(
                             detalleNota.reduce((acc, curr) => {
                               const cant = Number(curr.cantidad_final || 0);
                               const prec = Number(curr.precio_unitario || 0);
                               return acc + (cant * prec);
                             }, 0)
-                          ).toFixed(2)}
+                          ).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
                       </tr>
                     </tfoot>
