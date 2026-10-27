@@ -2088,6 +2088,38 @@ app.get('/api/rotos-devueltos/resumen-producto', async (req, res) => {
     }
 });
 
+
+// Marcar bulto roto como confirmado con fecha y hora automática del sistema
+app.put('/api/rotos-devueltos/confirmar/:id', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const updateQuery = `
+            UPDATE rotos_devueltos 
+            SET estatus = 'CONFIRMADO', 
+                fecha_confirmacion = NOW() 
+            WHERE id = ?
+        `;
+        
+        const [result] = await db.query(updateQuery, [id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, error: "Registro no encontrado." });
+        }
+
+        res.json({ 
+            success: true, 
+            message: "Incidencia confirmada correctamente.",
+            fecha_confirmacion: new Date() // Devolvemos la fecha actual para reflejarla en pantalla de inmediato
+        });
+    } catch (error) {
+        console.error("Error al confirmar el bulto roto:", error);
+        res.status(500).json({ success: false, error: "Error interno del servidor" });
+    }
+});
+
+
+
 // 📊 RESUMEN Y DETALLE DE JUSTIFICADOS
 app.get('/api/justificados-devueltos/historial', async (req, res) => {
     try {
