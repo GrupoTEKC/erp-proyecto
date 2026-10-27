@@ -137,6 +137,36 @@ function Produccion() {
     }
   }
 
+  // 🟢 FUNCIÓN PARA CONFIRMAR INCIDENCIA DE BULTOS ROTOS
+  const confirmarIncidenciaRoto = async (id) => {
+    try {
+      const res = await fetch(`${API}/api/rotos-devueltos/confirmar/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      const data = await res.json()
+
+      if (res.ok && data.success) {
+        // Actualizar el estado localmente para reflejar el cambio al instante
+        setHistorialRotos(prev => prev.map(item => {
+          if (item.id === id) {
+            return {
+              ...item,
+              estatus: 'CONFIRMADO',
+              fecha_confirmacion: data.fecha_confirmacion || new Date().toISOString()
+            }
+          }
+          return item
+        }))
+      } else {
+        alert(data.error || 'Error al confirmar la incidencia.')
+      }
+    } catch (err) {
+      console.error('Error al confirmar incidencia:', err)
+      alert('Error de conexión con el servidor.')
+    }
+  }
+
   const cargarDatos = async () => {
     try {
       const res = await fetch(`${API}/produccion/${fecha}`)
@@ -1300,7 +1330,7 @@ function Produccion() {
             </div>
           </div>
 
-          {/* TABLA 2: DESGLOSE DETALLADO */}
+          {/* TABLA 2: DESGLOSE DETALLADO CON LAS NUEVAS COLUMNAS */}
           <table style={styles.table}>
             <thead>
               <tr>
@@ -1309,21 +1339,70 @@ function Produccion() {
                 <th style={styles.th}>Fecha salida</th>
                 <th style={styles.th}>Producto</th>
                 <th style={styles.th}>Cant. Bultos rotos</th>
+                <th style={styles.th}>Estatus</th>
+                <th style={styles.th}>Fecha de Confirmación</th>
+                <th style={styles.th}>Acción</th>
               </tr>
             </thead>
             <tbody>
               {rotosDetalleFiltrado.length === 0 ? (
-                <tr><td colSpan="5" style={{ ...styles.td, textAlign: 'center' }}>Sin movimientos registrados que coincidan con la búsqueda.</td></tr>
+                <tr><td colSpan="8" style={{ ...styles.td, textAlign: 'center' }}>Sin movimientos registrados que coincidan con la búsqueda.</td></tr>
               ) : (
-                rotosDetalleFiltrado.map((row) => (
-                  <tr key={row.id}>
-                    <td style={{ ...styles.td, fontWeight: 'bold' }}>{row.folio}</td>
-                    <td style={styles.td}>{row.tienda_cliente}</td>
-                    <td style={styles.td}>{new Date(row.fecha_salida).toLocaleString('es-MX')}</td>
-                    <td style={styles.td}>{row.producto}</td>
-                    <td style={{ ...styles.td, color: '#dc3545', fontWeight: 'bold' }}>{row.cantidad_rota}</td>
-                  </tr>
-                ))
+                rotosDetalleFiltrado.map((row) => {
+                  const estaConfirmado = row.estatus === 'CONFIRMADO';
+                  return (
+                    <tr key={row.id}>
+                      <td style={{ ...styles.td, fontWeight: 'bold' }}>{row.folio}</td>
+                      <td style={styles.td}>{row.tienda_cliente}</td>
+                      <td style={styles.td}>{new Date(row.fecha_salida).toLocaleString('es-MX')}</td>
+                      <td style={styles.td}>{row.producto}</td>
+                      <td style={{ ...styles.td, color: '#dc3545', fontWeight: 'bold' }}>{row.cantidad_rota}</td>
+                      
+                      {/* Estatus */}
+                      <td style={styles.td}>
+                        <span style={{
+                          backgroundColor: estaConfirmado ? '#d4edda' : '#fff3cd',
+                          color: estaConfirmado ? '#155724' : '#856404',
+                          padding: '4px 8px',
+                          borderRadius: '12px',
+                          fontSize: '12px',
+                          fontWeight: 'bold',
+                          display: 'inline-block'
+                        }}>
+                          {estaConfirmado ? '🟢 Confirmado' : '🟡 Pendiente de confirmar'}
+                        </span>
+                      </td>
+
+                      {/* Fecha de Confirmación */}
+                      <td style={styles.td}>
+                        {row.fecha_confirmacion ? new Date(row.fecha_confirmacion).toLocaleString('es-MX') : '—'}
+                      </td>
+
+                      {/* Acción (Botón de confirmar o etiqueta OK) */}
+                      <td style={styles.td}>
+                        {estaConfirmado ? (
+                          <span style={{ fontWeight: 'bold', color: '#28a745', fontSize: '14px' }}>✅ OK</span>
+                        ) : (
+                          <button
+                            onClick={() => confirmarIncidenciaRoto(row.id)}
+                            style={{
+                              backgroundColor: '#28a745',
+                              color: '#fff',
+                              border: 'none',
+                              padding: '6px 12px',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontWeight: 'bold',
+                              fontSize: '12px'
+                            }}
+                          >
+                            🟢 Confirmar
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })
               )}
             </tbody>
           </table>
