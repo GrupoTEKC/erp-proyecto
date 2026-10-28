@@ -2068,16 +2068,30 @@ app.post('/api/notas-discrepancias/resolver', async (req, res) => {
 });
 
 
-
 // 📊 RESUMEN Y DETALLE DE ROTOS
 app.get('/api/rotos-devueltos/historial', async (req, res) => {
     try {
-        const [rows] = await db.query(`SELECT id, folio, tienda_cliente, fecha_salida, producto, cantidad_rota, motivo, fecha_registro FROM rotos_devueltos ORDER BY fecha_registro DESC`);
+        const [rows] = await db.query(`
+            SELECT 
+                id, 
+                folio, 
+                tienda_cliente, 
+                fecha_salida, 
+                producto, 
+                cantidad_rota, 
+                motivo, 
+                fecha_registro, 
+                estatus,         
+                fecha_confirmacion
+            FROM rotos_devueltos 
+            ORDER BY fecha_registro DESC
+        `);
         res.json({ success: true, data: rows });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }
 });
+
 
 app.get('/api/rotos-devueltos/resumen-producto', async (req, res) => {
     try {
