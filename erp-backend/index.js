@@ -2228,6 +2228,129 @@ app.get('/pedidos/folios-control', async (req, res) => {
 });
 
 
+// 1. Obtener materias primas agrupadas o completas para los selectores del frontend
+app.get('/api/materias-primas', async (req, res) => {
+    try {
+        const [rows] = await db.query(`SELECT * FROM materias_primas WHERE activo = 1 ORDER BY categoria, nombre`);
+        res.json({ success: true, data: rows });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// 2. Registrar un nuevo préstamo del tipo PROVEEDORES con su detalle de materias primas
+app.post('/api/prestamos/proveedores', async (req, res) => {
+    const connection = await db.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        const {
+            prestamista,
+            numero_nota,
+            clasificacion_pasivo, // 'CIRCULANTE' o 'FIJO'
+            fecha_recepcion,      // Fecha en que entregaron la materia prima
+            fecha_limite_pago,    // Fecha límite de pago
+            dias_credito,
+            productos             // Array con los productos seleccionados y sus cantidades
+        } = req.body;
+
+        if (!productos || productos.length === 0) {
+            return res.status(400).json({ success: false, error: 'Debe agregar al menos un material a la nota.' });
+        }
+
+        // Calcular el monto total sumando los subtotales enviados desde el frontend
+        let montoTotal = 0;
+        productos.forEach(p => {
+            montoTotal += Number(p.subtotal) || 0;
+        });
+
+        // Insertar en la tabla principal de prestamos
+        const insertPrestamoQuery = `
+            INSERT INTO prestamos (
+                prestamista, 
+                tipo_deuda, 
+                numero_nota, 
+                clasificacion_pasivo, 
+                monto_original, 
+                monto_total_pagar, 
+                saldo_pendiente, 
+                plazos_meses, 
+                frecuencia, 
+                monto_cuota_sugerida, 
+                fecha_primer_pago, 
+                color_identificador, 
+                cuenta_destino, 
+                estatus
+            ) VALUES (?, 'PROVEEDORES', ?, ?, ?, ?, ?, 1, 'MENSUAL', ?, ?, '#28a745', 'TRANSFERENCIA', 'ACTIVO')
+        `;
+
+        const [resultPrestamo] = await connection.query(insertPrestamoQuery, [
+            prestamista,
+            numero_nota || null,
+            clasificacion_pasivo || 'CIRCULANTE',
+            montoTotal,
+            montoTotal,
+            montoTotal, // Saldo pendiente inicia igual al total
+            montoTotal,
+            fecha_limite_pago,
+        ]);
+
+        const idPrestamo = resultPrestamo.insertId;
+
+        // Insertar cada producto en la tabla de detalle (prestamos_proveedor_detalle)
+        for (const item of productos) {
+            const cantidad = Number(item.cantidad) || 0;
+            const precioUnitario = Number(item.precio_unitario) || 0;
+            const unidadMedida = item.unidad_medida; // 'BULTOS', 'TONELADAS', 'PIEZAS', 'SUPERSACOS'
+            
+            // Regla de conversión automática a toneladas si elige BULTOS (1 tonelada = 40 bultos)
+            let toneladasEquivalentes = 0;
+            if (unidadMedida === 'BULTOS') {
+                toneladasEquivalentes = cantidad / 40;
+            } else if (unidadMedida === 'TONELADAS') {
+                toneladasEquivalentes = cantidad;
+            } else {
+                toneladasEquivalentes = 0; // Para piezas o supersacos que no aplican a granel
+            }
+
+            const subtotal = cantidad * precioUnitario;
+
+            const insertDetalleQuery = `
+                INSERT INTO prestamos_proveedor_detalle (
+                    id_prestamo, 
+                    nombre_material, 
+                    unidad_medida, 
+                    cantidad, 
+                    toneladas_equivalentes, 
+                    precio_unitario, 
+                    subtotal
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            `;
+
+            await connection.query(insertDetalleQuery, [
+                idPrestamo,
+                item.nombre_material,
+                unidadMedida,
+                cantidad,
+                toneladasEquivalentes,
+                precioUnitario,
+                subtotal
+            ]);
+        }
+
+        await connection.commit();
+        connection.release();
+
+        res.json({ success: true, message: 'Préstamo de proveedor registrado correctamente.', id_prestamo: idPrestamo });
+
+    } catch (error) {
+        await connection.rollback();
+        if (connection) connection.release();
+        console.error('Error al registrar préstamo de proveedor:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 
 // =============================
 // CHOFERES
