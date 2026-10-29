@@ -163,7 +163,7 @@ const styles = {
     backgroundColor: '#FFFFFF',
     borderRadius: '12px',
     padding: '28px',
-    width: '650px',
+    width: '720px',
     maxWidth: '95%',
     maxHeight: '90vh',
     overflowY: 'auto',
@@ -224,11 +224,14 @@ function CuentasPorPagar() {
 
   // Catálogo de materias primas para proveedores
   const [materiasPrimasCatalogo, setMateriasPrimasCatalogo] = useState([])
-  const [productosProveedor, setProductosProveedor] = useState([])
-  const [itemSeleccionadoId, setItemSeleccionadoId] = useState("")
-  const [cantidadItem, setCantidadItem] = useState("")
-  const [unidadItem, setUnidadItem] = useState("BULTOS")
-  const [precioItem, setPrecioItem] = useState("")
+  
+  // Lista de productos del proveedor con 1 renglón inicial
+  const [productosProveedor, setProductosProveedor] = useState([
+    { id_materia: "", nombre_material: "", unidad_medida: "BULTOS", cantidad: "", toneladas_equivalentes: 0, precio_unitario: "", subtotal: 0 }
+  ])
+
+  // Días de crédito para proveedores
+  const [diasCredito, setDiasCredito] = useState("30")
 
   // Estado del mes/año seleccionado para el calendario
   const hoy = new Date()
@@ -240,7 +243,6 @@ function CuentasPorPagar() {
     prestamista: "",
     tipo_deuda: "FINANCIEROS",
     numero_nota: "",
-    clasificacion_pasivo: "CIRCULANTE",
     monto_original: "",
     monto_cuota_sugerida: "",
     plazos_meses: "6",
@@ -262,6 +264,19 @@ function CuentasPorPagar() {
     fecha_real_pago: new Date().toISOString().split('T')[0]
   })
 
+  // CÁLCULO AUTOMÁTICO DE FECHA LÍMITE DE PAGO (Visible y de solo lectura para validación)
+  useEffect(() => {
+    if (formPrestamo.fecha_recepcion && diasCredito !== "") {
+      const fechaRec = new Date(formPrestamo.fecha_recepcion + "T00:00:00")
+      fechaRec.setDate(fechaRec.getDate() + Number(diasCredito))
+      const fechaCalculada = fechaRec.toISOString().split('T')[0]
+      setFormPrestamo(prev => ({ ...prev, fecha_primer_pago: fechaCalculada }))
+    }
+  }, [formPrestamo.fecha_recepcion, diasCredito])
+
+  // DETERMINACIÓN AUTOMÁTICA DE PASIVO CIRCULANTE O FIJO (<= 365 días = Circulante, > 365 días = Fijo)
+  const esPasivoCirculanteProveedor = Number(diasCredito || 0) <= 365
+
   // CÁLCULOS DINÁMICOS PARA FORMULARIO PRÉSTAMO FINANCIERO
   const montoOriginalNum = Number(formPrestamo.monto_original) || 0
   const montoCuotaNum = Number(formPrestamo.monto_cuota_sugerida) || 0
@@ -271,10 +286,10 @@ function CuentasPorPagar() {
   const interesGenerado = montoTotalPagarFinanciero - montoOriginalNum
 
   // Cálculo total para Proveedores
-  const totalProveedorCalculado = productosProveedor.reduce((acc, p) => acc + Number(p.subtotal), 0)
+  const totalProveedorCalculado = productosProveedor.reduce((acc, p) => acc + (Number(p.subtotal) || 0), 0)
 
   const esValidoGuardar = formPrestamo.tipo_deuda === "PROVEEDORES" 
-    ? (formPrestamo.prestamista.trim() !== "" && productosProveedor.length > 0)
+    ? (formPrestamo.prestamista.trim() !== "" && productosProveedor.some(p => p.id_materia && Number(p.cantidad) > 0))
     : (montoOriginalNum > 0 && plazosMesesNum > 0 && montoCuotaNum > 0 && montoTotalPagarFinanciero >= montoOriginalNum)
 
   // Cargar Préstamos y Catálogo de Materias Primas
@@ -288,7 +303,6 @@ function CuentasPorPagar() {
       setEventos(data.eventosCalendario || [])
       setPrestamosSeleccionados(listP.map(p => p.id_prestamo))
 
-      // Cargar materias primas
       const resMp = await fetch(`${API}/api/materias-primas`)
       const dataMp = await resMp.json()
       if (dataMp.success) {
@@ -305,56 +319,52 @@ function CuentasPorPagar() {
     cargarDatos()
   }, [])
 
-  // Manejar cambio de producto seleccionado para precargar precio
-  const handleSelectMateriaPrima = (id) => {
-    setItemSeleccionadoId(id)
-    const encontrada = materiasPrimasCatalogo.find(m => String(m.id_materia) === String(id))
-    if (encontrada) {
-      setPrecioItem(encontrada.precio_unitario)
-    } else {
-      setPrecioItem("")
+  // Manejar cambios en los renglones de materias primas
+  const handleCambioItemProveedor = (index, campo, valor) => {
+    const nuevos = [...productosProveedor]
+    nuevos[index][campo] = valor
+
+    if (campo === "id_materia") {
+      const encontrada = materiasPrimasCatalogo.find(m => String(m.id_materia) === String(valor))
+      if (encontrada) {
+        nuevos[index].nombre_material = encontrada.nombre
+        nuevos[index].precio_unitario = encontrada.precio_unitario
+      } else {
+        nuevos[index].nombre_material = ""
+        nuevos[index].precio_unitario = ""
+      }
     }
+
+    const cant = Number(nuevos[index].cantidad) || 0
+    const prec = Number(nuevos[index].precio_unitario) || 0
+    nuevos[index].subtotal = cant * prec
+
+    // Cálculo automático de toneladas si elige BULTOS (1 tonelada = 40 bultos)
+    if (nuevos[index].unidad_medida === "BULTOS") {
+      nuevos[index].toneladas_equivalentes = cant / 40
+    } else if (nuevos[index].unidad_medida === "TONELADAS") {
+      nuevos[index].toneladas_equivalentes = cant
+    } else {
+      nuevos[index].toneladas_equivalentes = 0
+    }
+
+    setProductosProveedor(nuevos)
   }
 
-  // Agregar producto a la lista de proveedor
-  const agregarProductoProveedor = () => {
-    if (!itemSeleccionadoId || !cantidadItem || Number(cantidadItem) <= 0 || !precioItem || Number(precioItem) < 0) {
-      alert("Por favor selecciona un material y especifica una cantidad y precio válidos.")
-      return
-    }
-
-    const materialObj = materiasPrimasCatalogo.find(m => String(m.id_materia) === String(itemSeleccionadoId))
-    if (!materialObj) return
-
-    const cant = Number(cantidadItem)
-    const precio = Number(precioItem)
-    const subtotal = cant * precio
-
+  const agregarRenglonProveedor = () => {
     setProductosProveedor([
       ...productosProveedor,
-      {
-        id_materia: materialObj.id_materia,
-        nombre_material: materialObj.nombre,
-        unidad_medida: unidadItem,
-        cantidad: cant,
-        precio_unitario: precio,
-        subtotal: subtotal
-      }
+      { id_materia: "", nombre_material: "", unidad_medida: "BULTOS", cantidad: "", toneladas_equivalentes: 0, precio_unitario: "", subtotal: 0 }
     ])
-
-    // Limpiar campos de selección de item
-    setItemSeleccionadoId("")
-    setCantidadItem("")
-    setUnidadItem("BULTOS")
-    setPrecioItem("")
   }
 
-  const eliminarProductoProveedor = (index) => {
+  const eliminarRenglonProveedor = (index) => {
+    if (productosProveedor.length === 1) return
     const nuevos = productosProveedor.filter((_, idx) => idx !== index)
     setProductosProveedor(nuevos)
   }
 
-  // Guardar Préstamo (Financiero, Diversos o Proveedores)
+  // Guardar Préstamo
   const handleCrearPrestamo = async (e) => {
     e.preventDefault()
     if (!esValidoGuardar) return
@@ -364,10 +374,10 @@ function CuentasPorPagar() {
         const bodyData = {
           prestamista: formPrestamo.prestamista,
           numero_nota: formPrestamo.numero_nota,
-          clasificacion_pasivo: formPrestamo.clasificacion_pasivo,
+          clasificacion_pasivo: esPasivoCirculanteProveedor ? "CIRCULANTE" : "FIJO",
           fecha_recepcion: formPrestamo.fecha_recepcion,
           fecha_limite_pago: formPrestamo.fecha_primer_pago,
-          productos: productosProveedor
+          productos: productosProveedor.filter(p => p.id_materia && Number(p.cantidad) > 0)
         }
 
         const res = await fetch(`${API}/api/prestamos/proveedores`, {
@@ -379,12 +389,13 @@ function CuentasPorPagar() {
         const data = await res.json()
         if (res.ok && data.success) {
           setModalNuevo(false)
-          setProductosProveedor([])
+          setProductosProveedor([
+            { id_materia: "", nombre_material: "", unidad_medida: "BULTOS", cantidad: "", toneladas_equivalentes: 0, precio_unitario: "", subtotal: 0 }
+          ])
           setFormPrestamo({
             prestamista: "",
             tipo_deuda: "FINANCIEROS",
             numero_nota: "",
-            clasificacion_pasivo: "CIRCULANTE",
             monto_original: "",
             monto_cuota_sugerida: "",
             plazos_meses: "6",
@@ -411,7 +422,6 @@ function CuentasPorPagar() {
             prestamista: "",
             tipo_deuda: "FINANCIEROS",
             numero_nota: "",
-            clasificacion_pasivo: "CIRCULANTE",
             monto_original: "",
             monto_cuota_sugerida: "",
             plazos_meses: "6",
@@ -430,7 +440,7 @@ function CuentasPorPagar() {
     }
   }
 
-  // Registrar Abono (Petición principal y Reintento con flag)
+  // Registrar Abono
   const ejecutarAbono = async (permitirSobrepago = false) => {
     try {
       const res = await fetch(`${API}/api/prestamos/abono`, {
@@ -446,7 +456,6 @@ function CuentasPorPagar() {
 
       const data = await res.json()
 
-      // Si se requiere confirmación por sobrepago
       if (!res.ok && data.requiere_confirmacion) {
         setModalSobrepago(data)
         return
@@ -486,7 +495,6 @@ function CuentasPorPagar() {
     ejecutarAbono(true)
   }
 
-  // Ver Historial
   const handleVerHistorial = async (id) => {
     try {
       const res = await fetch(`${API}/api/prestamos/${id}/historial`)
@@ -506,7 +514,6 @@ function CuentasPorPagar() {
     }
   }
 
-  // Filtrado de préstamos según la clasificación calculada en el Backend (dinámica según abonos abonados)
   const prestamosFiltrados = prestamos.filter((p) => {
     const clasificacion = p.clasificacion_pasivo || (Number(p.plazos_restantes ?? p.plazos_meses) <= 12 ? 'CIRCULANTE' : 'FIJO')
     if (filtroTipoPasivo === "CIRCULANTES") return clasificacion === 'CIRCULANTE'
@@ -516,7 +523,6 @@ function CuentasPorPagar() {
 
   const idsPrestamosVisibles = prestamosFiltrados.map((p) => p.id_prestamo)
 
-  // Lógica de Generación de Días para Calendario Mensual
   const nombresMeses = [
     "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
     "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
@@ -525,21 +531,12 @@ function CuentasPorPagar() {
   const obtenerDiasMes = (mes, anio) => {
     const primerDia = new Date(anio, mes, 1)
     const ultimoDia = new Date(anio, mes + 1, 0)
-
-    let diaSemanaInicio = primerDia.getDay() - 1 // Lunes = 0
-    if (diaSemanaInicio === -1) diaSemanaInicio = 6 // Domingo = 6
-
+    let diaSemanaInicio = primerDia.getDay() - 1
+    if (diaSemanaInicio === -1) diaSemanaInicio = 6
     const totalDias = ultimoDia.getDate()
     const celdas = []
-
-    for (let i = 0; i < diaSemanaInicio; i++) {
-      celdas.push(null)
-    }
-
-    for (let d = 1; d <= totalDias; d++) {
-      celdas.push(new Date(anio, mes, d))
-    }
-
+    for (let i = 0; i < diaSemanaInicio; i++) celdas.push(null)
+    for (let d = 1; d <= totalDias; d++) celdas.push(new Date(anio, mes, d))
     return celdas
   }
 
@@ -564,15 +561,14 @@ function CuentasPorPagar() {
     }
   }
 
-  // Mensaje explicativo para cada tipo de deuda
   const obtenerMensajeTipoDeuda = (tipo) => {
     switch (tipo) {
       case "PROVEEDORES":
-        return "Haz seleccionado proveedores: Hace énfasis en financiamiento o crédito directo de materia prima, insumos y mercancía para la operación."
+        return "Haz seleccionado proveedores: Crédito directo de materia prima. La fecha límite y clasificación de pasivo se calculan y validan de forma automática."
       case "FINANCIEROS":
-        return "Haz seleccionado créditos financieros: Relacionado con préstamos, líneas de crédito o financiamientos otorgados por instituciones bancarias y financieras."
+        return "Haz seleccionado créditos financieros: Otorgados por instituciones bancarias."
       case "DIVERSOS":
-        return "Haz seleccionado créditos diversos: Aplica para deudas con acreedores varios, préstamos de socios, terceros o financiamientos que no corresponden a proveedores ni bancos."
+        return "Haz seleccionado créditos diversos: Acreedores varios o préstamos de terceros."
       default:
         return ""
     }
@@ -581,14 +577,12 @@ function CuentasPorPagar() {
   return (
     <div style={styles.page}>
       
-      {/* 🍔 BOTÓN DE MENÚ */}
       {!menuAbierto && (
         <button style={styles.hamburger} onClick={() => setMenuAbierto(true)}>
           ☰
         </button>
       )}
 
-      {/* 📂 DESPLEGABLE DE MENÚ */}
       {menuAbierto && (
         <>
           <div style={styles.overlay} onClick={() => setMenuAbierto(false)} />
@@ -612,7 +606,6 @@ function CuentasPorPagar() {
         </>
       )}
 
-      {/* 🔵 CABECERA GENERAL ALINEADA */}
       <div style={styles.headerRow}>
         <div>
           <button style={styles.backTop} onClick={() => navigate("/")}>
@@ -624,10 +617,8 @@ function CuentasPorPagar() {
         </div>
       </div>
 
-      {/* CONTENEDOR PRINCIPAL */}
       <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '28px', width: '100%', alignItems: 'start' }}>
         
-        {/* BARRA LATERAL IZQUIERDA */}
         <div style={styles.cardPanel}>
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
             <img src={logo} alt="Logo" style={{ height: 128, objectFit: "contain" }} />
@@ -637,7 +628,6 @@ function CuentasPorPagar() {
             ➕ Registrar credito/prestamo
           </button>
 
-          {/* COMPONENTE DE FILTRO DE PASIVOS */}
           <div style={{ marginBottom: '20px' }}>
             <label style={{ fontSize: '12px', fontWeight: '700', color: '#64748B', display: 'block', marginBottom: '6px', textTransform: 'uppercase' }}>
               Clasificación de pasivo
@@ -648,8 +638,8 @@ function CuentasPorPagar() {
               onChange={(e) => setFiltroTipoPasivo(e.target.value)}
             >
              <option value="TODOS">TODOS (Circulantes y Fijos)</option>
-             <option value="CIRCULANTES">PASIVOS CIRCULANTES (menor o = a 12 meses)</option>
-             <option value="FIJOS">PASIVOS FIJOS (mayor a 12 meses)</option>
+             <option value="CIRCULANTES">PASIVOS CIRCULANTES</option>
+             <option value="FIJOS">PASIVOS FIJOS</option>
             </select>
           </div>
 
@@ -689,7 +679,6 @@ function CuentasPorPagar() {
                       </button>
                     </div>
 
-                    {/* BADGES / ETIQUETAS VISUALES */}
                     <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginLeft: '24px', marginBottom: '6px', flexWrap: 'wrap' }}>
                       {p.tipo_deuda && (
                         <span style={{ fontSize: '10px', fontWeight: '700', color: '#64748B' }}>
@@ -701,7 +690,6 @@ function CuentasPorPagar() {
                       </span>
                     </div>
 
-                    {/* BARRA DE PROGRESO */}
                     <div style={{ width: '100%', height: '6px', backgroundColor: '#E2E8F0', borderRadius: '3px', overflow: 'hidden', marginTop: '6px' }}>
                       <div style={{ width: `${pct}%`, height: '100%', backgroundColor: colorHex, borderRadius: '3px' }} />
                     </div>
@@ -716,9 +704,7 @@ function CuentasPorPagar() {
           </div>
         </div>
         
-        {/* CALENDARIO MENSUAL PRINCIPAL */}
         <div style={styles.cardPanel}>
-          
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
             <h2 style={{ margin: 0, fontSize: '22px', color: '#1E293B', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span>📅</span> {nombresMeses[mesSeleccionado]} {anioSeleccionado}
@@ -726,94 +712,38 @@ function CuentasPorPagar() {
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <button style={styles.botonNav} onClick={() => cambiarMes(-1)}>◀</button>
-
-              <select
-                style={styles.selectFiltro}
-                value={mesSeleccionado}
-                onChange={(e) => setMesSeleccionado(parseInt(e.target.value))}
-              >
-                {nombresMeses.map((m, idx) => (
-                  <option key={idx} value={idx}>{m}</option>
-                ))}
+              <select style={styles.selectFiltro} value={mesSeleccionado} onChange={(e) => setMesSeleccionado(parseInt(e.target.value))}>
+                {nombresMeses.map((m, idx) => (<option key={idx} value={idx}>{m}</option>))}
               </select>
-
-              <select
-                style={styles.selectFiltro}
-                value={anioSeleccionado}
-                onChange={(e) => setAnioSeleccionado(parseInt(e.target.value))}
-              >
-                {[2025, 2026, 2027, 2028].map((a) => (
-                  <option key={a} value={a}>{a}</option>
-                ))}
+              <select style={styles.selectFiltro} value={anioSeleccionado} onChange={(e) => setAnioSeleccionado(parseInt(e.target.value))}>
+                {[2025, 2026, 2027, 2028].map((a) => (<option key={a} value={a}>{a}</option>))}
               </select>
-
               <button style={styles.botonNav} onClick={() => cambiarMes(1)}>▶</button>
-
-              <button
-                style={{ ...styles.botonOutlined, marginLeft: '8px' }}
-                onClick={() => {
-                  setMesSeleccionado(hoy.getMonth())
-                  setAnioSeleccionado(hoy.getFullYear())
-                }}
-              >
+              <button style={{ ...styles.botonOutlined, marginLeft: '8px' }} onClick={() => { setMesSeleccionado(hoy.getMonth()); setAnioSeleccionado(hoy.getFullYear()) }}>
                 Mes Actual
               </button>
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', backgroundColor: '#8B1E1E', color: '#FFFFFF', borderRadius: '8px 8px 0 0', fontWeight: '700', fontSize: '13px', textAlign: 'center', padding: '12px 0', letterSpacing: '0.5px' }}>
-            <span>LUN</span>
-            <span>MAR</span>
-            <span>MIÉ</span>
-            <span>JUE</span>
-            <span>VIE</span>
-            <span>SÁB</span>
-            <span>DOM</span>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', backgroundColor: '#8B1E1E', color: '#FFFFFF', borderRadius: '8px 8px 0 0', fontWeight: '700', fontSize: '13px', textAlign: 'center', padding: '12px 0' }}>
+            <span>LUN</span><span>MAR</span><span>MIÉ</span><span>JUE</span><span>VIE</span><span>SÁB</span><span>DOM</span>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderLeft: '1px solid #E2E8F0', borderBottom: '1px solid #E2E8F0', borderRadius: '0 0 8px 8px', overflow: 'hidden' }}>
             {diasCalendario.map((fechaObj, idx) => {
-              if (!fechaObj) {
-                return (
-                  <div key={idx} style={{ minHeight: '120px', backgroundColor: '#F8FAFC', borderRight: '1px solid #E2E8F0', borderTop: '1px solid #E2E8F0' }} />
-                )
-              }
+              if (!fechaObj) return <div key={idx} style={{ minHeight: '120px', backgroundColor: '#F8FAFC', borderRight: '1px solid #E2E8F0', borderTop: '1px solid #E2E8F0' }} />
 
               const y = fechaObj.getFullYear()
               const m = String(fechaObj.getMonth() + 1).padStart(2, '0')
               const d = String(fechaObj.getDate()).padStart(2, '0')
               const isoFecha = `${y}-${m}-${d}`
-
               const esHoy = isoFecha === hoyISO
-              const eventosDelDia = eventos.filter(ev => 
-                ev.fecha_programada === isoFecha && 
-                prestamosSeleccionados.includes(ev.id_prestamo) &&
-                idsPrestamosVisibles.includes(ev.id_prestamo)
-              )
+              const eventosDelDia = eventos.filter(ev => ev.fecha_programada === isoFecha && prestamosSeleccionados.includes(ev.id_prestamo) && idsPrestamosVisibles.includes(ev.id_prestamo))
 
               return (
-                <div
-                  key={idx}
-                  style={{
-                    minHeight: '120px',
-                    padding: '8px',
-                    borderRight: '1px solid #E2E8F0',
-                    borderTop: '1px solid #E2E8F0',
-                    backgroundColor: esHoy ? '#FEF2F2' : '#FFFFFF',
-                    boxSizing: 'border-box'
-                  }}
-                >
+                <div key={idx} style={{ minHeight: '120px', padding: '8px', borderRight: '1px solid #E2E8F0', borderTop: '1px solid #E2E8F0', backgroundColor: esHoy ? '#FEF2F2' : '#FFFFFF', boxSizing: 'border-box' }}>
                   <div style={{ textAlign: 'right', marginBottom: '6px' }}>
-                    <span
-                      style={{
-                        fontSize: '12px',
-                        fontWeight: '700',
-                        padding: '3px 7px',
-                        borderRadius: '12px',
-                        backgroundColor: esHoy ? '#8B1E1E' : 'transparent',
-                        color: esHoy ? '#FFFFFF' : '#64748B'
-                      }}
-                    >
+                    <span style={{ fontSize: '12px', fontWeight: '700', padding: '3px 7px', borderRadius: '12px', backgroundColor: esHoy ? '#8B1E1E' : 'transparent', color: esHoy ? '#FFFFFF' : '#64748B' }}>
                       {fechaObj.getDate()}
                     </span>
                   </div>
@@ -824,296 +754,159 @@ function CuentasPorPagar() {
                       const colorHex = ev.color || '#8B1E1E'
 
                       return (
-                        <div
-                          key={evIdx}
-                          style={{
-                            backgroundColor: ev.pagado ? '#F0FDF4' : '#FFFFFF',
-                            borderLeft: `4px solid ${ev.pagado ? '#16A34A' : colorHex}`,
-                            borderTop: '1px solid #E2E8F0',
-                            borderRight: '1px solid #E2E8F0',
-                            borderBottom: '1px solid #E2E8F0',
-                            borderRadius: '4px',
-                            padding: '6px 8px',
-                            cursor: 'pointer',
-                            boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
-                          }}
+                        <div key={evIdx} style={{ backgroundColor: ev.pagado ? '#F0FDF4' : '#FFFFFF', borderLeft: `4px solid ${ev.pagado ? '#16A34A' : colorHex}`, border: '1px solid #E2E8F0', borderRadius: '4px', padding: '6px 8px', cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}
                           onClick={() => {
-                            if (ev.pagado) {
-                              const confirmar = window.confirm(
-                                `El pago de la cuota #${ev.numero_periodo} de este mes ya fue realizado.\n\n¿Desea registrar un nuevo abono para este préstamo?`
-                              )
-                              if (!confirmar) return
-                            }
-
-                            setModalAbono({
-                              id_prestamo: ev.id_prestamo,
-                              prestamista: ev.prestamista,
-                              numero_periodo: ev.numero_periodo,
-                              monto_cuota_sugerida: ev.monto_sugerido
-                            })
+                            if (ev.pagado && !window.confirm(`El pago de la cuota #${ev.numero_periodo} ya fue realizado.\n\n¿Desea registrar un nuevo abono?`)) return
+                            setModalAbono({ id_prestamo: ev.id_prestamo, prestamista: ev.prestamista, numero_periodo: ev.numero_periodo, monto_cuota_sugerida: ev.monto_sugerido })
                             setFormAbono((prev) => ({ ...prev, monto_abonado: ev.monto_sugerido }))
-                          }}
-                        >
-                          <div style={{ fontWeight: '700', color: '#1E293B', fontSize: '12px', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-                            {ev.prestamista}
-                          </div>
-                          <div style={{ color: '#475569', fontSize: '11px', marginTop: '2px' }}>
-                            Cuota #{ev.numero_periodo}: <strong style={{ color: '#0F172A' }}>${Number(ev.monto_sugerido).toLocaleString()}</strong>
-                          </div>
-
-                          {ev.pagado ? (
-                            <div style={{ color: '#16A34A', fontWeight: '700', fontSize: '10px', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                              ✓ Abonado
-                            </div>
-                          ) : esVencido ? (
-                            <div style={{ color: '#DC2626', fontWeight: '700', fontSize: '10px', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                              ⚠️ Vencido
-                            </div>
-                          ) : (
-                            <div style={{ color: '#D97706', fontWeight: '600', fontSize: '10px', marginTop: '3px' }}>
-                              • Pendiente
-                            </div>
-                          )}
+                          }}>
+                          <div style={{ fontWeight: '700', color: '#1E293B', fontSize: '12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ev.prestamista}</div>
+                          <div style={{ color: '#475569', fontSize: '11px', marginTop: '2px' }}>Cuota #{ev.numero_periodo}: <strong style={{ color: '#0F172A' }}>${Number(ev.monto_sugerido).toLocaleString()}</strong></div>
+                          {ev.pagado ? <div style={{ color: '#16A34A', fontWeight: '700', fontSize: '10px', marginTop: '3px' }}>✓ Abonado</div> : esVencido ? <div style={{ color: '#DC2626', fontWeight: '700', fontSize: '10px', marginTop: '3px' }}>⚠️ Vencido</div> : <div style={{ color: '#D97706', fontWeight: '600', fontSize: '10px', marginTop: '3px' }}>• Pendiente</div>}
                         </div>
                       )
                     })}
                   </div>
-
                 </div>
               )
             })}
           </div>
-
         </div>
 
       </div>
 
-      {/* MODAL NUEVA DEUDA / PRÉSTAMO */}
       {modalNuevo && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={styles.modalBox}>
             <h3 style={{ margin: '0 0 20px 0', color: '#8B1E1E', fontSize: '18px', fontWeight: '700' }}>➕ Registrar credito/prestamo</h3>
             <form onSubmit={handleCrearPrestamo}>
 
-              {/* TIPO DE DEUDA CON AVISO DINÁMICO */}
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Tipo de deuda *</label>
-                <select
-                  style={styles.field}
-                  required
-                  value={formPrestamo.tipo_deuda}
-                  onChange={(e) => setFormPrestamo({ ...formPrestamo, tipo_deuda: e.target.value })}
-                >
+                <select style={styles.field} required value={formPrestamo.tipo_deuda} onChange={(e) => setFormPrestamo({ ...formPrestamo, tipo_deuda: e.target.value })}>
                   <option value="FINANCIEROS">CREDITOS FINANCIEROS</option>
                   <option value="PROVEEDORES">PROVEEDORES</option>
                   <option value="DIVERSOS">CREDITOS DIVERSOS</option>
                 </select>
-
-                {/* MENSAJE EXPLICATIVO SEGÚN LA ELECCIÓN */}
-                <div style={styles.infoBox}>
-                  ℹ {obtenerMensajeTipoDeuda(formPrestamo.tipo_deuda)}
-                </div>
+                <div style={styles.infoBox}>ℹ {obtenerMensajeTipoDeuda(formPrestamo.tipo_deuda)}</div>
               </div>
 
-              {/* ======================================================== */}
-              {/* FORMULARIO ESPECÍFICO PARA PROVEEDORES                   */}
-              {/* ======================================================== */}
               {formPrestamo.tipo_deuda === "PROVEEDORES" ? (
                 <>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                     <div>
                       <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Proveedor / Prestamista *</label>
-                      <input
-                        style={styles.field}
-                        required
-                        placeholder="Ej. Cemento y Cal Veracruz"
-                        value={formPrestamo.prestamista}
-                        onChange={(e) => setFormPrestamo({ ...formPrestamo, prestamista: e.target.value })}
-                      />
+                      <input style={styles.field} required placeholder="Ej. Cemento y Cal Veracruz" value={formPrestamo.prestamista} onChange={(e) => setFormPrestamo({ ...formPrestamo, prestamista: e.target.value })} />
                     </div>
                     <div>
                       <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Número de Nota / Folio</label>
-                      <input
-                        style={styles.field}
-                        placeholder="Ej. A-1049"
-                        value={formPrestamo.numero_nota}
-                        onChange={(e) => setFormPrestamo({ ...formPrestamo, numero_nota: e.target.value })}
-                      />
+                      <input style={styles.field} placeholder="Ej. A-1049" value={formPrestamo.numero_nota} onChange={(e) => setFormPrestamo({ ...formPrestamo, numero_nota: e.target.value })} />
                     </div>
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }}>
                     <div>
                       <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Fecha Recepción *</label>
-                      <input
-                        type="date"
-                        style={styles.field}
-                        required
-                        value={formPrestamo.fecha_recepcion}
-                        onChange={(e) => setFormPrestamo({ ...formPrestamo, fecha_recepcion: e.target.value })}
-                      />
+                      <input type="date" style={styles.field} required value={formPrestamo.fecha_recepcion} onChange={(e) => setFormPrestamo({ ...formPrestamo, fecha_recepcion: e.target.value })} />
                     </div>
                     <div>
-                      <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Fecha Límite Pago *</label>
-                      <input
-                        type="date"
-                        style={styles.field}
-                        required
-                        value={formPrestamo.fecha_primer_pago}
-                        onChange={(e) => setFormPrestamo({ ...formPrestamo, fecha_primer_pago: e.target.value })}
-                      />
+                      <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Días de Crédito *</label>
+                      <input type="number" style={styles.field} required placeholder="Ej. 30" value={diasCredito} onChange={(e) => setDiasCredito(e.target.value)} />
                     </div>
                     <div>
-                      <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Clasificación Pasivo *</label>
-                      <select
-                        style={styles.field}
-                        value={formPrestamo.clasificacion_pasivo}
-                        onChange={(e) => setFormPrestamo({ ...formPrestamo, clasificacion_pasivo: e.target.value })}
-                      >
-                        <option value="CIRCULANTE">Circulante</option>
-                        <option value="FIJO">Fijo</option>
-                      </select>
+                      <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Fecha Límite (Calculada)</label>
+                      <input type="date" style={{ ...styles.field, backgroundColor: '#F8FAFC', fontWeight: 'bold', color: '#8B1E1E' }} readOnly value={formPrestamo.fecha_primer_pago} />
                     </div>
                   </div>
 
-                  {/* SECCIÓN DE SELECCIÓN DE MATERIAS PRIMAS */}
+                  {/* ETIQUETA AUTOMÁTICA DE CLASIFICACIÓN DE PASIVO */}
+                  <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Clasificación detectada:</span>
+                    {esPasivoCirculanteProveedor ? (
+                      <span style={styles.badgeCirculante}>🟢 PASIVO CIRCULANTE (≤ 365 días)</span>
+                    ) : (
+                      <span style={styles.badgeFijo}>🔵 PASIVO FIJO (&gt; 365 días)</span>
+                    )}
+                  </div>
+
+                  {/* SECCIÓN DE MATERIAS PRIMAS */}
                   <div style={{ border: '1px solid #CBD5E1', padding: '16px', borderRadius: '8px', marginBottom: '16px', backgroundColor: '#F8FAFC' }}>
-                    <h4 style={{ margin: '0 0 12px 0', color: '#8B1E1E', fontSize: '15px' }}>📦 Agregar Materiales / Materias Primas</h4>
-                    
-                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr auto', gap: '8px', alignItems: 'end' }}>
-                      <div>
-                        <label style={{ fontSize: '12px', fontWeight: '600', color: '#334155' }}>Material *</label>
-                        <select
-                          style={styles.field}
-                          value={itemSeleccionadoId}
-                          onChange={(e) => handleSelectMateriaPrima(e.target.value)}
-                        >
-                          <option value="">-- Selecciona --</option>
-                          {materiasPrimasCatalogo.map((m) => (
-                            <option key={m.id_materia} value={m.id_materia}>
-                              {m.nombre} ({m.categoria})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label style={{ fontSize: '12px', fontWeight: '600', color: '#334155' }}>Cantidad *</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          style={styles.field}
-                          placeholder="Ej. 50"
-                          value={cantidadItem}
-                          onChange={(e) => setCantidadItem(e.target.value)}
-                        />
-                      </div>
-
-                      <div>
-                        <label style={{ fontSize: '12px', fontWeight: '600', color: '#334155' }}>Unidad Medida *</label>
-                        <select
-                          style={styles.field}
-                          value={unidadItem}
-                          onChange={(e) => setUnidadItem(e.target.value)}
-                        >
-                          <option value="BULTOS">Bultos</option>
-                          <option value="TONELADAS">Toneladas</option>
-                          <option value="PIEZAS">Piezas</option>
-                          <option value="SUPERSACOS">Supersacos</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label style={{ fontSize: '12px', fontWeight: '600', color: '#334155' }}>Precio Unit. ($) *</label>
-                        <input
-                          type="number"
-                          step="0.0001"
-                          style={styles.field}
-                          value={precioItem}
-                          onChange={(e) => setPrecioItem(e.target.value)}
-                        />
-                      </div>
-
-                      <div>
-                        <button
-                          type="button"
-                          onClick={agregarProductoProveedor}
-                          style={{ ...styles.botonAccion, height: '42px', marginTop: '6px' }}
-                        >
-                          ➕
-                        </button>
-                      </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <h4 style={{ margin: 0, color: '#8B1E1E', fontSize: '15px' }}>📦 Materias Primas de la Nota</h4>
+                      <button type="button" onClick={agregarRenglonProveedor} style={{ ...styles.botonAccion, padding: '6px 12px', fontSize: '12px' }}>
+                        ➕ Agregar otro material
+                      </button>
                     </div>
 
-                    {/* TABLA INTERNA DE PRODUCTOS AGREGADOS */}
-                    {productosProveedor.length > 0 && (
-                      <div style={{ marginTop: '16px', maxHeight: '180px', overflowY: 'auto', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '6px' }}>
-                        <table style={{ width: '100%', fontSize: '12px', borderCollapse: 'collapse' }}>
-                          <thead>
-                            <tr style={{ backgroundColor: '#F1F5F9', borderBottom: '1px solid #CBD5E1', textAlign: 'left' }}>
-                              <th style={{ padding: '8px' }}>Material</th>
-                              <th style={{ padding: '8px' }}>Cant. / Unid.</th>
-                              <th style={{ padding: '8px' }}>Precio Unit.</th>
-                              <th style={{ padding: '8px' }}>Subtotal</th>
-                              <th style={{ padding: '8px', textAlign: 'center' }}>Acción</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {productosProveedor.map((prod, pIdx) => (
-                              <tr key={pIdx} style={{ borderBottom: '1px solid #F1F5F9' }}>
-                                <td style={{ padding: '8px', fontWeight: '600' }}>{prod.nombre_material}</td>
-                                <td style={{ padding: '8px' }}>{prod.cantidad} {prod.unidad_medida}</td>
-                                <td style={{ padding: '8px' }}>${Number(prod.precio_unitario).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
-                                <td style={{ padding: '8px', fontWeight: '700', color: '#8B1E1E' }}>${Number(prod.subtotal).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
-                                <td style={{ padding: '8px', textAlign: 'center' }}>
-                                  <button
-                                    type="button"
-                                    onClick={() => eliminarProductoProveedor(pIdx)}
-                                    style={{ border: 'none', background: 'none', color: '#DC2626', cursor: 'pointer', fontWeight: 'bold' }}
-                                  >
-                                    ❌
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {productosProveedor.map((prod, pIdx) => (
+                        <div key={pIdx} style={{ backgroundColor: '#FFFFFF', padding: '12px', borderRadius: '6px', border: '1px solid #E2E8F0' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr auto', gap: '8px', alignItems: 'center' }}>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: '600', color: '#64748B', display: 'block' }}>Material *</label>
+                              <select style={styles.field} value={prod.id_materia} onChange={(e) => handleCambioItemProveedor(pIdx, "id_materia", e.target.value)}>
+                                <option value="">-- Selecciona material --</option>
+                                {materiasPrimasCatalogo.map((m) => (
+                                  <option key={m.id_materia} value={m.id_materia}>{m.nombre} ({m.categoria})</option>
+                                ))}
+                              </select>
+                            </div>
 
-                    {productosProveedor.length > 0 && (
-                      <div style={{ marginTop: '10px', textAlign: 'right', fontSize: '14px', fontWeight: '700', color: '#0F172A' }}>
-                        Deuda Total Nota: <span style={{ color: '#8B1E1E' }}>${totalProveedorCalculado.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
-                      </div>
-                    )}
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: '600', color: '#64748B', display: 'block' }}>Cantidad *</label>
+                              <input type="number" step="0.01" style={styles.field} placeholder="Cantidad" value={prod.cantidad} onChange={(e) => handleCambioItemProveedor(pIdx, "cantidad", e.target.value)} />
+                            </div>
+
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: '600', color: '#64748B', display: 'block' }}>Unidad *</label>
+                              <select style={styles.field} value={prod.unidad_medida} onChange={(e) => handleCambioItemProveedor(pIdx, "unidad_medida", e.target.value)}>
+                                <option value="BULTOS">Bultos</option>
+                                <option value="TONELADAS">Toneladas</option>
+                                <option value="PIEZAS">Piezas</option>
+                                <option value="SUPERSACOS">Supersacos</option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: '600', color: '#64748B', display: 'block' }}>Precio Unit. *</label>
+                              <input type="number" step="0.0001" style={styles.field} placeholder="Precio Unit." value={prod.precio_unitario} onChange={(e) => handleCambioItemProveedor(pIdx, "precio_unitario", e.target.value)} />
+                            </div>
+
+                            <div style={{ textAlign: 'center', paddingTop: '16px' }}>
+                              {productosProveedor.length > 1 && (
+                                <button type="button" onClick={() => eliminarRenglonProveedor(pIdx)} style={{ border: 'none', background: 'none', color: '#DC2626', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' }}>
+                                  ❌
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* INFORMACIÓN VISUAL DE TONELADAS EQUIVALENTES SI ES BULTOS O TONELADAS */}
+                          {prod.unidad_medida === "BULTOS" && Number(prod.cantidad) > 0 && (
+                            <div style={{ marginTop: '8px', fontSize: '12px', color: '#0369A1', backgroundColor: '#E0F2FE', padding: '4px 8px', borderRadius: '4px' }}>
+                              ⚖️ Conversión automática: <strong>{prod.cantidad} bultos</strong> equivalen a <strong>{Number(prod.toneladas_equivalentes).toFixed(4)} toneladas</strong> (división entre 40).
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div style={{ marginTop: '14px', textAlign: 'right', fontSize: '15px', fontWeight: '700', color: '#0F172A' }}>
+                      Deuda Total Nota: <span style={{ color: '#8B1E1E' }}>${totalProveedorCalculado.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                    </div>
                   </div>
                 </>
               ) : (
-                /* ======================================================== */
-                /* FORMULARIO ESTÁNDAR PARA FINANCIEROS Y DIVERSOS          */
-                /* ======================================================== */
                 <>
                   <div style={{ marginBottom: '16px' }}>
                     <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Acreedor / Prestamista / Banco *</label>
-                    <input
-                      style={styles.field}
-                      required
-                      placeholder="Ej. Limon"
-                      value={formPrestamo.prestamista}
-                      onChange={(e) => setFormPrestamo({ ...formPrestamo, prestamista: e.target.value })}
-                    />
+                    <input style={styles.field} required placeholder="Ej. Banco" value={formPrestamo.prestamista} onChange={(e) => setFormPrestamo({ ...formPrestamo, prestamista: e.target.value })} />
                   </div>
 
-                  {/* MÉTODO DE RECEPCIÓN DEL DINERO */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                     <div>
                       <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>¿Cómo ingresó el dinero? *</label>
-                      <select
-                        style={styles.field}
-                        required
-                        value={formPrestamo.cuenta_destino}
-                        onChange={(e) => setFormPrestamo({ ...formPrestamo, cuenta_destino: e.target.value })}
-                      >
+                      <select style={styles.field} required value={formPrestamo.cuenta_destino} onChange={(e) => setFormPrestamo({ ...formPrestamo, cuenta_destino: e.target.value })}>
                         <option value="TRANSFERENCIA">Transferencia</option>
                         <option value="EFECTIVO">Efectivo</option>
                       </select>
@@ -1122,55 +915,25 @@ function CuentasPorPagar() {
                     {formPrestamo.cuenta_destino === "TRANSFERENCIA" && (
                       <div>
                         <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Cuenta bancaria destino</label>
-                        <input
-                          style={styles.field}
-                          placeholder="Ej. Fiscal"
-                          value={formPrestamo.cuenta_bancaria_destino}
-                          onChange={(e) => setFormPrestamo({ ...formPrestamo, cuenta_bancaria_destino: e.target.value })}
-                        />
+                        <input style={styles.field} placeholder="Ej. Fiscal" value={formPrestamo.cuenta_bancaria_destino} onChange={(e) => setFormPrestamo({ ...formPrestamo, cuenta_bancaria_destino: e.target.value })} />
                       </div>
                     )}
                   </div>
 
-                  {/* CAMPOS FINANCIEROS CON CÁLCULOS */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }}>
                     <div>
                       <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Monto recibido ($) *</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        style={styles.field}
-                        required
-                        placeholder="Ej. 10.00"
-                        value={formPrestamo.monto_original}
-                        onChange={(e) => setFormPrestamo({ ...formPrestamo, monto_original: e.target.value })}
-                      />
+                      <input type="number" step="0.01" style={styles.field} required placeholder="Ej. 10.00" value={formPrestamo.monto_original} onChange={(e) => setFormPrestamo({ ...formPrestamo, monto_original: e.target.value })} />
                     </div>
 
                     <div>
                       <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Cuota fija / abono ($) *</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        style={styles.field}
-                        required
-                        placeholder="Ej. 1.30"
-                        value={formPrestamo.monto_cuota_sugerida}
-                        onChange={(e) => setFormPrestamo({ ...formPrestamo, monto_cuota_sugerida: e.target.value })}
-                      />
+                      <input type="number" step="0.01" style={styles.field} required placeholder="Ej. 1.30" value={formPrestamo.monto_cuota_sugerida} onChange={(e) => setFormPrestamo({ ...formPrestamo, monto_cuota_sugerida: e.target.value })} />
                     </div>
 
                     <div>
                       <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>N° de mensualidades *</label>
-                      <input
-                        type="number"
-                        style={styles.field}
-                        required
-                        placeholder="Ej. 10"
-                        value={formPrestamo.plazos_meses}
-                        onChange={(e) => setFormPrestamo({ ...formPrestamo, plazos_meses: e.target.value })}
-                      />
-                      {/* BADGE DINÁMICO SEGÚN PLAZO */}
+                      <input type="number" style={styles.field} required placeholder="Ej. 10" value={formPrestamo.plazos_meses} onChange={(e) => setFormPrestamo({ ...formPrestamo, plazos_meses: e.target.value })} />
                       {formPrestamo.plazos_meses !== "" && (
                         <div style={{ marginTop: '6px' }}>
                           {Number(formPrestamo.plazos_meses) <= 12 ? (
@@ -1183,34 +946,10 @@ function CuentasPorPagar() {
                     </div>
                   </div>
 
-                  {/* RESUMEN DE CÁLCULO Y VALIDACIÓN DINÁMICA */}
                   {montoOriginalNum > 0 && montoCuotaNum > 0 && plazosMesesNum > 0 && (
-                    <div style={{
-                      backgroundColor: montoTotalPagarFinanciero >= montoOriginalNum ? '#F0FDF4' : '#FEF2F2',
-                      borderLeft: `4px solid ${montoTotalPagarFinanciero >= montoOriginalNum ? '#16A34A' : '#DC2626'}`,
-                      color: montoTotalPagarFinanciero >= montoOriginalNum ? '#166534' : '#991B1B',
-                      padding: '12px',
-                      borderRadius: '6px',
-                      fontSize: '13px',
-                      marginBottom: '16px',
-                      lineHeight: '1.5'
-                    }}>
-                      <div>
-                        El monto que te prestaron es de <strong>${montoOriginalNum.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</strong>.
-                      </div>
-                      <div>
-                        El monto que tienes que pagar en total es de <strong>${montoTotalPagarFinanciero.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</strong> ({plazosMesesNum} pagos de${montoCuotaNum.toLocaleString('es-MX', { minimumFractionDigits: 2 })}).
-                      </div>
-                      {interesGenerado > 0 && (
-                        <div style={{ fontSize: '12px', marginTop: '4px', fontWeight: '600' }}>
-                          Interés/Costo total del financiamiento: ${interesGenerado.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                        </div>
-                      )}
-                      {montoTotalPagarFinanciero < montoOriginalNum && (
-                        <div style={{ fontSize: '12px', marginTop: '4px', fontWeight: '700', color: '#DC2626' }}>
-                          ⚠️ La deuda total a pagar no puede ser menor al monto prestado.
-                        </div>
-                      )}
+                    <div style={{ backgroundColor: montoTotalPagarFinanciero >= montoOriginalNum ? '#F0FDF4' : '#FEF2F2', borderLeft: `4px solid ${montoTotalPagarFinanciero >= montoOriginalNum ? '#16A34A' : '#DC2626'}`, color: montoTotalPagarFinanciero >= montoOriginalNum ? '#166534' : '#991B1B', padding: '12px', borderRadius: '6px', fontSize: '13px', marginBottom: '16px', lineHeight: '1.5' }}>
+                      <div>El monto que te prestaron es de <strong>${montoOriginalNum.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</strong>.</div>
+                      <div>El monto total a pagar es de <strong>${montoTotalPagarFinanciero.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</strong> ({plazosMesesNum} pagos de ${montoCuotaNum.toLocaleString('es-MX', { minimumFractionDigits: 2 })}).</div>
                     </div>
                   )}
                 </>
@@ -1219,37 +958,18 @@ function CuentasPorPagar() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
                 <div>
                   <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Selecciona un color</label>
-                  <input
-                    type="color"
-                    style={{ width: '100%', height: '42px', padding: '4px', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '6px', cursor: 'pointer', backgroundColor: '#FFFFFF' }}
-                    value={formPrestamo.color_identificador}
-                    onChange={(e) => setFormPrestamo({ ...formPrestamo, color_identificador: e.target.value })}
-                  />
+                  <input type="color" style={{ width: '100%', height: '42px', padding: '4px', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '6px', cursor: 'pointer', backgroundColor: '#FFFFFF' }} value={formPrestamo.color_identificador} onChange={(e) => setFormPrestamo({ ...formPrestamo, color_identificador: e.target.value })} />
                 </div>
                 {formPrestamo.tipo_deuda !== "PROVEEDORES" && (
                   <div>
                     <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Fecha del primer pago</label>
-                    <input
-                      type="date"
-                      style={styles.field}
-                      value={formPrestamo.fecha_primer_pago}
-                      onChange={(e) => setFormPrestamo({ ...formPrestamo, fecha_primer_pago: e.target.value })}
-                    />
+                    <input type="date" style={styles.field} value={formPrestamo.fecha_primer_pago} onChange={(e) => setFormPrestamo({ ...formPrestamo, fecha_primer_pago: e.target.value })} />
                   </div>
                 )}
               </div>
 
               <div style={{ display: 'flex', gap: '12px' }}>
-                <button
-                  type="submit"
-                  disabled={!esValidoGuardar}
-                  style={{
-                    ...styles.botonAccion,
-                    flex: 1,
-                    opacity: esValidoGuardar ? 1 : 0.5,
-                    cursor: esValidoGuardar ? 'pointer' : 'not-allowed'
-                  }}
-                >
+                <button type="submit" disabled={!esValidoGuardar} style={{ ...styles.botonAccion, flex: 1, opacity: esValidoGuardar ? 1 : 0.5, cursor: esValidoGuardar ? 'pointer' : 'not-allowed' }}>
                   Guardar
                 </button>
                 <button type="button" style={{ ...styles.botonOutlined, backgroundColor: '#F1F5F9', borderColor: '#CBD5E1', color: '#475569' }} onClick={() => setModalNuevo(false)}>
@@ -1261,42 +981,22 @@ function CuentasPorPagar() {
         </div>
       )}
 
-      {/* MODAL ABONO */}
       {modalAbono && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={styles.modalBox}>
             <h3 style={{ margin: '0 0 8px 0', color: '#8B1E1E', fontSize: '18px', fontWeight: '700' }}>💲 Registrar Abono</h3>
             <p style={{ fontSize: '14px', color: '#64748B', margin: '0 0 12px 0' }}>Acreedor: <strong style={{ color: '#0F172A' }}>{modalAbono.prestamista}</strong></p>
 
-            {eventos.find(ev => ev.id_prestamo === modalAbono.id_prestamo && ev.numero_periodo === modalAbono.numero_periodo)?.pagado && (
-              <div style={{ backgroundColor: '#FEF3C7', border: '1px solid #F59E0B', color: '#B45309', padding: '8px 12px', borderRadius: '6px', fontSize: '12px', marginBottom: '16px', fontWeight: '600' }}>
-                ℹ️ Esta cuota ya cuenta con un pago registrado. El importe ingresado se sumará como un abono adicional.
-              </div>
-            )}
-
             <form onSubmit={handleRegistrarAbono}>
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Monto ($ MXN) *</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  style={styles.field}
-                  required
-                  value={formAbono.monto_abonado}
-                  onChange={(e) => setFormAbono({ ...formAbono, monto_abonado: e.target.value })}
-                />
+                <input type="number" step="0.01" style={styles.field} required value={formAbono.monto_abonado} onChange={(e) => setFormAbono({ ...formAbono, monto_abonado: e.target.value })} />
               </div>
 
-              {/* ORIGEN DEL PAGO Y CUENTA DE SALIDA */}
               <div style={{ display: 'grid', gridTemplateColumns: formAbono.origen_pago === 'TRANSFERENCIA' ? '1fr 1fr' : '1fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
                   <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Método de pago *</label>
-                  <select
-                    style={styles.field}
-                    required
-                    value={formAbono.origen_pago}
-                    onChange={(e) => setFormAbono({ ...formAbono, origen_pago: e.target.value })}
-                  >
+                  <select style={styles.field} required value={formAbono.origen_pago} onChange={(e) => setFormAbono({ ...formAbono, origen_pago: e.target.value })}>
                     <option value="EFECTIVO">Efectivo</option>
                     <option value="TRANSFERENCIA">Transferencia</option>
                   </select>
@@ -1305,108 +1005,55 @@ function CuentasPorPagar() {
                 {formAbono.origen_pago === "TRANSFERENCIA" && (
                   <div>
                     <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>¿Desde qué cuenta? *</label>
-                    <input
-                      style={styles.field}
-                      required
-                      placeholder="Ej. Banamex / Fiscal"
-                      value={formAbono.cuenta_bancaria_salida}
-                      onChange={(e) => setFormAbono({ ...formAbono, cuenta_bancaria_salida: e.target.value })}
-                    />
+                    <input style={styles.field} required placeholder="Ej. Banamex / Fiscal" value={formAbono.cuenta_bancaria_salida} onChange={(e) => setFormAbono({ ...formAbono, cuenta_bancaria_salida: e.target.value })} />
                   </div>
                 )}
               </div>
 
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Persona que realizó el pago *</label>
-                <input
-                  style={styles.field}
-                  required
-                  placeholder="Nombre completo"
-                  value={formAbono.responsable_pago}
-                  onChange={(e) => setFormAbono({ ...formAbono, responsable_pago: e.target.value })}
-                />
+                <input style={styles.field} required placeholder="Nombre completo" value={formAbono.responsable_pago} onChange={(e) => setFormAbono({ ...formAbono, responsable_pago: e.target.value })} />
               </div>
 
-              {/* DOBLE FECHA DE ABONO (REAL VS REGISTRO) */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
                 <div>
                   <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Fecha real del pago *</label>
-                  <input
-                    type="date"
-                    style={styles.field}
-                    required
-                    value={formAbono.fecha_real_pago}
-                    onChange={(e) => setFormAbono({ ...formAbono, fecha_real_pago: e.target.value })}
-                  />
+                  <input type="date" style={styles.field} required value={formAbono.fecha_real_pago} onChange={(e) => setFormAbono({ ...formAbono, fecha_real_pago: e.target.value })} />
                 </div>
                 <div>
                   <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Fecha de registro</label>
-                  <input
-                    type="date"
-                    style={styles.field}
-                    value={formAbono.fecha_abono}
-                    onChange={(e) => setFormAbono({ ...formAbono, fecha_abono: e.target.value })}
-                  />
+                  <input type="date" style={styles.field} value={formAbono.fecha_abono} onChange={(e) => setFormAbono({ ...formAbono, fecha_abono: e.target.value })} />
                 </div>
               </div>
 
               <div style={{ display: 'flex', gap: '12px' }}>
-                <button type="submit" style={{ ...styles.botonAccion, flex: 1 }}>
-                  Confirmar pago
-                </button>
-                <button type="button" style={{ ...styles.botonOutlined, backgroundColor: '#F1F5F9', borderColor: '#CBD5E1', color: '#475569' }} onClick={() => setModalAbono(null)}>
-                  Cancelar
-                </button>
+                <button type="submit" style={{ ...styles.botonAccion, flex: 1 }}>Confirmar pago</button>
+                <button type="button" style={{ ...styles.botonOutlined, backgroundColor: '#F1F5F9', borderColor: '#CBD5E1', color: '#475569' }} onClick={() => setModalAbono(null)}>Cancelar</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* MODAL ADVERTENCIA DE SOBREPAGO */}
       {modalSobrepago && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
           <div style={{ ...styles.modalBox, borderLeft: '6px solid #D97706' }}>
-            <h3 style={{ margin: '0 0 12px 0', color: '#B45309', fontSize: '18px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              ⚠️ Confirmación de sobrepago
-            </h3>
-            
-            <p style={{ fontSize: '14px', color: '#334155', lineHeight: '1.5', marginBottom: '16px' }}>
-              El monto ingresado (<strong>${Number(modalSobrepago.monto_ingresado).toLocaleString()}</strong>) excede la cuota esperada (<strong>${Number(modalSobrepago.cuota_esperada).toLocaleString()}</strong>) o el saldo restante del préstamo (<strong>${Number(modalSobrepago.saldo_pendiente).toLocaleString()}</strong>).
-            </p>
-
-            <div style={{ backgroundColor: '#FEF3C7', border: '1px solid #FCD34D', color: '#92400E', padding: '12px', borderRadius: '6px', fontSize: '13px', marginBottom: '20px', lineHeight: '1.4' }}>
-              Si confirmas esta operación, el saldo sobrante cubrirá automáticamente las cuotas posteriores en el calendario.
-            </div>
-
+            <h3 style={{ margin: '0 0 12px 0', color: '#B45309', fontSize: '18px', fontWeight: '700' }}>⚠️ Confirmación de sobrepago</h3>
+            <p style={{ fontSize: '14px', color: '#334155', lineHeight: '1.5', marginBottom: '16px' }}>El monto ingresado excede la cuota esperada o el saldo restante.</p>
             <div style={{ display: 'flex', gap: '12px' }}>
-              <button
-                type="button"
-                style={{ ...styles.botonAccion, backgroundColor: '#D97706', flex: 1 }}
-                onClick={handleConfirmarSobrepago}
-              >
-                Sí, confirmar sobrepago
-              </button>
-              <button
-                type="button"
-                style={{ ...styles.botonOutlined, backgroundColor: '#F1F5F9', borderColor: '#CBD5E1', color: '#475569' }}
-                onClick={() => setModalSobrepago(null)}
-              >
-                Cancelar
-              </button>
+              <button type="button" style={{ ...styles.botonAccion, backgroundColor: '#D97706', flex: 1 }} onClick={handleConfirmarSobrepago}>Sí, confirmar sobrepago</button>
+              <button type="button" style={{ ...styles.botonOutlined, backgroundColor: '#F1F5F9', borderColor: '#CBD5E1', color: '#475569' }} onClick={() => setModalSobrepago(null)}>Cancelar</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL HISTORIAL */}
       {modalHistorial && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={styles.modalBox}>
             <h3 style={{ margin: '0 0 20px 0', color: '#8B1E1E', fontSize: '18px', fontWeight: '700' }}>📋 Historial de Abonos</h3>
-            
             {historialAbonos.length === 0 ? (
-              <p style={{ fontSize: '14px', color: '#64748B', margin: '20px 0' }}>Sin pagos registrados para esta deuda.</p>
+              <p style={{ fontSize: '14px', color: '#64748B', margin: '20px 0' }}>Sin pagos registrados.</p>
             ) : (
               <div style={{ maxHeight: '280px', overflowY: 'auto', border: '1px solid #E2E8F0', borderRadius: '6px', marginBottom: '20px' }}>
                 <table style={{ width: '100%', fontSize: '13px', borderCollapse: 'collapse' }}>
@@ -1429,10 +1076,7 @@ function CuentasPorPagar() {
                 </table>
               </div>
             )}
-
-            <button style={{ ...styles.botonAccion, width: '100%' }} onClick={() => setModalHistorial(null)}>
-              Cerrar
-            </button>
+            <button style={{ ...styles.botonAccion, width: '100%' }} onClick={() => setModalHistorial(null)}>Cerrar</button>
           </div>
         </div>
       )}
