@@ -555,11 +555,11 @@ function CuentasPorPagar() {
   const obtenerMensajeTipoDeuda = (tipo) => {
     switch (tipo) {
       case "PROVEEDORES":
-        return "Haz seleccionado proveedores: Crédito directo de materia prima. La fecha límite y clasificación de pasivo se calculan y validan de forma automática."
+        return "Haz seleccionado proveedores: Crédito directo de materia prima."
       case "FINANCIEROS":
         return "Haz seleccionado créditos financieros: Otorgados por instituciones bancarias."
       case "DIVERSOS":
-        return "Haz seleccionado créditos diversos: Acreedores varios o préstamos de terceros."
+        return "Haz seleccionado créditos diversos: Hace enfasis a las unidades."
       default:
         return ""
     }
