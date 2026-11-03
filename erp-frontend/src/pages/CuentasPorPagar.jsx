@@ -254,17 +254,17 @@ function CuentasPorPagar() {
     cuenta_bancaria_destino: "Fiscal"
   })
 
+  // Único campo de fecha de abono ingresado por el usuario (fecha en que dio el pago)
   const [formAbono, setFormAbono] = useState({
     monto_abonado: "",
     origen_pago: "EFECTIVO",
     cuenta_bancaria_salida: "",
     responsable_pago: "",
     num_comprobante: "",
-    fecha_abono: new Date().toISOString().split('T')[0],
-    fecha_real_pago: new Date().toISOString().split('T')[0]
+    fecha_abono: new Date().toISOString().split('T')[0]
   })
 
-  // CÁLCULO AUTOMÁTICO DE FECHA LÍMITE DE PAGO (Visible y de solo lectura para validación)
+  // CÁLCULO AUTOMÁTICO DE FECHA LÍMITE DE PAGO
   useEffect(() => {
     if (formPrestamo.fecha_recepcion && diasCredito !== "") {
       const fechaRec = new Date(formPrestamo.fecha_recepcion + "T00:00:00")
@@ -274,10 +274,8 @@ function CuentasPorPagar() {
     }
   }, [formPrestamo.fecha_recepcion, diasCredito])
 
-  // DETERMINACIÓN AUTOMÁTICA DE PASIVO CIRCULANTE O FIJO (<= 365 días = Circulante, > 365 días = Fijo)
   const esPasivoCirculanteProveedor = Number(diasCredito || 0) <= 365
 
-  // CÁLCULOS DINÁMICOS PARA FORMULARIO PRÉSTAMO FINANCIERO
   const montoOriginalNum = Number(formPrestamo.monto_original) || 0
   const montoCuotaNum = Number(formPrestamo.monto_cuota_sugerida) || 0
   const plazosMesesNum = Number(formPrestamo.plazos_meses) || 0
@@ -285,14 +283,12 @@ function CuentasPorPagar() {
   const montoTotalPagarFinanciero = montoCuotaNum * plazosMesesNum
   const interesGenerado = montoTotalPagarFinanciero - montoOriginalNum
 
-  // Cálculo total para Proveedores
   const totalProveedorCalculado = productosProveedor.reduce((acc, p) => acc + (Number(p.subtotal) || 0), 0)
 
   const esValidoGuardar = formPrestamo.tipo_deuda === "PROVEEDORES" 
     ? (formPrestamo.prestamista.trim() !== "" && productosProveedor.some(p => p.id_materia && Number(p.cantidad) > 0))
     : (montoOriginalNum > 0 && plazosMesesNum > 0 && montoCuotaNum > 0 && montoTotalPagarFinanciero >= montoOriginalNum)
 
-  // Cargar Préstamos y Catálogo de Materias Primas
   const cargarDatos = async () => {
     setCargando(true)
     try {
@@ -319,7 +315,6 @@ function CuentasPorPagar() {
     cargarDatos()
   }, [])
 
-  // Manejar cambios en los renglones de materias primas
   const handleCambioItemProveedor = (index, campo, valor) => {
     const nuevos = [...productosProveedor]
     nuevos[index][campo] = valor
@@ -339,7 +334,6 @@ function CuentasPorPagar() {
     const prec = Number(nuevos[index].precio_unitario) || 0
     nuevos[index].subtotal = cant * prec
 
-    // Cálculo automático de toneladas si elige BULTOS (1 tonelada = 40 bultos)
     if (nuevos[index].unidad_medida === "BULTOS") {
       nuevos[index].toneladas_equivalentes = cant / 40
     } else if (nuevos[index].unidad_medida === "TONELADAS") {
@@ -364,7 +358,6 @@ function CuentasPorPagar() {
     setProductosProveedor(nuevos)
   }
 
-  // Guardar Préstamo
   const handleCrearPrestamo = async (e) => {
     e.preventDefault()
     if (!esValidoGuardar) return
@@ -440,7 +433,6 @@ function CuentasPorPagar() {
     }
   }
 
-  // Registrar Abono
   const ejecutarAbono = async (permitirSobrepago = false) => {
     try {
       const res = await fetch(`${API}/api/prestamos/abono`, {
@@ -470,8 +462,7 @@ function CuentasPorPagar() {
           cuenta_bancaria_salida: "",
           responsable_pago: "",
           num_comprobante: "",
-          fecha_abono: new Date().toISOString().split('T')[0],
-          fecha_real_pago: new Date().toISOString().split('T')[0]
+          fecha_abono: new Date().toISOString().split('T')[0]
         })
         cargarDatos()
       } else {
@@ -819,7 +810,6 @@ function CuentasPorPagar() {
                     </div>
                   </div>
 
-                  {/* ETIQUETA AUTOMÁTICA DE CLASIFICACIÓN DE PASIVO */}
                   <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Clasificación detectada:</span>
                     {esPasivoCirculanteProveedor ? (
@@ -829,7 +819,6 @@ function CuentasPorPagar() {
                     )}
                   </div>
 
-                  {/* SECCIÓN DE MATERIAS PRIMAS */}
                   <div style={{ border: '1px solid #CBD5E1', padding: '16px', borderRadius: '8px', marginBottom: '16px', backgroundColor: '#F8FAFC' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                       <h4 style={{ margin: 0, color: '#8B1E1E', fontSize: '15px' }}>📦 Materias Primas de la Nota</h4>
@@ -881,7 +870,6 @@ function CuentasPorPagar() {
                             </div>
                           </div>
 
-                          {/* INFORMACIÓN VISUAL DE TONELADAS EQUIVALENTES SI ES BULTOS O TONELADAS */}
                           {prod.unidad_medida === "BULTOS" && Number(prod.cantidad) > 0 && (
                             <div style={{ marginTop: '8px', fontSize: '12px', color: '#0369A1', backgroundColor: '#E0F2FE', padding: '4px 8px', borderRadius: '4px' }}>
                               ⚖️ Conversión automática: <strong>{prod.cantidad} bultos</strong> equivalen a <strong>{Number(prod.toneladas_equivalentes).toFixed(4)} toneladas</strong> (división entre 40).
@@ -981,6 +969,7 @@ function CuentasPorPagar() {
         </div>
       )}
 
+      {/* MODAL ABONO (CORREGIDO CON UN SOLO CAMPO DE FECHA DE PAGO) */}
       {modalAbono && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={styles.modalBox}>
@@ -1015,15 +1004,10 @@ function CuentasPorPagar() {
                 <input style={styles.field} required placeholder="Nombre completo" value={formAbono.responsable_pago} onChange={(e) => setFormAbono({ ...formAbono, responsable_pago: e.target.value })} />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
-                <div>
-                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Fecha real del pago *</label>
-                  <input type="date" style={styles.field} required value={formAbono.fecha_real_pago} onChange={(e) => setFormAbono({ ...formAbono, fecha_real_pago: e.target.value })} />
-                </div>
-                <div>
-                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Fecha de registro</label>
-                  <input type="date" style={styles.field} value={formAbono.fecha_abono} onChange={(e) => setFormAbono({ ...formAbono, fecha_abono: e.target.value })} />
-                </div>
+              <div style={{ marginBottom: '24px' }}>
+                <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Fecha de pago *</label>
+                <input type="date" style={styles.field} required value={formAbono.fecha_abono} onChange={(e) => setFormAbono({ ...formAbono, fecha_abono: e.target.value })} />
+                <span style={{ fontSize: '11px', color: '#64748B', display: 'block', marginTop: '4px' }}>Día en que realmente se efectuó el pago (se guarda en fecha_abono).</span>
               </div>
 
               <div style={{ display: 'flex', gap: '12px' }}>
@@ -1067,7 +1051,7 @@ function CuentasPorPagar() {
                   <tbody>
                     {historialAbonos.map((h) => (
                       <tr key={h.id_abono} style={{ borderBottom: '1px solid #F1F5F9' }}>
-                        <td style={{ padding: '10px 12px', color: '#334155' }}>{h.fecha_real_pago || h.fecha_abono}</td>
+                        <td style={{ padding: '10px 12px', color: '#334155' }}>{h.fecha_abono}</td>
                         <td style={{ padding: '10px 12px', fontWeight: '700', color: '#8B1E1E' }}>${Number(h.monto_abonado).toLocaleString()}</td>
                         <td style={{ padding: '10px 12px', color: '#334155' }}>{h.responsable_pago}</td>
                       </tr>
