@@ -775,9 +775,9 @@ function CuentasPorPagar() {
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Tipo de deuda *</label>
                 <select style={styles.field} required value={formPrestamo.tipo_deuda} onChange={(e) => setFormPrestamo({ ...formPrestamo, tipo_deuda: e.target.value })}>
-                  <option value="FINANCIEROS">CREDITOS FINANCIEROS</option>
+                  <option value="FINANCIEROS">FINANCIEROS</option>
                   <option value="PROVEEDORES">PROVEEDORES</option>
-                  <option value="DIVERSOS">CREDITOS DIVERSOS</option>
+                  <option value="DIVERSOS">DIVERSOS</option>
                 </select>
                 <div style={styles.infoBox}>ℹ {obtenerMensajeTipoDeuda(formPrestamo.tipo_deuda)}</div>
               </div>
@@ -787,25 +787,25 @@ function CuentasPorPagar() {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                     <div>
                       <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Proveedor / Prestamista *</label>
-                      <input style={styles.field} required placeholder="Ej. Cemento y Cal Veracruz" value={formPrestamo.prestamista} onChange={(e) => setFormPrestamo({ ...formPrestamo, prestamista: e.target.value })} />
+                      <input style={styles.field} required placeholder="Ej. Limon, Yadesa" value={formPrestamo.prestamista} onChange={(e) => setFormPrestamo({ ...formPrestamo, prestamista: e.target.value })} />
                     </div>
                     <div>
                       <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Número de Nota / Folio</label>
-                      <input style={styles.field} placeholder="Ej. A-1049" value={formPrestamo.numero_nota} onChange={(e) => setFormPrestamo({ ...formPrestamo, numero_nota: e.target.value })} />
+                      <input style={styles.field} placeholder="Ej. A-1049  o 10000003665" value={formPrestamo.numero_nota} onChange={(e) => setFormPrestamo({ ...formPrestamo, numero_nota: e.target.value })} />
                     </div>
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }}>
                     <div>
-                      <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Fecha Recepción *</label>
+                      <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Fecha recepción *</label>
                       <input type="date" style={styles.field} required value={formPrestamo.fecha_recepcion} onChange={(e) => setFormPrestamo({ ...formPrestamo, fecha_recepcion: e.target.value })} />
                     </div>
                     <div>
-                      <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Días de Crédito *</label>
+                      <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Días de crédito *</label>
                       <input type="number" style={styles.field} required placeholder="Ej. 30" value={diasCredito} onChange={(e) => setDiasCredito(e.target.value)} />
                     </div>
                     <div>
-                      <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Fecha Límite (Calculada)</label>
+                      <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Fecha límite (calculada)</label>
                       <input type="date" style={{ ...styles.field, backgroundColor: '#F8FAFC', fontWeight: 'bold', color: '#8B1E1E' }} readOnly value={formPrestamo.fecha_primer_pago} />
                     </div>
                   </div>
@@ -821,7 +821,7 @@ function CuentasPorPagar() {
 
                   <div style={{ border: '1px solid #CBD5E1', padding: '16px', borderRadius: '8px', marginBottom: '16px', backgroundColor: '#F8FAFC' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                      <h4 style={{ margin: 0, color: '#8B1E1E', fontSize: '15px' }}>📦 Materias Primas de la Nota</h4>
+                      <h4 style={{ margin: 0, color: '#8B1E1E', fontSize: '15px' }}>📦 Materias primas de la nota</h4>
                       <button type="button" onClick={agregarRenglonProveedor} style={{ ...styles.botonAccion, padding: '6px 12px', fontSize: '12px' }}>
                         ➕ Agregar otro material
                       </button>
@@ -853,6 +853,7 @@ function CuentasPorPagar() {
                                 <option value="TONELADAS">Toneladas</option>
                                 <option value="PIEZAS">Piezas</option>
                                 <option value="SUPERSACOS">Supersacos</option>
+                                <option value="SUPERSACOS">Kilos</option>
                               </select>
                             </div>
 
@@ -880,7 +881,7 @@ function CuentasPorPagar() {
                     </div>
 
                     <div style={{ marginTop: '14px', textAlign: 'right', fontSize: '15px', fontWeight: '700', color: '#0F172A' }}>
-                      Deuda Total Nota: <span style={{ color: '#8B1E1E' }}>${totalProveedorCalculado.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                      Deuda total nota: <span style={{ color: '#8B1E1E' }}>${totalProveedorCalculado.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
                     </div>
                   </div>
                 </>
@@ -888,7 +889,7 @@ function CuentasPorPagar() {
                 <>
                   <div style={{ marginBottom: '16px' }}>
                     <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Acreedor / Prestamista / Banco *</label>
-                    <input style={styles.field} required placeholder="Ej. Banco" value={formPrestamo.prestamista} onChange={(e) => setFormPrestamo({ ...formPrestamo, prestamista: e.target.value })} />
+                    <input style={styles.field} required placeholder="Ej. BANAMEX, BBVA, BANORTE" value={formPrestamo.prestamista} onChange={(e) => setFormPrestamo({ ...formPrestamo, prestamista: e.target.value })} />
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
@@ -902,7 +903,7 @@ function CuentasPorPagar() {
 
                     {formPrestamo.cuenta_destino === "TRANSFERENCIA" && (
                       <div>
-                        <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Cuenta bancaria destino</label>
+                        <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>¿A que cuenta bancaria ingreso?</label>
                         <input style={styles.field} placeholder="Ej. Fiscal" value={formPrestamo.cuenta_bancaria_destino} onChange={(e) => setFormPrestamo({ ...formPrestamo, cuenta_bancaria_destino: e.target.value })} />
                       </div>
                     )}
@@ -911,17 +912,17 @@ function CuentasPorPagar() {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }}>
                     <div>
                       <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Monto recibido ($) *</label>
-                      <input type="number" step="0.01" style={styles.field} required placeholder="Ej. 10.00" value={formPrestamo.monto_original} onChange={(e) => setFormPrestamo({ ...formPrestamo, monto_original: e.target.value })} />
+                      <input type="number" step="0.01" style={styles.field} required placeholder="Ej. 40,000" value={formPrestamo.monto_original} onChange={(e) => setFormPrestamo({ ...formPrestamo, monto_original: e.target.value })} />
                     </div>
 
                     <div>
                       <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Cuota fija / abono ($) *</label>
-                      <input type="number" step="0.01" style={styles.field} required placeholder="Ej. 1.30" value={formPrestamo.monto_cuota_sugerida} onChange={(e) => setFormPrestamo({ ...formPrestamo, monto_cuota_sugerida: e.target.value })} />
+                      <input type="number" step="0.01" style={styles.field} required placeholder="Ej. 1,000" value={formPrestamo.monto_cuota_sugerida} onChange={(e) => setFormPrestamo({ ...formPrestamo, monto_cuota_sugerida: e.target.value })} />
                     </div>
 
                     <div>
                       <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>N° de mensualidades *</label>
-                      <input type="number" style={styles.field} required placeholder="Ej. 10" value={formPrestamo.plazos_meses} onChange={(e) => setFormPrestamo({ ...formPrestamo, plazos_meses: e.target.value })} />
+                      <input type="number" style={styles.field} required placeholder="Ej. 12" value={formPrestamo.plazos_meses} onChange={(e) => setFormPrestamo({ ...formPrestamo, plazos_meses: e.target.value })} />
                       {formPrestamo.plazos_meses !== "" && (
                         <div style={{ marginTop: '6px' }}>
                           {Number(formPrestamo.plazos_meses) <= 12 ? (
@@ -978,7 +979,7 @@ function CuentasPorPagar() {
 
             <form onSubmit={handleRegistrarAbono}>
               <div style={{ marginBottom: '16px' }}>
-                <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Monto ($ MXN) *</label>
+                <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Monto del abono*</label>
                 <input type="number" step="0.01" style={styles.field} required value={formAbono.monto_abonado} onChange={(e) => setFormAbono({ ...formAbono, monto_abonado: e.target.value })} />
               </div>
 
@@ -994,7 +995,7 @@ function CuentasPorPagar() {
                 {formAbono.origen_pago === "TRANSFERENCIA" && (
                   <div>
                     <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>¿Desde qué cuenta? *</label>
-                    <input style={styles.field} required placeholder="Ej. Banamex / Fiscal" value={formAbono.cuenta_bancaria_salida} onChange={(e) => setFormAbono({ ...formAbono, cuenta_bancaria_salida: e.target.value })} />
+                    <input style={styles.field} required placeholder="Ej. Fiscal" value={formAbono.cuenta_bancaria_salida} onChange={(e) => setFormAbono({ ...formAbono, cuenta_bancaria_salida: e.target.value })} />
                   </div>
                 )}
               </div>
@@ -1005,7 +1006,7 @@ function CuentasPorPagar() {
               </div>
 
               <div style={{ marginBottom: '24px' }}>
-                <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Fecha de pago *</label>
+                <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Fecha en que se realizo el respectivo pago*</label>
                 <input type="date" style={styles.field} required value={formAbono.fecha_abono} onChange={(e) => setFormAbono({ ...formAbono, fecha_abono: e.target.value })} />
                 <span style={{ fontSize: '11px', color: '#64748B', display: 'block', marginTop: '4px' }}>Día en que realmente se efectuó el pago (se guarda en fecha_abono).</span>
               </div>
