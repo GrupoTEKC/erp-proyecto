@@ -247,6 +247,7 @@ function CuentasPorPagar() {
     monto_cuota_sugerida: "",
     plazos_meses: "6",
     frecuencia: "MENSUAL",
+    fecha_creacion_credito: new Date().toISOString().split('T')[0], // Nueva fecha de creación
     fecha_primer_pago: new Date().toISOString().split('T')[0],
     fecha_recepcion: new Date().toISOString().split('T')[0],
     color_identificador: "#8B1E1E",
@@ -264,7 +265,7 @@ function CuentasPorPagar() {
     fecha_abono: new Date().toISOString().split('T')[0]
   })
 
-  // CÁLCULO AUTOMÁTICO DE FECHA LÍMITE DE PAGO
+  // CÁLCULO AUTOMÁTICO DE FECHA LÍTIE DE PAGO (Proveedores)
   useEffect(() => {
     if (formPrestamo.fecha_recepcion && diasCredito !== "") {
       const fechaRec = new Date(formPrestamo.fecha_recepcion + "T00:00:00")
@@ -396,6 +397,7 @@ function CuentasPorPagar() {
             monto_cuota_sugerida: "",
             plazos_meses: "6",
             frecuencia: "MENSUAL",
+            fecha_creacion_credito: new Date().toISOString().split('T')[0],
             fecha_primer_pago: new Date().toISOString().split('T')[0],
             fecha_recepcion: new Date().toISOString().split('T')[0],
             color_identificador: "#8B1E1E",
@@ -412,10 +414,9 @@ function CuentasPorPagar() {
           monto_original: formPrestamo.monto_original,
           plazos_meses: formPrestamo.plazos_meses,
           frecuencia: formPrestamo.frecuencia,
+          fecha_creacion: formPrestamo.fecha_creacion_credito, // Enviando fecha en que se creó el crédito
           fecha_primer_pago: formPrestamo.fecha_primer_pago,
-          color_identificador: formPrestamo.color_identificador,
-          cuenta_destino: formPrestamo.cuenta_destino,
-          cuenta_bancaria_destino: formPrestamo.cuenta_bancaria_destino
+          color_identificador: formPrestamo.color_identificador
         }
 
         const res = await fetch(`${API}/api/prestamos/diversos`, {
@@ -435,6 +436,7 @@ function CuentasPorPagar() {
             monto_cuota_sugerida: "",
             plazos_meses: "6",
             frecuencia: "MENSUAL",
+            fecha_creacion_credito: new Date().toISOString().split('T')[0],
             fecha_primer_pago: new Date().toISOString().split('T')[0],
             fecha_recepcion: new Date().toISOString().split('T')[0],
             color_identificador: "#8B1E1E",
@@ -461,6 +463,7 @@ function CuentasPorPagar() {
             monto_cuota_sugerida: "",
             plazos_meses: "6",
             frecuencia: "MENSUAL",
+            fecha_creacion_credito: new Date().toISOString().split('T')[0],
             fecha_primer_pago: new Date().toISOString().split('T')[0],
             fecha_recepcion: new Date().toISOString().split('T')[0],
             color_identificador: "#8B1E1E",
@@ -936,23 +939,6 @@ function CuentasPorPagar() {
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                     <div>
-                      <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>¿Cómo ingresó el crédito? *</label>
-                      <select style={styles.field} required value={formPrestamo.cuenta_destino} onChange={(e) => setFormPrestamo({ ...formPrestamo, cuenta_destino: e.target.value })}>
-                        <option value="TRANSFERENCIA">Transferencia</option>
-                        <option value="EFECTIVO">Efectivo</option>
-                      </select>
-                    </div>
-
-                    {formPrestamo.cuenta_destino === "TRANSFERENCIA" && (
-                      <div>
-                        <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>¿A qué cuenta bancaria ingresó?</label>
-                        <input style={styles.field} placeholder="Ej. Fiscal" value={formPrestamo.cuenta_bancaria_destino} onChange={(e) => setFormPrestamo({ ...formPrestamo, cuenta_bancaria_destino: e.target.value })} />
-                      </div>
-                    )}
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }}>
-                    <div>
                       <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Monto del crédito inicial ($) *</label>
                       <input type="number" step="0.01" style={styles.field} required placeholder="Ej. 30000" value={formPrestamo.monto_original} onChange={(e) => setFormPrestamo({ ...formPrestamo, monto_original: e.target.value })} />
                     </div>
@@ -970,10 +956,19 @@ function CuentasPorPagar() {
                         </div>
                       )}
                     </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                    <div>
+                      <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Fecha en que se creó el crédito *</label>
+                      <input type="date" style={styles.field} required value={formPrestamo.fecha_creacion_credito} onChange={(e) => setFormPrestamo({ ...formPrestamo, fecha_creacion_credito: e.target.value })} />
+                      <span style={{ fontSize: '11px', color: '#64748B', display: 'block', marginTop: '4px' }}>Día en que se firmó o generó la deuda de la unidad.</span>
+                    </div>
 
                     <div>
                       <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Fecha del primer pago *</label>
                       <input type="date" style={styles.field} required value={formPrestamo.fecha_primer_pago} onChange={(e) => setFormPrestamo({ ...formPrestamo, fecha_primer_pago: e.target.value })} />
+                      <span style={{ fontSize: '11px', color: '#64748B', display: 'block', marginTop: '4px' }}>Día en que corresponderá la primera mensualidad.</span>
                     </div>
                   </div>
 
