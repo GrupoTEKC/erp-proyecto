@@ -604,7 +604,7 @@ function CuentasPorPagar() {
       case "FINANCIEROS":
         return "Haz seleccionado créditos financieros: Otorgados por instituciones bancarias."
       case "DIVERSOS":
-        return "Haz seleccionado créditos diversos: Hace énfasis a las unidades (ej. pago de la Isuzu) con mensualidades y abonos libres acumulativos."
+        return "Haz seleccionado créditos diversos: Hace énfasis a las unidades."
       default:
         return ""
     }
