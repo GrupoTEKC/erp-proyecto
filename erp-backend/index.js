@@ -5306,6 +5306,7 @@ app.get('/api/prestamos', async (req, res) => {
       const cuotaMonto = parseFloat(p.monto_cuota_sugerida || 0);
       let bolsaAbonadaDisponible = parseFloat(p.monto_pagado || 0);
       const esPrestamoLiquidado = p.estatus === 'LIQUIDADO' || parseFloat(p.saldo_pendiente) === 0;
+      const esDiversos = p.tipo_deuda === 'DIVERSOS'; // Identificador para créditos diversos (unidades)
 
       for (let i = 0; i < p.plazos_meses; i++) {
         const fechaEvento = new Date(fechaBase);
@@ -5321,11 +5322,14 @@ app.get('/api/prestamos', async (req, res) => {
           fechaEvento.setMonth(fechaBase.getMonth() + i);
         }
 
-        // Evaluar si esta cuota individual está saldada (ya sea por su registro único, por cobertura de sobrepago acumulado, o préstamo liquidado)
+        // Evaluar si esta cuota individual está saldada
         let estaAbonado = abonosMap.has(`${p.id_prestamo}_${numeroPeriodo}`);
 
         if (!estaAbonado) {
-          if (esPrestamoLiquidado || bolsaAbonadaDisponible >= (numeroPeriodo * cuotaMonto)) {
+          if (esPrestamoLiquidado) {
+            estaAbonado = true;
+          } else if (!esDiversos && cuotaMonto > 0 && bolsaAbonadaDisponible >= (numeroPeriodo * cuotaMonto)) {
+            // La lógica original de bolsa acumulada se mantiene intacta SOLO para Financieros / Proveedores con cuota fija > 0
             estaAbonado = true;
           }
         }
