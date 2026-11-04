@@ -973,7 +973,7 @@ function CuentasPorPagar() {
                   </div>
 
                   <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #CBD5E1', padding: '12px', borderRadius: '6px', fontSize: '13px', color: '#334155', marginBottom: '16px', lineHeight: '1.4' }}>
-                    ℹ️ <strong>Crédito Diverso (Unidades):</strong> El monto inicial sirve como referencia histórica. Podrás ir ingresando abonos libres acumulativos (ej. $10, $12, $30) en cada mensualidad hasta completar el plazo indicado, calculándose el total real automáticamente al finalizar.
+                    ℹ️ <strong>Crédito Diverso (Unidades):</strong> Hace enfasis a las unidades.
                   </div>
                 </>
               ) : (
