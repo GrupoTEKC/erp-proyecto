@@ -285,8 +285,11 @@ function CuentasPorPagar() {
 
   const totalProveedorCalculado = productosProveedor.reduce((acc, p) => acc + (Number(p.subtotal) || 0), 0)
 
+  // Validación para habilitar guardar según el tipo de deuda
   const esValidoGuardar = formPrestamo.tipo_deuda === "PROVEEDORES" 
     ? (formPrestamo.prestamista.trim() !== "" && productosProveedor.some(p => p.id_materia && Number(p.cantidad) > 0))
+    : formPrestamo.tipo_deuda === "DIVERSOS"
+    ? (formPrestamo.prestamista.trim() !== "" && montoOriginalNum > 0 && plazosMesesNum > 0)
     : (montoOriginalNum > 0 && plazosMesesNum > 0 && montoCuotaNum > 0 && montoTotalPagarFinanciero >= montoOriginalNum)
 
   const cargarDatos = async () => {
@@ -402,6 +405,45 @@ function CuentasPorPagar() {
           cargarDatos()
         } else {
           alert(data.error || "Error al registrar préstamo de proveedor.")
+        }
+      } else if (formPrestamo.tipo_deuda === "DIVERSOS") {
+        const bodyData = {
+          prestamista: formPrestamo.prestamista,
+          monto_original: formPrestamo.monto_original,
+          plazos_meses: formPrestamo.plazos_meses,
+          frecuencia: formPrestamo.frecuencia,
+          fecha_primer_pago: formPrestamo.fecha_primer_pago,
+          color_identificador: formPrestamo.color_identificador,
+          cuenta_destino: formPrestamo.cuenta_destino,
+          cuenta_bancaria_destino: formPrestamo.cuenta_bancaria_destino
+        }
+
+        const res = await fetch(`${API}/api/prestamos/diversos`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(bodyData)
+        })
+
+        const data = await res.json()
+        if (res.ok && data.success) {
+          setModalNuevo(false)
+          setFormPrestamo({
+            prestamista: "",
+            tipo_deuda: "FINANCIEROS",
+            numero_nota: "",
+            monto_original: "",
+            monto_cuota_sugerida: "",
+            plazos_meses: "6",
+            frecuencia: "MENSUAL",
+            fecha_primer_pago: new Date().toISOString().split('T')[0],
+            fecha_recepcion: new Date().toISOString().split('T')[0],
+            color_identificador: "#8B1E1E",
+            cuenta_destino: "TRANSFERENCIA",
+            cuenta_bancaria_destino: "Fiscal"
+          })
+          cargarDatos()
+        } else {
+          alert(data.error || "Error al registrar crédito diverso.")
         }
       } else {
         const res = await fetch(`${API}/api/prestamos`, {
@@ -559,7 +601,7 @@ function CuentasPorPagar() {
       case "FINANCIEROS":
         return "Haz seleccionado créditos financieros: Otorgados por instituciones bancarias."
       case "DIVERSOS":
-        return "Haz seleccionado créditos diversos: Hace enfasis a las unidades."
+        return "Haz seleccionado créditos diversos: Hace énfasis a las unidades (ej. pago de la Isuzu) con mensualidades y abonos libres acumulativos."
       default:
         return ""
     }
@@ -791,7 +833,7 @@ function CuentasPorPagar() {
                     </div>
                     <div>
                       <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Número de Nota / Folio</label>
-                      <input style={styles.field} placeholder="Ej. A-1049  o 10000003665" value={formPrestamo.numero_nota} onChange={(e) => setFormPrestamo({ ...formPrestamo, numero_nota: e.target.value })} />
+                      <input style={styles.field} placeholder="Ej. A-1049 o 10000003665" value={formPrestamo.numero_nota} onChange={(e) => setFormPrestamo({ ...formPrestamo, numero_nota: e.target.value })} />
                     </div>
                   </div>
 
@@ -853,7 +895,7 @@ function CuentasPorPagar() {
                                 <option value="TONELADAS">Toneladas</option>
                                 <option value="PIEZAS">Piezas</option>
                                 <option value="SUPERSACOS">Supersacos</option>
-                                <option value="SUPERSACOS">Kilos</option>
+                                <option value="KILOS">Kilos</option>
                               </select>
                             </div>
 
@@ -885,6 +927,60 @@ function CuentasPorPagar() {
                     </div>
                   </div>
                 </>
+              ) : formPrestamo.tipo_deuda === "DIVERSOS" ? (
+                <>
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Nombre del préstamo / Concepto de unidad *</label>
+                    <input style={styles.field} required placeholder="Ej. PAGO DE LA ISUZU" value={formPrestamo.prestamista} onChange={(e) => setFormPrestamo({ ...formPrestamo, prestamista: e.target.value })} />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                    <div>
+                      <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>¿Cómo ingresó el crédito? *</label>
+                      <select style={styles.field} required value={formPrestamo.cuenta_destino} onChange={(e) => setFormPrestamo({ ...formPrestamo, cuenta_destino: e.target.value })}>
+                        <option value="TRANSFERENCIA">Transferencia</option>
+                        <option value="EFECTIVO">Efectivo</option>
+                      </select>
+                    </div>
+
+                    {formPrestamo.cuenta_destino === "TRANSFERENCIA" && (
+                      <div>
+                        <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>¿A qué cuenta bancaria ingresó?</label>
+                        <input style={styles.field} placeholder="Ej. Fiscal" value={formPrestamo.cuenta_bancaria_destino} onChange={(e) => setFormPrestamo({ ...formPrestamo, cuenta_bancaria_destino: e.target.value })} />
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                    <div>
+                      <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Monto del crédito inicial ($) *</label>
+                      <input type="number" step="0.01" style={styles.field} required placeholder="Ej. 30000" value={formPrestamo.monto_original} onChange={(e) => setFormPrestamo({ ...formPrestamo, monto_original: e.target.value })} />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>N° de mensualidades / Plazos *</label>
+                      <input type="number" style={styles.field} required placeholder="Ej. 12" value={formPrestamo.plazos_meses} onChange={(e) => setFormPrestamo({ ...formPrestamo, plazos_meses: e.target.value })} />
+                      {formPrestamo.plazos_meses !== "" && (
+                        <div style={{ marginTop: '6px' }}>
+                          {Number(formPrestamo.plazos_meses) <= 12 ? (
+                            <span style={styles.badgeCirculante}>🟢 Pasivo circulante</span>
+                          ) : (
+                            <span style={styles.badgeFijo}>🔵 Pasivo fijo</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Fecha del primer pago *</label>
+                      <input type="date" style={styles.field} required value={formPrestamo.fecha_primer_pago} onChange={(e) => setFormPrestamo({ ...formPrestamo, fecha_primer_pago: e.target.value })} />
+                    </div>
+                  </div>
+
+                  <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #CBD5E1', padding: '12px', borderRadius: '6px', fontSize: '13px', color: '#334155', marginBottom: '16px', lineHeight: '1.4' }}>
+                    ℹ️ <strong>Crédito Diverso (Unidades):</strong> El monto inicial sirve como referencia histórica. Podrás ir ingresando abonos libres acumulativos (ej. $10, $12, $30) en cada mensualidad hasta completar el plazo indicado, calculándose el total real automáticamente al finalizar.
+                  </div>
+                </>
               ) : (
                 <>
                   <div style={{ marginBottom: '16px' }}>
@@ -903,7 +999,7 @@ function CuentasPorPagar() {
 
                     {formPrestamo.cuenta_destino === "TRANSFERENCIA" && (
                       <div>
-                        <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>¿A que cuenta bancaria ingreso?</label>
+                        <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>¿A qué cuenta bancaria ingresó?</label>
                         <input style={styles.field} placeholder="Ej. Fiscal" value={formPrestamo.cuenta_bancaria_destino} onChange={(e) => setFormPrestamo({ ...formPrestamo, cuenta_bancaria_destino: e.target.value })} />
                       </div>
                     )}
@@ -949,7 +1045,7 @@ function CuentasPorPagar() {
                   <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Selecciona un color</label>
                   <input type="color" style={{ width: '100%', height: '42px', padding: '4px', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '6px', cursor: 'pointer', backgroundColor: '#FFFFFF' }} value={formPrestamo.color_identificador} onChange={(e) => setFormPrestamo({ ...formPrestamo, color_identificador: e.target.value })} />
                 </div>
-                {formPrestamo.tipo_deuda !== "PROVEEDORES" && (
+                {formPrestamo.tipo_deuda !== "PROVEEDORES" && formPrestamo.tipo_deuda !== "DIVERSOS" && (
                   <div>
                     <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Fecha del primer pago</label>
                     <input type="date" style={styles.field} value={formPrestamo.fecha_primer_pago} onChange={(e) => setFormPrestamo({ ...formPrestamo, fecha_primer_pago: e.target.value })} />
@@ -970,7 +1066,7 @@ function CuentasPorPagar() {
         </div>
       )}
 
-      {/* MODAL ABONO (CORREGIDO CON UN SOLO CAMPO DE FECHA DE PAGO) */}
+      {/* MODAL ABONO */}
       {modalAbono && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={styles.modalBox}>
@@ -979,7 +1075,7 @@ function CuentasPorPagar() {
 
             <form onSubmit={handleRegistrarAbono}>
               <div style={{ marginBottom: '16px' }}>
-                <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Monto del abono*</label>
+                <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Monto del abono *</label>
                 <input type="number" step="0.01" style={styles.field} required value={formAbono.monto_abonado} onChange={(e) => setFormAbono({ ...formAbono, monto_abonado: e.target.value })} />
               </div>
 
@@ -1006,7 +1102,7 @@ function CuentasPorPagar() {
               </div>
 
               <div style={{ marginBottom: '24px' }}>
-                <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Fecha en que se realizo el respectivo pago*</label>
+                <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Fecha en que se realizó el respectivo pago *</label>
                 <input type="date" style={styles.field} required value={formAbono.fecha_abono} onChange={(e) => setFormAbono({ ...formAbono, fecha_abono: e.target.value })} />
                 <span style={{ fontSize: '11px', color: '#64748B', display: 'block', marginTop: '4px' }}>Día en que realmente se efectuó el pago (se guarda en fecha_abono).</span>
               </div>
