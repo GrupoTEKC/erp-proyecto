@@ -2352,6 +2352,85 @@ app.post('/api/prestamos/proveedores', async (req, res) => {
 });
 
 
+app.post('/api/prestamos/diversos', async (req, res) => {
+    const connection = await db.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        const {
+            prestamista,          // Concepto o nombre del préstamo (Ej. "Pago de la Isuzu")
+            monto_original,       // Monto inicial de referencia / historial
+            plazos_meses,         // Número de mensualidades (ej. 12)
+            frecuencia = 'MENSUAL',
+            fecha_primer_pago,    // Fecha de inicio de los pagos
+            color_identificador = '#ffc107',
+            cuenta_destino = 'TRANSFERENCIA',
+            cuenta_bancaria_destino
+        } = req.body;
+
+        if (!prestamista || !monto_original || !plazos_meses || !fecha_primer_pago) {
+            return res.status(400).json({ success: false, error: 'Faltan datos obligatorios para el crédito diverso.' });
+        }
+
+        const montoOriginalNum = Number(monto_original) || 0;
+        const plazosNum = Number(plazos_meses) || 0;
+
+        // Regla de clasificación de pasivo automática (<= 12 meses = Circulante, > 12 meses = Fijo)
+        const clasificacion_pasivo = plazosNum <= 12 ? 'CIRCULANTE' : 'FIJO';
+
+        // Para créditos diversos, el saldo pendiente y monto total a pagar arrancan 
+        // con el monto original de referencia, e irán cambiando conforme se registren abonos libres.
+        const query = `
+            INSERT INTO prestamos (
+                prestamista, 
+                tipo_deuda, 
+                clasificacion_pasivo, 
+                monto_original, 
+                monto_total_pagar, 
+                saldo_pendiente, 
+                plazos_meses, 
+                frecuencia, 
+                monto_cuota_sugerida, 
+                fecha_primer_pago, 
+                color_identificador, 
+                cuenta_destino, 
+                cuenta_bancaria_destino,
+                estatus
+            ) VALUES (?, 'DIVERSOS', ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, 'ACTIVO')
+        `;
+
+        const [result] = await connection.query(query, [
+            prestamista.trim().toUpperCase(),
+            clasificacion_pasivo,
+            montoOriginalNum,
+            montoOriginalNum, // Monto total a pagar inicial (se actualizará con los abonos acumulados)
+            montoOriginalNum, // Saldo pendiente inicial
+            plazosNum,
+            frecuencia,
+            fecha_primer_pago,
+            color_identificador,
+            cuenta_destino,
+            cuenta_bancaria_destino || null
+        ]);
+
+        await connection.commit();
+        connection.release();
+
+        res.status(201).json({ 
+            success: true, 
+            message: 'Crédito diverso registrado exitosamente.', 
+            id_prestamo: result.insertId 
+        });
+
+    } catch (error) {
+        await connection.rollback();
+        if (connection) connection.release();
+        console.error('Error al registrar crédito diverso:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+
 // =============================
 // CHOFERES
 // =============================
