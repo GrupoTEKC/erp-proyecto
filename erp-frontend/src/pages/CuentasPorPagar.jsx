@@ -323,7 +323,6 @@ function CuentasPorPagar() {
   const handleCambioProveedor = (e) => {
     const proveedorSeleccionado = e.target.value
     setFormPrestamo(prev => ({ ...prev, prestamista: proveedorSeleccionado }))
-    // Reiniciar los productos al cambiar de proveedor
     setProductosProveedor([
       { id_materia: "", nombre_material: "", unidad_medida: "TONELADA", cantidad: "", toneladas_equivalentes: 0, precio_unitario: "", subtotal: 0 }
     ])
@@ -898,7 +897,6 @@ function CuentasPorPagar() {
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       {productosProveedor.map((prod, pIdx) => {
-                        // Filtrar el catálogo de materias primas según el proveedor seleccionado
                         const materialesFiltrados = materiasPrimasCatalogo.filter(m => m.proveedor === formPrestamo.prestamista)
 
                         return (
@@ -926,7 +924,7 @@ function CuentasPorPagar() {
 
                               <div>
                                 <label style={{ fontSize: '11px', fontWeight: '600', color: '#64748B', display: 'block' }}>Precio Unit. *</label>
-                                <input type="number" step="0.0001" style={{ ...styles.field, backgroundColor: '#F1F5F9', fontWeight: 'bold' }} readOnly placeholder="Precio Unit." value={prod.precio_unitario} />
+                                <input type="number" step="0.0001" style={{ ...styles.field, backgroundColor: '#FFFBEB', fontWeight: 'bold', borderColor: '#F59E0B' }} placeholder="Precio Unit." value={prod.precio_unitario} onChange={(e) => handleCambioItemProveedor(pIdx, "precio_unitario", e.target.value)} />
                               </div>
 
                               <div style={{ textAlign: 'center', paddingTop: '16px' }}>
