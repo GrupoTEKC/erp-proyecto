@@ -2263,43 +2263,37 @@ app.post('/api/prestamos/proveedores', async (req, res) => {
             montoTotal += Number(p.subtotal) || 0;
         });
 
+        // Insertar en la tabla principal de prestamos
+        const insertPrestamoQuery = `
+            INSERT INTO prestamos (
+                prestamista, 
+                tipo_deuda, 
+                numero_nota, 
+                clasificacion_pasivo, 
+                monto_original, 
+                monto_total_pagar, 
+                saldo_pendiente, 
+                plazos_meses, 
+                frecuencia, 
+                monto_cuota_sugerida, 
+                fecha_primer_pago, 
+                color_identificador, 
+                cuenta_destino, 
+                estatus
+            ) VALUES (?, 'PROVEEDORES', ?, ?, ?, ?, ?, 1, 'MENSUAL', ?, ?, '#28a745', 'TRANSFERENCIA', 'ACTIVO')
+        `;
 
+        const [resultPrestamo] = await connection.query(insertPrestamoQuery, [
+            prestamista,
+            numero_nota || null,
+            clasificacion_pasivo || 'CIRCULANTE',
+            montoTotal,
+            montoTotal,
+            montoTotal, // Saldo pendiente inicia igual al total
+            montoTotal,
+            fecha_limite_pago,
+        ]);
 
-      // En tu consulta SQL de inserción agregas fecha_recepcion:
-const insertPrestamoQuery = `
-    INSERT INTO prestamos (
-        prestamista, 
-        tipo_deuda, 
-        numero_nota, 
-        fecha_recepcion,        -- <--- Columna nueva
-        clasificacion_pasivo, 
-        monto_original, 
-        monto_total_pagar, 
-        saldo_pendiente, 
-        plazos_meses, 
-        frecuencia, 
-        monto_cuota_sugerida, 
-        fecha_primer_pago, 
-        color_identificador, 
-        cuenta_destino, 
-        estatus
-    ) VALUES (?, 'PROVEEDORES', ?, ?, ?, ?, ?, ?, 1, 'MENSUAL', ?, ?, '#28a745', 'TRANSFERENCIA', 'ACTIVO')
-`;
-
-const [resultPrestamo] = await connection.query(insertPrestamoQuery, [
-    prestamista,
-    numero_nota || null,
-    fecha_recepcion || null,     -- <--- Valor recibido desde el frontend
-    clasificacion_pasivo || 'CIRCULANTE',
-    montoTotal,
-    montoTotal,
-    montoTotal,
-    montoTotal,
-    fecha_limite_pago,
-]);
-
-
-      
         const idPrestamo = resultPrestamo.insertId;
 
         // Insertar cada producto en la tabla de detalle (prestamos_proveedor_detalle)
