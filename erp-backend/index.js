@@ -2238,14 +2238,13 @@ app.get('/api/materias-primas', async (req, res) => {
     }
 });
 
-// 2. Registrar un nuevo préstamo del tipo PROVEEDORES con su detalle de materias primas
 app.post('/api/prestamos/proveedores', async (req, res) => {
     const connection = await db.getConnection();
     try {
         await connection.beginTransaction();
 
         const {
-            prestamista,
+            prestamista,          // Aquí vendrá el nombre del proveedor (ej. 'SAN RAFAEL', 'ADOCRETOS', etc.)
             numero_nota,
             clasificacion_pasivo, // 'CIRCULANTE' o 'FIJO'
             fecha_recepcion,      // Fecha en que entregaron la materia prima
@@ -2301,16 +2300,18 @@ app.post('/api/prestamos/proveedores', async (req, res) => {
         for (const item of productos) {
             const cantidad = Number(item.cantidad) || 0;
             const precioUnitario = Number(item.precio_unitario) || 0;
-            const unidadMedida = item.unidad_medida; // 'BULTOS', 'TONELADAS', 'PIEZAS', 'SUPERSACOS'
+            const unidadMedida = item.unidad_medida; // 'TONELADA', 'KILO', 'BULTO', 'PIEZA', '1/2 TON', etc.
             
-            // Regla de conversión automática a toneladas si elige BULTOS (1 tonelada = 40 bultos)
+            // Regla de conversión flexible a toneladas equivalentes
             let toneladasEquivalentes = 0;
-            if (unidadMedida === 'BULTOS') {
-                toneladasEquivalentes = cantidad / 40;
-            } else if (unidadMedida === 'TONELADAS') {
+            if (unidadMedida === 'BULTOS' || unidadMedida === 'BULTO') {
+                toneladasEquivalentes = cantidad / 40; // O la proporción estándar que manejes
+            } else if (unidadMedida === 'TONELADAS' || unidadMedida === 'TONELADA') {
                 toneladasEquivalentes = cantidad;
+            } else if (unidadMedida === '1/2 TON' || unidadMedida === 'MEDIA_TONELADA') {
+                toneladasEquivalentes = cantidad * 0.5;
             } else {
-                toneladasEquivalentes = 0; // Para piezas o supersacos que no aplican a granel
+                toneladasEquivalentes = 0; // Para kilos, piezas, bolsas o pigmentos
             }
 
             const subtotal = cantidad * precioUnitario;
