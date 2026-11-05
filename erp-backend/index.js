@@ -2238,16 +2238,18 @@ app.get('/api/materias-primas', async (req, res) => {
     }
 });
 
+
+
 app.post('/api/prestamos/proveedores', async (req, res) => {
     const connection = await db.getConnection();
     try {
         await connection.beginTransaction();
 
         const {
-            prestamista,          // Aquí vendrá el nombre del proveedor (ej. 'SAN RAFAEL', 'ADOCRETOS', etc.)
+            prestamista,          // Nombre del proveedor (ej. 'SAN RAFAEL', 'ADOCRETOS', etc.)
             numero_nota,
             clasificacion_pasivo, // 'CIRCULANTE' o 'FIJO'
-            fecha_recepcion,      // Fecha en que entregaron la materia prima
+            fecha_recepcion,      // Fecha en que entregaron la materia prima (¡Ahora sí la guardamos!)
             fecha_limite_pago,    // Fecha límite de pago
             dias_credito,
             productos             // Array con los productos seleccionados y sus cantidades
@@ -2263,12 +2265,13 @@ app.post('/api/prestamos/proveedores', async (req, res) => {
             montoTotal += Number(p.subtotal) || 0;
         });
 
-        // Insertar en la tabla principal de prestamos
+        // Insertar en la tabla principal de prestamos (incluyendo fecha_recepcion)
         const insertPrestamoQuery = `
             INSERT INTO prestamos (
                 prestamista, 
                 tipo_deuda, 
                 numero_nota, 
+                fecha_recepcion,
                 clasificacion_pasivo, 
                 monto_original, 
                 monto_total_pagar, 
@@ -2280,12 +2283,13 @@ app.post('/api/prestamos/proveedores', async (req, res) => {
                 color_identificador, 
                 cuenta_destino, 
                 estatus
-            ) VALUES (?, 'PROVEEDORES', ?, ?, ?, ?, ?, 1, 'MENSUAL', ?, ?, '#28a745', 'TRANSFERENCIA', 'ACTIVO')
+            ) VALUES (?, 'PROVEEDORES', ?, ?, ?, ?, ?, ?, 1, 'MENSUAL', ?, ?, '#28a745', 'TRANSFERENCIA', 'ACTIVO')
         `;
 
         const [resultPrestamo] = await connection.query(insertPrestamoQuery, [
             prestamista,
             numero_nota || null,
+            fecha_recepcion || null, // <--- Guardando la fecha de recepción en la BD
             clasificacion_pasivo || 'CIRCULANTE',
             montoTotal,
             montoTotal,
@@ -2305,13 +2309,13 @@ app.post('/api/prestamos/proveedores', async (req, res) => {
             // Regla de conversión flexible a toneladas equivalentes
             let toneladasEquivalentes = 0;
             if (unidadMedida === 'BULTOS' || unidadMedida === 'BULTO') {
-                toneladasEquivalentes = cantidad / 40; // O la proporción estándar que manejes
+                toneladasEquivalentes = cantidad / 40;
             } else if (unidadMedida === 'TONELADAS' || unidadMedida === 'TONELADA') {
                 toneladasEquivalentes = cantidad;
             } else if (unidadMedida === '1/2 TON' || unidadMedida === 'MEDIA_TONELADA') {
                 toneladasEquivalentes = cantidad * 0.5;
             } else {
-                toneladasEquivalentes = 0; // Para kilos, piezas, bolsas o pigmentos
+                toneladasEquivalentes = 0;
             }
 
             const subtotal = cantidad * precioUnitario;
@@ -2351,7 +2355,6 @@ app.post('/api/prestamos/proveedores', async (req, res) => {
         res.status(500).json({ success: false, error: error.message });
     }
 });
-
 
 app.post('/api/prestamos/diversos', async (req, res) => {
     const connection = await db.getConnection();
