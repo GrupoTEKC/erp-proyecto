@@ -290,7 +290,7 @@ function CuentasPorPagar() {
   const esValidoGuardar = formPrestamo.tipo_deuda === "PROVEEDORES" 
     ? (formPrestamo.prestamista.trim() !== "" && productosProveedor.some(p => p.id_materia && Number(p.cantidad) > 0))
     : formPrestamo.tipo_deuda === "DIVERSOS"
-    ? (formPrestamo.prestamista.trim() !== "" && montoOriginalNum > 0 && plazosMesesNum > 0)
+    ? (formPrestamo.prestamista.trim() !== "" && montoOriginalNum > 0 && montoCuotaNum > 0 && plazosMesesNum > 0)
     : (montoOriginalNum > 0 && plazosMesesNum > 0 && montoCuotaNum > 0 && montoTotalPagarFinanciero >= montoOriginalNum)
 
   const cargarDatos = async () => {
@@ -425,6 +425,7 @@ function CuentasPorPagar() {
         const bodyData = {
           prestamista: formPrestamo.prestamista,
           monto_original: formPrestamo.monto_original,
+          monto_cuota_sugerida: formPrestamo.monto_cuota_sugerida, // <-- Enviando la cuota sugerida real
           plazos_meses: formPrestamo.plazos_meses,
           frecuencia: formPrestamo.frecuencia,
           fecha_creacion: formPrestamo.fecha_creacion_credito,
@@ -959,6 +960,13 @@ function CuentasPorPagar() {
                     </div>
 
                     <div>
+                      <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Monto de cuota / pago sugerido ($) *</label>
+                      <input type="number" step="0.01" style={styles.field} required placeholder="Ej. 5000" value={formPrestamo.monto_cuota_sugerida} onChange={(e) => setFormPrestamo({ ...formPrestamo, monto_cuota_sugerida: e.target.value })} />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                    <div>
                       <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>N° de mensualidades / Plazos *</label>
                       <input type="number" style={styles.field} required placeholder="Ej. 12" value={formPrestamo.plazos_meses} onChange={(e) => setFormPrestamo({ ...formPrestamo, plazos_meses: e.target.value })} />
                       {formPrestamo.plazos_meses !== "" && (
@@ -970,6 +978,10 @@ function CuentasPorPagar() {
                           )}
                         </div>
                       )}
+                    </div>
+
+                    <div>
+                      {/* Espacio reservado para alineación */}
                     </div>
                   </div>
 
