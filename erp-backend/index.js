@@ -2356,6 +2356,7 @@ app.post('/api/prestamos/proveedores', async (req, res) => {
     }
 });
 
+
 app.post('/api/prestamos/diversos', async (req, res) => {
     const connection = await db.getConnection();
     try {
@@ -2364,14 +2365,16 @@ app.post('/api/prestamos/diversos', async (req, res) => {
         const {
             prestamista,
             monto_original,
+            monto_cuota_sugerida, // <-- 1. Recibir la cuota sugerida desde el frontend
             plazos_meses,
             frecuencia = 'MENSUAL',
-            fecha_creacion,      // <-- Nueva fecha de creación enviada desde el frontend
+            fecha_creacion,      
             fecha_primer_pago,
             color_identificador = '#ffc107'
         } = req.body;
 
         const montoOriginalNum = Number(monto_original) || 0;
+        const cuotaSugeridaNum = Number(monto_cuota_sugerida) || 0; // <-- 2. Convertir a numérico
         const plazosNum = Number(plazos_meses) || 0;
         const clasificacion_pasivo = plazosNum <= 12 ? 'CIRCULANTE' : 'FIJO';
 
@@ -2386,11 +2389,11 @@ app.post('/api/prestamos/diversos', async (req, res) => {
                 plazos_meses, 
                 frecuencia, 
                 monto_cuota_sugerida, 
-                fecha_creacion,      -- <-- Columna nueva en la BD
+                fecha_creacion,      
                 fecha_primer_pago, 
                 color_identificador, 
                 estatus
-            ) VALUES (?, 'DIVERSOS', ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, 'ACTIVO')
+            ) VALUES (?, 'DIVERSOS', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVO')
         `;
 
         const [result] = await connection.query(query, [
@@ -2401,7 +2404,8 @@ app.post('/api/prestamos/diversos', async (req, res) => {
             montoOriginalNum,
             plazosNum,
             frecuencia,
-            fecha_creacion || null, // <-- Valor recibido
+            cuotaSugeridaNum,       // <-- 3. Guardar el valor real en la BD
+            fecha_creacion || null, 
             fecha_primer_pago,
             color_identificador
         ]);
