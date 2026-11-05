@@ -227,7 +227,7 @@ function CuentasPorPagar() {
   
   // Lista de productos del proveedor con 1 renglón inicial
   const [productosProveedor, setProductosProveedor] = useState([
-    { id_materia: "", nombre_material: "", unidad_medida: "BULTOS", cantidad: "", toneladas_equivalentes: 0, precio_unitario: "", subtotal: 0 }
+    { id_materia: "", nombre_material: "", unidad_medida: "TONELADA", cantidad: "", toneladas_equivalentes: 0, precio_unitario: "", subtotal: 0 }
   ])
 
   // Días de crédito para proveedores
@@ -247,7 +247,7 @@ function CuentasPorPagar() {
     monto_cuota_sugerida: "",
     plazos_meses: "6",
     frecuencia: "MENSUAL",
-    fecha_creacion_credito: new Date().toISOString().split('T')[0], // Nueva fecha de creación
+    fecha_creacion_credito: new Date().toISOString().split('T')[0],
     fecha_primer_pago: new Date().toISOString().split('T')[0],
     fecha_recepcion: new Date().toISOString().split('T')[0],
     color_identificador: "#8B1E1E",
@@ -265,7 +265,7 @@ function CuentasPorPagar() {
     fecha_abono: new Date().toISOString().split('T')[0]
   })
 
-  // CÁLCULO AUTOMÁTICO DE FECHA LÍTIE DE PAGO (Proveedores)
+  // CÁLCULO AUTOMÁTICO DE FECHA LÍMITE DE PAGO (Proveedores)
   useEffect(() => {
     if (formPrestamo.fecha_recepcion && diasCredito !== "") {
       const fechaRec = new Date(formPrestamo.fecha_recepcion + "T00:00:00")
@@ -319,6 +319,16 @@ function CuentasPorPagar() {
     cargarDatos()
   }, [])
 
+  // Manejo dinámico de cambio de proveedor en el formulario de proveedores
+  const handleCambioProveedor = (e) => {
+    const proveedorSeleccionado = e.target.value
+    setFormPrestamo(prev => ({ ...prev, prestamista: proveedorSeleccionado }))
+    // Reiniciar los productos al cambiar de proveedor
+    setProductosProveedor([
+      { id_materia: "", nombre_material: "", unidad_medida: "TONELADA", cantidad: "", toneladas_equivalentes: 0, precio_unitario: "", subtotal: 0 }
+    ])
+  }
+
   const handleCambioItemProveedor = (index, campo, valor) => {
     const nuevos = [...productosProveedor]
     nuevos[index][campo] = valor
@@ -327,6 +337,7 @@ function CuentasPorPagar() {
       const encontrada = materiasPrimasCatalogo.find(m => String(m.id_materia) === String(valor))
       if (encontrada) {
         nuevos[index].nombre_material = encontrada.nombre
+        nuevos[index].unidad_medida = encontrada.unidad_medida_precio || encontrada.unidad_base
         nuevos[index].precio_unitario = encontrada.precio_unitario
       } else {
         nuevos[index].nombre_material = ""
@@ -338,10 +349,13 @@ function CuentasPorPagar() {
     const prec = Number(nuevos[index].precio_unitario) || 0
     nuevos[index].subtotal = cant * prec
 
-    if (nuevos[index].unidad_medida === "BULTOS") {
+    const unidad = nuevos[index].unidad_medida
+    if (unidad === "BULTOS" || unidad === "BULTO") {
       nuevos[index].toneladas_equivalentes = cant / 40
-    } else if (nuevos[index].unidad_medida === "TONELADAS") {
+    } else if (unidad === "TONELADAS" || unidad === "TONELADA") {
       nuevos[index].toneladas_equivalentes = cant
+    } else if (unidad === "1/2 TON" || unidad === "MEDIA_TONELADA") {
+      nuevos[index].toneladas_equivalentes = cant * 0.5
     } else {
       nuevos[index].toneladas_equivalentes = 0
     }
@@ -352,7 +366,7 @@ function CuentasPorPagar() {
   const agregarRenglonProveedor = () => {
     setProductosProveedor([
       ...productosProveedor,
-      { id_materia: "", nombre_material: "", unidad_medida: "BULTOS", cantidad: "", toneladas_equivalentes: 0, precio_unitario: "", subtotal: 0 }
+      { id_materia: "", nombre_material: "", unidad_medida: "TONELADA", cantidad: "", toneladas_equivalentes: 0, precio_unitario: "", subtotal: 0 }
     ])
   }
 
@@ -387,7 +401,7 @@ function CuentasPorPagar() {
         if (res.ok && data.success) {
           setModalNuevo(false)
           setProductosProveedor([
-            { id_materia: "", nombre_material: "", unidad_medida: "BULTOS", cantidad: "", toneladas_equivalentes: 0, precio_unitario: "", subtotal: 0 }
+            { id_materia: "", nombre_material: "", unidad_medida: "TONELADA", cantidad: "", toneladas_equivalentes: 0, precio_unitario: "", subtotal: 0 }
           ])
           setFormPrestamo({
             prestamista: "",
@@ -414,7 +428,7 @@ function CuentasPorPagar() {
           monto_original: formPrestamo.monto_original,
           plazos_meses: formPrestamo.plazos_meses,
           frecuencia: formPrestamo.frecuencia,
-          fecha_creacion: formPrestamo.fecha_creacion_credito, // Enviando fecha en que se creó el crédito
+          fecha_creacion: formPrestamo.fecha_creacion_credito,
           fecha_primer_pago: formPrestamo.fecha_primer_pago,
           color_identificador: formPrestamo.color_identificador
         }
@@ -831,8 +845,18 @@ function CuentasPorPagar() {
                 <>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                     <div>
-                      <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Proveedor / Prestamista *</label>
-                      <input style={styles.field} required placeholder="Ej. Limon, Yadesa" value={formPrestamo.prestamista} onChange={(e) => setFormPrestamo({ ...formPrestamo, prestamista: e.target.value })} />
+                      <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Selecciona Proveedor *</label>
+                      <select style={styles.field} required value={formPrestamo.prestamista} onChange={handleCambioProveedor}>
+                        <option value="">-- Selecciona proveedor --</option>
+                        <option value="LIMON">LIMON</option>
+                        <option value="YADESA">YADESA</option>
+                        <option value="ADOCRETOS">ADOCRETOS</option>
+                        <option value="SAPSA">SAPSA</option>
+                        <option value="HOLCIM PEROTE">HOLCIM PEROTE</option>
+                        <option value="ANDRADE">ANDRADE</option>
+                        <option value="SAN RAFAEL">SAN RAFAEL</option>
+                        <option value="LSG">LSG</option>
+                      </select>
                     </div>
                     <div>
                       <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Número de Nota / Folio</label>
@@ -873,56 +897,49 @@ function CuentasPorPagar() {
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      {productosProveedor.map((prod, pIdx) => (
-                        <div key={pIdx} style={{ backgroundColor: '#FFFFFF', padding: '12px', borderRadius: '6px', border: '1px solid #E2E8F0' }}>
-                          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr auto', gap: '8px', alignItems: 'center' }}>
-                            <div>
-                              <label style={{ fontSize: '11px', fontWeight: '600', color: '#64748B', display: 'block' }}>Material *</label>
-                              <select style={styles.field} value={prod.id_materia} onChange={(e) => handleCambioItemProveedor(pIdx, "id_materia", e.target.value)}>
-                                <option value="">-- Selecciona material --</option>
-                                {materiasPrimasCatalogo.map((m) => (
-                                  <option key={m.id_materia} value={m.id_materia}>{m.nombre} ({m.categoria})</option>
-                                ))}
-                              </select>
-                            </div>
+                      {productosProveedor.map((prod, pIdx) => {
+                        // Filtrar el catálogo de materias primas según el proveedor seleccionado
+                        const materialesFiltrados = materiasPrimasCatalogo.filter(m => m.proveedor === formPrestamo.prestamista)
 
-                            <div>
-                              <label style={{ fontSize: '11px', fontWeight: '600', color: '#64748B', display: 'block' }}>Cantidad *</label>
-                              <input type="number" step="0.01" style={styles.field} placeholder="Cantidad" value={prod.cantidad} onChange={(e) => handleCambioItemProveedor(pIdx, "cantidad", e.target.value)} />
-                            </div>
+                        return (
+                          <div key={pIdx} style={{ backgroundColor: '#FFFFFF', padding: '12px', borderRadius: '6px', border: '1px solid #E2E8F0' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr auto', gap: '8px', alignItems: 'center' }}>
+                              <div>
+                                <label style={{ fontSize: '11px', fontWeight: '600', color: '#64748B', display: 'block' }}>Material *</label>
+                                <select style={styles.field} value={prod.id_materia} onChange={(e) => handleCambioItemProveedor(pIdx, "id_materia", e.target.value)}>
+                                  <option value="">-- Selecciona material --</option>
+                                  {materialesFiltrados.map((m) => (
+                                    <option key={m.id_materia} value={m.id_materia}>{m.nombre} ({m.unidad_medida_precio || m.unidad_base})</option>
+                                  ))}
+                                </select>
+                              </div>
 
-                            <div>
-                              <label style={{ fontSize: '11px', fontWeight: '600', color: '#64748B', display: 'block' }}>Unidad *</label>
-                              <select style={styles.field} value={prod.unidad_medida} onChange={(e) => handleCambioItemProveedor(pIdx, "unidad_medida", e.target.value)}>
-                                <option value="BULTOS">Bultos</option>
-                                <option value="TONELADAS">Toneladas</option>
-                                <option value="PIEZAS">Piezas</option>
-                                <option value="SUPERSACOS">Supersacos</option>
-                                <option value="KILOS">Kilos</option>
-                              </select>
-                            </div>
+                              <div>
+                                <label style={{ fontSize: '11px', fontWeight: '600', color: '#64748B', display: 'block' }}>Cantidad *</label>
+                                <input type="number" step="0.01" style={styles.field} placeholder="Cantidad" value={prod.cantidad} onChange={(e) => handleCambioItemProveedor(pIdx, "cantidad", e.target.value)} />
+                              </div>
 
-                            <div>
-                              <label style={{ fontSize: '11px', fontWeight: '600', color: '#64748B', display: 'block' }}>Precio Unit. *</label>
-                              <input type="number" step="0.0001" style={styles.field} placeholder="Precio Unit." value={prod.precio_unitario} onChange={(e) => handleCambioItemProveedor(pIdx, "precio_unitario", e.target.value)} />
-                            </div>
+                              <div>
+                                <label style={{ fontSize: '11px', fontWeight: '600', color: '#64748B', display: 'block' }}>Unidad *</label>
+                                <input type="text" style={{ ...styles.field, backgroundColor: '#F1F5F9', fontWeight: 'bold' }} readOnly value={prod.unidad_medida} placeholder="Unidad" />
+                              </div>
 
-                            <div style={{ textAlign: 'center', paddingTop: '16px' }}>
-                              {productosProveedor.length > 1 && (
-                                <button type="button" onClick={() => eliminarRenglonProveedor(pIdx)} style={{ border: 'none', background: 'none', color: '#DC2626', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' }}>
-                                  ❌
-                                </button>
-                              )}
+                              <div>
+                                <label style={{ fontSize: '11px', fontWeight: '600', color: '#64748B', display: 'block' }}>Precio Unit. *</label>
+                                <input type="number" step="0.0001" style={{ ...styles.field, backgroundColor: '#F1F5F9', fontWeight: 'bold' }} readOnly placeholder="Precio Unit." value={prod.precio_unitario} />
+                              </div>
+
+                              <div style={{ textAlign: 'center', paddingTop: '16px' }}>
+                                {productosProveedor.length > 1 && (
+                                  <button type="button" onClick={() => eliminarRenglonProveedor(pIdx)} style={{ border: 'none', background: 'none', color: '#DC2626', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' }}>
+                                    ❌
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           </div>
-
-                          {prod.unidad_medida === "BULTOS" && Number(prod.cantidad) > 0 && (
-                            <div style={{ marginTop: '8px', fontSize: '12px', color: '#0369A1', backgroundColor: '#E0F2FE', padding: '4px 8px', borderRadius: '4px' }}>
-                              ⚖️ Conversión automática: <strong>{prod.cantidad} bultos</strong> equivalen a <strong>{Number(prod.toneladas_equivalentes).toFixed(4)} toneladas</strong> (división entre 40).
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
 
                     <div style={{ marginTop: '14px', textAlign: 'right', fontSize: '15px', fontWeight: '700', color: '#0F172A' }}>
@@ -962,18 +979,16 @@ function CuentasPorPagar() {
                     <div>
                       <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Fecha en que se creó el crédito *</label>
                       <input type="date" style={styles.field} required value={formPrestamo.fecha_creacion_credito} onChange={(e) => setFormPrestamo({ ...formPrestamo, fecha_creacion_credito: e.target.value })} />
-                      <span style={{ fontSize: '11px', color: '#64748B', display: 'block', marginTop: '4px' }}>Día en que se firmó o generó la deuda de la unidad.</span>
                     </div>
 
                     <div>
                       <label style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Fecha del primer pago *</label>
                       <input type="date" style={styles.field} required value={formPrestamo.fecha_primer_pago} onChange={(e) => setFormPrestamo({ ...formPrestamo, fecha_primer_pago: e.target.value })} />
-                      <span style={{ fontSize: '11px', color: '#64748B', display: 'block', marginTop: '4px' }}>Día en que corresponderá la primera mensualidad.</span>
                     </div>
                   </div>
 
                   <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #CBD5E1', padding: '12px', borderRadius: '6px', fontSize: '13px', color: '#334155', marginBottom: '16px', lineHeight: '1.4' }}>
-                    ℹ️ <strong>Crédito Diverso (Unidades):</strong> Hace enfasis a las unidades.
+                    ℹ️ <strong>Crédito Diverso (Unidades):</strong> Hace énfasis a las unidades.
                   </div>
                 </>
               ) : (
