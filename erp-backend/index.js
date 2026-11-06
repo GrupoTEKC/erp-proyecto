@@ -3367,7 +3367,7 @@ app.get('/api/caja/resumen', async (req, res) => {
         SUM(CASE WHEN LOWER(metodo) = 'transferencia' THEN monto ELSE 0 END) AS total_ingreso_banco,
         SUM(monto) AS total_ingresos
        FROM (
-         -- 1. Pagos generales de clientes (Usando estrictamente fecha_pago, prohibido fecha_registro)
+         -- 1. Pagos generales de clientes (Usando estrictamente fecha_pago)
          SELECT 
            CAST(metodo AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS metodo, 
            monto 
@@ -3376,7 +3376,7 @@ app.get('/api/caja/resumen', async (req, res) => {
          
          UNION ALL
          
-         -- 2. Créditos Financieros (Estrictamente tipo_deuda = 'FINANCIEROS', usando monto_original y fecha_creacion)
+         -- 2. Créditos Financieros (Estrictamente tipo_deuda = 'FINANCIEROS')
          SELECT 
            CAST(cuenta_destino AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS metodo, 
            monto_original AS monto 
@@ -3386,14 +3386,14 @@ app.get('/api/caja/resumen', async (req, res) => {
       [fechaInicio, fechaInicio]
     );
 
-    // C) Sumar EGRESOS exactos del periodo (Egresos definitivos por fecha_hora + Abonos de préstamos por fecha_abono + Gastos temporales pendientes por fecha_entrega)
+    // C) Sumar EGRESOS exactos del periodo (EXCLUSIVAMENTE flujo_egresos y gastos_temporales)
     const [egresos] = await db.query(
       `SELECT 
         SUM(CASE WHEN UPPER(origen_pago) = 'EFECTIVO' THEN monto ELSE 0 END) AS total_egreso_efectivo,
         SUM(CASE WHEN UPPER(origen_pago) = 'TRANSFERENCIA' THEN monto ELSE 0 END) AS total_egreso_banco,
         SUM(monto) AS total_egresos
        FROM (
-         -- 1. Egresos definitivos / Gastos (Usando fecha_hora del pago real)
+         -- 1. Egresos definitivos / Gastos (Usando fecha_hora)
          SELECT 
            CAST(origen_pago AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS origen_pago, 
            monto 
@@ -3402,23 +3402,14 @@ app.get('/api/caja/resumen', async (req, res) => {
          
          UNION ALL
          
-         -- 2. Abonos de préstamos (Usando estrictamente monto_abonado, origen_pago y fecha_abono, prohibido fecha_registro)
-         SELECT 
-           CAST(origen_pago AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS origen_pago, 
-           monto_abonado AS monto 
-         FROM prestamos_abonos 
-         WHERE fecha_abono >= ?
-         
-         UNION ALL
-         
-         -- 3. Gastos temporales pendientes de comprobar (Usando monto_entregado y fecha_entrega)
+         -- 2. Gastos temporales pendientes de comprobar (Usando monto_entregado y fecha_entrega)
          SELECT 
            CAST(origen_pago AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS origen_pago, 
            monto_entregado AS monto 
          FROM gastos_temporales 
          WHERE estatus = 'PENDIENTE' AND fecha_entrega >= ?
        ) AS egresos_totales`,
-      [fechaInicio, fechaInicio, fechaInicio]
+      [fechaInicio, fechaInicio]
     );
 
     // D) Cálculo de Saldos Reales de Caja
@@ -3439,7 +3430,7 @@ app.get('/api/caja/resumen', async (req, res) => {
     
     const saldoTEKC = montoInicialTotal + totalIngresos - totalEgresos;
 
-    // E) Lista de movimientos unificada para el historial
+    // E) Lista de movimientos unificada para el historial (Sin prestamos_abonos)
     const [movimientos] = await db.query(
       `(SELECT 
           p.id_pago AS id,
@@ -3514,21 +3505,6 @@ app.get('/api/caja/resumen', async (req, res) => {
        UNION ALL
 
        (SELECT 
-          pa.id_abono AS id,
-          'EGRESO' COLLATE utf8mb4_unicode_ci AS tipo,
-          CAST(CONCAT('Abono Préstamo - ', pr.prestamista) AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS tienda,
-          CAST(NULL AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS tipo_pedido,
-          CAST(CONCAT('Pago de cuota préstamo - ', pr.prestamista) AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS concepto,
-          CAST(pa.monto_abonado AS DECIMAL(10,2)) AS monto,
-          CAST(pa.origen_pago AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS forma_pago,
-          pa.fecha_abono AS fecha
-        FROM prestamos_abonos pa
-        INNER JOIN prestamos pr ON pa.id_prestamo = pr.id_prestamo
-        WHERE pa.fecha_abono >= ?)
-
-       UNION ALL
-
-       (SELECT 
           gt.id_temporal AS id,
           'GASTO TEMPORAL' COLLATE utf8mb4_unicode_ci AS tipo,
           CAST(CONCAT(gt.concepto, ' (', emp.nombre, ')') AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS tienda,
@@ -3542,7 +3518,7 @@ app.get('/api/caja/resumen', async (req, res) => {
         WHERE gt.estatus = 'PENDIENTE' AND gt.fecha_entrega >= ?)
 
        ORDER BY fecha DESC`,
-      [fechaInicio, fechaInicio, fechaInicio, fechaInicio, fechaInicio]
+      [fechaInicio, fechaInicio, fechaInicio, fechaInicio]
     );
     
     res.json({
