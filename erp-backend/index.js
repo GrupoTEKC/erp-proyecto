@@ -3342,14 +3342,12 @@ app.get('/pagos/:id_pedido', async (req, res) => {
 })
 
 
-// =============================
-// 📊 CAJA Y FLUJO DE CAJA (EN TIEMPO REAL)
+// 📊 CAJA Y FLUJO DE CAJA (EN TIEMPO REAL - FILTRADO POR PERIODO DE CAJA / MES)
 // =============================
 
-// 1. OBTENER SALDOS Y HISTORIAL EN TIEMPO REAL
 app.get('/api/caja/resumen', async (req, res) => {
   try {
-    // A) Traer la caja abierta actual
+    // A) Traer la caja abierta actual para obtener la fecha_inicio del periodo/mes
     const [cajas] = await db.query(
       `SELECT * FROM caja_apertura_cierre WHERE estatus = 'ABIERTA' ORDER BY id_caja DESC LIMIT 1`
     );
@@ -3364,39 +3362,68 @@ app.get('/api/caja/resumen', async (req, res) => {
     const cajaActiva = cajas[0];
     const fechaInicio = cajaActiva.fecha_inicio;
 
-    // B) Sumar INGRESOS (Pagos + Préstamos recibidos)
+    // B) Sumar INGRESOS exactos del periodo (Pagos por fecha_pago + Créditos Financieros por fecha_creacion)
     const [ingresos] = await db.query(
       `SELECT 
         SUM(CASE WHEN LOWER(metodo) = 'efectivo' THEN monto ELSE 0 END) AS total_ingreso_efectivo,
         SUM(CASE WHEN LOWER(metodo) = 'transferencia' THEN monto ELSE 0 END) AS total_ingreso_banco,
-        SUM(CASE WHEN LOWER(metodo) IN ('efectivo', 'transferencia') THEN monto ELSE 0 END) AS total_ingresos
+        SUM(monto) AS total_ingresos
        FROM (
-         -- 1. Pagos generales / clientes
-         SELECT CAST(metodo AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS metodo, monto FROM pagos WHERE fecha_pago >= ?
+         -- 1. Pagos generales de clientes (Usando estrictamente fecha_pago, prohibido fecha_registro)
+         SELECT 
+           CAST(metodo AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS metodo, 
+           monto 
+         FROM pagos 
+         WHERE fecha_pago >= ?
+         
          UNION ALL
-         -- 2. Préstamos solicitados / recibidos
-         SELECT CAST(cuenta_destino AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS metodo, monto_original AS monto FROM prestamos WHERE fecha_registro >= ?
+         
+         -- 2. Créditos Financieros (Estrictamente tipo_deuda = 'FINANCIEROS', usando monto_original y fecha_creacion)
+         SELECT 
+           CAST(cuenta_destino AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS metodo, 
+           monto_original AS monto 
+         FROM prestamos 
+         WHERE tipo_deuda = 'FINANCIEROS' AND fecha_creacion >= ?
        ) AS ingresos_totales`,
       [fechaInicio, fechaInicio]
     );
 
-    // C) Sumar EGRESOS DEFINITIVOS (Flujo Egresos) + GASTOS TEMPORALES PENDIENTES
-    // Se removió el bloque UNION ALL con prestamos_abonos para evitar la doble contabilización.
+    // C) Sumar EGRESOS exactos del periodo (Egresos definitivos por fecha_hora + Abonos de préstamos por fecha_abono + Gastos temporales pendientes por fecha_entrega)
     const [egresos] = await db.query(
       `SELECT 
         SUM(CASE WHEN UPPER(origen_pago) = 'EFECTIVO' THEN monto ELSE 0 END) AS total_egreso_efectivo,
-        SUM(CASE WHEN UPPER(origen_pago) = 'TRANSFERENCIA' THEN monto ELSE 0 END) AS total_egreso_banco
+        SUM(CASE WHEN UPPER(origen_pago) = 'TRANSFERENCIA' THEN monto ELSE 0 END) AS total_egreso_banco,
+        SUM(monto) AS total_egresos
        FROM (
-         -- 1. Egresos definitivos (Incluye gastos generales Y abonos a préstamos registrados en flujo_egresos)
-         SELECT CAST(origen_pago AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS origen_pago, monto FROM flujo_egresos WHERE fecha_captura >= ?
+         -- 1. Egresos definitivos / Gastos (Usando fecha_hora del pago real)
+         SELECT 
+           CAST(origen_pago AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS origen_pago, 
+           monto 
+         FROM flujo_egresos 
+         WHERE fecha_hora >= ?
+         
          UNION ALL
-         -- 2. Entregas de dinero pendiente por comprobar (reducen la caja activa)
-         SELECT CAST(origen_pago AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS origen_pago, monto_entregado AS monto FROM gastos_temporales WHERE estatus = 'PENDIENTE' AND fecha_entrega >= ?
+         
+         -- 2. Abonos de préstamos (Usando monto_abonado y fecha_abono)
+         SELECT 
+           CAST(origen_pago AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS origen_pago, 
+           monto_abonado AS monto 
+         FROM prestamos_abonos 
+         WHERE fecha_abono >= ?
+         
+         UNION ALL
+         
+         -- 3. Gastos temporales pendientes de comprobar (Usando monto_entregado y fecha_entrega)
+         SELECT 
+           CAST(origen_pago AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS origen_pago, 
+           monto_entregado AS monto 
+         FROM gastos_temporales 
+         WHERE estatus = 'PENDIENTE' AND fecha_entrega >= ?
        ) AS egresos_totales`,
-      [fechaInicio, fechaInicio]
+      [fechaInicio, fechaInicio, fechaInicio]
     );
 
-    // D) Cálculo de Saldos
+    // D) Cálculo de Saldos Reales de Caja
     const ingEfectivo = Number(ingresos[0]?.total_ingreso_efectivo || 0);
     const ingBanco = Number(ingresos[0]?.total_ingreso_banco || 0);
 
@@ -3407,16 +3434,14 @@ app.get('/api/caja/resumen', async (req, res) => {
     const saldoBanco = Number(cajaActiva.monto_inicial_banco) + ingBanco - egrBanco;
     const saldoTotal = saldoEfectivo + saldoBanco;
 
-    // FÓRMULA SALDO TEKC (Suma de montos iniciales + ingresos - egresos)
+    // FÓRMULA SALDO TEKC (Apertura total + Total Ingresos - Total Egresos)
     const montoInicialTotal = Number(cajaActiva.monto_inicial_efectivo) + Number(cajaActiva.monto_inicial_banco);
-    const totalIngresos = Number(ingresos[0]?.total_ingresos || (ingEfectivo + ingBanco));
-    const totalEgresos = egrEfectivo + egrBanco;
+    const totalIngresos = Number(ingresos[0]?.total_ingresos || 0);
+    const totalEgresos = Number(egresos[0]?.total_egresos || 0);
     
     const saldoTEKC = montoInicialTotal + totalIngresos - totalEgresos;
 
-
-    // E) Lista de movimientos unificada
-    // Se eliminó la subconsulta SELECT de prestamos_abonos. Ahora sólo se pasa fechaInicio 4 veces como argumento.
+    // E) Lista de movimientos unificada para el historial
     const [movimientos] = await db.query(
       `(SELECT 
           p.id_pago AS id,
@@ -3452,7 +3477,7 @@ app.get('/api/caja/resumen', async (req, res) => {
           ) COLLATE utf8mb4_unicode_ci AS concepto,
           CAST(p.monto AS DECIMAL(10,2)) AS monto,
           CAST(p.metodo AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS forma_pago,
-          p.fecha_registro AS fecha
+          p.fecha_pago AS fecha
         FROM pagos p
         LEFT JOIN pedidos ped ON p.id_pedido = ped.id_pedido
         LEFT JOIN clientes c_ped ON ped.id_cliente = c_ped.id_cliente
@@ -3465,18 +3490,17 @@ app.get('/api/caja/resumen', async (req, res) => {
        (SELECT 
           pr.id_prestamo AS id,
           'INGRESO' COLLATE utf8mb4_unicode_ci AS tipo,
-          CAST(CONCAT('Préstamo - ', pr.prestamista) AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS tienda,
-          CAST('PRÉSTAMO' AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS tipo_pedido,
-          CAST(CONCAT('Entrada Préstamo - ', pr.prestamista) AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS concepto,
+          CAST(CONCAT('Crédito Financiero - ', pr.prestamista) AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS tienda,
+          CAST('FINANCIERO' AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS tipo_pedido,
+          CAST(CONCAT('Entrada Crédito Financiero - ', pr.prestamista) AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS concepto,
           CAST(pr.monto_original AS DECIMAL(10,2)) AS monto,
           CAST(pr.cuenta_destino AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS forma_pago,
-          pr.fecha_registro AS fecha
+          pr.fecha_creacion AS fecha
         FROM prestamos pr
-        WHERE pr.fecha_registro >= ?)
+        WHERE pr.tipo_deuda = 'FINANCIEROS' AND pr.fecha_creacion >= ?)
 
        UNION ALL
 
-       -- EGRESO 1: Flujo de Egresos (Cubre Gastos Generales Y Abonos a Préstamos)
        (SELECT 
           e.id_egreso AS id,
           'EGRESO' COLLATE utf8mb4_unicode_ci AS tipo,
@@ -3485,13 +3509,27 @@ app.get('/api/caja/resumen', async (req, res) => {
           CAST(CONCAT('Gasto - ', e.concepto) AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS concepto,
           CAST(e.monto AS DECIMAL(10,2)) AS monto,
           CAST(e.origen_pago AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS forma_pago,
-          e.fecha_captura AS fecha
+          e.fecha_hora AS fecha
         FROM flujo_egresos e
-        WHERE e.fecha_captura >= ?)
+        WHERE e.fecha_hora >= ?)
 
        UNION ALL
 
-       -- EGRESO 2: Gastos Temporales Pendientes
+       (SELECT 
+          pa.id_abono AS id,
+          'EGRESO' COLLATE utf8mb4_unicode_ci AS tipo,
+          CAST(CONCAT('Abono Préstamo - ', pr.prestamista) AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS tienda,
+          CAST(NULL AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS tipo_pedido,
+          CAST(CONCAT('Pago de cuota préstamo - ', pr.prestamista) AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS concepto,
+          CAST(pa.monto_abonado AS DECIMAL(10,2)) AS monto,
+          CAST(pa.origen_pago AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS forma_pago,
+          pa.fecha_abono AS fecha
+        FROM prestamos_abonos pa
+        INNER JOIN prestamos pr ON pa.id_prestamo = pr.id_prestamo
+        WHERE pa.fecha_abono >= ?)
+
+       UNION ALL
+
        (SELECT 
           gt.id_temporal AS id,
           'GASTO TEMPORAL' COLLATE utf8mb4_unicode_ci AS tipo,
@@ -3506,7 +3544,7 @@ app.get('/api/caja/resumen', async (req, res) => {
         WHERE gt.estatus = 'PENDIENTE' AND gt.fecha_entrega >= ?)
 
        ORDER BY fecha DESC`,
-      [fechaInicio, fechaInicio, fechaInicio, fechaInicio]
+      [fechaInicio, fechaInicio, fechaInicio, fechaInicio, fechaInicio]
     );
     
     res.json({
