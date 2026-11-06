@@ -1717,7 +1717,7 @@ function FlujoCaja() {
               </div>
               <div style={{ ...styles.card, ...(apartadoActivo === 3 ? styles.cardActive : {}) }} onClick={() => handleSelectApartado(3)}>
                 <div style={styles.cardHeader}><span style={styles.cardName}>Bolsa</span><span style={styles.cardIcon}>🛍️</span></div>
-                <p style={styles.cardDesc>Bolsa de cada uno de nuestros productos.</p>
+                <p style={styles.cardDesc}>Bolsa de cada uno de nuestros productos.</p>
               </div>
             </div>
             {apartadoActivo && (
@@ -2336,4 +2336,4 @@ function FlujoCaja() {
   )
 }
 
-export file default FlujoCaja
+export default FlujoCaja
