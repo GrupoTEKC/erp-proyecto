@@ -327,7 +327,6 @@ const styles = {
     fontWeight: 'bold',
     cursor: 'pointer'
   },
-  /* ESTILOS ESPECÍFICOS PARA GASTOS DE PERSONAL */
   puestoTabs: {
     display: 'flex',
     gap: '8px',
@@ -387,7 +386,6 @@ const styles = {
     backgroundColor: '#fee2e2',
     color: '#b91c1c'
   },
-  /* ESTILOS SECCIONES DINÁMICAS */
   dynamicBlock: {
     border: '1px solid #e2e8f0',
     backgroundColor: '#f8fafc',
@@ -440,15 +438,11 @@ const styles = {
 function FlujoCaja() {
   const navigate = useNavigate()
 
-  // ESTADO - CONTROL PLEGABLE DE HISTORIAL DE MOVIMIENTOS
   const [historialAbierto, setHistorialAbierto] = useState(false)
-
-  // ESTADO - RESUMEN DE CAJA Y MOVIMIENTOS
   const [saldos, setSaldos] = useState({ efectivo: 0, banco: 0, total_ingresos: 0, total_egresos: 0, saldo_tekc: 0 })
   const [movimientos, setMovimientos] = useState([])
   const [cargandoResumen, setCargandoResumen] = useState(true)
 
-  // ESTADO - FILTROS DE HISTORIAL MOVIMIENTOS
   const [filtroTipo, setFiltroTipo] = useState('TODOS')
   const [filtroPedido, setFiltroPedido] = useState('TODOS')
   const [busquedaTienda, setBusquedaTienda] = useState('')
@@ -456,10 +450,8 @@ function FlujoCaja() {
   const [fechaDesde, setFechaDesde] = useState('')
   const [fechaHasta, setFechaHasta] = useState('')
 
-  // ESTADO - GASTOS TEMPORALES (ENTREGAS PENDIENTES)
   const [gastosTemporales, setGastosTemporales] = useState([])
 
-  // ESTADOS - GASTOS OPERATIVOS (PRODUCCIÓN)
   const [produccionAbierto, setProduccionAbierto] = useState(false)
   const [apartadoActivo, setApartadoActivo] = useState(null)
   const [productosBD, setProductosBD] = useState([])
@@ -472,7 +464,6 @@ function FlujoCaja() {
   const [concepto, setConcepto] = useState('')
   const [comprobante, setComprobante] = useState('')
 
-  // ESTADOS - GASTOS DE PERSONAL
   const [personalAbierto, setPersonalAbierto] = useState(false)
   const [subPersonalActivo, setSubPersonalActivo] = useState(null)
   const [empleados, setEmpleados] = useState([])
@@ -483,54 +474,43 @@ function FlujoCaja() {
   const [fechaInicioSemana, setFechaInicioSemana] = useState('')
   const [fechaFinSemana, setFechaFinSemana] = useState('')
 
-  // ESTADOS COMPLEMENTARIOS - CATALOGOS VIÁTICOS
   const [rutas, setRutas] = useState([])
   const [unidades, setUnidades] = useState([])
   const [idRutaSeleccionada, setIdRutaSeleccionada] = useState('')
   const [idUnidadSeleccionada, setIdUnidadSeleccionada] = useState('')
   const [esChofer, setEsChofer] = useState(false)
 
-  // ESTADOS DESGLOSE DINÁMICO VIÁTICOS
   const [casetas, setCasetas] = useState([''])
   const [gasolina, setGasolina] = useState([''])
   const [comidas, setComidas] = useState([''])
   const [folios, setFolios] = useState([''])
 
-  // ESTADOS - GASTOS DE PLANTA Y MANTENIMIENTO
   const [plantaAbierto, setPlantaAbierto] = useState(false)
   const [subPlantaActivo, setSubPlantaActivo] = useState(null)
   const [fechaPago, setFechaPago] = useState('')
   const [tipoServicioPublico, setTipoServicioPublico] = useState('')
   const [lineasServicios, setLineasServicios] = useState([{ concepto: '', monto: '' }])
   
-  // Sub-tarjeta 2 Planta
   const [tipoEquipo, setTipoEquipo] = useState('Unidad')
   const [montacargas, setMontacargas] = useState([])
   const [equipoSeleccionado, setEquipoSeleccionado] = useState('')
   const [tipoServicioMantenimiento, setTipoServicioMantenimiento] = useState('')
   const [lineasMantenimiento, setLineasMantenimiento] = useState([{ concepto: '', monto: '' }])
 
-  // Sub-tarjeta 3 Planta
   const [lineasHerramientas, setLineasHerramientas] = useState([{ cantidad: '1', concepto: '', precio: '' }])
 
-  // ESTADOS - GASTOS DEPARTAMENTALES
   const [deptosAbierto, setDeptosAbierto] = useState(false)
   const [subDeptoActivo, setSubDeptoActivo] = useState(null)
   const [fechaPagoDepto, setFechaPagoDepto] = useState('')
   
-  // Sub 1 Marketing
   const [lineasMarketing, setLineasMarketing] = useState([{ tipoGasto: '', monto: '', comentario: '' }])
-  
-  // Sub 2 Caja Chica
   const [cantidadCajaChica, setCantidadCajaChica] = useState('')
   const [detalleCajaChica, setDetalleCajaChica] = useState('')
   const [montoCajaChica, setMontoCajaChica] = useState('')
 
-  // Sub 3 Servicios Profesionales
   const [empleadoServicios, setEmpleadoServicios] = useState('')
   const [montoServicios, setMontoServicios] = useState('')
 
-  // OBTENER RESUMEN Y MOVIMIENTOS AL CARGAR EL COMPONENTE
   const cargarResumenCaja = async () => {
     setCargandoResumen(true)
     try {
@@ -542,8 +522,8 @@ function FlujoCaja() {
             setSaldos({
               efectivo: data.saldos.efectivo || 0,
               banco: data.saldos.banco || 0,
-              total_ingresos: data.saldos.total_ingresos || data.saldos.ingresos || 0,
-              total_egresos: data.saldos.total_egresos || data.saldos.egresos || 0,
+              total_ingresos: data.saldos.total_ingresos || 0,
+              total_egresos: data.saldos.total_egresos || 0,
               saldo_tekc: data.saldos.saldo_tekc || 0
             })
           }
@@ -559,7 +539,6 @@ function FlujoCaja() {
     }
   }
 
-  // Cargar lista de Gastos Temporales pendientes
   const cargarGastosTemporales = async () => {
     try {
       const res = await fetch(`${API}/api/gastos-temporales?estatus=PENDIENTE`)
@@ -574,7 +553,6 @@ function FlujoCaja() {
     }
   }
 
-  // Cargar catálogo de datos y resumen
   useEffect(() => {
     cargarResumenCaja()
     cargarGastosTemporales()
@@ -585,7 +563,6 @@ function FlujoCaja() {
     fetch(`${API}/montacargas`).then(r => r.json()).then(d => Array.isArray(d) && setMontacargas(d)).catch(console.error)
   }, [])
 
-  // Verificar status de pagos de nómina por fechas
   useEffect(() => {
     if (fechaInicioSemana && fechaFinSemana) {
       fetch(`${API}/empleados/pagos-semana?fecha_inicio=${fechaInicioSemana}&fecha_fin=${fechaFinSemana}`)
@@ -597,7 +574,6 @@ function FlujoCaja() {
     }
   }, [fechaInicioSemana, fechaFinSemana])
 
-  // Handlers para la selección de categorías
   const handleSelectApartado = (idCat) => {
     setApartadoActivo(idCat)
     setSubopcionSeleccionada('')
@@ -659,7 +635,6 @@ function FlujoCaja() {
     setMontoServicios('')
   }
 
-  // PASO B: Navegar a la pantalla de Viáticos con los datos iniciales
   const handleComprobarGastoTemporal = (gasto) => {
     navigate('/viaticos', {
       state: {
@@ -673,7 +648,6 @@ function FlujoCaja() {
     })
   }
 
-  // PASO A: Registrar una entrega/gasto temporal
   const handleGuardarGastoTemporal = async () => {
     if (!empleadoSeleccionado || !monto || parseFloat(monto) <= 0 || !concepto.trim()) {
       alert('⚠️ Por favor completa los datos obligatorios del gasto temporal.')
@@ -710,7 +684,6 @@ function FlujoCaja() {
     }
   }
 
-  // Detectar cambio de empleado en Viáticos
   const handleEmpleadoViaticosChange = (idEmp) => {
     setEmpleadoSeleccionado(idEmp)
     const emp = empleados.find((e) => String(e.id_empleado) === String(idEmp))
@@ -722,7 +695,6 @@ function FlujoCaja() {
     }
   }
 
-  // Auxiliares dinámicos
   const handleAgregarCampo = (setter, lista) => setter([...lista, ''])
   const handleCambioCampo = (setter, lista, index, valor) => {
     const nueva = [...lista]
@@ -745,7 +717,6 @@ function FlujoCaja() {
     setter(lista.filter((_, i) => i !== index))
   }
 
-  // Totales
   const totalCasetas = casetas.reduce((acc, v) => acc + (parseFloat(v) || 0), 0)
   const totalGasolina = gasolina.reduce((acc, v) => acc + (parseFloat(v) || 0), 0)
   const totalComidas = comidas.reduce((acc, v) => acc + (parseFloat(v) || 0), 0)
@@ -761,7 +732,6 @@ function FlujoCaja() {
 
   const totalMarketing = lineasMarketing.reduce((acc, item) => acc + (parseFloat(item.monto) || 0), 0)
 
-  // SUBMIT HANDLERS
   const handleGuardarOperativos = async () => {
     if (!monto || parseFloat(monto) <= 0) {
       alert('Por favor ingresa un monto válido.')
@@ -1156,7 +1126,6 @@ function FlujoCaja() {
     }
   }
 
-  // Filtrar empleados reactivamente por el puesto de la pestaña activa
   const empleadosFiltrados = empleados.filter(e => {
     if (!e.puesto) return false
     const puestoEmp = e.puesto.toUpperCase().trim()
@@ -1171,19 +1140,16 @@ function FlujoCaja() {
     return puestoEmp === tabActual
   })
 
-  // FILTRADO DINÁMICO DE MOVIMIENTOS
   const movimientosFiltrados = movimientos.filter((m) => {
     const tipoUpper = m.tipo?.toUpperCase() || ''
     const esIngreso = tipoUpper === 'INGRESO'
     const esEgreso = tipoUpper === 'EGRESO'
     const esTemporal = tipoUpper === 'GASTO TEMPORAL'
 
-    // 1. Filtrado por Tipo de Movimiento
     if (filtroTipo === 'INGRESO' && !esIngreso) return false
     if (filtroTipo === 'EGRESO' && !esEgreso) return false
     if (filtroTipo === 'GASTO TEMPORAL' && !esTemporal) return false
 
-    // 2. Filtrado por Tienda / Cliente (Buscador)
     if (busquedaTienda.trim() !== '') {
       const nombreTienda = (
         m.tienda ||
@@ -1196,7 +1162,6 @@ function FlujoCaja() {
       if (!nombreTienda.includes(terminoBusqueda)) return false
     }
 
-    // 3. Filtrado por Tipo de Pedido
     if (filtroPedido !== 'TODOS') {
       const esRezagado =
         m.es_rezagado === true ||
@@ -1208,14 +1173,12 @@ function FlujoCaja() {
       if (filtroPedido === 'NORMAL' && (!esIngreso || esRezagado)) return false
     }
 
-    // 4. Filtrado por Forma de Pago (Efectivo / Transferencia)
     if (filtroFormaPago !== 'TODOS') {
       const formaPagoUpper = (m.forma_pago || m.origen_pago || 'EFECTIVO').toUpperCase()
       if (filtroFormaPago === 'EFECTIVO' && !formaPagoUpper.includes('EFECTIVO')) return false
       if (filtroFormaPago === 'TRANSFERENCIA' && !formaPagoUpper.includes('TRANSFERENCIA') && !formaPagoUpper.includes('BANCO')) return false
     }
 
-    // 5. Filtrado por Rango de Fecha y Hora
     if (fechaDesde || fechaHasta) {
       if (!m.fecha) return false
       const fechaMov = new Date(m.fecha)
@@ -1234,7 +1197,6 @@ function FlujoCaja() {
     return true
   })
 
-  // CÁLCULOS DINÁMICOS PARA LA FILA DE TOTALES
   const conteoTipos = movimientosFiltrados.reduce(
     (acc, m) => {
       const tipoUpper = m.tipo?.toUpperCase() || ''
@@ -1253,14 +1215,12 @@ function FlujoCaja() {
     return acc - val
   }, 0)
 
-  // DESCARGAR HISTORIAL FILTRADO EN CSV / EXCEL
   const descargarCSV = () => {
     if (movimientosFiltrados.length === 0) {
       alert('No hay movimientos cargados o filtrados para descargar.')
       return
     }
 
-    // Definición de las cabeceras respetando el orden original de las 6 columnas
     const headers = [
       'Tipo',
       'Tienda / Cliente / Concepto',
@@ -1270,13 +1230,10 @@ function FlujoCaja() {
       'Fecha y Hora'
     ]
 
-    // Construcción de las filas respetando la lógica de los datos aplicados
     const rows = movimientosFiltrados.map((m) => {
       const tipoUpper = m.tipo?.toUpperCase() || ''
       const esIngreso = tipoUpper === 'INGRESO'
-
       const tipo = m.tipo || ''
-
       const nombreTienda =
         m.tienda ||
         m.cliente ||
@@ -1296,13 +1253,10 @@ function FlujoCaja() {
         : 'N/A'
 
       const formaPago = m.forma_pago || m.origen_pago || 'Efectivo'
-
       const val = parseFloat(m.monto || 0)
       const montoFormatted = esIngreso ? val : -val
-
       const fechaHora = m.fecha ? new Date(m.fecha).toLocaleString('es-MX') : 'N/A'
 
-      // Escapar dobles comillas para evitar rupturas en el formato CSV
       const cleanField = (val) => `"${String(val ?? '').replace(/"/g, '""')}"`
 
       return [
@@ -1315,9 +1269,7 @@ function FlujoCaja() {
       ].join(',')
     })
 
-    // UTF-8 BOM (\uFEFF) para forzar a Excel a leer tildes y caracteres especiales correctamente
     const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\n')
-
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
@@ -1331,7 +1283,6 @@ function FlujoCaja() {
 
   return (
     <div style={styles.page}>
-      {/* ENCABEZADO CORPORATIVO */}
       <header style={styles.header}>
         <div style={styles.leftSection}>
           <button style={styles.cancel} onClick={() => navigate(-1)}>
@@ -1346,31 +1297,30 @@ function FlujoCaja() {
         </div>
       </header>
 
-      {/* TARJETAS DE SALDOS (KPIs) */}
+      {/* TARJETAS DE SALDOS (KPIs) ALINEADAS AL ENDPOINT */}
       <div style={styles.kpiGrid}>
         <div style={styles.kpiCard}>
           <p style={styles.kpiTitle}>Saldo general TEKC</p>
-          <p style={styles.kpiValue}>${saldos.saldo_tekc.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+          <p style={styles.kpiValue}>${Number(saldos.saldo_tekc || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
         </div>
         <div style={styles.kpiCard}>
           <p style={styles.kpiTitle}>Total en efectivo</p>
-          <p style={styles.kpiValue}>${saldos.efectivo.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+          <p style={styles.kpiValue}>${Number(saldos.efectivo || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
         </div>
         <div style={styles.kpiCard}>
           <p style={styles.kpiTitle}>Total en banco</p>
-          <p style={styles.kpiValue}>${saldos.banco.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+          <p style={styles.kpiValue}>${Number(saldos.banco || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
         </div>
         <div style={styles.kpiCard}>
           <p style={styles.kpiTitle}>Total de ingresos</p>
-          <p style={styles.kpiValue}>${saldos.total_ingresos.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+          <p style={styles.kpiValue}>${Number(saldos.total_ingresos || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
         </div>
         <div style={styles.kpiCard}>
           <p style={styles.kpiTitle}>Total de egresos</p>
-          <p style={styles.kpiValue}>${saldos.total_egresos.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+          <p style={styles.kpiValue}>${Number(saldos.total_egresos || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
         </div>
       </div>
 
-      {/* TABLA DE GASTOS TEMPORALES PENDIENTES DE COMPROBAR */}
       {gastosTemporales.length > 0 && (
         <div style={styles.movimientosCard}>
           <h3 style={{ color: vino, marginTop: 0, marginBottom: '10px' }}>
@@ -1416,7 +1366,6 @@ function FlujoCaja() {
         </div>
       )}
 
-      {/* TABLA DE HISTORIAL DE MOVIMIENTOS DE CAJA (DESPLEGABLE / PLEGABLE) */}
       <div style={styles.movimientosCard}>
         <div
           style={{
@@ -1630,7 +1579,6 @@ function FlujoCaja() {
                       const esIngreso = tipoUpper === 'INGRESO'
                       const esTemporal = tipoUpper === 'GASTO TEMPORAL'
 
-                      // 1. Detección dinámica de Tienda / Cliente
                       const nombreTienda =
                         m.tienda ||
                         m.cliente ||
@@ -1638,7 +1586,6 @@ function FlujoCaja() {
                         m.nombre_tienda ||
                         'Venta General'
 
-                      // 2. Detección de Pedido Rezagado vs Pedido Normal
                       const esRezagado =
                         m.es_rezagado === true ||
                         m.tipo_pedido === 'REZAGADO' ||
@@ -1660,8 +1607,6 @@ function FlujoCaja() {
                               {m.tipo}
                             </span>
                           </td>
-
-                          {/* Columna Tienda / Cliente */}
                           <td style={styles.td}>
                             <strong>{nombreTienda}</strong>
                             {m.concepto && (
@@ -1670,8 +1615,6 @@ function FlujoCaja() {
                               </div>
                             )}
                           </td>
-
-                          {/* Columna Tipo de Pedido */}
                           <td style={styles.td}>
                             {esIngreso ? (
                               <span
@@ -1691,11 +1634,9 @@ function FlujoCaja() {
                               <span style={{ color: '#94a3b8', fontSize: '12px' }}>N/A</span>
                             )}
                           </td>
-
                           <td style={styles.td}>
                             {m.forma_pago || m.origen_pago || 'Efectivo'}
                           </td>
-
                           <td
                             style={{
                               ...styles.td,
@@ -1706,7 +1647,6 @@ function FlujoCaja() {
                               ? `+$${parseFloat(m.monto || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
                               : `-$${parseFloat(m.monto || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`}
                           </td>
-
                           <td style={styles.td}>
                             {m.fecha
                               ? new Date(m.fecha).toLocaleDateString('es-MX', {
@@ -1721,8 +1661,6 @@ function FlujoCaja() {
                     })
                   )}
                 </tbody>
-
-                {/* FILA DE TOTALES EN EL PIE DE LA TABLA */}
                 <tfoot>
                   <tr>
                     <td style={styles.tf}>
@@ -1761,90 +1699,47 @@ function FlujoCaja() {
         )}
       </div>
 
-      {/* SUBTÍTULO DESGLOSE DE CAJA */}
       <h2 style={styles.subTitle}>DESGLOSE DE CAJA</h2>
 
-      {/* 🏭 TARJETA PRINCIPAL 1: GASTOS OPERATIVOS (PRODUCCIÓN) */}
+      {/* 🏭 GASTOS OPERATIVOS */}
       <div style={styles.parentCard}>
-        <div
-          style={styles.parentHeader}
-          onClick={() => setProduccionAbierto(!produccionAbierto)}
-        >
+        <div style={styles.parentHeader} onClick={() => setProduccionAbierto(!produccionAbierto)}>
           <div style={styles.parentTitleGroup}>
             <span style={{ fontSize: '28px' }}>🏭</span>
             <div>
               <h3 style={styles.parentTitle}>GASTOS OPERATIVOS (PRODUCCIÓN)</h3>
-              <p style={styles.parentSubtitle}>
-                Gastos asociados a materias primas, bolsa y equipo de protección del personal de planta.
-              </p>
+              <p style={styles.parentSubtitle}>Gastos asociados a materias primas, bolsa y equipo de protección del personal de planta.</p>
             </div>
           </div>
-          <span style={styles.toggleBadge}>
-            {produccionAbierto ? '▼ Ocultar' : '▶ Desplegar'}
-          </span>
+          <span style={styles.toggleBadge}>{produccionAbierto ? '▼ Ocultar' : '▶ Desplegar'}</span>
         </div>
-
         {produccionAbierto && (
           <div>
             <div style={styles.cardsContainer}>
-              <div
-                style={{ ...styles.card, ...(apartadoActivo === 1 ? styles.cardActive : {}) }}
-                onClick={() => handleSelectApartado(1)}
-              >
-                <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Materias primas</span>
-                  <span style={styles.cardIcon}>📦</span>
-                </div>
+              <div style={{ ...styles.card, ...(apartadoActivo === 1 ? styles.cardActive : {}) }} onClick={() => handleSelectApartado(1)}>
+                <div style={styles.cardHeader}><span style={styles.cardName}>Materias primas</span><span style={styles.cardIcon}>📦</span></div>
                 <p style={styles.cardDesc}>Cemento blanco, cemento gris, cal, impalpable, aditivos, malla.</p>
               </div>
-
-              <div
-                style={{ ...styles.card, ...(apartadoActivo === 2 ? styles.cardActive : {}) }}
-                onClick={() => handleSelectApartado(2)}
-              >
-                <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Protección personal (EPP)</span>
-                  <span style={styles.cardIcon}>🥽</span>
-                </div>
+              <div style={{ ...styles.card, ...(apartadoActivo === 2 ? styles.cardActive : {}) }} onClick={() => handleSelectApartado(2)}>
+                <div style={styles.cardHeader}><span style={styles.cardName}>Protección personal (EPP)</span><span style={styles.cardIcon}>🥽</span></div>
                 <p style={styles.cardDesc}>Mascarillas y equipo de protección para operadores.</p>
               </div>
-
-              <div
-                style={{ ...styles.card, ...(apartadoActivo === 3 ? styles.cardActive : {}) }}
-                onClick={() => handleSelectApartado(3)}
-              >
-                <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Bolsa</span>
-                  <span style={styles.cardIcon}>🛍️</span>
-                </div>
+              <div style={{ ...styles.card, ...(apartadoActivo === 3 ? styles.cardActive : {}) }} onClick={() => handleSelectApartado(3)}>
+                <div style={styles.cardHeader}><span style={styles.cardName}>Bolsa</span><span style={styles.cardIcon}>🛍️</span></div>
                 <p style={styles.cardDesc}>Bolsa de cada uno de nuestros productos.</p>
               </div>
             </div>
-
             {apartadoActivo && (
               <div style={styles.formContainer}>
                 <div style={styles.formTitle}>
-                  <span>
-                    Estás capturando gasto en:{' '}
-                    {apartadoActivo === 1 && '📦 Materias primas'}
-                    {apartadoActivo === 2 && '🥽 Equipo de protección personal (EPP)'}
-                    {apartadoActivo === 3 && '🛍️ Insumos de bolsa'}
-                  </span>
-                  <button type="button" style={styles.closeBtn} onClick={() => setApartadoActivo(null)}>
-                    ✕ Cerrar
-                  </button>
+                  <span>Estás capturando gasto en: {apartadoActivo === 1 && '📦 Materias primas'}{apartadoActivo === 2 && '🥽 EPP'}{apartadoActivo === 3 && '🛍️ Bolsa'}</span>
+                  <button type="button" style={styles.closeBtn} onClick={() => setApartadoActivo(null)}>✕ Cerrar</button>
                 </div>
-
                 <form onSubmit={(e) => e.preventDefault()} style={styles.grid}>
                   {apartadoActivo === 1 && (
                     <div style={styles.fieldGroup}>
                       <label style={styles.label}>Insumo de materia prima *</label>
-                      <select
-                        style={styles.select}
-                        value={subopcionSeleccionada}
-                        onChange={(e) => setSubopcionSeleccionada(e.target.value)}
-                        required
-                      >
+                      <select style={styles.select} value={subopcionSeleccionada} onChange={(e) => setSubopcionSeleccionada(e.target.value)} required>
                         <option value="">-- Seleccionar insumo --</option>
                         <option value="Cemento Blanco">Cemento blanco</option>
                         <option value="Cemento Gris">Cemento gris</option>
@@ -1855,121 +1750,59 @@ function FlujoCaja() {
                       </select>
                     </div>
                   )}
-
                   {apartadoActivo === 2 && (
                     <div style={styles.fieldGroup}>
                       <label style={styles.label}>Tipo de equipo de protección *</label>
-                      <select
-                        style={styles.select}
-                        value={subopcionSeleccionada}
-                        onChange={(e) => setSubopcionSeleccionada(e.target.value)}
-                        required
-                      >
+                      <select style={styles.select} value={subopcionSeleccionada} onChange={(e) => setSubopcionSeleccionada(e.target.value)} required>
                         <option value="">-- Seleccionar tipo --</option>
                         <option value="Mascarillas Antipolvo">Mascarillas antipolvo</option>
                       </select>
                     </div>
                   )}
-
                   {apartadoActivo === 3 && (
                     <div style={styles.fieldGroup}>
                       <label style={styles.label}>Bolsa *</label>
-                      <select
-                        style={styles.select}
-                        value={productoSeleccionado}
-                        onChange={(e) => setProductoSeleccionado(e.target.value)}
-                        required
-                      >
-                        <option value="">-- Seleccionar producto del catálogo --</option>
+                      <select style={styles.select} value={productoSeleccionado} onChange={(e) => setProductoSeleccionado(e.target.value)} required>
+                        <option value="">-- Seleccionar producto --</option>
                         {productosBD.map((prod) => (
-                          <option key={prod.id_producto} value={prod.id_producto}>
-                            {prod.nombre} ({prod.unidad_medida})
-                          </option>
+                          <option key={prod.id_producto} value={prod.id_producto}>{prod.nombre} ({prod.unidad_medida})</option>
                         ))}
                       </select>
                     </div>
                   )}
-
                   <div style={styles.fieldGroup}>
                     <label style={styles.label}>Origen de pago *</label>
-                    <select
-                      style={styles.select}
-                      value={origenPago}
-                      onChange={(e) => {
-                        setOrigenPago(e.target.value)
-                        if (e.target.value !== 'TRANSFERENCIA') {
-                          setCuentaBancaria('')
-                          setNombreDuenioCuenta('')
-                        }
-                      }}
-                    >
+                    <select style={styles.select} value={origenPago} onChange={(e) => { setOrigenPago(e.target.value); if(e.target.value !== 'TRANSFERENCIA'){ setCuentaBancaria(''); setNombreDuenioCuenta(''); } }}>
                       <option value="EFECTIVO">Efectivo</option>
                       <option value="TRANSFERENCIA">Transferencia</option>
                     </select>
                   </div>
-
                   {origenPago === 'TRANSFERENCIA' && (
                     <div style={styles.fieldGroup}>
                       <label style={styles.label}>Cuenta Bancaria de Salida *</label>
-                      <select
-                        style={styles.select}
-                        value={cuentaBancaria}
-                        onChange={(e) => {
-                          setCuentaBancaria(e.target.value)
-                          if (e.target.value !== 'OTRO') setNombreDuenioCuenta('')
-                        }}
-                        required
-                      >
+                      <select style={styles.select} value={cuentaBancaria} onChange={(e) => { setCuentaBancaria(e.target.value); if(e.target.value !== 'OTRO') setNombreDuenioCuenta(''); }} required>
                         <option value="">-- Seleccionar Cuenta --</option>
                         <option value="Cuenta Fiscal">Cuenta fiscal</option>
                         <option value="OTRO">Otro</option>
                       </select>
                     </div>
                   )}
-
                   {origenPago === 'TRANSFERENCIA' && cuentaBancaria === 'OTRO' && (
                     <div style={styles.fieldGroup}>
-                      <label style={styles.label}>Nombre y Apellido del dueño de la cuenta *</label>
-                      <input
-                        type="text"
-                        placeholder="Ej. Eli Maravillas"
-                        style={styles.input}
-                        value={nombreDuenioCuenta}
-                        onChange={(e) => setNombreDuenioCuenta(e.target.value)}
-                        required
-                      />
+                      <label style={styles.label}>Dueño de la cuenta *</label>
+                      <input type="text" placeholder="Ej. Eli Maravillas" style={styles.input} value={nombreDuenioCuenta} onChange={(e) => setNombreDuenioCuenta(e.target.value)} required />
                     </div>
                   )}
-
                   <div style={styles.fieldGroup}>
                     <label style={styles.label}>Monto pagado ($) *</label>
-                    <input
-                      type="number"
-                      step="any"
-                      min="0.01"
-                      placeholder="0.00"
-                      style={styles.input}
-                      value={monto}
-                      onChange={(e) => setMonto(e.target.value)}
-                      required
-                    />
+                    <input type="number" step="any" min="0.01" placeholder="0.00" style={styles.input} value={monto} onChange={(e) => setMonto(e.target.value)} required />
                   </div>
-
                   <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
                     <label style={styles.label}>Comentarios (Opcional)</label>
-                    <textarea
-                      rows="2"
-                      placeholder="Escribe un comentario si se requiere..."
-                      style={{ ...styles.input, resize: 'vertical' }}
-                      value={concepto}
-                      onChange={(e) => setConcepto(e.target.value)}
-                    />
+                    <textarea rows="2" placeholder="Escribe un comentario..." style={{ ...styles.input, resize: 'vertical' }} value={concepto} onChange={(e) => setConcepto(e.target.value)} />
                   </div>
-
                   <div style={styles.fullRow}>
-                    <button type="button" onClick={handleGuardarOperativos} style={styles.submitButton}>
-                      Guardar registro de gasto
-                    </button>
+                    <button type="button" onClick={handleGuardarOperativos} style={styles.submitButton}>Guardar registro de gasto</button>
                   </div>
                 </form>
               </div>
@@ -1978,576 +1811,241 @@ function FlujoCaja() {
         )}
       </div>
 
-      {/* 👥 TARJETA PRINCIPAL 2: GASTOS DE PERSONAL */}
+      {/* 👥 GASTOS DE PERSONAL */}
       <div style={styles.parentCard}>
-        <div
-          style={styles.parentHeader}
-          onClick={() => setPersonalAbierto(!personalAbierto)}
-        >
+        <div style={styles.parentHeader} onClick={() => setPersonalAbierto(!personalAbierto)}>
           <div style={styles.parentTitleGroup}>
             <span style={{ fontSize: '28px' }}>👥</span>
             <div>
               <h3 style={styles.parentTitle}>GASTOS DE PERSONAL</h3>
-              <p style={styles.parentSubtitle}>
-                Pago de nómina base, IMSS, ISR, comedor, entrega de gastos temporales y viáticos.
-              </p>
+              <p style={styles.parentSubtitle}>Pago de nómina base, IMSS, ISR, comedor, viáticos y gastos temporales.</p>
             </div>
           </div>
-          <span style={styles.toggleBadge}>
-            {personalAbierto ? '▼ Ocultar' : '▶ Desplegar'}
-          </span>
+          <span style={styles.toggleBadge}>{personalAbierto ? '▼ Ocultar' : '▶ Desplegar'}</span>
         </div>
-
         {personalAbierto && (
           <div>
             <div style={styles.cardsContainer}>
-              <div
-                style={{ ...styles.card, ...(subPersonalActivo === 4 ? styles.cardActive : {}) }}
-                onClick={() => handleSelectSubPersonal(4)}
-              >
-                <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Nómina Base</span>
-                  <span style={styles.cardIcon}>💵</span>
-                </div>
-                <p style={styles.cardDesc}>
-                  Sueldos de Administrativos, Operadores, Choferes, Vendedores y Chalanes.
-                </p>
+              <div style={{ ...styles.card, ...(subPersonalActivo === 4 ? styles.cardActive : {}) }} onClick={() => handleSelectSubPersonal(4)}>
+                <div style={styles.cardHeader}><span style={styles.cardName}>Nómina Base</span><span style={styles.cardIcon}>💵</span></div>
+                <p style={styles.cardDesc}>Sueldos de Administrativos, Operadores, Choferes, Vendedores y Chalanes.</p>
               </div>
-
-              <div
-                style={{ ...styles.card, ...(subPersonalActivo === 5 ? styles.cardActive : {}) }}
-                onClick={() => handleSelectSubPersonal(5)}
-              >
-                <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>IMSS e ISR</span>
-                  <span style={styles.cardIcon}>🏥</span>
-                </div>
-                <p style={styles.cardDesc}>Gastos de IMSS y ISR en los trabajadores.</p>
+              <div style={{ ...styles.card, ...(subPersonalActivo === 5 ? styles.cardActive : {}) }} onClick={() => handleSelectSubPersonal(5)}>
+                <div style={styles.cardHeader}><span style={styles.cardName}>IMSS e ISR</span><span style={styles.cardIcon}>🏥</span></div>
+                <p style={styles.cardDesc}>Gastos de IMSS e ISR en los trabajadores.</p>
               </div>
-
-              <div
-                style={{ ...styles.card, ...(subPersonalActivo === 6 ? styles.cardActive : {}) }}
-                onClick={() => handleSelectSubPersonal(6)}
-              >
-                <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Comedor</span>
-                  <span style={styles.cardIcon}>🍽️</span>
-                </div>
-                <p style={styles.cardDesc}>Gasto semanal en desayunos (PAGO A DOÑA LUCI)</p>
+              <div style={{ ...styles.card, ...(subPersonalActivo === 6 ? styles.cardActive : {}) }} onClick={() => handleSelectSubPersonal(6)}>
+                <div style={styles.cardHeader}><span style={styles.cardName}>Comedor</span><span style={styles.cardIcon}>🍽️</span></div>
+                <p style={styles.cardDesc}>Gasto semanal en desayunos (PAGO A DOÑA LUCI).</p>
               </div>
-
-              <div
-                style={{ ...styles.card, ...(subPersonalActivo === 7 ? styles.cardActive : {}) }}
-                onClick={() => handleSelectSubPersonal(7)}
-              >
-                <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Viáticos</span>
-                  <span style={styles.cardIcon}>✈️</span>
-                </div>
-                <p style={styles.cardDesc}>
-                  Asignaciones directas para gastos de transporte, comidas y despensa del personal.
-                </p>
+              <div style={{ ...styles.card, ...(subPersonalActivo === 7 ? styles.cardActive : {}) }} onClick={() => handleSelectSubPersonal(7)}>
+                <div style={styles.cardHeader}><span style={styles.cardName}>Viáticos</span><span style={styles.cardIcon}>✈️</span></div>
+                <p style={styles.cardDesc}>Asignaciones directas para transporte, comidas y despensa.</p>
               </div>
-
-              <div
-                style={{ ...styles.card, ...(subPersonalActivo === 88 ? styles.cardActive : {}) }}
-                onClick={() => handleSelectSubPersonal(88)}
-              >
-                <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Entrega Temporal</span>
-                  <span style={styles.cardIcon}>⏳</span>
-                </div>
-                <p style={styles.cardDesc}>
-                  Entrega de efectivo pendiente por comprobar que reduce la caja activa.
-                </p>
+              <div style={{ ...styles.card, ...(subPersonalActivo === 88 ? styles.cardActive : {}) }} onClick={() => handleSelectSubPersonal(88)}>
+                <div style={styles.cardHeader}><span style={styles.cardName}>Entrega Temporal</span><span style={styles.cardIcon}>⏳</span></div>
+                <p style={styles.cardDesc}>Entrega de efectivo pendiente por comprobar que reduce la caja activa.</p>
               </div>
             </div>
-
             {subPersonalActivo && (
               <div style={styles.formContainer}>
                 <div style={styles.formTitle}>
-                  <span>
-                    Estás capturando:{' '}
-                    {subPersonalActivo === 4 && '💵 Nómina Base'}
-                    {subPersonalActivo === 5 && '🏥 IMSS / ISR'}
-                    {subPersonalActivo === 6 && '🍽️ Comedor'}
-                    {subPersonalActivo === 7 && '✈️ Viáticos'}
-                    {subPersonalActivo === 88 && '⏳ Entrega de Dinero Temporal'}
-                  </span>
-                  <button type="button" style={styles.closeBtn} onClick={() => setSubPersonalActivo(null)}>
-                    ✕ Cerrar
-                  </button>
+                  <span>Estás capturando: {subPersonalActivo === 4 && '💵 Nómina Base'}{subPersonalActivo === 5 && '🏥 IMSS / ISR'}{subPersonalActivo === 6 && '🍽️ Comedor'}{subPersonalActivo === 7 && '✈️ Viáticos'}{subPersonalActivo === 88 && '⏳ Entrega Temporal'}</span>
+                  <button type="button" style={styles.closeBtn} onClick={() => setSubPersonalActivo(null)}>✕ Cerrar</button>
                 </div>
-
                 <form onSubmit={(e) => e.preventDefault()} style={styles.grid}>
                   {subPersonalActivo === 88 && (
                     <>
                       <div style={styles.fieldGroup}>
                         <label style={styles.label}>Empleado que recibe dinero *</label>
-                        <select
-                          style={styles.select}
-                          value={empleadoSeleccionado}
-                          onChange={(e) => setEmpleadoSeleccionado(e.target.value)}
-                          required
-                        >
+                        <select style={styles.select} value={empleadoSeleccionado} onChange={(e) => setEmpleadoSeleccionado(e.target.value)} required>
                           <option value="">-- Seleccionar empleado --</option>
                           {empleados.map((emp) => (
-                            <option key={emp.id_empleado} value={emp.id_empleado}>
-                              {emp.nombre_completo || `${emp.nombre || ''} ${emp.apellido1 || ''}`} ({emp.puesto})
-                            </option>
+                            <option key={emp.id_empleado} value={emp.id_empleado}>{emp.nombre_completo || `${emp.nombre || ''} ${emp.apellido1 || ''}`} ({emp.puesto})</option>
                           ))}
                         </select>
                       </div>
-
                       <div style={styles.fieldGroup}>
                         <label style={styles.label}>Monto Entregado ($) *</label>
-                        <input
-                          type="number"
-                          step="any"
-                          min="0.01"
-                          placeholder="0.00"
-                          style={styles.input}
-                          value={monto}
-                          onChange={(e) => setMonto(e.target.value)}
-                          required
-                        />
+                        <input type="number" step="any" min="0.01" placeholder="0.00" style={styles.input} value={monto} onChange={(e) => setMonto(e.target.value)} required />
                       </div>
-
                       <div style={styles.fieldGroup}>
                         <label style={styles.label}>Origen de pago *</label>
-                        <select
-                          style={styles.select}
-                          value={origenPago}
-                          onChange={(e) => setOrigenPago(e.target.value)}
-                        >
+                        <select style={styles.select} value={origenPago} onChange={(e) => setOrigenPago(e.target.value)}>
                           <option value="EFECTIVO">Efectivo</option>
                           <option value="TRANSFERENCIA">Transferencia</option>
                         </select>
                       </div>
-
                       <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
-                        <label style={styles.label}>Concepto / Motivo de la entrega *</label>
-                        <textarea
-                          rows="2"
-                          placeholder="Ej. Entrega para viáticos de viaje a Veracruz..."
-                          style={{ ...styles.input, resize: 'vertical' }}
-                          value={concepto}
-                          onChange={(e) => setConcepto(e.target.value)}
-                          required
-                        />
+                        <label style={styles.label}>Concepto / Motivo *</label>
+                        <textarea rows="2" placeholder="Motivo de la entrega..." style={{ ...styles.input, resize: 'vertical' }} value={concepto} onChange={(e) => setConcepto(e.target.value)} required />
                       </div>
-
                       <div style={styles.fullRow}>
-                        <button type="button" onClick={handleGuardarGastoTemporal} style={styles.submitButton}>
-                          Registrar Entrega Temporal
-                        </button>
+                        <button type="button" onClick={handleGuardarGastoTemporal} style={styles.submitButton}>Registrar Entrega Temporal</button>
                       </div>
                     </>
                   )}
-
                   {subPersonalActivo === 4 && (
                     <div style={{ ...styles.fullRow, marginBottom: '10px' }}>
                       <label style={styles.label}>1. Seleccionar semana a pagar</label>
                       <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
-                        <input
-                          type="date"
-                          style={styles.input}
-                          value={fechaInicioSemana}
-                          onChange={(e) => setFechaInicioSemana(e.target.value)}
-                        />
+                        <input type="date" style={styles.input} value={fechaInicioSemana} onChange={(e) => setFechaInicioSemana(e.target.value)} />
                         <span style={{ alignSelf: 'center', fontWeight: 'bold' }}>a</span>
-                        <input
-                          type="date"
-                          style={styles.input}
-                          value={fechaFinSemana}
-                          onChange={(e) => setFechaFinSemana(e.target.value)}
-                        />
+                        <input type="date" style={styles.input} value={fechaFinSemana} onChange={(e) => setFechaFinSemana(e.target.value)} />
                       </div>
-
-                      <label style={{ ...styles.label, marginTop: '18px', display: 'block' }}>
-                        2. Puesto del personal
-                      </label>
+                      <label style={{ ...styles.label, marginTop: '18px', display: 'block' }}>2. Puesto del personal</label>
                       <div style={styles.puestoTabs}>
                         {['ADMINISTRATIVOS', 'OPERADORES', 'CHOFERES', 'VENDEDORES', 'CHALANES'].map((puesto) => (
-                          <button
-                            key={puesto}
-                            type="button"
-                            style={{
-                              ...styles.puestoTabBtn,
-                              ...(puestoTab === puesto ? styles.puestoTabActive : {})
-                            }}
-                            onClick={() => {
-                              setPuestoTab(puesto)
-                              setEmpleadoSeleccionado('')
-                            }}
-                          >
+                          <button key={puesto} type="button" style={{ ...styles.puestoTabBtn, ...(puestoTab === puesto ? styles.puestoTabActive : {}) }} onClick={() => { setPuestoTab(puesto); setEmpleadoSeleccionado(''); }}>
                             {puesto}
                           </button>
                         ))}
                       </div>
-
-                      <label style={{ ...styles.label, marginBottom: '8px', display: 'block' }}>
-                        3. Seleccionar trabajador
-                      </label>
+                      <label style={{ ...styles.label, marginBottom: '8px', display: 'block' }}>3. Seleccionar trabajador</label>
                       <div style={styles.empleadosGrid}>
                         {empleadosFiltrados.map((emp) => {
                           const estaPagado = empleadosPagados.includes(emp.id_empleado)
                           const estaSeleccionado = String(empleadoSeleccionado) === String(emp.id_empleado)
-                          const nombreCompleto = emp.nombre_completo || `${emp.nombre || ''} ${emp.apellido1 || ''}`
-
                           return (
-                            <div
-                              key={emp.id_empleado}
-                              style={{
-                                ...styles.empleadoCard,
-                                ...(estaSeleccionado ? styles.empleadoCardSelected : {})
-                              }}
-                              onClick={() => {
-                                setEmpleadoSeleccionado(emp.id_empleado)
-                                if (emp.sueldo_base) setMonto(emp.sueldo_base)
-                              }}
-                            >
-                              <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#1e293b' }}>
-                                {nombreCompleto}
-                              </span>
-                              <span
-                                style={{
-                                  ...styles.statusBadge,
-                                  ...(estaPagado ? styles.badgePagado : styles.badgePendiente)
-                                }}
-                              >
-                                {estaPagado ? 'Pagado' : 'Pendiente'}
-                              </span>
+                            <div key={emp.id_empleado} style={{ ...styles.empleadoCard, ...(estaSeleccionado ? styles.empleadoCardSelected : {}) }} onClick={() => { setEmpleadoSeleccionado(emp.id_empleado); if (emp.sueldo_base) setMonto(emp.sueldo_base) }}>
+                              <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#1e293b' }}>{emp.nombre_completo || `${emp.nombre || ''} ${emp.apellido1 || ''}`}</span>
+                              <span style={{ ...styles.statusBadge, ...(estaPagado ? styles.badgePagado : styles.badgePendiente) }}>{estaPagado ? 'Pagado' : 'Pendiente'}</span>
                             </div>
                           )
                         })}
                       </div>
                     </div>
                   )}
-
                   {subPersonalActivo === 5 && (
                     <div style={styles.fieldGroup}>
                       <label style={styles.label}>Tipo de Impuesto *</label>
-                      <select
-                        style={styles.select}
-                        value={subTipoImpuesto}
-                        onChange={(e) => setSubTipoImpuesto(e.target.value)}
-                      >
+                      <select style={styles.select} value={subTipoImpuesto} onChange={(e) => setSubTipoImpuesto(e.target.value)}>
                         <option value="IMSS">IMSS</option>
                         <option value="ISR">ISR</option>
                       </select>
                     </div>
                   )}
-
                   {subPersonalActivo === 5 && (
                     <div style={styles.fieldGroup}>
                       <label style={styles.label}>Empleado asignado (Opcional)</label>
-                      <select
-                        style={styles.select}
-                        value={empleadoSeleccionado}
-                        onChange={(e) => setEmpleadoSeleccionado(e.target.value)}
-                      >
+                      <select style={styles.select} value={empleadoSeleccionado} onChange={(e) => setEmpleadoSeleccionado(e.target.value)}>
                         <option value="">-- Pago General / Global --</option>
                         {empleados.map((emp) => (
-                          <option key={emp.id_empleado} value={emp.id_empleado}>
-                            {emp.nombre_completo || `${emp.nombre || ''} ${emp.apellido1 || ''}`}
-                          </option>
+                          <option key={emp.id_empleado} value={emp.id_empleado}>{emp.nombre_completo || `${emp.nombre || ''} ${emp.apellido1 || ''}`}</option>
                         ))}
                       </select>
                     </div>
                   )}
-
                   {subPersonalActivo === 7 && (
                     <>
                       <div style={styles.fieldGroup}>
                         <label style={styles.label}>Empleado que recibe viáticos *</label>
-                        <select
-                          style={styles.select}
-                          value={empleadoSeleccionado}
-                          onChange={(e) => handleEmpleadoViaticosChange(e.target.value)}
-                          required
-                        >
+                        <select style={styles.select} value={empleadoSeleccionado} onChange={(e) => handleEmpleadoViaticosChange(e.target.value)} required>
                           <option value="">-- Seleccionar empleado --</option>
                           {empleados.map((emp) => (
-                            <option key={emp.id_empleado} value={emp.id_empleado}>
-                              {emp.nombre_completo || `${emp.nombre || ''} ${emp.apellido1 || ''}`} ({emp.puesto})
-                            </option>
+                            <option key={emp.id_empleado} value={emp.id_empleado}>{emp.nombre_completo || `${emp.nombre || ''} ${emp.apellido1 || ''}`} ({emp.puesto})</option>
                           ))}
                         </select>
                       </div>
-
                       <div style={styles.fieldGroup}>
                         <label style={styles.label}>Ruta de Viaje {esChofer && '*'}</label>
-                        <select
-                          style={styles.select}
-                          value={idRutaSeleccionada}
-                          onChange={(e) => setIdRutaSeleccionada(e.target.value)}
-                          required={esChofer}
-                        >
+                        <select style={styles.select} value={idRutaSeleccionada} onChange={(e) => setIdRutaSeleccionada(e.target.value)} required={esChofer}>
                           <option value="">-- Seleccionar ruta --</option>
                           {rutas.map((r) => (
-                            <option key={r.id_ruta} value={r.id_ruta}>
-                              {r.nombre || r.origen_destino}
-                            </option>
+                            <option key={r.id_ruta} value={r.id_ruta}>{r.nombre || r.origen_destino}</option>
                           ))}
                         </select>
                       </div>
-
                       <div style={styles.fieldGroup}>
                         <label style={styles.label}>Unidad Vehicular {esChofer && '*'}</label>
-                        <select
-                          style={styles.select}
-                          value={idUnidadSeleccionada}
-                          onChange={(e) => setIdUnidadSeleccionada(e.target.value)}
-                          required={esChofer}
-                        >
+                        <select style={styles.select} value={idUnidadSeleccionada} onChange={(e) => setIdUnidadSeleccionada(e.target.value)} required={esChofer}>
                           <option value="">-- Seleccionar unidad --</option>
                           {unidades.map((u) => (
-                            <option key={u.id_unidad} value={u.id_unidad}>
-                              {u.nombre || u.placas}
-                            </option>
+                            <option key={u.id_unidad} value={u.id_unidad}>{u.nombre || u.placas}</option>
                           ))}
                         </select>
                       </div>
-
-                      {/* CASETAS */}
                       <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
-                        <div style={styles.dynamicHeader}>
-                          <span>🚘 Casetas ($)</span>
-                          <button
-                            type="button"
-                            style={styles.addBtn}
-                            onClick={() => handleAgregarCampo(setCasetas, casetas)}
-                          >
-                            +
-                          </button>
-                        </div>
+                        <div style={styles.dynamicHeader}><span>🚘 Casetas ($)</span><button type="button" style={styles.addBtn} onClick={() => handleAgregarCampo(setCasetas, casetas)}>+</button></div>
                         {casetas.map((montoCaseta, idx) => (
                           <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
-                            <input
-                              type="number"
-                              step="any"
-                              placeholder="Monto de caseta"
-                              style={styles.input}
-                              value={montoCaseta}
-                              onChange={(e) => handleCambioCampo(setCasetas, casetas, idx, e.target.value)}
-                            />
-                            {casetas.length > 1 && (
-                              <button
-                                type="button"
-                                style={styles.removeBtn}
-                                onClick={() => handleEliminarCampo(setCasetas, casetas, idx)}
-                              >
-                                ✕
-                              </button>
-                            )}
+                            <input type="number" step="any" placeholder="Monto" style={styles.input} value={montoCaseta} onChange={(e) => handleCambioCampo(setCasetas, casetas, idx, e.target.value)} />
+                            {casetas.length > 1 && <button type="button" style={styles.removeBtn} onClick={() => handleEliminarCampo(setCasetas, casetas, idx)}>✕</button>}
                           </div>
                         ))}
                       </div>
-
-                      {/* GASOLINA */}
                       <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
-                        <div style={styles.dynamicHeader}>
-                          <span>⛽ Gasolina / Combustible ($)</span>
-                          <button
-                            type="button"
-                            style={styles.addBtn}
-                            onClick={() => handleAgregarCampo(setGasolina, gasolina)}
-                          >
-                            +
-                          </button>
-                        </div>
+                        <div style={styles.dynamicHeader}><span>⛽ Gasolina / Combustible ($)</span><button type="button" style={styles.addBtn} onClick={() => handleAgregarCampo(setGasolina, gasolina)}>+</button></div>
                         {gasolina.map((montoGasolina, idx) => (
                           <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
-                            <input
-                              type="number"
-                              step="any"
-                              placeholder="Monto de gasolina"
-                              style={styles.input}
-                              value={montoGasolina}
-                              onChange={(e) => handleCambioCampo(setGasolina, gasolina, idx, e.target.value)}
-                            />
-                            {gasolina.length > 1 && (
-                              <button
-                                type="button"
-                                style={styles.removeBtn}
-                                onClick={() => handleEliminarCampo(setGasolina, gasolina, idx)}
-                              >
-                                ✕
-                              </button>
-                            )}
+                            <input type="number" step="any" placeholder="Monto" style={styles.input} value={montoGasolina} onChange={(e) => handleCambioCampo(setGasolina, gasolina, idx, e.target.value)} />
+                            {gasolina.length > 1 && <button type="button" style={styles.removeBtn} onClick={() => handleEliminarCampo(setGasolina, gasolina, idx)}>✕</button>}
                           </div>
                         ))}
                       </div>
-
-                      {/* COMIDAS */}
                       <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
-                        <div style={styles.dynamicHeader}>
-                          <span>🍔 Comidas / Alimentos ($)</span>
-                          <button
-                            type="button"
-                            style={styles.addBtn}
-                            onClick={() => handleAgregarCampo(setComidas, comidas)}
-                          >
-                            +
-                          </button>
-                        </div>
+                        <div style={styles.dynamicHeader}><span>🍔 Comidas / Alimentos ($)</span><button type="button" style={styles.addBtn} onClick={() => handleAgregarCampo(setComidas, comidas)}>+</button></div>
                         {comidas.map((montoComida, idx) => (
                           <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
-                            <input
-                              type="number"
-                              step="any"
-                              placeholder="Monto de alimentos"
-                              style={styles.input}
-                              value={montoComida}
-                              onChange={(e) => handleCambioCampo(setComidas, comidas, idx, e.target.value)}
-                            />
-                            {comidas.length > 1 && (
-                              <button
-                                type="button"
-                                style={styles.removeBtn}
-                                onClick={() => handleEliminarCampo(setComidas, comidas, idx)}
-                              >
-                                ✕
-                              </button>
-                            )}
+                            <input type="number" step="any" placeholder="Monto" style={styles.input} value={montoComida} onChange={(e) => handleCambioCampo(setComidas, comidas, idx, e.target.value)} />
+                            {comidas.length > 1 && <button type="button" style={styles.removeBtn} onClick={() => handleEliminarCampo(setComidas, comidas, idx)}>✕</button>}
                           </div>
                         ))}
                       </div>
-
-                      {/* FOLIOS */}
                       <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
-                        <div style={styles.dynamicHeader}>
-                          <span>📄 Folios / Comprobantes {esChofer && '*'}</span>
-                          <button
-                            type="button"
-                            style={styles.addBtn}
-                            onClick={() => handleAgregarCampo(setFolios, folios)}
-                          >
-                            +
-                          </button>
-                        </div>
+                        <div style={styles.dynamicHeader}><span>📄 Folios / Comprobantes {esChofer && '*'}</span><button type="button" style={styles.addBtn} onClick={() => handleAgregarCampo(setFolios, folios)}>+</button></div>
                         {folios.map((folio, idx) => (
                           <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
-                            <input
-                              type="text"
-                              placeholder="Número de folio o ticket"
-                              style={styles.input}
-                              value={folio}
-                              onChange={(e) => handleCambioCampo(setFolios, folios, idx, e.target.value)}
-                              required={esChofer && idx === 0}
-                            />
-                            {folios.length > 1 && (
-                              <button
-                                type="button"
-                                style={styles.removeBtn}
-                                onClick={() => handleEliminarCampo(setFolios, folios, idx)}
-                              >
-                                ✕
-                              </button>
-                            )}
+                            <input type="text" placeholder="Folio" style={styles.input} value={folio} onChange={(e) => handleCambioCampo(setFolios, folios, idx, e.target.value)} required={esChofer && idx === 0} />
+                            {folios.length > 1 && <button type="button" style={styles.removeBtn} onClick={() => handleEliminarCampo(setFolios, folios, idx)}>✕</button>}
                           </div>
                         ))}
                       </div>
-
-                      {/* RESUMEN DE TOTAL DE VIÁTICOS */}
                       <div style={{ ...styles.fullRow, ...styles.totalSummaryBox }}>
-                        <div style={{ fontSize: '13px', color: '#64748b' }}>
-                          Casetas: ${totalCasetas.toFixed(2)} | Gasolina: ${totalGasolina.toFixed(2)} | Comidas: ${totalComidas.toFixed(2)}
-                        </div>
-                        <div style={{ fontSize: '18px', fontWeight: 'bold', color: vino, marginTop: '4px' }}>
-                          Total Viáticos: ${totalViaticosGeneral.toFixed(2)}
-                        </div>
+                        <div style={{ fontSize: '13px', color: '#64748b' }}>Casetas: ${totalCasetas.toFixed(2)} | Gasolina: ${totalGasolina.toFixed(2)} | Comidas: ${totalComidas.toFixed(2)}</div>
+                        <div style={{ fontSize: '18px', fontWeight: 'bold', color: vino, marginTop: '4px' }}>Total Viáticos: ${totalViaticosGeneral.toFixed(2)}</div>
                       </div>
                     </>
                   )}
-
                   {subPersonalActivo !== 88 && subPersonalActivo !== 7 && (
                     <>
                       <div style={styles.fieldGroup}>
                         <label style={styles.label}>Origen de pago *</label>
-                        <select
-                          style={styles.select}
-                          value={origenPago}
-                          onChange={(e) => {
-                            setOrigenPago(e.target.value)
-                            if (e.target.value !== 'TRANSFERENCIA') {
-                              setCuentaBancaria('')
-                              setNombreDuenioCuenta('')
-                            }
-                          }}
-                        >
+                        <select style={styles.select} value={origenPago} onChange={(e) => { setOrigenPago(e.target.value); if(e.target.value !== 'TRANSFERENCIA'){ setCuentaBancaria(''); setNombreDuenioCuenta(''); } }}>
                           <option value="EFECTIVO">Efectivo</option>
                           <option value="TRANSFERENCIA">Transferencia</option>
                         </select>
                       </div>
-
                       {origenPago === 'TRANSFERENCIA' && (
                         <div style={styles.fieldGroup}>
                           <label style={styles.label}>Cuenta Bancaria de Salida *</label>
-                          <select
-                            style={styles.select}
-                            value={cuentaBancaria}
-                            onChange={(e) => {
-                              setCuentaBancaria(e.target.value)
-                              if (e.target.value !== 'OTRO') setNombreDuenioCuenta('')
-                            }}
-                            required
-                          >
-                            <option value="">-- Seleccionar Cuenta --</option>
+                          <select style={styles.select} value={cuentaBancaria} onChange={(e) => { setCuentaBancaria(e.target.value); if(e.target.value !== 'OTRO') setNombreDuenioCuenta(''); }} required>
+                            <option value="">-- Seleccionar --</option>
                             <option value="Cuenta Fiscal">Cuenta fiscal</option>
                             <option value="OTRO">Otro</option>
                           </select>
                         </div>
                       )}
-
                       {origenPago === 'TRANSFERENCIA' && cuentaBancaria === 'OTRO' && (
                         <div style={styles.fieldGroup}>
-                          <label style={styles.label}>Nombre y Apellido del dueño de la cuenta *</label>
-                          <input
-                            type="text"
-                            placeholder="Ej. Eli Maravillas"
-                            style={styles.input}
-                            value={nombreDuenioCuenta}
-                            onChange={(e) => setNombreDuenioCuenta(e.target.value)}
-                            required
-                          />
+                          <label style={styles.label}>Dueño de la cuenta *</label>
+                          <input type="text" placeholder="Ej. Eli Maravillas" style={styles.input} value={nombreDuenioCuenta} onChange={(e) => setNombreDuenioCuenta(e.target.value)} required />
                         </div>
                       )}
-
                       <div style={styles.fieldGroup}>
                         <label style={styles.label}>Monto Pagado ($) *</label>
-                        <input
-                          type="number"
-                          step="any"
-                          min="0.01"
-                          placeholder="0.00"
-                          style={styles.input}
-                          value={monto}
-                          onChange={(e) => setMonto(e.target.value)}
-                          required
-                        />
+                        <input type="number" step="any" min="0.01" placeholder="0.00" style={styles.input} value={monto} onChange={(e) => setMonto(e.target.value)} required />
                       </div>
                     </>
                   )}
-
                   {subPersonalActivo !== 88 && (
                     <>
                       <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
-                        <label style={styles.label}>Comentarios u Observaciones (Opcional)</label>
-                        <textarea
-                          rows="2"
-                          placeholder="Notas sobre el pago de personal..."
-                          style={{ ...styles.input, resize: 'vertical' }}
-                          value={concepto}
-                          onChange={(e) => setConcepto(e.target.value)}
-                        />
+                        <label style={styles.label}>Comentarios (Opcional)</label>
+                        <textarea rows="2" placeholder="Notas..." style={{ ...styles.input, resize: 'vertical' }} value={concepto} onChange={(e) => setConcepto(e.target.value)} />
                       </div>
-
                       <div style={styles.fullRow}>
-                        <button type="button" onClick={handleGuardarPersonal} style={styles.submitButton}>
-                          Guardar Registro de Personal
-                        </button>
+                        <button type="button" onClick={handleGuardarPersonal} style={styles.submitButton}>Guardar Registro de Personal</button>
                       </div>
                     </>
                   )}
@@ -2558,373 +2056,152 @@ function FlujoCaja() {
         )}
       </div>
 
-      {/* 🏢 TARJETA PRINCIPAL 3: PLANTA Y MANTENIMIENTO */}
+      {/* 🏢 PLANTA Y MANTENIMIENTO */}
       <div style={styles.parentCard}>
-        <div
-          style={styles.parentHeader}
-          onClick={() => setPlantaAbierto(!plantaAbierto)}
-        >
+        <div style={styles.parentHeader} onClick={() => setPlantaAbierto(!plantaAbierto)}>
           <div style={styles.parentTitleGroup}>
             <span style={{ fontSize: '28px' }}>🏢</span>
             <div>
               <h3 style={styles.parentTitle}>PLANTA Y MANTENIMIENTO</h3>
-              <p style={styles.parentSubtitle}>
-                Pago de servicios públicos de la fábrica, mantenimientos de vehículos y compra de herramientas.
-              </p>
+              <p style={styles.parentSubtitle}>Servicios públicos, mantenimientos de vehículos y herramientas.</p>
             </div>
           </div>
-          <span style={styles.toggleBadge}>
-            {plantaAbierto ? '▼ Ocultar' : '▶ Desplegar'}
-          </span>
+          <span style={styles.toggleBadge}>{plantaAbierto ? '▼ Ocultar' : '▶ Desplegar'}</span>
         </div>
-
         {plantaAbierto && (
           <div>
             <div style={styles.cardsContainer}>
-              <div
-                style={{ ...styles.card, ...(subPlantaActivo === 8 ? styles.cardActive : {}) }}
-                onClick={() => handleSelectSubPlanta(8)}
-              >
-                <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Servicios Públicos</span>
-                  <span style={styles.cardIcon}>⚡</span>
-                </div>
-                <p style={styles.cardDesc}>Pago de Luz (CFE) y Agua potable de la planta.</p>
+              <div style={{ ...styles.card, ...(subPlantaActivo === 8 ? styles.cardActive : {}) }} onClick={() => handleSelectSubPlanta(8)}>
+                <div style={styles.cardHeader}><span style={styles.cardName}>Servicios Públicos</span><span style={styles.cardIcon}>⚡</span></div>
+                <p style={styles.cardDesc}>Pago de Luz (CFE) y Agua potable.</p>
               </div>
-
-              <div
-                style={{ ...styles.card, ...(subPlantaActivo === 9 ? styles.cardActive : {}) }}
-                onClick={() => handleSelectSubPlanta(9)}
-              >
-                <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Mantenimientos</span>
-                  <span style={styles.cardIcon}>🔧</span>
-                </div>
-                <p style={styles.cardDesc}>Mantenimiento preventivo o correctivo de unidades y montacargas.</p>
+              <div style={{ ...styles.card, ...(subPlantaActivo === 9 ? styles.cardActive : {}) }} onClick={() => handleSelectSubPlanta(9)}>
+                <div style={styles.cardHeader}><span style={styles.cardName}>Mantenimientos</span><span style={styles.cardIcon}>🔧</span></div>
+                <p style={styles.cardDesc}>Unidades y montacargas.</p>
               </div>
-
-              <div
-                style={{ ...styles.card, ...(subPlantaActivo === 10 ? styles.cardActive : {}) }}
-                onClick={() => handleSelectSubPlanta(10)}
-              >
-                <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Herramientas y Refacciones</span>
-                  <span style={styles.cardIcon}>🛠️</span>
-                </div>
-                <p style={styles.cardDesc}>Compra de herramientas de trabajo y accesorios de planta.</p>
+              <div style={{ ...styles.card, ...(subPlantaActivo === 10 ? styles.cardActive : {}) }} onClick={() => handleSelectSubPlanta(10)}>
+                <div style={styles.cardHeader}><span style={styles.cardName}>Herramientas y Refacciones</span><span style={styles.cardIcon}>🛠️</span></div>
+                <p style={styles.cardDesc}>Compra de herramientas y accesorios.</p>
               </div>
             </div>
-
             {subPlantaActivo && (
               <div style={styles.formContainer}>
                 <div style={styles.formTitle}>
-                  <span>
-                    Estás capturando:{' '}
-                    {subPlantaActivo === 8 && '⚡ Servicios Públicos de Planta'}
-                    {subPlantaActivo === 9 && '🔧 Mantenimiento de Equipos / Unidades'}
-                    {subPlantaActivo === 10 && '🛠️ Herramientas y Refacciones'}
-                  </span>
-                  <button type="button" style={styles.closeBtn} onClick={() => setSubPlantaActivo(null)}>
-                    ✕ Cerrar
-                  </button>
+                  <span>Estás capturando: {subPlantaActivo === 8 && '⚡ Servicios Públicos'}{subPlantaActivo === 9 && '🔧 Mantenimiento'}{subPlantaActivo === 10 && '🛠️ Herramientas'}</span>
+                  <button type="button" style={styles.closeBtn} onClick={() => setSubPlantaActivo(null)}>✕ Cerrar</button>
                 </div>
-
                 <form onSubmit={(e) => e.preventDefault()} style={styles.grid}>
                   <div style={styles.fieldGroup}>
                     <label style={styles.label}>Fecha del Pago *</label>
-                    <input
-                      type="date"
-                      style={styles.input}
-                      value={fechaPago}
-                      onChange={(e) => setFechaPago(e.target.value)}
-                      required
-                    />
+                    <input type="date" style={styles.input} value={fechaPago} onChange={(e) => setFechaPago(e.target.value)} required />
                   </div>
-
                   <div style={styles.fieldGroup}>
                     <label style={styles.label}>Origen de pago *</label>
-                    <select
-                      style={styles.select}
-                      value={origenPago}
-                      onChange={(e) => {
-                        setOrigenPago(e.target.value)
-                        if (e.target.value !== 'TRANSFERENCIA') {
-                          setCuentaBancaria('')
-                          setNombreDuenioCuenta('')
-                        }
-                      }}
-                    >
+                    <select style={styles.select} value={origenPago} onChange={(e) => { setOrigenPago(e.target.value); if(e.target.value !== 'TRANSFERENCIA'){ setCuentaBancaria(''); setNombreDuenioCuenta(''); } }}>
                       <option value="EFECTIVO">Efectivo</option>
                       <option value="TRANSFERENCIA">Transferencia</option>
                     </select>
                   </div>
-
                   {origenPago === 'TRANSFERENCIA' && (
                     <div style={styles.fieldGroup}>
                       <label style={styles.label}>Cuenta Bancaria de Salida *</label>
-                      <select
-                        style={styles.select}
-                        value={cuentaBancaria}
-                        onChange={(e) => {
-                          setCuentaBancaria(e.target.value)
-                          if (e.target.value !== 'OTRO') setNombreDuenioCuenta('')
-                        }}
-                        required
-                      >
-                        <option value="">-- Seleccionar Cuenta --</option>
+                      <select style={styles.select} value={cuentaBancaria} onChange={(e) => { setCuentaBancaria(e.target.value); if(e.target.value !== 'OTRO') setNombreDuenioCuenta(''); }} required>
+                        <option value="">-- Seleccionar --</option>
                         <option value="Cuenta Fiscal">Cuenta fiscal</option>
                         <option value="OTRO">Otro</option>
                       </select>
                     </div>
                   )}
-
                   {origenPago === 'TRANSFERENCIA' && cuentaBancaria === 'OTRO' && (
                     <div style={styles.fieldGroup}>
-                      <label style={styles.label}>Nombre y Apellido del dueño de la cuenta *</label>
-                      <input
-                        type="text"
-                        placeholder="Ej. Eli Maravillas"
-                        style={styles.input}
-                        value={nombreDuenioCuenta}
-                        onChange={(e) => setNombreDuenioCuenta(e.target.value)}
-                        required
-                      />
+                      <label style={styles.label}>Dueño de la cuenta *</label>
+                      <input type="text" placeholder="Ej. Eli Maravillas" style={styles.input} value={nombreDuenioCuenta} onChange={(e) => setNombreDuenioCuenta(e.target.value)} required />
                     </div>
                   )}
-
-                  {/* FORMULARIO SUB 8: SERVICIOS PÚBLICOS */}
                   {subPlantaActivo === 8 && (
                     <>
                       <div style={styles.fieldGroup}>
                         <label style={styles.label}>Tipo de Servicio *</label>
-                        <select
-                          style={styles.select}
-                          value={tipoServicioPublico}
-                          onChange={(e) => setTipoServicioPublico(e.target.value)}
-                          required
-                        >
+                        <select style={styles.select} value={tipoServicioPublico} onChange={(e) => setTipoServicioPublico(e.target.value)} required>
                           <option value="">-- Seleccionar --</option>
                           <option value="LUZ (CFE)">Luz (CFE)</option>
                           <option value="AGUA POTABLE">Agua Potable</option>
                         </select>
                       </div>
-
                       <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
-                        <div style={styles.dynamicHeader}>
-                          <span>Desglose de Conceptos de Servicio</span>
-                          <button
-                            type="button"
-                            style={styles.addBtn}
-                            onClick={() => handleAgregarObjeto(setLineasServicios, lineasServicios, { concepto: '', monto: '' })}
-                          >
-                            +
-                          </button>
-                        </div>
+                        <div style={styles.dynamicHeader}><span>Desglose de Servicios</span><button type="button" style={styles.addBtn} onClick={() => handleAgregarObjeto(setLineasServicios, lineasServicios, { concepto: '', monto: '' })}>+</button></div>
                         {lineasServicios.map((linea, idx) => (
                           <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr auto', gap: '8px', marginBottom: '6px' }}>
-                            <input
-                              type="text"
-                              placeholder="Ej. Recibo Bimestral Planta 1"
-                              style={styles.input}
-                              value={linea.concepto}
-                              onChange={(e) => handleCambioObjeto(setLineasServicios, lineasServicios, idx, 'concepto', e.target.value)}
-                            />
-                            <input
-                              type="number"
-                              step="any"
-                              placeholder="Monto $"
-                              style={styles.input}
-                              value={linea.monto}
-                              onChange={(e) => handleCambioObjeto(setLineasServicios, lineasServicios, idx, 'monto', e.target.value)}
-                            />
-                            {lineasServicios.length > 1 && (
-                              <button
-                                type="button"
-                                style={styles.removeBtn}
-                                onClick={() => handleEliminarObjeto(setLineasServicios, lineasServicios, idx)}
-                              >
-                                ✕
-                              </button>
-                            )}
+                            <input type="text" placeholder="Concepto" style={styles.input} value={linea.concepto} onChange={(e) => handleCambioObjeto(setLineasServicios, lineasServicios, idx, 'concepto', e.target.value)} />
+                            <input type="number" step="any" placeholder="Monto $" style={styles.input} value={linea.monto} onChange={(e) => handleCambioObjeto(setLineasServicios, lineasServicios, idx, 'monto', e.target.value)} />
+                            {lineasServicios.length > 1 && <button type="button" style={styles.removeBtn} onClick={() => handleEliminarObjeto(setLineasServicios, lineasServicios, idx)}>✕</button>}
                           </div>
                         ))}
                       </div>
-
                       <div style={{ ...styles.fullRow, ...styles.totalSummaryBox }}>
-                        <div style={{ fontSize: '18px', fontWeight: 'bold', color: vino }}>
-                          Total Servicio: ${totalServiciosPublicos.toFixed(2)}
-                        </div>
+                        <div style={{ fontSize: '18px', fontWeight: 'bold', color: vino }}>Total Servicio: ${totalServiciosPublicos.toFixed(2)}</div>
                       </div>
                     </>
                   )}
-
-                  {/* FORMULARIO SUB 9: MANTENIMIENTOS */}
                   {subPlantaActivo === 9 && (
                     <>
                       <div style={styles.fieldGroup}>
                         <label style={styles.label}>Tipo de Equipo *</label>
-                        <select
-                          style={styles.select}
-                          value={tipoEquipo}
-                          onChange={(e) => {
-                            setTipoEquipo(e.target.value)
-                            setEquipoSeleccionado('')
-                          }}
-                        >
+                        <select style={styles.select} value={tipoEquipo} onChange={(e) => { setTipoEquipo(e.target.value); setEquipoSeleccionado(''); }}>
                           <option value="Unidad">Unidad Vehicular</option>
                           <option value="Montacargas">Montacargas</option>
                         </select>
                       </div>
-
                       <div style={styles.fieldGroup}>
                         <label style={styles.label}>Seleccionar {tipoEquipo} *</label>
-                        <select
-                          style={styles.select}
-                          value={equipoSeleccionado}
-                          onChange={(e) => setEquipoSeleccionado(e.target.value)}
-                          required
-                        >
+                        <select style={styles.select} value={equipoSeleccionado} onChange={(e) => setEquipoSeleccionado(e.target.value)} required>
                           <option value="">-- Seleccionar --</option>
-                          {tipoEquipo === 'Unidad'
-                            ? unidades.map((u) => (
-                                <option key={u.id_unidad} value={u.id_unidad}>
-                                  {u.nombre || u.placas}
-                                </option>
-                              ))
-                            : montacargas.map((m) => (
-                                <option key={m.id_montacargas} value={m.id_montacargas}>
-                                  {m.nombre || m.num_serie}
-                                </option>
-                              ))}
+                          {tipoEquipo === 'Unidad' ? unidades.map((u) => <option key={u.id_unidad} value={u.id_unidad}>{u.nombre || u.placas}</option>) : montacargas.map((m) => <option key={m.id_montacargas} value={m.id_montacargas}>{m.nombre || m.num_serie}</option>)}
                         </select>
                       </div>
-
                       <div style={styles.fieldGroup}>
                         <label style={styles.label}>Tipo de Mantenimiento *</label>
-                        <select
-                          style={styles.select}
-                          value={tipoServicioMantenimiento}
-                          onChange={(e) => setTipoServicioMantenimiento(e.target.value)}
-                          required
-                        >
+                        <select style={styles.select} value={tipoServicioMantenimiento} onChange={(e) => setTipoServicioMantenimiento(e.target.value)} required>
                           <option value="">-- Seleccionar --</option>
-                          <option value="PREVENTIVO">Preventivo (Afinación, Aceite)</option>
-                          <option value="CORRECTIVO">Correctivo (Reparación de falla)</option>
+                          <option value="PREVENTIVO">Preventivo</option>
+                          <option value="CORRECTIVO">Correctivo</option>
                         </select>
                       </div>
-
                       <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
-                        <div style={styles.dynamicHeader}>
-                          <span>Desglose de Trabajos / Refacciones</span>
-                          <button
-                            type="button"
-                            style={styles.addBtn}
-                            onClick={() => handleAgregarObjeto(setLineasMantenimiento, lineasMantenimiento, { concepto: '', monto: '' })}
-                          >
-                            +
-                          </button>
-                        </div>
+                        <div style={styles.dynamicHeader}><span>Desglose de Trabajos / Refacciones</span><button type="button" style={styles.addBtn} onClick={() => handleAgregarObjeto(setLineasMantenimiento, lineasMantenimiento, { concepto: '', monto: '' })}>+</button></div>
                         {lineasMantenimiento.map((linea, idx) => (
                           <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr auto', gap: '8px', marginBottom: '6px' }}>
-                            <input
-                              type="text"
-                              placeholder="Ej. Cambio de balatas / filtro"
-                              style={styles.input}
-                              value={linea.concepto}
-                              onChange={(e) => handleCambioObjeto(setLineasMantenimiento, lineasMantenimiento, idx, 'concepto', e.target.value)}
-                            />
-                            <input
-                              type="number"
-                              step="any"
-                              placeholder="Monto $"
-                              style={styles.input}
-                              value={linea.monto}
-                              onChange={(e) => handleCambioObjeto(setLineasMantenimiento, lineasMantenimiento, idx, 'monto', e.target.value)}
-                            />
-                            {lineasMantenimiento.length > 1 && (
-                              <button
-                                type="button"
-                                style={styles.removeBtn}
-                                onClick={() => handleEliminarObjeto(setLineasMantenimiento, lineasMantenimiento, idx)}
-                              >
-                                ✕
-                              </button>
-                            )}
+                            <input type="text" placeholder="Concepto" style={styles.input} value={linea.concepto} onChange={(e) => handleCambioObjeto(setLineasMantenimiento, lineasMantenimiento, idx, 'concepto', e.target.value)} />
+                            <input type="number" step="any" placeholder="Monto $" style={styles.input} value={linea.monto} onChange={(e) => handleCambioObjeto(setLineasMantenimiento, lineasMantenimiento, idx, 'monto', e.target.value)} />
+                            {lineasMantenimiento.length > 1 && <button type="button" style={styles.removeBtn} onClick={() => handleEliminarObjeto(setLineasMantenimiento, lineasMantenimiento, idx)}>✕</button>}
                           </div>
                         ))}
                       </div>
-
                       <div style={{ ...styles.fullRow, ...styles.totalSummaryBox }}>
-                        <div style={{ fontSize: '18px', fontWeight: 'bold', color: vino }}>
-                          Total Mantenimiento: ${totalMantenimiento.toFixed(2)}
-                        </div>
+                        <div style={{ fontSize: '18px', fontWeight: 'bold', color: vino }}>Total Mantenimiento: ${totalMantenimiento.toFixed(2)}</div>
                       </div>
                     </>
                   )}
-
-                  {/* FORMULARIO SUB 10: HERRAMIENTAS */}
                   {subPlantaActivo === 10 && (
                     <>
                       <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
-                        <div style={styles.dynamicHeader}>
-                          <span>Lista de Herramientas Adquiridas</span>
-                          <button
-                            type="button"
-                            style={styles.addBtn}
-                            onClick={() => handleAgregarObjeto(setLineasHerramientas, lineasHerramientas, { cantidad: '1', concepto: '', precio: '' })}
-                          >
-                            +
-                          </button>
-                        </div>
+                        <div style={styles.dynamicHeader}><span>Herramientas Adquiridas</span><button type="button" style={styles.addBtn} onClick={() => handleAgregarObjeto(setLineasHerramientas, lineasHerramientas, { cantidad: '1', concepto: '', precio: '' })}>+</button></div>
                         {lineasHerramientas.map((linea, idx) => (
                           <div key={idx} style={{ display: 'grid', gridTemplateColumns: '80px 2fr 1fr auto', gap: '8px', marginBottom: '6px' }}>
-                            <input
-                              type="number"
-                              placeholder="Cant."
-                              style={styles.input}
-                              value={linea.cantidad}
-                              onChange={(e) => handleCambioObjeto(setLineasHerramientas, lineasHerramientas, idx, 'cantidad', e.target.value)}
-                            />
-                            <input
-                              type="text"
-                              placeholder="Ej. Pala cuadrada, marro, flexómetro"
-                              style={styles.input}
-                              value={linea.concepto}
-                              onChange={(e) => handleCambioObjeto(setLineasHerramientas, lineasHerramientas, idx, 'concepto', e.target.value)}
-                            />
-                            <input
-                              type="number"
-                              step="any"
-                              placeholder="Precio Unit $"
-                              style={styles.input}
-                              value={linea.precio}
-                              onChange={(e) => handleCambioObjeto(setLineasHerramientas, lineasHerramientas, idx, 'precio', e.target.value)}
-                            />
-                            {lineasHerramientas.length > 1 && (
-                              <button
-                                type="button"
-                                style={styles.removeBtn}
-                                onClick={() => handleEliminarObjeto(setLineasHerramientas, lineasHerramientas, idx)}
-                              >
-                                ✕
-                              </button>
-                            )}
+                            <input type="number" placeholder="Cant." style={styles.input} value={linea.cantidad} onChange={(e) => handleCambioObjeto(setLineasHerramientas, lineasHerramientas, idx, 'cantidad', e.target.value)} />
+                            <input type="text" placeholder="Concepto" style={styles.input} value={linea.concepto} onChange={(e) => handleCambioObjeto(setLineasHerramientas, lineasHerramientas, idx, 'concepto', e.target.value)} />
+                            <input type="number" step="any" placeholder="Precio Unit $" style={styles.input} value={linea.precio} onChange={(e) => handleCambioObjeto(setLineasHerramientas, lineasHerramientas, idx, 'precio', e.target.value)} />
+                            {lineasHerramientas.length > 1 && <button type="button" style={styles.removeBtn} onClick={() => handleEliminarObjeto(setLineasHerramientas, lineasHerramientas, idx)}>✕</button>}
                           </div>
                         ))}
                       </div>
-
                       <div style={{ ...styles.fullRow, ...styles.totalSummaryBox }}>
-                        <div style={{ fontSize: '18px', fontWeight: 'bold', color: vino }}>
-                          Total Herramientas: ${totalHerramientas.toFixed(2)}
-                        </div>
+                        <div style={{ fontSize: '18px', fontWeight: 'bold', color: vino }}>Total Herramientas: ${totalHerramientas.toFixed(2)}</div>
                       </div>
                     </>
                   )}
-
                   <div style={styles.fullRow}>
-                    <button type="button" onClick={handleGuardarPlanta} style={styles.submitButton}>
-                      Guardar Gasto de Planta
-                    </button>
+                    <button type="button" onClick={handleGuardarPlanta} style={styles.submitButton}>Guardar Gasto de Planta</button>
                   </div>
                 </form>
               </div>
@@ -2933,295 +2210,130 @@ function FlujoCaja() {
         )}
       </div>
 
-      {/* 📊 TARJETA PRINCIPAL 4: GASTOS DEPARTAMENTALES */}
+      {/* 📊 GASTOS DEPARTAMENTALES */}
       <div style={styles.parentCard}>
-        <div
-          style={styles.parentHeader}
-          onClick={() => setDeptosAbierto(!deptosAbierto)}
-        >
+        <div style={styles.parentHeader} onClick={() => setDeptosAbierto(!deptosAbierto)}>
           <div style={styles.parentTitleGroup}>
             <span style={{ fontSize: '28px' }}>📊</span>
             <div>
               <h3 style={styles.parentTitle}>GASTOS DEPARTAMENTALES</h3>
-              <p style={styles.parentSubtitle}>
-                Gastos de Marketing, Caja Chica y Servicios Profesionales / Honorarios externos.
-              </p>
+              <p style={styles.parentSubtitle}>Marketing, Caja Chica y Servicios Profesionales.</p>
             </div>
           </div>
-          <span style={styles.toggleBadge}>
-            {deptosAbierto ? '▼ Ocultar' : '▶ Desplegar'}
-          </span>
+          <span style={styles.toggleBadge}>{deptosAbierto ? '▼ Ocultar' : '▶ Desplegar'}</span>
         </div>
-
         {deptosAbierto && (
           <div>
             <div style={styles.cardsContainer}>
-              <div
-                style={{ ...styles.card, ...(subDeptoActivo === 12 ? styles.cardActive : {}) }}
-                onClick={() => handleSelectSubDepto(12)}
-              >
-                <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Marketing</span>
-                  <span style={styles.cardIcon}>📢</span>
-                </div>
-                <p style={styles.cardDesc}>Publicidad en redes, eventos, lonas y material promocional.</p>
+              <div style={{ ...styles.card, ...(subDeptoActivo === 12 ? styles.cardActive : {}) }} onClick={() => handleSelectSubDepto(12)}>
+                <div style={styles.cardHeader}><span style={styles.cardName}>Marketing</span><span style={styles.cardIcon}>📢</span></div>
+                <p style={styles.cardDesc}>Publicidad en redes, eventos y lonas.</p>
               </div>
-
-              <div
-                style={{ ...styles.card, ...(subDeptoActivo === 13 ? styles.cardActive : {}) }}
-                onClick={() => handleSelectSubDepto(13)}
-              >
-                <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Caja Chica</span>
-                  <span style={styles.cardIcon}>📦</span>
-                </div>
-                <p style={styles.cardDesc}>Gastos menores imprevistos de oficina o insumos de limpieza.</p>
+              <div style={{ ...styles.card, ...(subDeptoActivo === 13 ? styles.cardActive : {}) }} onClick={() => handleSelectSubDepto(13)}>
+                <div style={styles.cardHeader}><span style={styles.cardName}>Caja Chica</span><span style={styles.cardIcon}>📦</span></div>
+                <p style={styles.cardDesc}>Gastos menores imprevistos.</p>
               </div>
-
-              <div
-                style={{ ...styles.card, ...(subDeptoActivo === 14 ? styles.cardActive : {}) }}
-                onClick={() => handleSelectSubDepto(14)}
-              >
-                <div style={styles.cardHeader}>
-                  <span style={styles.cardName}>Servicios Profesionales</span>
-                  <span style={styles.cardIcon}>💼</span>
-                </div>
-                <p style={styles.cardDesc}>Honorarios externos (Asesoría Contable por Alma Nely).</p>
+              <div style={{ ...styles.card, ...(subDeptoActivo === 14 ? styles.cardActive : {}) }} onClick={() => handleSelectSubDepto(14)}>
+                <div style={styles.cardHeader}><span style={styles.cardName}>Servicios Profesionales</span><span style={styles.cardIcon}>💼</span></div>
+                <p style={styles.cardDesc}>Asesoría contable externa.</p>
               </div>
             </div>
-
             {subDeptoActivo && (
               <div style={styles.formContainer}>
                 <div style={styles.formTitle}>
-                  <span>
-                    Estás capturando:{' '}
-                    {subDeptoActivo === 12 && '📢 Gastos de Marketing'}
-                    {subDeptoActivo === 13 && '📦 Gastos de Caja Chica'}
-                    {subDeptoActivo === 14 && '💼 Servicios Profesionales'}
-                  </span>
-                  <button type="button" style={styles.closeBtn} onClick={() => setSubDeptoActivo(null)}>
-                    ✕ Cerrar
-                  </button>
+                  <span>Estás capturando: {subDeptoActivo === 12 && '📢 Marketing'}{subDeptoActivo === 13 && '📦 Caja Chica'}{subDeptoActivo === 14 && '💼 Servicios Profesionales'}</span>
+                  <button type="button" style={styles.closeBtn} onClick={() => setSubDeptoActivo(null)}>✕ Cerrar</button>
                 </div>
-
                 <form onSubmit={(e) => e.preventDefault()} style={styles.grid}>
                   <div style={styles.fieldGroup}>
                     <label style={styles.label}>Origen de pago *</label>
-                    <select
-                      style={styles.select}
-                      value={origenPago}
-                      onChange={(e) => {
-                        setOrigenPago(e.target.value)
-                        if (e.target.value !== 'TRANSFERENCIA') {
-                          setCuentaBancaria('')
-                          setNombreDuenioCuenta('')
-                        }
-                      }}
-                    >
+                    <select style={styles.select} value={origenPago} onChange={(e) => { setOrigenPago(e.target.value); if(e.target.value !== 'TRANSFERENCIA'){ setCuentaBancaria(''); setNombreDuenioCuenta(''); } }}>
                       <option value="EFECTIVO">Efectivo</option>
                       <option value="TRANSFERENCIA">Transferencia</option>
                     </select>
                   </div>
-
                   {origenPago === 'TRANSFERENCIA' && (
                     <div style={styles.fieldGroup}>
                       <label style={styles.label}>Cuenta Bancaria de Salida *</label>
-                      <select
-                        style={styles.select}
-                        value={cuentaBancaria}
-                        onChange={(e) => {
-                          setCuentaBancaria(e.target.value)
-                          if (e.target.value !== 'OTRO') setNombreDuenioCuenta('')
-                        }}
-                        required
-                      >
-                        <option value="">-- Seleccionar Cuenta --</option>
+                      <select style={styles.select} value={cuentaBancaria} onChange={(e) => { setCuentaBancaria(e.target.value); if(e.target.value !== 'OTRO') setNombreDuenioCuenta(''); }} required>
+                        <option value="">-- Seleccionar --</option>
                         <option value="Cuenta Fiscal">Cuenta fiscal</option>
                         <option value="OTRO">Otro</option>
                       </select>
                     </div>
                   )}
-
                   {origenPago === 'TRANSFERENCIA' && cuentaBancaria === 'OTRO' && (
                     <div style={styles.fieldGroup}>
-                      <label style={styles.label}>Nombre y Apellido del dueño de la cuenta *</label>
-                      <input
-                        type="text"
-                        placeholder="Ej. Eli Maravillas"
-                        style={styles.input}
-                        value={nombreDuenioCuenta}
-                        onChange={(e) => setNombreDuenioCuenta(e.target.value)}
-                        required
-                      />
+                      <label style={styles.label}>Dueño de la cuenta *</label>
+                      <input type="text" placeholder="Ej. Eli Maravillas" style={styles.input} value={nombreDuenioCuenta} onChange={(e) => setNombreDuenioCuenta(e.target.value)} required />
                     </div>
                   )}
-
-                  {/* FORMULARIO SUB 12: MARKETING */}
                   {subDeptoActivo === 12 && (
                     <>
                       <div style={styles.fieldGroup}>
                         <label style={styles.label}>Fecha del Evento / Campaña *</label>
-                        <input
-                          type="date"
-                          style={styles.input}
-                          value={fechaPagoDepto}
-                          onChange={(e) => setFechaPagoDepto(e.target.value)}
-                          required
-                        />
+                        <input type="date" style={styles.input} value={fechaPagoDepto} onChange={(e) => setFechaPagoDepto(e.target.value)} required />
                       </div>
-
                       <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
-                        <div style={styles.dynamicHeader}>
-                          <span>Desglose de Gastos de Publicidad</span>
-                          <button
-                            type="button"
-                            style={styles.addBtn}
-                            onClick={() => handleAgregarObjeto(setLineasMarketing, lineasMarketing, { tipoGasto: '', monto: '', comentario: '' })}
-                          >
-                            +
-                          </button>
-                        </div>
+                        <div style={styles.dynamicHeader}><span>Desglose de Marketing</span><button type="button" style={styles.addBtn} onClick={() => handleAgregarObjeto(setLineasMarketing, lineasMarketing, { tipoGasto: '', monto: '', comentario: '' })}>+</button></div>
                         {lineasMarketing.map((item, idx) => (
                           <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 2fr auto', gap: '8px', marginBottom: '6px' }}>
-                            <select
-                              style={styles.select}
-                              value={item.tipoGasto}
-                              onChange={(e) => handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'tipoGasto', e.target.value)}
-                            >
+                            <select style={styles.select} value={item.tipoGasto} onChange={(e) => handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'tipoGasto', e.target.value)}>
                               <option value="">-- Concepto --</option>
                               <option value="Facebook Ads">Facebook / Meta Ads</option>
                               <option value="Lonas / Impresos">Lonas / Impresos</option>
                               <option value="Uniformes / Merch">Uniformes / Merch</option>
                               <option value="Evento / Exposición">Evento / Exposición</option>
                             </select>
-                            <input
-                              type="number"
-                              step="any"
-                              placeholder="Monto $"
-                              style={styles.input}
-                              value={item.monto}
-                              onChange={(e) => handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'monto', e.target.value)}
-                            />
-                            <input
-                              type="text"
-                              placeholder="Notas opcionales"
-                              style={styles.input}
-                              value={item.comentario}
-                              onChange={(e) => handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'comentario', e.target.value)}
-                            />
-                            {lineasMarketing.length > 1 && (
-                              <button
-                                type="button"
-                                style={styles.removeBtn}
-                                onClick={() => handleEliminarObjeto(setLineasMarketing, lineasMarketing, idx)}
-                              >
-                                ✕
-                              </button>
-                            )}
+                            <input type="number" step="any" placeholder="Monto $" style={styles.input} value={item.monto} onChange={(e) => handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'monto', e.target.value)} />
+                            <input type="text" placeholder="Notas" style={styles.input} value={item.comentario} onChange={(e) => handleCambioObjeto(setLineasMarketing, lineasMarketing, idx, 'comentario', e.target.value)} />
+                            {lineasMarketing.length > 1 && <button type="button" style={styles.removeBtn} onClick={() => handleEliminarObjeto(setLineasMarketing, lineasMarketing, idx)}>✕</button>}
                           </div>
                         ))}
                       </div>
-
                       <div style={{ ...styles.fullRow, ...styles.totalSummaryBox }}>
-                        <div style={{ fontSize: '18px', fontWeight: 'bold', color: vino }}>
-                          Total Marketing: ${totalMarketing.toFixed(2)}
-                        </div>
+                        <div style={{ fontSize: '18px', fontWeight: 'bold', color: vino }}>Total Marketing: ${totalMarketing.toFixed(2)}</div>
                       </div>
                     </>
                   )}
-
-                  {/* FORMULARIO SUB 13: CAJA CHICA */}
                   {subDeptoActivo === 13 && (
                     <>
                       <div style={styles.fieldGroup}>
                         <label style={styles.label}>Cantidad Adquirida (Opcional)</label>
-                        <input
-                          type="text"
-                          placeholder="Ej. 2 paquetes, 5 pzs"
-                          style={styles.input}
-                          value={cantidadCajaChica}
-                          onChange={(e) => setCantidadCajaChica(e.target.value)}
-                        />
+                        <input type="text" placeholder="Ej. 2 paquetes" style={styles.input} value={cantidadCajaChica} onChange={(e) => setCantidadCajaChica(e.target.value)} />
                       </div>
-
                       <div style={styles.fieldGroup}>
                         <label style={styles.label}>Monto Total ($) *</label>
-                        <input
-                          type="number"
-                          step="any"
-                          min="0.01"
-                          placeholder="0.00"
-                          style={styles.input}
-                          value={montoCajaChica}
-                          onChange={(e) => setMontoCajaChica(e.target.value)}
-                          required
-                        />
+                        <input type="number" step="any" min="0.01" placeholder="0.00" style={styles.input} value={montoCajaChica} onChange={(e) => setMontoCajaChica(e.target.value)} required />
                       </div>
-
                       <div style={{ ...styles.fieldGroup, ...styles.fullRow }}>
-                        <label style={styles.label}>Detalle del Gasto de Caja Chica *</label>
-                        <textarea
-                          rows="2"
-                          placeholder="Ej. Compra de hojas de papel, garrafones de agua, artículos de limpieza..."
-                          style={{ ...styles.input, resize: 'vertical' }}
-                          value={detalleCajaChica}
-                          onChange={(e) => setDetalleCajaChica(e.target.value)}
-                          required
-                        />
+                        <label style={styles.label}>Detalle del Gasto *</label>
+                        <textarea rows="2" placeholder="Detalles..." style={{ ...styles.input, resize: 'vertical' }} value={detalleCajaChica} onChange={(e) => setDetalleCajaChica(e.target.value)} required />
                       </div>
                     </>
                   )}
-
-                  {/* FORMULARIO SUB 14: SERVICIOS PROFESIONALES */}
                   {subDeptoActivo === 14 && (
                     <>
                       <div style={styles.fieldGroup}>
                         <label style={styles.label}>Fecha de Pago *</label>
-                        <input
-                          type="date"
-                          style={styles.input}
-                          value={fechaPagoDepto}
-                          onChange={(e) => setFechaPagoDepto(e.target.value)}
-                          required
-                        />
+                        <input type="date" style={styles.input} value={fechaPagoDepto} onChange={(e) => setFechaPagoDepto(e.target.value)} required />
                       </div>
-
                       <div style={styles.fieldGroup}>
                         <label style={styles.label}>Profesional / Proveedor *</label>
-                        <select
-                          style={styles.select}
-                          value={empleadoServicios}
-                          onChange={(e) => setEmpleadoServicios(e.target.value)}
-                          required
-                        >
+                        <select style={styles.select} value={empleadoServicios} onChange={(e) => setEmpleadoServicios(e.target.value)} required>
                           {empleados.map((e) => (
-                            <option key={e.id_empleado} value={e.id_empleado}>
-                              {e.nombre_completo || `${e.nombre} ${e.apellido1}`}
-                            </option>
+                            <option key={e.id_empleado} value={e.id_empleado}>{e.nombre_completo || `${e.nombre} ${e.apellido1}`}</option>
                           ))}
                         </select>
                       </div>
-
                       <div style={styles.fieldGroup}>
                         <label style={styles.label}>Monto de Honorarios ($) *</label>
-                        <input
-                          type="number"
-                          step="any"
-                          min="0.01"
-                          placeholder="0.00"
-                          style={styles.input}
-                          value={montoServicios}
-                          onChange={(e) => setMontoServicios(e.target.value)}
-                          required
-                        />
+                        <input type="number" step="any" min="0.01" placeholder="0.00" style={styles.input} value={montoServicios} onChange={(e) => setMontoServicios(e.target.value)} required />
                       </div>
                     </>
                   )}
-
                   <div style={styles.fullRow}>
-                    <button type="button" onClick={handleGuardarDeptos} style={styles.submitButton}>
-                      Guardar Gasto Departamental
-                    </button>
+                    <button type="button" onClick={handleGuardarDeptos} style={styles.submitButton}>Guardar Gasto Departamental</button>
                   </div>
                 </form>
               </div>
