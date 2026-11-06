@@ -3342,8 +3342,6 @@ app.get('/pagos/:id_pedido', async (req, res) => {
 })
 
 
-// 📊 CAJA Y FLUJO DE CAJA (EN TIEMPO REAL - FILTRADO POR PERIODO DE CAJA / MES)
-// =============================
 
 app.get('/api/caja/resumen', async (req, res) => {
   try {
@@ -3404,7 +3402,7 @@ app.get('/api/caja/resumen', async (req, res) => {
          
          UNION ALL
          
-         -- 2. Abonos de préstamos (Usando monto_abonado y fecha_abono)
+         -- 2. Abonos de préstamos (Usando estrictamente monto_abonado, origen_pago y fecha_abono, prohibido fecha_registro)
          SELECT 
            CAST(origen_pago AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS origen_pago, 
            monto_abonado AS monto 
@@ -3570,6 +3568,7 @@ app.get('/api/caja/resumen', async (req, res) => {
     res.status(500).json({ ok: false, error: err.message });
   }
 });
+
 
 // 2. REGISTRAR UN EGRESO GENERAL
 app.post('/api/egresos', async (req, res) => {
