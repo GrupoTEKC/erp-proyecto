@@ -201,7 +201,6 @@ const styles = {
     fontSize: '13px',
     fontWeight: 'bold'
   },
-  /* SUB-TARJETAS (HIJAS) */
   cardsContainer: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
@@ -242,7 +241,6 @@ const styles = {
     margin: 0,
     lineHeight: '1.3'
   },
-  /* FORMULARIO DE CAPTURA */
   formContainer: {
     backgroundColor: '#ffffff',
     border: `2px solid ${vino}`,
@@ -1181,17 +1179,10 @@ function FlujoCaja() {
 
     if (fechaDesde || fechaHasta) {
       if (!m.fecha) return false
-      const fechaMov = new Date(m.fecha)
+      const fechaMovStr = String(m.fecha).split('T')[0] // yyyy-mm-dd
       
-      if (fechaDesde) {
-        const fDesde = new Date(`${fechaDesde}T00:00:00`)
-        if (fechaMov < fDesde) return false
-      }
-      
-      if (fechaHasta) {
-        const fHasta = new Date(`${fechaHasta}T23:59:59`)
-        if (fechaMov > fHasta) return false
-      }
+      if (fechaDesde && fechaMovStr < fechaDesde) return false
+      if (fechaHasta && fechaMovStr > fechaHasta) return false
     }
 
     return true
@@ -1297,7 +1288,7 @@ function FlujoCaja() {
         </div>
       </header>
 
-      {/* TARJETAS DE SALDOS (KPIs) ALINEADAS AL ENDPOINT */}
+      {/* TARJETAS DE SALDOS (KPIs) */}
       <div style={styles.kpiGrid}>
         <div style={styles.kpiCard}>
           <p style={styles.kpiTitle}>Saldo general TEKC</p>
@@ -1525,7 +1516,7 @@ function FlujoCaja() {
                     <th style={styles.th}>Monto</th>
                     <th style={styles.th}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <span>Fecha y Hora</span>
+                        <span>Fecha y Hora (Desde / Hasta)</span>
                         <div style={{ display: 'flex', gap: '4px' }}>
                           <input
                             type="date"
@@ -1726,7 +1717,7 @@ function FlujoCaja() {
               </div>
               <div style={{ ...styles.card, ...(apartadoActivo === 3 ? styles.cardActive : {}) }} onClick={() => handleSelectApartado(3)}>
                 <div style={styles.cardHeader}><span style={styles.cardName}>Bolsa</span><span style={styles.cardIcon}>🛍️</span></div>
-                <p style={styles.cardDesc}>Bolsa de cada uno de nuestros productos.</p>
+                <p style={styles.cardDesc>Bolsa de cada uno de nuestros productos.</p>
               </div>
             </div>
             {apartadoActivo && (
@@ -2345,4 +2336,4 @@ function FlujoCaja() {
   )
 }
 
-export default FlujoCaja
+export file default FlujoCaja
