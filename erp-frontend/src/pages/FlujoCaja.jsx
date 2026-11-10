@@ -506,6 +506,11 @@ function FlujoCaja() {
   const [detalleCajaChica, setDetalleCajaChica] = useState('')
   const [montoCajaChica, setMontoCajaChica] = useState('')
 
+  
+  const [tiendaMateriaPrima, setTiendaMateriaPrima] = useState('')
+  const [cantidadMateriaPrima, setCantidadMateriaPrima] = useState('')
+  const [fechaPagoMateriaPrima, setFechaPagoMateriaPrima] = useState('')
+  
   const [empleadoServicios, setEmpleadoServicios] = useState('')
   const [montoServicios, setMontoServicios] = useState('')
 
@@ -572,6 +577,7 @@ function FlujoCaja() {
     }
   }, [fechaInicioSemana, fechaFinSemana])
 
+
   const handleSelectApartado = (idCat) => {
     setApartadoActivo(idCat)
     setSubopcionSeleccionada('')
@@ -581,7 +587,11 @@ function FlujoCaja() {
     setComprobante('')
     setCuentaBancaria('')
     setNombreDuenioCuenta('')
+    setTiendaMateriaPrima('')
+    setCantidadMateriaPrima('')
+    setFechaPagoMateriaPrima('')
   }
+  
 
   const handleSelectSubPersonal = (idSub) => {
     setSubPersonalActivo(idSub)
@@ -730,6 +740,7 @@ function FlujoCaja() {
 
   const totalMarketing = lineasMarketing.reduce((acc, item) => acc + (parseFloat(item.monto) || 0), 0)
 
+
   const handleGuardarOperativos = async () => {
     if (!monto || parseFloat(monto) <= 0) {
       alert('Por favor ingresa un monto válido.')
@@ -744,7 +755,8 @@ function FlujoCaja() {
     )
 
     if (apartadoActivo === 1 && subopcionSeleccionada) {
-      detalleFinal = `[MATERIA PRIMA: ${subopcionSeleccionada}] - ${baseConcepto}`
+      // 🌟 Opcional: Integrar el nombre de la tienda y cantidad en el concepto o enviarlos directos al backend
+      detalleFinal = `[MATERIA PRIMA: ${subopcionSeleccionada}] | Proveedor: ${tiendaMateriaPrima} | Cantidad: ${cantidadMateriaPrima} - ${baseConcepto}`
     } else if (apartadoActivo === 2 && subopcionSeleccionada) {
       detalleFinal = `[EPP: ${subopcionSeleccionada}] - ${baseConcepto}`
     } else if (apartadoActivo === 3 && prodEncontrado) {
@@ -765,7 +777,13 @@ function FlujoCaja() {
       cuenta_bancaria: cuentaFinal,
       id_producto_relacionado: apartadoActivo === 3 ? parseInt(productoSeleccionado) : null,
       concepto: detalleFinal,
-      num_comprobante: comprobante ? comprobante.trim() : null
+      num_comprobante: comprobante ? comprobante.trim() : null,
+      // 🌟 Añadimos estos campos solo si es Materia Prima (apartado 1)
+      ...(apartadoActivo === 1 && {
+        tienda: tiendaMateriaPrima.trim(),
+        cantidad: cantidadMateriaPrima.trim(),
+        fecha_pago: fechaPagoMateriaPrima
+      })
     }
 
     try {
@@ -793,6 +811,7 @@ function FlujoCaja() {
       alert('Ocurrió un error de conexión con el servidor.')
     }
   }
+  
 
   const handleGuardarPersonal = async () => {
     let idCategoriaFinal = 4
@@ -1727,20 +1746,43 @@ function FlujoCaja() {
                   <button type="button" style={styles.closeBtn} onClick={() => setApartadoActivo(null)}>✕ Cerrar</button>
                 </div>
                 <form onSubmit={(e) => e.preventDefault()} style={styles.grid}>
+                  
+
                   {apartadoActivo === 1 && (
-                    <div style={styles.fieldGroup}>
-                      <label style={styles.label}>Insumo de materia prima *</label>
-                      <select style={styles.select} value={subopcionSeleccionada} onChange={(e) => setSubopcionSeleccionada(e.target.value)} required>
-                        <option value="">-- Seleccionar insumo --</option>
-                        <option value="Cemento Blanco">Cemento blanco</option>
-                        <option value="Cemento Gris">Cemento gris</option>
-                        <option value="Cal">Cal</option>
-                        <option value="Impalpable">Impalpable</option>
-                        <option value="Aditivos">Aditivos</option>
-                        <option value="Malla">Malla</option>
-                      </select>
-                    </div>
+                    <>
+                      <div style={styles.fieldGroup}>
+                        <label style={styles.label}>Insumo de materia prima *</label>
+                        <select style={styles.select} value={subopcionSeleccionada} onChange={(e) => setSubopcionSeleccionada(e.target.value)} required>
+                          <option value="">-- Seleccionar insumo --</option>
+                          <option value="Cemento Blanco">Cemento blanco</option>
+                          <option value="Cemento Gris">Cemento gris</option>
+                          <option value="Cal">Cal</option>
+                          <option value="Impalpable">Impalpable</option>
+                          <option value="Aditivos">Aditivos</option>
+                          <option value="Malla">Malla</option>
+                        </select>
+                      </div>
+
+                      {/* 🌟 1. Nombre de la tienda / proveedor */}
+                      <div style={styles.fieldGroup}>
+                        <label style={styles.label}>Nombre de la Tienda / Proveedor *</label>
+                        <input type="text" placeholder="Ej. Construrama" style={styles.input} value={tiendaMateriaPrima} onChange={(e) => setTiendaMateriaPrima(e.target.value)} required />
+                      </div>
+
+                      {/* 🌟 2. Cantidad en texto libre */}
+                      <div style={styles.fieldGroup}>
+                        <label style={styles.label}>Cantidad *</label>
+                        <input type="text" placeholder="Ej. 4 toneladas o 3 kilos" style={styles.input} value={cantidadMateriaPrima} onChange={(e) => setCantidadMateriaPrima(e.target.value)} required />
+                      </div>
+
+                      {/* 🌟 3. Fecha real en que se pagó */}
+                      <div style={styles.fieldGroup}>
+                        <label style={styles.label}>Fecha real de pago *</label>
+                        <input type="date" style={styles.input} value={fechaPagoMateriaPrima} onChange={(e) => setFechaPagoMateriaPrima(e.target.value)} required />
+                      </div>
+                    </>
                   )}
+                  
                   {apartadoActivo === 2 && (
                     <div style={styles.fieldGroup}>
                       <label style={styles.label}>Tipo de equipo de protección *</label>
