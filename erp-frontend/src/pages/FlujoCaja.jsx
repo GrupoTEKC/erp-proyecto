@@ -1757,6 +1757,7 @@ function FlujoCaja() {
                           <option value="Cemento Blanco">Cemento blanco</option>
                           <option value="Cemento Gris">Cemento gris</option>
                           <option value="Cal">Cal</option>
+                          <option value="Marmolina">Marmolina</option>
                           <option value="Impalpable">Impalpable</option>
                           <option value="Aditivos">Aditivos</option>
                           <option value="Malla">Malla</option>
@@ -1765,19 +1766,19 @@ function FlujoCaja() {
 
                       {/* 🌟 1. Nombre de la tienda / proveedor */}
                       <div style={styles.fieldGroup}>
-                        <label style={styles.label}>Nombre de la Tienda / Proveedor *</label>
-                        <input type="text" placeholder="Ej. Construrama" style={styles.input} value={tiendaMateriaPrima} onChange={(e) => setTiendaMateriaPrima(e.target.value)} required />
+                        <label style={styles.label}>Nombre de la Tienda / Proveedor: *</label>
+                        <input type="text" placeholder="Ej. SUPLIMAT" style={styles.input} value={tiendaMateriaPrima} onChange={(e) => setTiendaMateriaPrima(e.target.value)} required />
                       </div>
 
                       {/* 🌟 2. Cantidad en texto libre */}
                       <div style={styles.fieldGroup}>
-                        <label style={styles.label}>Cantidad *</label>
-                        <input type="text" placeholder="Ej. 4 toneladas o 3 kilos" style={styles.input} value={cantidadMateriaPrima} onChange={(e) => setCantidadMateriaPrima(e.target.value)} required />
+                        <label style={styles.label}>Define la cantidad adquirida: *</label>
+                        <input type="text" placeholder="Ej. 4 Toneladas / Kilos / Bultos" style={styles.input} value={cantidadMateriaPrima} onChange={(e) => setCantidadMateriaPrima(e.target.value)} required />
                       </div>
 
                       {/* 🌟 3. Fecha real en que se pagó */}
                       <div style={styles.fieldGroup}>
-                        <label style={styles.label}>Fecha real de pago *</label>
+                        <label style={styles.label}>Fecha real de pago: *</label>
                         <input type="date" style={styles.input} value={fechaPagoMateriaPrima} onChange={(e) => setFechaPagoMateriaPrima(e.target.value)} required />
                       </div>
                     </>
