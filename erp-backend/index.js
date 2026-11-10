@@ -746,7 +746,9 @@ app.post('/egresos', async (req, res) => {
       id_ruta_relacionada,
       concepto,
       num_comprobante,
-      fecha_pago // Fecha reportada por el usuario desde el frontend
+      fecha_pago, // Fecha reportada por el usuario desde el frontend
+      tienda,     // Recibido desde el frontend (específico para Materias Primas)
+      cantidad    // Recibido desde el frontend (específico para Materias Primas)
     } = req.body
 
     // 1. Validaciones básicas de campos obligatorios
@@ -761,9 +763,6 @@ app.post('/egresos', async (req, res) => {
     }
     if (origen_pago === 'TRANSFERENCIA' && !cuenta_bancaria) {
       return res.status(400).json({ error: 'Debe especificar la cuenta bancaria de origen' })
-    }
-    if (!concepto) {
-      return res.status(400).json({ error: 'El concepto o detalle del gasto es obligatorio' })
     }
 
     // 2. Validación de regla de negocio según la categoría (ej. Servicios Profesionales)
@@ -780,16 +779,36 @@ app.post('/egresos', async (req, res) => {
       }
     }
 
-    // 3. Normalizar el concepto si viene como objeto
-    const conceptoString = typeof concepto === 'object' ? JSON.stringify(concepto) : String(concepto).trim()
+    // 3. Construcción inteligente del texto para la columna `concepto` (Tipo text)
+    let conceptoFinal = ''
 
-    // 4. Manejo de la fecha reportada por el usuario (fecha_hora)
+    // Si es el apartado de Materias Primas (id_categoria === 1), armamos el formato estructurado con Tienda y Cantidad
+    if (Number(id_categoria) === 1) {
+      const parts = []
+      if (tienda) parts.push(`[Tienda/Proveedor: ${tienda.trim()}]`)
+      if (cantidad) parts.push(`[Cantidad: ${cantidad.trim()}]`)
+      if (concepto && String(concepto).trim() !== '') {
+        parts.push(`- ${String(concepto).trim()}`)
+      }
+      conceptoFinal = parts.join(' ')
+    } else {
+      // Para cualquier otra categoría, procesamos el concepto normal
+      conceptoFinal = concepto ? String(concepto).trim() : ''
+    }
+
+    if (!conceptoFinal) {
+      return res.status(400).json({ error: 'El concepto o detalle del gasto es obligatorio' })
+    }
+
+    const conceptoString = typeof conceptoFinal === 'object' ? JSON.stringify(conceptoFinal) : conceptoFinal
+
+    // 4. Manejo de la fecha reportada por el usuario para `fecha_hora`
     const horaActual = new Date().toTimeString().split(' ')[0]
     const fechaReportada = fecha_pago 
       ? (fecha_pago.includes(':') ? fecha_pago : `${fecha_pago} ${horaActual}`)
       : new Date()
 
-    // 5. Inserción en la tabla flujo_egresos
+    // 5. Inserción estricta en la tabla flujo_egresos (usando únicamente columnas existentes)
     const [result] = await db.query(`
       INSERT INTO flujo_egresos (
         id_categoria, 
