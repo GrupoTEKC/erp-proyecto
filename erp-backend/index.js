@@ -3361,7 +3361,6 @@ app.get('/pagos/:id_pedido', async (req, res) => {
 })
 
 
-
 app.get('/api/caja/resumen', async (req, res) => {
   try {
     // A) Traer la caja abierta actual para obtener la fecha_inicio del periodo/mes
@@ -3405,19 +3404,19 @@ app.get('/api/caja/resumen', async (req, res) => {
       [fechaInicio, fechaInicio]
     );
 
-    // C) Sumar EGRESOS exactos del periodo (EXCLUYENDO id_categoria = 99 que son transferencias internas)
+    // C) Sumar EGRESOS exactos del periodo (EXCLUYENDO id_categoria = 15 que son transferencias internas)
     const [egresos] = await db.query(
       `SELECT 
         SUM(CASE WHEN UPPER(origen_pago) = 'EFECTIVO' THEN monto ELSE 0 END) AS total_egreso_efectivo,
         SUM(CASE WHEN UPPER(origen_pago) = 'TRANSFERENCIA' THEN monto ELSE 0 END) AS total_egreso_banco,
         SUM(monto) AS total_egresos
        FROM (
-         -- 1. Egresos definitivos / Gastos (Excluyendo categoría 99 de transferencias)
+         -- 1. Egresos definitivos / Gastos (Excluyendo categoría 15 de transferencias)
          SELECT 
            CAST(origen_pago AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS origen_pago, 
            monto 
          FROM flujo_egresos 
-         WHERE fecha_hora >= ? AND id_categoria != 99
+         WHERE fecha_hora >= ? AND id_categoria != 15
          
          UNION ALL
          
@@ -3449,7 +3448,7 @@ app.get('/api/caja/resumen', async (req, res) => {
     
     const saldoTEKC = montoInicialTotal + totalIngresos - totalEgresos;
 
-    // E) Lista de movimientos unificada para el historial (Sin prestamos_abonos)
+    // E) Lista de movimientos unificada para el historial (Excluyendo id_categoria = 15 de transferencias)
     const [movimientos] = await db.query(
       `(SELECT 
           p.id_pago AS id,
@@ -3519,7 +3518,7 @@ app.get('/api/caja/resumen', async (req, res) => {
           CAST(e.origen_pago AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS forma_pago,
           e.fecha_hora AS fecha
         FROM flujo_egresos e
-        WHERE e.fecha_hora >= ?)
+        WHERE e.fecha_hora >= ? AND e.id_categoria != 15)
 
        UNION ALL
 
@@ -3580,14 +3579,12 @@ app.post('/api/caja/transferencia', async (req, res) => {
       return res.status(400).json({ error: 'La fecha del movimiento es obligatoria' })
     }
 
-    // Estructuramos el concepto para guardarlo limpiamente en tu tabla
     const detalleConcepto = `[TRANSFERENCIA DE CAJAS] De ${origen} a ${destino} | Responsable: ${usuario || 'Sistema'} ${concepto ? '- ' + concepto.trim() : ''}`
 
     const horaActual = new Date().toTimeString().split(' ')[0]
     const fechaHoraMovimiento = fecha_movimiento.includes(':') ? fecha_movimiento : `${fecha_movimiento} ${horaActual}`
 
-    // Usamos id_categoria = 99 (Movimiento Interno) 
-    // y guardamos la fecha elegida por el usuario en `fecha_hora` (fecha_captura se llena solita en automático)
+    // Usamos id_categoria = 15 (La categoría recién creada que sí existe en la BD)
     const [result] = await db.query(`
       INSERT INTO flujo_egresos (
         id_categoria, 
@@ -3598,7 +3595,7 @@ app.post('/api/caja/transferencia', async (req, res) => {
         fecha_hora
       ) VALUES (?, ?, ?, ?, ?, ?)
     `, [
-      99, 
+      15, 
       monto,
       origen,
       destino === 'BANCO' ? 'Cuenta Interna / Banco' : null,
