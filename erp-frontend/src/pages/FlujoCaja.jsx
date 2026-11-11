@@ -1210,11 +1210,15 @@ function FlujoCaja() {
     const tipoUpper = m.tipo?.toUpperCase() || ''
     const esIngreso = tipoUpper === 'INGRESO'
     const esEgreso = tipoUpper === 'EGRESO'
+    const esTransferencia = tipoUpper === 'TRANSFERENCIA'
     const esTemporal = tipoUpper === 'GASTO TEMPORAL'
 
     if (filtroTipo === 'INGRESO' && !esIngreso) return false
     if (filtroTipo === 'EGRESO' && !esEgreso) return false
+    if (filtroTipo === 'TRANSFERENCIA' && !esTransferencia) return false 
     if (filtroTipo === 'GASTO TEMPORAL' && !esTemporal) return false
+    
+   
 
     if (busquedaTienda.trim() !== '') {
       const nombreTienda = (
@@ -1517,24 +1521,25 @@ function FlujoCaja() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <span>Tipo</span>
                         <select
-                          value={filtroTipo}
-                          onChange={(e) => setFiltroTipo(e.target.value)}
-                          style={{
-                            padding: '4px 8px',
-                            borderRadius: '6px',
-                            border: '1px solid #cbd5e1',
-                            fontSize: '12px',
-                            backgroundColor: '#ffffff',
-                            color: '#334155',
-                            cursor: 'pointer',
-                            fontWeight: 'normal'
-                          }}
+                        value={filtroTipo}
+                        onChange={(e) => setFiltroTipo(e.target.value)}
+                        style={{
+                        padding: '4px 8px',
+                        borderRadius: '6px',
+                        border: '1px solid #cbd5e1',
+                        fontSize: '12px',
+                        backgroundColor: '#ffffff',
+                        color: '#334155',
+                        cursor: 'pointer',
+                        fontWeight: 'normal'
+                        }}
                         >
-                          <option value="TODOS">🔍 Todos los tipos</option>
-                          <option value="INGRESO">🟢 INGRESO</option>
-                          <option value="EGRESO">🔴 EGRESO</option>
-                          <option value="GASTO TEMPORAL">🟡 GASTO TEMPORAL</option>
-                        </select>
+                        <option value="TODOS">🔍 Todos los tipos</option>
+                        <option value="INGRESO">🟢 INGRESO</option>
+                        <option value="EGRESO">🔴 EGRESO</option>
+                        <option value="TRANSFERENCIA">🟣 TRANSFERENCIA</option>
+                        <option value="GASTO TEMPORAL">🟡 GASTO TEMPORAL</option>
+                       </select>
                       </div>
                     </th>
                     <th style={styles.th}>
@@ -1658,8 +1663,9 @@ function FlujoCaja() {
                     </tr>
                   ) : (
                     movimientosFiltrados.map((m, idx) => {
-                      const tipoUpper = m.tipo?.toUpperCase() || ''
+                     const tipoUpper = m.tipo?.toUpperCase() || ''
                       const esIngreso = tipoUpper === 'INGRESO'
+                      const esTransferencia = tipoUpper === 'TRANSFERENCIA' 
                       const esTemporal = tipoUpper === 'GASTO TEMPORAL'
 
                       const nombreTienda =
@@ -1668,7 +1674,7 @@ function FlujoCaja() {
                         m.tienda_cliente ||
                         m.nombre_tienda ||
                         'Venta General'
-
+                      
                       const esRezagado =
                         m.es_rezagado === true ||
                         m.tipo_pedido === 'REZAGADO' ||
