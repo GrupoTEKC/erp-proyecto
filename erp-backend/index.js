@@ -3448,7 +3448,7 @@ app.get('/api/caja/resumen', async (req, res) => {
     
     const saldoTEKC = montoInicialTotal + totalIngresos - totalEgresos;
 
-    // E) Lista de movimientos unificada para el historial (Excluyendo id_categoria = 15 de transferencias)
+    // E) Lista de movimientos unificada para el historial (Excluyendo id_categoria = 15 de egresos y agregándolo como TRANSFERENCIA)
     const [movimientos] = await db.query(
       `(SELECT 
           p.id_pago AS id,
@@ -3535,8 +3535,22 @@ app.get('/api/caja/resumen', async (req, res) => {
         INNER JOIN empleados emp ON gt.id_empleado = emp.id_empleado
         WHERE gt.estatus = 'PENDIENTE' AND gt.fecha_entrega >= ?)
 
+       UNION ALL
+
+       (SELECT 
+          e.id_egreso AS id,
+          'TRANSFERENCIA' COLLATE utf8mb4_unicode_ci AS tipo,
+          CAST(e.concepto AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS tienda,
+          CAST(NULL AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS tipo_pedido,
+          CAST(e.concepto AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS concepto,
+          CAST(e.monto AS DECIMAL(10,2)) AS monto,
+          CAST(CONCAT(e.origen_pago, ' ➔ ', COALESCE(e.cuenta_bancaria, 'BANCO')) AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS forma_pago,
+          e.fecha_hora AS fecha
+        FROM flujo_egresos e
+        WHERE e.fecha_hora >= ? AND e.id_categoria = 15)
+
        ORDER BY fecha DESC`,
-      [fechaInicio, fechaInicio, fechaInicio, fechaInicio]
+      [fechaInicio, fechaInicio, fechaInicio, fechaInicio, fechaInicio] // 👈 5 parámetros para los 5 "?"
     );
     
     res.json({
