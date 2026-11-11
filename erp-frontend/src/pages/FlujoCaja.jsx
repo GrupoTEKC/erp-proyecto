@@ -697,7 +697,6 @@ function FlujoCaja() {
     }
   }
 
-  // 🌟 FUNCIÓN PARA GUARDAR LA TRANSFERENCIA DE CAJAS
   const handleGuardarMovimientoCaja = async () => {
     if (!montoMovimiento || parseFloat(montoMovimiento) <= 0) {
       alert('Por favor ingresa un monto válido.')
@@ -1218,8 +1217,6 @@ function FlujoCaja() {
     if (filtroTipo === 'TRANSFERENCIA' && !esTransferencia) return false 
     if (filtroTipo === 'GASTO TEMPORAL' && !esTemporal) return false
     
-   
-
     if (busquedaTienda.trim() !== '') {
       const nombreTienda = (
         m.tienda ||
@@ -1360,7 +1357,7 @@ function FlujoCaja() {
         </div>
       </header>
 
-      {/* 🌟 BOTÓN DE HACER MOVIMIENTO EN CAJA (Colocado arriba de las tarjetas de efectivo y banco) */}
+      {/* 🌟 BOTÓN DE HACER MOVIMIENTO EN CAJA */}
       <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '15px' }}>
         <button
           type="button"
@@ -1521,25 +1518,25 @@ function FlujoCaja() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <span>Tipo</span>
                         <select
-                        value={filtroTipo}
-                        onChange={(e) => setFiltroTipo(e.target.value)}
-                        style={{
-                        padding: '4px 8px',
-                        borderRadius: '6px',
-                        border: '1px solid #cbd5e1',
-                        fontSize: '12px',
-                        backgroundColor: '#ffffff',
-                        color: '#334155',
-                        cursor: 'pointer',
-                        fontWeight: 'normal'
-                        }}
+                          value={filtroTipo}
+                          onChange={(e) => setFiltroTipo(e.target.value)}
+                          style={{
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            border: '1px solid #cbd5e1',
+                            fontSize: '12px',
+                            backgroundColor: '#ffffff',
+                            color: '#334155',
+                            cursor: 'pointer',
+                            fontWeight: 'normal'
+                          }}
                         >
-                        <option value="TODOS">🔍 Todos los tipos</option>
-                        <option value="INGRESO">🟢 INGRESO</option>
-                        <option value="EGRESO">🔴 EGRESO</option>
-                        <option value="TRANSFERENCIA">🟣 TRANSFERENCIA</option>
-                        <option value="GASTO TEMPORAL">🟡 GASTO TEMPORAL</option>
-                       </select>
+                          <option value="TODOS">🔍 Todos los tipos</option>
+                          <option value="INGRESO">🟢 INGRESO</option>
+                          <option value="EGRESO">🔴 EGRESO</option>
+                          <option value="TRANSFERENCIA">🟣 TRANSFERENCIA</option>
+                          <option value="GASTO TEMPORAL">🟡 GASTO TEMPORAL</option>
+                        </select>
                       </div>
                     </th>
                     <th style={styles.th}>
@@ -1663,7 +1660,7 @@ function FlujoCaja() {
                     </tr>
                   ) : (
                     movimientosFiltrados.map((m, idx) => {
-                     const tipoUpper = m.tipo?.toUpperCase() || ''
+                      const tipoUpper = m.tipo?.toUpperCase() || ''
                       const esIngreso = tipoUpper === 'INGRESO'
                       const esTransferencia = tipoUpper === 'TRANSFERENCIA' 
                       const esTemporal = tipoUpper === 'GASTO TEMPORAL'
@@ -1688,6 +1685,16 @@ function FlujoCaja() {
                               style={
                                 esIngreso
                                   ? styles.badgeIngreso
+                                  : esTransferencia
+                                  ? {
+                                      backgroundColor: '#f3e8ff',
+                                      color: '#7e22ce',
+                                      padding: '4px 10px',
+                                      borderRadius: '12px',
+                                      fontWeight: 'bold',
+                                      fontSize: '12px',
+                                      display: 'inline-block'
+                                    }
                                   : esTemporal
                                   ? styles.badgeTemporal
                                   : styles.badgeEgreso
@@ -1729,12 +1736,15 @@ function FlujoCaja() {
                           <td
                             style={{
                               ...styles.td,
-                              ...(esIngreso ? styles.montoIngreso : styles.montoEgreso)
+                              color: esTransferencia ? '#7e22ce' : (esIngreso ? '#16a34a' : '#dc2626'),
+                              fontWeight: 'bold'
                             }}
                           >
-                            {esIngreso
-                              ? `+$${parseFloat(m.monto || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
-                              : `-$${parseFloat(m.monto || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`}
+                            {esTransferencia
+                              ? `$${parseFloat(m.monto || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+                              : (esIngreso
+                                  ? `+$${parseFloat(m.monto || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+                                  : `-$${parseFloat(m.monto || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`)}
                           </td>
                           <td style={styles.td}>
                             {m.fecha
