@@ -3405,23 +3405,23 @@ app.get('/api/caja/resumen', async (req, res) => {
       [fechaInicio, fechaInicio]
     );
 
-    // C) Sumar EGRESOS exactos del periodo (EXCLUSIVAMENTE flujo_egresos y gastos_temporales)
+    // C) Sumar EGRESOS exactos del periodo (EXCLUYENDO id_categoria = 99 que son transferencias internas)
     const [egresos] = await db.query(
       `SELECT 
         SUM(CASE WHEN UPPER(origen_pago) = 'EFECTIVO' THEN monto ELSE 0 END) AS total_egreso_efectivo,
         SUM(CASE WHEN UPPER(origen_pago) = 'TRANSFERENCIA' THEN monto ELSE 0 END) AS total_egreso_banco,
         SUM(monto) AS total_egresos
        FROM (
-         -- 1. Egresos definitivos / Gastos (Usando fecha_hora)
+         -- 1. Egresos definitivos / Gastos (Excluyendo categoría 99 de transferencias)
          SELECT 
            CAST(origen_pago AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS origen_pago, 
            monto 
          FROM flujo_egresos 
-         WHERE fecha_hora >= ?
+         WHERE fecha_hora >= ? AND id_categoria != 99
          
          UNION ALL
          
-         -- 2. Gastos temporales pendientes de comprobar (Usando monto_entregado y fecha_entrega)
+         -- 2. Gastos temporales pendientes de comprobar
          SELECT 
            CAST(origen_pago AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS origen_pago, 
            monto_entregado AS monto 
@@ -3563,6 +3563,60 @@ app.get('/api/caja/resumen', async (req, res) => {
     res.status(500).json({ ok: false, error: err.message });
   }
 });
+
+
+// Endpoint para Transferencia / Movimiento Interno entre Cajas
+app.post('/api/caja/transferencia', async (req, res) => {
+  try {
+    const { monto, origen, destino, fecha_movimiento, usuario, concepto } = req.body
+
+    if (!monto || Number(monto) <= 0) {
+      return res.status(400).json({ error: 'El monto debe ser mayor a 0' })
+    }
+    if (!origen || !destino || origen === destino) {
+      return res.status(400).json({ error: 'Selecciona un origen y destino válidos y diferentes' })
+    }
+    if (!fecha_movimiento) {
+      return res.status(400).json({ error: 'La fecha del movimiento es obligatoria' })
+    }
+
+    // Estructuramos el concepto para guardarlo limpiamente en tu tabla
+    const detalleConcepto = `[TRANSFERENCIA DE CAJAS] De ${origen} a ${destino} | Responsable: ${usuario || 'Sistema'} ${concepto ? '- ' + concepto.trim() : ''}`
+
+    const horaActual = new Date().toTimeString().split(' ')[0]
+    const fechaHoraMovimiento = fecha_movimiento.includes(':') ? fecha_movimiento : `${fecha_movimiento} ${horaActual}`
+
+    // Usamos id_categoria = 99 (Movimiento Interno) 
+    // y guardamos la fecha elegida por el usuario en `fecha_hora` (fecha_captura se llena solita en automático)
+    const [result] = await db.query(`
+      INSERT INTO flujo_egresos (
+        id_categoria, 
+        monto, 
+        origen_pago, 
+        cuenta_bancaria, 
+        concepto, 
+        fecha_hora
+      ) VALUES (?, ?, ?, ?, ?, ?)
+    `, [
+      99, 
+      monto,
+      origen,
+      destino === 'BANCO' ? 'Cuenta Interna / Banco' : null,
+      detalleConcepto,
+      fechaHoraMovimiento
+    ])
+
+    res.json({
+      success: true,
+      message: 'Transferencia de cajas registrada con éxito',
+      id_movimiento: result.insertId
+    })
+
+  } catch (err) {
+    console.error("❌ ERROR EN TRANSFERENCIA DE CAJA:", err)
+    res.status(500).json({ error: err.message })
+  }
+})
 
 
 // 2. REGISTRAR UN EGRESO GENERAL
