@@ -3482,6 +3482,7 @@ app.get('/api/caja/resumen', async (req, res) => {
     
     const saldoTEKC = montoInicialTotal + totalIngresos - totalEgresos;
 
+
     // E) Lista de movimientos unificada para el historial
     const [movimientos] = await db.query(
       `(SELECT 
@@ -3542,6 +3543,21 @@ app.get('/api/caja/resumen', async (req, res) => {
 
        UNION ALL
 
+       -- 🌟 NUEVO: Ventas de Bodega (Cliente 234) como Ingreso en Efectivo
+       (SELECT 
+          p.id_pedido AS id,
+          'INGRESO' COLLATE utf8mb4_unicode_ci AS tipo,
+          CAST('Venta Bodega' AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS tienda,
+          CAST('CONTADO' AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS tipo_pedido,
+          CAST(CONCAT('Venta Directa Bodega - Pedido #', p.id_pedido) AS CHAR(255)) COLLATE utf8mb4_unicode_ci AS concepto,
+          CAST(p.total AS DECIMAL(10,2)) AS monto,
+          CAST('EFECTIVO' AS CHAR(50)) COLLATE utf8mb4_unicode_ci AS forma_pago,
+          p.fecha AS fecha
+        FROM pedidos p
+        WHERE p.id_cliente = 234 AND p.fecha >= ?)
+
+       UNION ALL
+
        (SELECT 
           e.id_egreso AS id,
           'EGRESO' COLLATE utf8mb4_unicode_ci AS tipo,
@@ -3584,9 +3600,9 @@ app.get('/api/caja/resumen', async (req, res) => {
         WHERE e.fecha_hora >= ? AND e.id_categoria = 15)
 
        ORDER BY fecha DESC`,
-      [fechaInicio, fechaInicio, fechaInicio, fechaInicio, fechaInicio]
+      [fechaInicio, fechaInicio, fechaInicio, fechaInicio, fechaInicio, fechaInicio] 
     );
-    
+
     res.json({
       ok: true,
       caja_info: {
