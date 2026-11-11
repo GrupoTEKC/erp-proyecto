@@ -2482,9 +2482,9 @@ function FlujoCaja() {
           }}>
             <h3 style={{ color: vino, marginTop: 0, borderBottom: `2px solid ${vino}`, paddingBottom: "10px", display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <span>🔄 Transferencia de Cajas</span>
+                <span>🔄 TRANSFERENCIA ENTRE CAJAS</span>
                 <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#64748b', marginTop: '2px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Transferencia de Cajas
+                  En este apartado podras registrar los movimientos entre cajas (Efectivo ↔ Transferencia).
                 </div>
               </div>
               <button 
@@ -2504,8 +2504,8 @@ function FlujoCaja() {
                   value={cajaDestino} 
                   onChange={(e) => setCajaDestino(e.target.value)}
                 >
-                  <option value="BANCO">Banco (Se descuenta de Efectivo)</option>
-                  <option value="EFECTIVO">Efectivo (Se descuenta de Banco)</option>
+                  <option value="BANCO"> Agregar en banco (Se descuenta del efectivo)</option>
+                  <option value="EFECTIVO">Agregar en efectivo (Se descuenta del banco)</option>
                 </select>
               </div>
 
@@ -2538,7 +2538,7 @@ function FlujoCaja() {
                 <label style={{ fontSize: '13.5px', fontWeight: 'bold', color: '#334155' }}>Responsable (Quién realizó el movimiento) *</label>
                 <input 
                   type="text" 
-                  placeholder="Ej. Juan Pérez" 
+                  placeholder="Ej. Elizabeth Maravillas" 
                   style={styles.input} 
                   value={responsableMovimiento} 
                   onChange={(e) => setResponsableMovimiento(e.target.value)} 
@@ -2550,7 +2550,7 @@ function FlujoCaja() {
                 <label style={{ fontSize: '13.5px', fontWeight: 'bold', color: '#334155' }}>Comentarios (Opcional)</label>
                 <textarea 
                   rows="2" 
-                  placeholder="Ej. Depósito nocturno..." 
+                  placeholder="Ej. Se requeria para pagar un abono por transferencia" 
                   style={{ ...styles.input, resize: 'vertical' }} 
                   value={comentarioMovimiento} 
                   onChange={(e) => setComentarioMovimiento(e.target.value)} 
@@ -2586,7 +2586,7 @@ function FlujoCaja() {
                     fontWeight: 'bold'
                   }}
                 >
-                  Guardar Transferencia
+                  Guardar movimiento
                 </button>
               </div>
             </div>
