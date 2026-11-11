@@ -506,13 +506,20 @@ function FlujoCaja() {
   const [detalleCajaChica, setDetalleCajaChica] = useState('')
   const [montoCajaChica, setMontoCajaChica] = useState('')
 
-  
   const [tiendaMateriaPrima, setTiendaMateriaPrima] = useState('')
   const [cantidadMateriaPrima, setCantidadMateriaPrima] = useState('')
   const [fechaPagoMateriaPrima, setFechaPagoMateriaPrima] = useState('')
   
   const [empleadoServicios, setEmpleadoServicios] = useState('')
   const [montoServicios, setMontoServicios] = useState('')
+
+  // 🌟 NUEVOS ESTADOS PARA TRANSFERENCIA DE CAJAS
+  const [modalMovimientoAbierto, setModalMovimientoAbierto] = useState(false)
+  const [cajaDestino, setCajaDestino] = useState('BANCO')
+  const [montoMovimiento, setMontoMovimiento] = useState('')
+  const [fechaMovimiento, setFechaMovimiento] = useState(new Date().toISOString().slice(0, 10))
+  const [responsableMovimiento, setResponsableMovimiento] = useState('')
+  const [comentarioMovimiento, setComentarioMovimiento] = useState('')
 
   const cargarResumenCaja = async () => {
     setCargandoResumen(true)
@@ -577,7 +584,6 @@ function FlujoCaja() {
     }
   }, [fechaInicioSemana, fechaFinSemana])
 
-
   const handleSelectApartado = (idCat) => {
     setApartadoActivo(idCat)
     setSubopcionSeleccionada('')
@@ -592,7 +598,6 @@ function FlujoCaja() {
     setFechaPagoMateriaPrima('')
   }
   
-
   const handleSelectSubPersonal = (idSub) => {
     setSubPersonalActivo(idSub)
     setEmpleadoSeleccionado('')
@@ -692,6 +697,54 @@ function FlujoCaja() {
     }
   }
 
+  // 🌟 FUNCIÓN PARA GUARDAR LA TRANSFERENCIA DE CAJAS
+  const handleGuardarMovimientoCaja = async () => {
+    if (!montoMovimiento || parseFloat(montoMovimiento) <= 0) {
+      alert('Por favor ingresa un monto válido.')
+      return
+    }
+    if (!fechaMovimiento) {
+      alert('Por favor selecciona la fecha del movimiento.')
+      return
+    }
+    if (!responsableMovimiento.trim()) {
+      alert('Por favor ingresa el nombre del responsable.')
+      return
+    }
+
+    const origen = cajaDestino === 'BANCO' ? 'EFECTIVO' : 'BANCO'
+
+    try {
+      const res = await fetch(`${API}/api/caja/transferencia`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          monto: parseFloat(montoMovimiento),
+          origen: origen,
+          destino: cajaDestino,
+          fecha_movimiento: fechaMovimiento,
+          usuario: responsableMovimiento.trim(),
+          concepto: comentarioMovimiento.trim()
+        })
+      })
+
+      const data = await res.json()
+      if (res.ok && data.success) {
+        alert('¡Transferencia de cajas realizada con éxito!')
+        setModalMovimientoAbierto(false)
+        setMontoMovimiento('')
+        setResponsableMovimiento('')
+        setComentarioMovimiento('')
+        cargarResumenCaja()
+      } else {
+        alert(`Error: ${data.error || 'No se pudo completar el movimiento'}`)
+      }
+    } catch (err) {
+      console.error('Error al realizar transferencia:', err)
+      alert('Error de conexión con el servidor.')
+    }
+  }
+
   const handleEmpleadoViaticosChange = (idEmp) => {
     setEmpleadoSeleccionado(idEmp)
     const emp = empleados.find((e) => String(e.id_empleado) === String(idEmp))
@@ -740,7 +793,6 @@ function FlujoCaja() {
 
   const totalMarketing = lineasMarketing.reduce((acc, item) => acc + (parseFloat(item.monto) || 0), 0)
 
-
   const handleGuardarOperativos = async () => {
     if (!monto || parseFloat(monto) <= 0) {
       alert('Por favor ingresa un monto válido.')
@@ -755,7 +807,6 @@ function FlujoCaja() {
     )
 
     if (apartadoActivo === 1 && subopcionSeleccionada) {
-      // 🌟 Opcional: Integrar el nombre de la tienda y cantidad en el concepto o enviarlos directos al backend
       detalleFinal = `[MATERIA PRIMA: ${subopcionSeleccionada}] | Proveedor: ${tiendaMateriaPrima} | Cantidad: ${cantidadMateriaPrima} - ${baseConcepto}`
     } else if (apartadoActivo === 2 && subopcionSeleccionada) {
       detalleFinal = `[EPP: ${subopcionSeleccionada}] - ${baseConcepto}`
@@ -778,7 +829,6 @@ function FlujoCaja() {
       id_producto_relacionado: apartadoActivo === 3 ? parseInt(productoSeleccionado) : null,
       concepto: detalleFinal,
       num_comprobante: comprobante ? comprobante.trim() : null,
-      // 🌟 Añadimos estos campos solo si es Materia Prima (apartado 1)
       ...(apartadoActivo === 1 && {
         tienda: tiendaMateriaPrima.trim(),
         cantidad: cantidadMateriaPrima.trim(),
@@ -811,7 +861,6 @@ function FlujoCaja() {
       alert('Ocurrió un error de conexión con el servidor.')
     }
   }
-  
 
   const handleGuardarPersonal = async () => {
     let idCategoriaFinal = 4
@@ -1198,7 +1247,7 @@ function FlujoCaja() {
 
     if (fechaDesde || fechaHasta) {
       if (!m.fecha) return false
-      const fechaMovStr = String(m.fecha).split('T')[0] // yyyy-mm-dd
+      const fechaMovStr = String(m.fecha).split('T')[0]
       
       if (fechaDesde && fechaMovStr < fechaDesde) return false
       if (fechaHasta && fechaMovStr > fechaHasta) return false
@@ -1306,6 +1355,30 @@ function FlujoCaja() {
           <img src={logo} alt="Logo SCAE" style={styles.logo} />
         </div>
       </header>
+
+      {/* 🌟 BOTÓN DE HACER MOVIMIENTO EN CAJA (Colocado arriba de las tarjetas de efectivo y banco) */}
+      <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '15px' }}>
+        <button
+          type="button"
+          onClick={() => setModalMovimientoAbierto(true)}
+          style={{
+            backgroundColor: vino,
+            color: '#fff',
+            border: 'none',
+            padding: '10px 18px',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
+        >
+          🔄 Hacer movimiento en caja
+        </button>
+      </div>
 
       {/* TARJETAS DE SALDOS (KPIs) */}
       <div style={styles.kpiGrid}>
@@ -1746,8 +1819,6 @@ function FlujoCaja() {
                   <button type="button" style={styles.closeBtn} onClick={() => setApartadoActivo(null)}>✕ Cerrar</button>
                 </div>
                 <form onSubmit={(e) => e.preventDefault()} style={styles.grid}>
-                  
-
                   {apartadoActivo === 1 && (
                     <>
                       <div style={styles.fieldGroup}>
@@ -1764,19 +1835,16 @@ function FlujoCaja() {
                         </select>
                       </div>
 
-                      {/* 🌟 1. Nombre de la tienda / proveedor */}
                       <div style={styles.fieldGroup}>
                         <label style={styles.label}>Nombre de la Tienda / Proveedor: *</label>
                         <input type="text" placeholder="Ej. SUPLIMAT" style={styles.input} value={tiendaMateriaPrima} onChange={(e) => setTiendaMateriaPrima(e.target.value)} required />
                       </div>
 
-                      {/* 🌟 2. Cantidad en texto libre */}
                       <div style={styles.fieldGroup}>
                         <label style={styles.label}>Define la cantidad adquirida: *</label>
                         <input type="text" placeholder="Ej. 4 Toneladas / Kilos / Bultos" style={styles.input} value={cantidadMateriaPrima} onChange={(e) => setCantidadMateriaPrima(e.target.value)} required />
                       </div>
 
-                      {/* 🌟 3. Fecha real en que se pagó */}
                       <div style={styles.fieldGroup}>
                         <label style={styles.label}>Fecha real de pago: *</label>
                         <input type="date" style={styles.input} value={fechaPagoMateriaPrima} onChange={(e) => setFechaPagoMateriaPrima(e.target.value)} required />
@@ -2375,6 +2443,140 @@ function FlujoCaja() {
           </div>
         )}
       </div>
+
+      {/* 🌟 MODAL DE TRANSFERENCIA DE CAJAS */}
+      {modalMovimientoAbierto && (
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          backgroundColor: "rgba(0,0,0,0.5)",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: "#fff",
+            padding: "24px",
+            borderRadius: "10px",
+            width: "440px",
+            maxWidth: "90%",
+            boxShadow: "0 10px 25px rgba(0,0,0,0.25)",
+            border: `2px solid ${vino}`
+          }}>
+            <h3 style={{ color: vino, marginTop: 0, borderBottom: `2px solid ${vino}`, paddingBottom: "10px", display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <span>🔄 Transferencia de Cajas</span>
+                <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#64748b', marginTop: '2px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Transferencia de Cajas
+                </div>
+              </div>
+              <button 
+                onClick={() => setModalMovimientoAbierto(false)} 
+                style={{ background: 'none', border: 'none', fontSize: '16px', cursor: 'pointer', fontWeight: 'bold', color: '#64748b' }}
+              >
+                ✕
+              </button>
+            </h3>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '15px' }}>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '13.5px', fontWeight: 'bold', color: '#334155' }}>¿A qué caja deseas agregar dinero? *</label>
+                <select 
+                  style={styles.select} 
+                  value={cajaDestino} 
+                  onChange={(e) => setCajaDestino(e.target.value)}
+                >
+                  <option value="BANCO">Banco (Se descuenta de Efectivo)</option>
+                  <option value="EFECTIVO">Efectivo (Se descuenta de Banco)</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '13.5px', fontWeight: 'bold', color: '#334155' }}>Monto a transferir ($) *</label>
+                <input 
+                  type="number" 
+                  step="any" 
+                  min="0.01" 
+                  placeholder="0.00" 
+                  style={styles.input} 
+                  value={montoMovimiento} 
+                  onChange={(e) => setMontoMovimiento(e.target.value)} 
+                  required 
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '13.5px', fontWeight: 'bold', color: '#334155' }}>Fecha en que ocurrió el movimiento *</label>
+                <input 
+                  type="date" 
+                  style={styles.input} 
+                  value={fechaMovimiento} 
+                  onChange={(e) => setFechaMovimiento(e.target.value)} 
+                  required 
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '13.5px', fontWeight: 'bold', color: '#334155' }}>Responsable (Quién realizó el movimiento) *</label>
+                <input 
+                  type="text" 
+                  placeholder="Ej. Juan Pérez" 
+                  style={styles.input} 
+                  value={responsableMovimiento} 
+                  onChange={(e) => setResponsableMovimiento(e.target.value)} 
+                  required 
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '13.5px', fontWeight: 'bold', color: '#334155' }}>Comentarios (Opcional)</label>
+                <textarea 
+                  rows="2" 
+                  placeholder="Ej. Depósito nocturno..." 
+                  style={{ ...styles.input, resize: 'vertical' }} 
+                  value={comentarioMovimiento} 
+                  onChange={(e) => setComentarioMovimiento(e.target.value)} 
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setModalMovimientoAbierto(false)}
+                  style={{
+                    backgroundColor: '#fff',
+                    color: '#64748b',
+                    border: '1px solid #cbd5e1',
+                    padding: '10px 16px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleGuardarMovimientoCaja}
+                  style={{
+                    backgroundColor: vino,
+                    color: '#fff',
+                    border: 'none',
+                    padding: '10px 20px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  Guardar Transferencia
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
