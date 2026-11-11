@@ -3577,7 +3577,6 @@ app.get('/api/caja/resumen', async (req, res) => {
   }
 });
 
-
 // Endpoint para Transferencia / Movimiento Interno entre Cajas
 app.post('/api/caja/transferencia', async (req, res) => {
   try {
@@ -3593,12 +3592,17 @@ app.post('/api/caja/transferencia', async (req, res) => {
       return res.status(400).json({ error: 'La fecha del movimiento es obligatoria' })
     }
 
+    // 🌟 CORRECCIÓN CLAVE: 
+    // Si el dinero sale de BANCO, el origen de pago físico es TRANSFERENCIA.
+    // Si el dinero sale de EFECTIVO, el origen de pago físico es EFECTIVO.
+    const origenPagoReal = origen.toUpperCase() === 'BANCO' ? 'TRANSFERENCIA' : 'EFECTIVO';
+
     const detalleConcepto = `[TRANSFERENCIA DE CAJAS] De ${origen} a ${destino} | Responsable: ${usuario || 'Sistema'} ${concepto ? '- ' + concepto.trim() : ''}`
 
     const horaActual = new Date().toTimeString().split(' ')[0]
     const fechaHoraMovimiento = fecha_movimiento.includes(':') ? fecha_movimiento : `${fecha_movimiento} ${horaActual}`
 
-    // Usamos id_categoria = 15 (La categoría recién creada que sí existe en la BD)
+    // Usamos id_categoria = 15
     const [result] = await db.query(`
       INSERT INTO flujo_egresos (
         id_categoria, 
@@ -3611,8 +3615,8 @@ app.post('/api/caja/transferencia', async (req, res) => {
     `, [
       15, 
       monto,
-      origen,
-      destino === 'BANCO' ? 'Cuenta Interna / Banco' : null,
+      origenPagoReal, // 👈 Pasamos el valor limpio ('EFECTIVO' o 'TRANSFERENCIA')
+      destino,        // Guardamos el destino en cuenta_bancaria para que el historial lo lea bien (ej. 'BANCO' o 'EFECTIVO')
       detalleConcepto,
       fechaHoraMovimiento
     ])
@@ -3628,7 +3632,6 @@ app.post('/api/caja/transferencia', async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
-
 
 // 2. REGISTRAR UN EGRESO GENERAL
 app.post('/api/egresos', async (req, res) => {
