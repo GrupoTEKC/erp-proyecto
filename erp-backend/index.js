@@ -3378,7 +3378,7 @@ app.get('/api/caja/resumen', async (req, res) => {
     const cajaActiva = cajas[0];
     const fechaInicio = cajaActiva.fecha_inicio;
 
-    // B) Sumar INGRESOS exactos del periodo (Pagos por fecha_pago + Créditos Financieros por fecha_creacion)
+    // B) Sumar INGRESOS exactos del periodo (Pagos + Créditos Financieros + Ventas Bodega id_234)
     const [ingresos] = await db.query(
       `SELECT 
         SUM(CASE WHEN LOWER(metodo) = 'efectivo' THEN monto ELSE 0 END) AS total_ingreso_efectivo,
@@ -3400,8 +3400,17 @@ app.get('/api/caja/resumen', async (req, res) => {
            monto_original AS monto 
          FROM prestamos 
          WHERE tipo_deuda = 'FINANCIEROS' AND fecha_creacion >= ?
+
+         UNION ALL
+
+         -- 3. Ventas directas de Venta Bodega (id_cliente = 234) en efectivo
+         SELECT 
+           'efectivo' COLLATE utf8mb4_unicode_ci AS metodo, 
+           total AS monto 
+         FROM pedidos 
+         WHERE id_cliente = 234 AND fecha >= ?
        ) AS ingresos_totales`,
-      [fechaInicio, fechaInicio]
+      [fechaInicio, fechaInicio, fechaInicio]
     );
 
     // C) Sumar EGRESOS exactos del periodo (EXCLUYENDO id_categoria = 15 que son transferencias internas)
@@ -3450,15 +3459,15 @@ app.get('/api/caja/resumen', async (req, res) => {
 
     transferenciasCajas.forEach(t => {
       const montoT = Number(t.monto || 0);
-      const origenT = t.origen_pago?.toUpperCase();       // 'EFECTIVO' o 'TRANSFERENCIA' (que representa salida de banco)
+      const origenT = t.origen_pago?.toUpperCase();       // 'EFECTIVO' o 'TRANSFERENCIA'
       const destinoT = t.cuenta_bancaria?.toUpperCase(); // 'BANCO' o 'EFECTIVO'
 
       if (origenT === 'EFECTIVO' && destinoT === 'BANCO') {
-        ajusteEfectivo -= montoT; // Salió de efectivo físico
-        ajusteBanco += montoT;    // Entró a banco digital
+        ajusteEfectivo -= montoT;
+        ajusteBanco += montoT;
       } else if (origenT === 'TRANSFERENCIA' && destinoT === 'EFECTIVO') {
-        ajusteBanco -= montoT;    // Salió de banco digital
-        ajusteEfectivo += montoT; // Entró a efectivo físico
+        ajusteBanco -= montoT;
+        ajusteEfectivo += montoT;
       }
     });
 
@@ -3601,8 +3610,6 @@ app.get('/api/caja/resumen', async (req, res) => {
     res.status(500).json({ ok: false, error: err.message });
   }
 });
-
-
 
 // Endpoint para Transferencia / Movimiento Interno entre Cajas
 app.post('/api/caja/transferencia', async (req, res) => {
