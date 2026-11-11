@@ -3430,15 +3430,40 @@ app.get('/api/caja/resumen', async (req, res) => {
       [fechaInicio, fechaInicio]
     );
 
-    // D) Cálculo de Saldos Reales de Caja
+    // 🌟 C.1) Obtener las transferencias internas (Categoría 15) para ajustar las tarjetas de efectivo y banco
+    const [transferenciasCajas] = await db.query(
+      `SELECT origen_pago, cuenta_bancaria, monto 
+       FROM flujo_egresos 
+       WHERE fecha_hora >= ? AND id_categoria = 15`,
+      [fechaInicio]
+    );
+
+    // D) Cálculo de Saldos Reales de Caja con el ajuste de transferencias internas
     const ingEfectivo = Number(ingresos[0]?.total_ingreso_efectivo || 0);
     const ingBanco = Number(ingresos[0]?.total_ingreso_banco || 0);
 
     const egrEfectivo = Number(egresos[0]?.total_egreso_efectivo || 0);
     const egrBanco = Number(egresos[0]?.total_egreso_banco || 0);
 
-    const saldoEfectivo = Number(cajaActiva.monto_inicial_efectivo) + ingEfectivo - egrEfectivo;
-    const saldoBanco = Number(cajaActiva.monto_inicial_banco) + ingBanco - egrBanco;
+    let ajusteEfectivo = 0;
+    let ajusteBanco = 0;
+
+    transferenciasCajas.forEach(t => {
+      const montoT = Number(t.monto || 0);
+      const origenT = t.origen_pago?.toUpperCase();       // 'EFECTIVO' o 'TRANSFERENCIA' (que representa salida de banco)
+      const destinoT = t.cuenta_bancaria?.toUpperCase(); // 'BANCO' o 'EFECTIVO'
+
+      if (origenT === 'EFECTIVO' && destinoT === 'BANCO') {
+        ajusteEfectivo -= montoT; // Salió de efectivo físico
+        ajusteBanco += montoT;    // Entró a banco digital
+      } else if (origenT === 'TRANSFERENCIA' && destinoT === 'EFECTIVO') {
+        ajusteBanco -= montoT;    // Salió de banco digital
+        ajusteEfectivo += montoT; // Entró a efectivo físico
+      }
+    });
+
+    const saldoEfectivo = Number(cajaActiva.monto_inicial_efectivo) + ingEfectivo - egrEfectivo + ajusteEfectivo;
+    const saldoBanco = Number(cajaActiva.monto_inicial_banco) + ingBanco - egrBanco + ajusteBanco;
     const saldoTotal = saldoEfectivo + saldoBanco;
 
     // FÓRMULA SALDO TEKC (Apertura total + Total Ingresos - Total Egresos)
@@ -3448,7 +3473,7 @@ app.get('/api/caja/resumen', async (req, res) => {
     
     const saldoTEKC = montoInicialTotal + totalIngresos - totalEgresos;
 
-    // E) Lista de movimientos unificada para el historial (Excluyendo id_categoria = 15 de egresos y agregándolo como TRANSFERENCIA)
+    // E) Lista de movimientos unificada para el historial
     const [movimientos] = await db.query(
       `(SELECT 
           p.id_pago AS id,
@@ -3550,7 +3575,7 @@ app.get('/api/caja/resumen', async (req, res) => {
         WHERE e.fecha_hora >= ? AND e.id_categoria = 15)
 
        ORDER BY fecha DESC`,
-      [fechaInicio, fechaInicio, fechaInicio, fechaInicio, fechaInicio] // 👈 5 parámetros para los 5 "?"
+      [fechaInicio, fechaInicio, fechaInicio, fechaInicio, fechaInicio]
     );
     
     res.json({
@@ -3576,6 +3601,8 @@ app.get('/api/caja/resumen', async (req, res) => {
     res.status(500).json({ ok: false, error: err.message });
   }
 });
+
+
 
 // Endpoint para Transferencia / Movimiento Interno entre Cajas
 app.post('/api/caja/transferencia', async (req, res) => {
