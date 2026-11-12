@@ -63,7 +63,7 @@ function FlujoCajaLogin() {
     if (usuario === 'FlujCja_#08' && password === 'erfdFCAja242##') {
       localStorage.setItem('flujo_caja_auth', 'true')
       alert('✅ REVISAR ANTES DE AGREGAR O REALIZAR CUALQUIER MODIFICACION')
-      navigate('/flujo-de-caja') // O la ruta correspondiente configurada en tus rutas
+      navigate('/flujo-caja') // O la ruta correspondiente configurada en tus rutas
       return
     }
 
