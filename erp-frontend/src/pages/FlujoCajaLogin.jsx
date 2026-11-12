@@ -75,7 +75,7 @@ function FlujoCajaLogin() {
     <div style={styles.container}>
       <div style={styles.card}>
         <img src={logo} alt="Grupo TEKC" style={styles.logo} />
-        <h2 style={styles.title}>Consulta de Flujo de Caja</h2>
+        <h2 style={styles.title}>Flujo de caja</h2>
         <p style={{ marginBottom: '15px', color: '#555', fontSize: '13px' }}>
           Ingresa usuario y contraseña para consultar o registrar movimientos de caja
         </p>
