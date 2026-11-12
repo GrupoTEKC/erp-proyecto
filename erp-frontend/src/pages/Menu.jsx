@@ -118,7 +118,7 @@ function Menu() {
             </button>
           </Link>
 
-          {/* 🔥 NUEVO MÓDULO: Cuentas por pagar */}
+          {/* 🔥 MÓDULO: Cuentas por pagar */}
           <Link to="/cuentas-por-pagar-login" style={styles.link}>
             <button style={styles.button}>
               <span style={styles.icon}>💳</span> Cuentas por pagar
@@ -131,7 +131,8 @@ function Menu() {
             </button>
           </Link>
 
-          <Link to="/flujo-caja" style={styles.link}>
+          {/* 💰 LOGIN Y FLUJO DE CAJA */}
+          <Link to="/flujo-caja-login" style={styles.link}>
             <button style={styles.button}>
               <span style={styles.icon}>$</span> Flujo de caja
             </button>
@@ -140,7 +141,7 @@ function Menu() {
       </aside>
 
       <main style={styles.content}>
-        {/* Dashboard futuro */}
+      
       </main>
     </div>
   )
