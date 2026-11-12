@@ -2312,6 +2312,8 @@ function FlujoCaja() {
                           <option value="">-- Seleccionar --</option>
                           <option value="LUZ (CFE)">Luz (CFE)</option>
                           <option value="AGUA POTABLE">Agua Potable</option>
+                          <option value="GAS">Gas</option>
+                          <option value="INTERNET">Internet</option>
                         </select>
                       </div>
                       <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
