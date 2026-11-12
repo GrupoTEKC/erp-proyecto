@@ -483,6 +483,10 @@ function FlujoCaja() {
   const [comidas, setComidas] = useState([''])
   const [folios, setFolios] = useState([''])
 
+  // 🌟 ESTADOS PARA FECHA DE VIÁTICOS Y GASTOS VARIOS DENTRO DEL MISMO FORMULARIO
+  const [fechaViaticos, setFechaViaticos] = useState(new Date().toISOString().slice(0, 10))
+  const [gastosVariosViaticos, setGastosVariosViaticos] = useState([{ concepto: '', monto: '' }])
+
   const [plantaAbierto, setPlantaAbierto] = useState(false)
   const [subPlantaActivo, setSubPlantaActivo] = useState(null)
   const [fechaPago, setFechaPago] = useState('')
@@ -614,6 +618,8 @@ function FlujoCaja() {
     setGasolina([''])
     setComidas([''])
     setFolios([''])
+    setGastosVariosViaticos([{ concepto: '', monto: '' }])
+    setFechaViaticos(new Date().toISOString().slice(0, 10))
   }
 
   const handleSelectSubPlanta = (idSub) => {
@@ -780,7 +786,8 @@ function FlujoCaja() {
   const totalCasetas = casetas.reduce((acc, v) => acc + (parseFloat(v) || 0), 0)
   const totalGasolina = gasolina.reduce((acc, v) => acc + (parseFloat(v) || 0), 0)
   const totalComidas = comidas.reduce((acc, v) => acc + (parseFloat(v) || 0), 0)
-  const totalViaticosGeneral = totalCasetas + totalGasolina + totalComidas
+  const totalGastosVariosViaticos = gastosVariosViaticos.reduce((acc, item) => acc + (parseFloat(item.monto) || 0), 0)
+  const totalViaticosGeneral = totalCasetas + totalGasolina + totalComidas + totalGastosVariosViaticos
 
   const totalServiciosPublicos = lineasServicios.reduce((acc, item) => acc + (parseFloat(item.monto) || 0), 0)
   const totalMantenimiento = lineasMantenimiento.reduce((acc, item) => acc + (parseFloat(item.monto) || 0), 0)
@@ -828,10 +835,10 @@ function FlujoCaja() {
       id_producto_relacionado: apartadoActivo === 3 ? parseInt(productoSeleccionado) : null,
       concepto: detalleFinal,
       num_comprobante: comprobante ? comprobante.trim() : null,
+      fecha_pago: apartadoActivo === 1 ? fechaPagoMateriaPrima : new Date().toISOString().slice(0, 10),
       ...(apartadoActivo === 1 && {
         tienda: tiendaMateriaPrima.trim(),
-        cantidad: cantidadMateriaPrima.trim(),
-        fecha_pago: fechaPagoMateriaPrima
+        cantidad: cantidadMateriaPrima.trim()
       })
     }
 
@@ -878,9 +885,13 @@ function FlujoCaja() {
         alert('⚠️ Por favor selecciona el empleado que recibe los viáticos.')
         return
       }
+      if (!fechaViaticos) {
+        alert('⚠️ Por favor selecciona la fecha del gasto.')
+        return
+      }
 
       if (totalViaticosGeneral <= 0) {
-        alert('⚠️ Debe ingresar al menos un monto de gasto (Caseta, Gasolina o Comida).')
+        alert('⚠️ Debe ingresar al menos un monto de gasto válido.')
         return
       }
 
@@ -900,14 +911,20 @@ function FlujoCaja() {
       const nombreUnidad = uniObj ? (uniObj.nombre || uniObj.placas) : null
 
       const conceptoPayload = JSON.stringify({
-        resumen: `VIÁTICOS: Casetas $${totalCasetas} | Gasolina $${totalGasolina} | Comidas $${totalComidas}`,
+        resumen: `VIÁTICOS: Casetas $${totalCasetas} | Gasolina $${totalGasolina} | Comidas $${totalComidas} | Varios $${totalGastosVariosViaticos}`,
         desglose: {
           casetas: casetas.map(Number).filter(n => n > 0),
           gasolina: gasolina.map(Number).filter(n => n > 0),
-          comidas: comidas.map(Number).filter(n => n > 0)
+          comidas: comidas.map(Number).filter(n => n > 0),
+          gastos_varios: gastosVariosViaticos.filter(item => item.concepto.trim() && parseFloat(item.monto) > 0)
         },
         comentario: concepto.trim() || null
       })
+
+      // 🌟 AQUÍ MANDAMOS EL ARREGLO `gastos_varios` Y LA `fecha_pago` AL BACKEND
+      const gastosVariosValidos = gastosVariosViaticos.filter(
+        item => item.concepto.trim() && parseFloat(item.monto) > 0
+      )
 
       payload = {
         id_categoria: 8,
@@ -920,7 +937,9 @@ function FlujoCaja() {
         unidad_relacionada: nombreUnidad,
         id_ruta_relacionada: idRutaSeleccionada ? parseInt(idRutaSeleccionada) : null,
         concepto: conceptoPayload,
-        num_comprobante: foliosLimpios.length > 0 ? foliosLimpios.join(', ') : null
+        num_comprobante: foliosLimpios.length > 0 ? foliosLimpios.join(', ') : null,
+        fecha_pago: fechaViaticos, // 👈 Fecha obligatoria seleccionada por el usuario
+        gastos_varios: gastosVariosValidos.length > 0 ? gastosVariosValidos : undefined
       }
 
     } else {
@@ -956,7 +975,8 @@ function FlujoCaja() {
         id_empleado: empleadoSeleccionado ? parseInt(empleadoSeleccionado) : null,
         empleado_relacionado: nombreEmpleado,
         concepto: baseConcepto,
-        num_comprobante: comprobante ? comprobante.trim() : null
+        num_comprobante: comprobante ? comprobante.trim() : null,
+        fecha_pago: new Date().toISOString().slice(0, 10)
       }
     }
 
@@ -1140,7 +1160,8 @@ function FlujoCaja() {
         monto: parseFloat(montoCajaChica),
         origen_pago: origenPago,
         cuenta_bancaria: cuentaFinal,
-        concepto: `${cant}${detalleCajaChica.trim()}`
+        concepto: `${cant}${detalleCajaChica.trim()}`,
+        fecha_pago: new Date().toISOString().slice(0, 10)
       }
     } else if (subDeptoActivo === 14) {
       if (!fechaPagoDepto || !empleadoServicios || !montoServicios || parseFloat(montoServicios) <= 0) {
@@ -1958,7 +1979,7 @@ function FlujoCaja() {
               </div>
               <div style={{ ...styles.card, ...(subPersonalActivo === 7 ? styles.cardActive : {}) }} onClick={() => handleSelectSubPersonal(7)}>
                 <div style={styles.cardHeader}><span style={styles.cardName}>Viáticos</span><span style={styles.cardIcon}>✈️</span></div>
-                <p style={styles.cardDesc}>Asignaciones directas para transporte, comidas y despensa.</p>
+                <p style={styles.cardDesc}>Asignaciones directas para transporte, comidas, gastos varios y despensa.</p>
               </div>
               <div style={{ ...styles.card, ...(subPersonalActivo === 88 ? styles.cardActive : {}) }} onClick={() => handleSelectSubPersonal(88)}>
                 <div style={styles.cardHeader}><span style={styles.cardName}>Entrega Temporal</span><span style={styles.cardIcon}>⏳</span></div>
@@ -2066,6 +2087,10 @@ function FlujoCaja() {
                         </select>
                       </div>
                       <div style={styles.fieldGroup}>
+                        <label style={styles.label}>Fecha del Gasto *</label>
+                        <input type="date" style={styles.input} value={fechaViaticos} onChange={(e) => setFechaViaticos(e.target.value)} required />
+                      </div>
+                      <div style={styles.fieldGroup}>
                         <label style={styles.label}>Ruta de Viaje {esChofer && '*'}</label>
                         <select style={styles.select} value={idRutaSeleccionada} onChange={(e) => setIdRutaSeleccionada(e.target.value)} required={esChofer}>
                           <option value="">-- Seleccionar ruta --</option>
@@ -2110,6 +2135,49 @@ function FlujoCaja() {
                           </div>
                         ))}
                       </div>
+
+                      {/* 🌟 BLOQUE DE GASTOS VARIOS CON BOTÓN + DENTRO DE VIÁTICOS */}
+                      <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
+                        <div style={styles.dynamicHeader}>
+                          <span>📝 Gastos Varios (Concepto y Monto)</span>
+                          <button 
+                            type="button" 
+                            style={styles.addBtn} 
+                            onClick={() => handleAgregarObjeto(setGastosVariosViaticos, gastosVariosViaticos, { concepto: '', monto: '' })}
+                          >
+                            +
+                          </button>
+                        </div>
+                        {gastosVariosViaticos.map((linea, idx) => (
+                          <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr auto', gap: '8px', marginBottom: '6px' }}>
+                            <input 
+                              type="text" 
+                              placeholder="Concepto del gasto" 
+                              style={styles.input} 
+                              value={linea.concepto} 
+                              onChange={(e) => handleCambioObjeto(setGastosVariosViaticos, gastosVariosViaticos, idx, 'concepto', e.target.value)} 
+                            />
+                            <input 
+                              type="number" 
+                              step="any" 
+                              placeholder="Monto $" 
+                              style={styles.input} 
+                              value={linea.monto} 
+                              onChange={(e) => handleCambioObjeto(setGastosVariosViaticos, gastosVariosViaticos, idx, 'monto', e.target.value)} 
+                            />
+                            {gastosVariosViaticos.length > 1 && (
+                              <button 
+                                type="button" 
+                                style={styles.removeBtn} 
+                                onClick={() => handleEliminarObjeto(setGastosVariosViaticos, gastosVariosViaticos, idx)}
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
                       <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
                         <div style={styles.dynamicHeader}><span>📄 Folios / Comprobantes {esChofer && '*'}</span><button type="button" style={styles.addBtn} onClick={() => handleAgregarCampo(setFolios, folios)}>+</button></div>
                         {folios.map((folio, idx) => (
@@ -2120,7 +2188,7 @@ function FlujoCaja() {
                         ))}
                       </div>
                       <div style={{ ...styles.fullRow, ...styles.totalSummaryBox }}>
-                        <div style={{ fontSize: '13px', color: '#64748b' }}>Casetas: ${totalCasetas.toFixed(2)} | Gasolina: ${totalGasolina.toFixed(2)} | Comidas: ${totalComidas.toFixed(2)}</div>
+                        <div style={{ fontSize: '13px', color: '#64748b' }}>Casetas: ${totalCasetas.toFixed(2)} | Gasolina: ${totalGasolina.toFixed(2)} | Comidas: ${totalComidas.toFixed(2)} | Varios: ${totalGastosVariosViaticos.toFixed(2)}</div>
                         <div style={{ fontSize: '18px', fontWeight: 'bold', color: vino, marginTop: '4px' }}>Total Viáticos: ${totalViaticosGeneral.toFixed(2)}</div>
                       </div>
                     </>
