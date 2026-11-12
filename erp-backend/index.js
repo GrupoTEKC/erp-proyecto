@@ -3683,12 +3683,13 @@ app.post('/api/caja/transferencia', async (req, res) => {
   }
 })
 
-// 2. REGISTRAR UN EGRESO GENERAL
-app.post('/api/egresos', async (req, res) => {
+
+app.post('/egresos', async (req, res) => {
+  const conn = await db.getConnection()
   try {
     const {
       id_categoria,
-      monto,
+      monto, // Monto tradicional único (gasto normal o materia prima)
       origen_pago,
       cuenta_bancaria,
       id_producto_relacionado,
@@ -3699,50 +3700,169 @@ app.post('/api/egresos', async (req, res) => {
       id_ruta_relacionada,
       concepto,
       num_comprobante,
-      id_prestamo_abono
-    } = req.body;
+      fecha_pago, // 🌟 Fecha seleccionada por el usuario (OBLIGATORIA)
+      tienda,     
+      cantidad,   
+      gastos_varios // 🌟 Arreglo dinámico para múltiples gastos varios [{ concepto, monto }, ...]
+    } = req.body
 
-    if (!id_categoria || !monto || !origen_pago || !concepto) {
-      return res.status(400).json({ ok: false, error: 'Faltan campos obligatorios' });
+    // 1. Validaciones básicas comunes
+    if (!id_categoria) {
+      return res.status(400).json({ error: 'La categoría del gasto es obligatoria' })
+    }
+    if (!origen_pago) {
+      return res.status(400).json({ error: 'El origen de pago es obligatorio' })
+    }
+    if (origen_pago === 'TRANSFERENCIA' && !cuenta_bancaria) {
+      return res.status(400).json({ error: 'Debe especificar la cuenta bancaria de origen' })
     }
 
-    const [result] = await db.query(
-      `INSERT INTO flujo_egresos (
-        id_categoria, monto, origen_pago, cuenta_bancaria,
-        id_producto_relacionado, id_empleado, empleado_relacionado,
-        unidad_relacionada, id_unidad_relacionada, id_ruta_relacionada,
-        concepto, num_comprobante, id_prestamo_abono
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
+    // 🌟 2. Validación obligatoria de la fecha seleccionada por el usuario
+    if (!fecha_pago || String(fecha_pago).trim() === '') {
+      return res.status(400).json({ error: 'La fecha del gasto es obligatoria' })
+    }
+
+    // 3. Validación de regla de negocio según la categoría
+    const [catRows] = await conn.query(
+      'SELECT requiere_empleado FROM categorias_egresos WHERE id_categoria = ?',
+      [id_categoria]
+    )
+
+    if (catRows.length > 0 && catRows[0].requiere_empleado === 1) {
+      if (!id_empleado && !empleado_relacionado) {
+        return res.status(400).json({ 
+          error: 'Esta categoría requiere seleccionar o especificar obligatoriamente un empleado' 
+        })
+      }
+    }
+
+    // Formatear la fecha reportada por el usuario para `fecha_hora`
+    const horaActual = new Date().toTimeString().split(' ')[0]
+    const fechaHoraReportada = fecha_pago.includes(':') ? fecha_pago : `${fecha_pago} ${horaActual}`
+
+    await conn.beginTransaction()
+
+    // 🌟 4. CASO ESPECIAL: GASTOS VARIOS DINÁMICOS (Múltiples filas con botón +)
+    if (Array.isArray(gastos_varios) && gastos_varios.length > 0) {
+      for (const item of gastos_varios) {
+        const montoItem = Number(item.monto)
+        const conceptoItem = item.concepto ? String(item.concepto).trim() : ''
+
+        // 🔥 VALIDACIÓN ESTRICTA DEL MONTO Y CONCEPTO EN CADA GASTO VARIO
+        if (isNaN(montoItem) || montoItem <= 0 || !conceptoItem) {
+          await conn.rollback()
+          return res.status(400).json({ error: 'Cada gasto vario debe tener un concepto válido y un monto mayor a 0' })
+        }
+
+        const conceptoFinal = `[Gasto Vario] ${conceptoItem}`
+
+        await conn.query(`
+          INSERT INTO flujo_egresos (
+            id_categoria, 
+            monto, 
+            origen_pago, 
+            cuenta_bancaria, 
+            id_producto_relacionado, 
+            id_empleado,
+            empleado_relacionado, 
+            unidad_relacionada, 
+            id_unidad_relacionada,
+            id_ruta_relacionada,
+            concepto, 
+            num_comprobante,
+            fecha_hora
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+          id_categoria,
+          montoItem, // 👈 Aquí se guarda el monto específico de este gasto vario
+          origen_pago,
+          origen_pago === 'TRANSFERENCIA' ? cuenta_bancaria : null,
+          id_producto_relacionado || null,
+          id_empleado || null,
+          empleado_relacionado || null,
+          unidad_relacionada || null,
+          id_unidad_relacionada || null,
+          id_ruta_relacionada || null,
+          conceptoFinal,
+          num_comprobante ? num_comprobante.trim().toUpperCase() : null,
+          fechaHoraReportada
+        ])
+      }
+    } else {
+      // 🌟 5. CASO TRADICIONAL (Casetas, Gasolina, Comidas, Materias Primas o Gasto Único)
+      const montoNum = Number(monto)
+      if (isNaN(montoNum) || montoNum <= 0) {
+        await conn.rollback()
+        return res.status(400).json({ error: 'El monto debe ser un número mayor a 0' })
+      }
+
+      let conceptoFinal = ''
+
+      if (Number(id_categoria) === 1) {
+        const parts = []
+        if (tienda) parts.push(`[Tienda/Proveedor: ${tienda.trim()}]`)
+        if (cantidad) parts.push(`[Cantidad: ${cantidad.trim()}]`)
+        if (concepto && String(concepto).trim() !== '') {
+          parts.push(`- ${String(concepto).trim()}`)
+        }
+        conceptoFinal = parts.join(' ')
+      } else {
+        conceptoFinal = concepto ? String(concepto).trim() : ''
+      }
+
+      if (!conceptoFinal) {
+        await conn.rollback()
+        return res.status(400).json({ error: 'El concepto o detalle del gasto es obligatorio' })
+      }
+
+      await conn.query(`
+        INSERT INTO flujo_egresos (
+          id_categoria, 
+          monto, 
+          origen_pago, 
+          cuenta_bancaria, 
+          id_producto_relacionado, 
+          id_empleado,
+          empleado_relacionado, 
+          unidad_relacionada, 
+          id_unidad_relacionada,
+          id_ruta_relacionada,
+          concepto, 
+          num_comprobante,
+          fecha_hora
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [
         id_categoria,
-        monto,
+        montoNum,
         origen_pago,
-        cuenta_bancaria || null,
+        origen_pago === 'TRANSFERENCIA' ? cuenta_bancaria : null,
         id_producto_relacionado || null,
         id_empleado || null,
         empleado_relacionado || null,
         unidad_relacionada || null,
         id_unidad_relacionada || null,
         id_ruta_relacionada || null,
-        concepto,
-        num_comprobante || null,
-        id_prestamo_abono || null
-      ]
-    );
+        conceptoFinal,
+        num_comprobante ? num_comprobante.trim().toUpperCase() : null,
+        fechaHoraReportada
+      ])
+    }
+
+    await conn.commit()
+    conn.release()
 
     res.json({
-      ok: true,
-      message: 'Egreso registrado correctamente',
-      id_egreso: result.insertId
-    });
+      success: true,
+      message: 'Gastos registrados con éxito'
+    })
 
   } catch (err) {
-    res.status(500).json({ ok: false, error: err.message });
+    if (conn) await conn.rollback()
+    if (conn) conn.release()
+    console.error("❌ ERROR AL REGISTRAR EGRESO:", err)
+    res.status(500).json({ error: err.message })
   }
-});
-
-
-
+})
 
 app.post('/api/gastos-temporales', async (req, res) => {
   try {
