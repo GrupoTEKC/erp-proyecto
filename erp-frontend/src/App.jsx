@@ -14,6 +14,7 @@ import EmbarquesLogin from './pages/EmbarquesLogin'
 import Produccion from './pages/produccion'
 import ProduccionLogin from './pages/produccionLogin'
 import ClientesLogin from './pages/ClientesLogin'
+import FlujoCajaLogin from './pages/FlujoCajaLogin' // 👈 1. IMPORTACIÓN DEL NUEVO LOGIN
 
 // 🔥 NUEVOS COMPONENTES
 import ClientePrecios from './pages/ClientePrecios'
@@ -23,7 +24,7 @@ import FlujoCaja from './pages/FlujoCaja'
 import Viaticos from './pages/Viaticos'
 import CuentasPorPagarLogin from './pages/CuentasPorPagarLogin'
 import CuentasPorPagar from './pages/CuentasPorPagar'
-import NotasDiscrepancias from './pages/NotasDiscrepancias' // 👈 1. IMPORTACIÓN AGREGADA
+import NotasDiscrepancias from './pages/NotasDiscrepancias'
 
 function App() {
   return (
@@ -74,7 +75,8 @@ function App() {
         <Route path="/produccion-login" element={<ProduccionLogin />} />
         <Route path="/produccion" element={<Produccion />} />
 
-        {/* 💰 FLUJO DE CAJA */}
+        {/* 💰 🔐 LOGIN Y PANTALLA FLUJO DE CAJA */}
+        <Route path="/flujo-caja-login" element={<FlujoCajaLogin />} />
         <Route path="/flujo-caja" element={<FlujoCaja />} />
 
         {/* ✈️ VIÁTICOS */}
