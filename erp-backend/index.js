@@ -2173,10 +2173,9 @@ app.get('/api/justificados-devueltos/resumen-producto', async (req, res) => {
 });
 
 
-
 app.get('/pedidos/folios-control', async (req, res) => {
   try {
-    // 1. Obtener entregas (normales) + pedidos rezagados con folios asignados
+    // 1. Obtener entregas (normales) + pedidos rezagados con folios numéricos limpios (>= 6687)
     const [registrados] = await db.query(`
       SELECT 
         CAST(e.folio AS CHAR) COLLATE utf8mb4_unicode_ci AS folio,
@@ -2195,6 +2194,7 @@ app.get('/pedidos/folios-control', async (req, res) => {
       WHERE e.folio IS NOT NULL 
         AND e.folio != ''
         AND e.folio REGEXP '[0-9]'
+        AND CAST(REGEXP_REPLACE(e.folio, '[^0-9]', '') AS UNSIGNED) >= 6687
 
       UNION ALL
 
@@ -2214,11 +2214,12 @@ app.get('/pedidos/folios-control', async (req, res) => {
       WHERE r.folio IS NOT NULL 
         AND r.folio != ''
         AND r.folio REGEXP '[0-9]'
+        AND CAST(REGEXP_REPLACE(r.folio, '[^0-9]', '') AS UNSIGNED) >= 6687
 
       ORDER BY num_folio ASC
     `);
 
-    // 2. Extraer min y max numérico (Mantiene intacta la lógica de REGEXP_REPLACE pero unificando ambas tablas)
+    // 2. Extraer min y max numérico descartando ceros y forzando el inicio en 6687
     const [rangos] = await db.query(`
       SELECT 
         MIN(num_folio) AS min_folio,
@@ -2234,14 +2235,16 @@ app.get('/pedidos/folios-control', async (req, res) => {
         FROM pedidos_rezagados
         WHERE folio IS NOT NULL AND folio != '' AND folio REGEXP '[0-9]'
       ) AS folios_totales
+      WHERE num_folio >= 6687
     `);
 
     res.json({
-      min_folio: rangos[0].min_folio || 0,
-      max_folio: rangos[0].max_folio || 0,
+      min_folio: rangos[0]?.min_folio || 6687,
+      max_folio: rangos[0]?.max_folio || 6687,
       registrados
     });
   } catch (error) {
+    console.error("❌ ERROR EN /pedidos/folios-control:", error);
     res.status(500).json({ error: error.message });
   }
 });
