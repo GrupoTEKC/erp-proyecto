@@ -5618,6 +5618,7 @@ app.get('/api/prestamos', async (req, res) => {
         eventosCalendario.push({
           id_prestamo: p.id_prestamo,
           prestamista: p.prestamista,
+          numero_nota: p.numero_nota,
           numero_periodo: numeroPeriodo,
           monto_sugerido: p.monto_cuota_sugerida,
           fecha_programada: fechaEvento.toISOString().split('T')[0],
