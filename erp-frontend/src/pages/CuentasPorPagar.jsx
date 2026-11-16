@@ -717,7 +717,9 @@ function CuentasPorPagar() {
                           style={{ accentColor: '#8B1E1E', cursor: 'pointer' }}
                         />
                         <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: colorHex, flexShrink: 0 }} />
-                        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.prestamista}</span>
+                        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {p.prestamista} {p.numero_nota && <strong style={{ color: '#0F172A' }}>(Nota: {p.numero_nota})</strong>}
+                        </span>
                       </label>
                       
                       <button
@@ -810,7 +812,9 @@ function CuentasPorPagar() {
                             setModalAbono({ id_prestamo: ev.id_prestamo, prestamista: ev.prestamista, numero_periodo: ev.numero_periodo, monto_cuota_sugerida: ev.monto_sugerido })
                             setFormAbono((prev) => ({ ...prev, monto_abonado: ev.monto_sugerido }))
                           }}>
-                          <div style={{ fontWeight: '700', color: '#1E293B', fontSize: '12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ev.prestamista}</div>
+                             <div style={{ fontWeight: '700', color: '#1E293B', fontSize: '12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                             {ev.prestamista} {ev.numero_nota && <strong style={{ color: '#0F172A' }}>(Nota: {ev.numero_nota})</strong>}
+                           </div>
                           <div style={{ color: '#475569', fontSize: '11px', marginTop: '2px' }}>Cuota #{ev.numero_periodo}: <strong style={{ color: '#0F172A' }}>${Number(ev.monto_sugerido).toLocaleString()}</strong></div>
                           {ev.pagado ? <div style={{ color: '#16A34A', fontWeight: '700', fontSize: '10px', marginTop: '3px' }}>✓ Abonado</div> : esVencido ? <div style={{ color: '#DC2626', fontWeight: '700', fontSize: '10px', marginTop: '3px' }}>⚠️ Vencido</div> : <div style={{ color: '#D97706', fontWeight: '600', fontSize: '10px', marginTop: '3px' }}>• Pendiente</div>}
                         </div>
