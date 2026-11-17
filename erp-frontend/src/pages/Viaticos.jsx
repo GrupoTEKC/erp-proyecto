@@ -205,6 +205,7 @@ export default function Viaticos() {
   const [gasolina, setGasolina] = useState([''])
   const [comidas, setComidas] = useState([''])
   const [folios, setFolios] = useState([''])
+  const [gastosVariosViaticos, setGastosVariosViaticos] = useState([{ concepto: '', monto: '' }])
 
   useEffect(() => {
     fetch(`${API}/empleados`).then(r => r.json()).then(d => Array.isArray(d) && setEmpleados(d)).catch(console.error)
@@ -247,11 +248,23 @@ export default function Viaticos() {
     setter(lista.filter((_, i) => i !== index))
   }
 
+  const handleAgregarObjeto = (setter, lista, objetoInicial) => setter([...lista, { ...objetoInicial }])
+  const handleCambioObjeto = (setter, lista, index, campo, valor) => {
+    const nueva = [...lista]
+    nueva[index][campo] = valor
+    setter(nueva)
+  }
+  const handleEliminarObjeto = (setter, lista, index) => {
+    if (lista.length === 1) return
+    setter(lista.filter((_, i) => i !== index))
+  }
+
   // Totales
   const totalCasetas = casetas.reduce((acc, v) => acc + (parseFloat(v) || 0), 0)
   const totalGasolina = gasolina.reduce((acc, v) => acc + (parseFloat(v) || 0), 0)
   const totalComidas = comidas.reduce((acc, v) => acc + (parseFloat(v) || 0), 0)
-  const totalViaticosGeneral = totalCasetas + totalGasolina + totalComidas
+  const totalGastosVariosViaticos = gastosVariosViaticos.reduce((acc, item) => acc + (parseFloat(item.monto) || 0), 0)
+  const totalViaticosGeneral = totalCasetas + totalGasolina + totalComidas + totalGastosVariosViaticos
   const diferenciaMonto = parseFloat(montoEntregado) - totalViaticosGeneral
 
   const handleGuardarViaticos = async () => {
@@ -261,7 +274,7 @@ export default function Viaticos() {
     }
 
     if (totalViaticosGeneral <= 0) {
-      alert('⚠️ Debe ingresar al menos un monto de gasto (Caseta, Gasolina o Comida).')
+      alert('⚠️ Debe ingresar al menos un monto de gasto válido.')
       return
     }
 
@@ -287,12 +300,17 @@ export default function Viaticos() {
     const uniObj = unidades.find(u => String(u.id_unidad) === String(idUnidadSeleccionada))
     const nombreUnidad = uniObj ? (uniObj.nombre || uniObj.placas) : null
 
+    const gastosVariosValidos = gastosVariosViaticos.filter(
+      item => item.concepto.trim() && parseFloat(item.monto) > 0
+    )
+
     const conceptoPayload = JSON.stringify({
-      resumen: `VIÁTICOS: Casetas $${totalCasetas} | Gasolina $${totalGasolina} | Comidas $${totalComidas}`,
+      resumen: `VIÁTICOS: Casetas $${totalCasetas} | Gasolina $${totalGasolina} | Comidas $${totalComidas} | Varios $${totalGastosVariosViaticos}`,
       desglose: {
         casetas: casetas.map(Number).filter(n => n > 0),
         gasolina: gasolina.map(Number).filter(n => n > 0),
-        comidas: comidas.map(Number).filter(n => n > 0)
+        comidas: comidas.map(Number).filter(n => n > 0),
+        gastos_varios: gastosVariosValidos
       },
       comentario: concepto.trim() || null
     })
@@ -302,23 +320,24 @@ export default function Viaticos() {
     let url = ''
     let payload = {}
 
-   if (idGastoTemporal) {
-  // 🚀 RUTA A: COMPROBACIÓN DE GASTO TEMPORAL (Agrega /api)
-  url = `${API}/api/gastos-temporales/${idGastoTemporal}/comprobar`
-  payload = {
-    id_categoria: 8,
-    monto_comprobado: totalViaticosGeneral,
-    num_comprobante: numComprobanteFinal,
-    concepto: conceptoPayload,
-    cuenta_bancaria: cuentaFinal,
-    id_unidad_relacionada: idUnidadSeleccionada ? parseInt(idUnidadSeleccionada) : null,
-    unidad_relacionada: nombreUnidad,
-    id_ruta_relacionada: idRutaSeleccionada ? parseInt(idRutaSeleccionada) : null
-  }
-} else {
-  // 💵 RUTA B: EGRESO DIRECTO E INMEDIATO (Agrega /api si aplica)
-  url = `${API}/api/egresos`
-          payload = {
+    if (idGastoTemporal) {
+      // 🚀 RUTA A: COMPROBACIÓN DE GASTO TEMPORAL
+      url = `${API}/api/gastos-temporales/${idGastoTemporal}/comprobar`
+      payload = {
+        id_categoria: 8,
+        monto_comprobado: totalViaticosGeneral,
+        num_comprobante: numComprobanteFinal,
+        concepto: conceptoPayload,
+        cuenta_bancaria: cuentaFinal,
+        id_unidad_relacionada: idUnidadSeleccionada ? parseInt(idUnidadSeleccionada) : null,
+        unidad_relacionada: nombreUnidad,
+        id_ruta_relacionada: idRutaSeleccionada ? parseInt(idRutaSeleccionada) : null,
+        gastos_varios: gastosVariosValidos.length > 0 ? gastosVariosValidos : undefined
+      }
+    } else {
+      // 💵 RUTA B: EGRESO DIRECTO E INMEDIATO
+      url = `${API}/api/egresos`
+      payload = {
         id_categoria: 8,
         monto: totalViaticosGeneral,
         origen_pago: origenPago,
@@ -329,7 +348,8 @@ export default function Viaticos() {
         unidad_relacionada: nombreUnidad,
         id_ruta_relacionada: idRutaSeleccionada ? parseInt(idRutaSeleccionada) : null,
         concepto: conceptoPayload,
-        num_comprobante: numComprobanteFinal
+        num_comprobante: numComprobanteFinal,
+        gastos_varios: gastosVariosValidos.length > 0 ? gastosVariosValidos : undefined
       }
     }
 
@@ -506,6 +526,48 @@ export default function Viaticos() {
             ))}
           </div>
 
+          {/* 🌟 BLOQUE DE GASTOS VARIOS CON BOTÓN + EN COMPROBACIÓN DE VIÁTICOS */}
+          <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
+            <div style={styles.dynamicHeader}>
+              <span>📝 Gastos Varios — Total: ${totalGastosVariosViaticos.toFixed(2)}</span>
+              <button 
+                type="button" 
+                style={styles.addBtn} 
+                onClick={() => handleAgregarObjeto(setGastosVariosViaticos, gastosVariosViaticos, { concepto: '', monto: '' })}
+              >
+                +
+              </button>
+            </div>
+            {gastosVariosViaticos.map((linea, idx) => (
+              <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr auto', gap: '8px', marginBottom: '6px' }}>
+                <input 
+                  type="text" 
+                  placeholder="Concepto del gasto" 
+                  style={styles.input} 
+                  value={linea.concepto} 
+                  onChange={(e) => handleCambioObjeto(setGastosVariosViaticos, gastosVariosViaticos, idx, 'concepto', e.target.value)} 
+                />
+                <input 
+                  type="number" 
+                  step="any" 
+                  placeholder="Monto $" 
+                  style={styles.input} 
+                  value={linea.monto} 
+                  onChange={(e) => handleCambioObjeto(setGastosVariosViaticos, gastosVariosViaticos, idx, 'monto', e.target.value)} 
+                />
+                {gastosVariosViaticos.length > 1 && (
+                  <button 
+                    type="button" 
+                    style={styles.removeBtn} 
+                    onClick={() => handleEliminarObjeto(setGastosVariosViaticos, gastosVariosViaticos, idx)}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+
           <div style={{ ...styles.fullRow, ...styles.dynamicBlock }}>
             <div style={styles.dynamicHeader}>
               <span>
@@ -594,6 +656,9 @@ export default function Viaticos() {
           </div>
 
           <div style={{ ...styles.fullRow, ...styles.totalSummaryBox }}>
+            <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '4px' }}>
+              Casetas: ${totalCasetas.toFixed(2)} | Gasolina: ${totalGasolina.toFixed(2)} | Comidas: ${totalComidas.toFixed(2)} | Varios: ${totalGastosVariosViaticos.toFixed(2)}
+            </div>
             <div style={{ fontSize: '20px', fontWeight: '900', color: vino }}>
               MONTO TOTAL COMPROBADO: ${totalViaticosGeneral.toFixed(2)}
             </div>
