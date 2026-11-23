@@ -55,7 +55,7 @@ function Clientes() {
   /* ================= FILTRO MEJORADO ================= */
   const term = busqueda.toLowerCase()
   const clientesFiltrados = clientes.filter(c =>
-    `${c.nombre} ${c.apellido1} ${c.apellido2} ${c.nombre_tienda} ${c.apodo}`
+    `${c.nombre || ''} ${c.apellido1 || ''} ${c.apellido2 || ''} ${c.nombre_tienda || ''} ${c.apodo || ''} ${c.municipio || ''}`
       .toLowerCase()
       .includes(term)
   )
@@ -118,7 +118,7 @@ function Clientes() {
 
       <input
         type="text"
-        placeholder="Buscar por nombre, tienda o apodo..."
+        placeholder="Buscar por nombre, tienda, apodo o municipio..."
         value={busqueda}
         onChange={e => setBusqueda(e.target.value)}
         style={buscador}
