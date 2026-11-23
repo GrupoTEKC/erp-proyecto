@@ -347,6 +347,8 @@ function ControlEnviosDetalle() {
 
         const totalFinal = totalPedido - totalDescuento
         const sugerenciasPedido = resultadosPorPedido[i] || []
+        const esCredito = p.tipo_pedido === 'credito'
+        const diasCredito = Number(p.dias_credito) || 0
 
         return (
           <div key={i} style={{
@@ -359,6 +361,10 @@ function ControlEnviosDetalle() {
             <div>
               <b>{p.cliente}</b> | {p.tienda}<br />
               Ruta: {p.ruta}<br />
+              <b>Tipo de pedido:</b>{' '}
+              {esCredito
+                ? `CRÉDITO (${diasCredito} ${diasCredito === 1 ? 'día' : 'días'})`
+                : 'CONTADO'}<br />
               <b>Fecha de Salida:</b> {p.fecha_salida ? new Date(p.fecha_salida).toLocaleString() : 'N/A'}
             </div>
 
