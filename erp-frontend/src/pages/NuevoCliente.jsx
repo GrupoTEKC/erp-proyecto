@@ -40,7 +40,12 @@ function NuevoCliente() {
   // =========================
   // FORMATEO
   // =========================
-  const upper = v => v.toUpperCase().trim().replace(/\s+/g, ' ')
+  // Permite escribir espacios libremente mientras se teclea; evita dobles espacios seguidos
+  const upper = v => v.toUpperCase().replace(/ {2,}/g, ' ')
+
+  // Limpia espacios al inicio y al final solo al preparar el envío
+  const limpiarEspaciosExtremos = v =>
+    typeof v === 'string' ? v.replace(/\s+/g, ' ').trim() : v
 
   const handleChange = e => {
     const { name, value } = e.target
@@ -114,10 +119,25 @@ function NuevoCliente() {
   const guardarCliente = async () => {
     if (!validar()) return
 
+    const correoLimpio = form.correo_usuario.trim()
+
     const payload = {
       ...form,
-      email: form.correo_usuario
-        ? form.correo_usuario + form.correo_dominio
+      nombre: limpiarEspaciosExtremos(form.nombre),
+      apellido1: limpiarEspaciosExtremos(form.apellido1),
+      apellido2: limpiarEspaciosExtremos(form.apellido2),
+      apodo: limpiarEspaciosExtremos(form.apodo),
+      categoria_otro: limpiarEspaciosExtremos(form.categoria_otro),
+      nombre_tienda: limpiarEspaciosExtremos(form.nombre_tienda),
+      calle: limpiarEspaciosExtremos(form.calle),
+      numero: limpiarEspaciosExtremos(form.numero),
+      municipio: limpiarEspaciosExtremos(form.municipio),
+      estado: limpiarEspaciosExtremos(form.estado),
+      entre_calles: limpiarEspaciosExtremos(form.entre_calles),
+      referencia: limpiarEspaciosExtremos(form.referencia),
+      correo_usuario: correoLimpio,
+      email: correoLimpio
+        ? correoLimpio + form.correo_dominio
         : ''
     }
 
@@ -230,9 +250,6 @@ function NuevoCliente() {
   )
 }
 
-// =========================
-// INPUT REUTILIZABLE
-// =========================
 function Campo({ label, name, form, onChange }) {
   return (
     <div style={styles.field}>
