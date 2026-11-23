@@ -2489,6 +2489,8 @@ app.get('/control-envios/:id_chofer', async (req, res) => {
     const [pedidos] = await conn.query(`
       SELECT 
         p.id_pedido,
+        p.tipo_pedido,
+        p.dias_credito,
         c.nombre AS cliente,
         c.nombre_tienda AS tienda,
         r.nombre AS ruta,
@@ -2569,6 +2571,8 @@ app.get('/control-envios/:id_chofer', async (req, res) => {
     conn.release()
   }
 })
+
+
 
 app.post('/control-envios/finalizar', async (req, res) => {
   const conn = await db.getConnection()
