@@ -23,13 +23,15 @@ function ControlEnviosDetalle() {
   const [showPin, setShowPin] = useState(null)
   const [pin, setPin] = useState('')
   const [comentarioCancelacion, setComentarioCancelacion] = useState('')
-  const [busquedaProducto, setBusquedaProducto] = useState('')
-  const [resultadosProductos, setResultadosProductos] = useState([])
+
+  // Buscador de productos aislado por pedido (clave = pIndex)
+  const [busquedasProducto, setBusquedasProducto] = useState({})
+  const [resultadosPorPedido, setResultadosPorPedido] = useState({})
 
   const [modalPrecio, setModalPrecio] = useState({ visible: false, pIndex: null, dIndex: null })
   const [passPrecio, setPassPrecio] = useState('')
   const [nuevoPrecioTemp, setNuevoPrecioTemp] = useState('')
-  
+
   const esMovil = window.innerWidth < 768
 
   const fieldResponsive = {
@@ -42,8 +44,8 @@ function ControlEnviosDetalle() {
     setNuevoPrecioTemp(precioActual)
     setPassPrecio('')
   }
-  
- useEffect(() => {
+
+  useEffect(() => {
     const cargarPedidos = async () => {
       const res = await fetch(`${API}/control-envios/${id_chofer}`)
       const data = await res.json()
@@ -73,13 +75,17 @@ function ControlEnviosDetalle() {
 
     cargarPedidos()
   }, [id_chofer])
-  
 
-  const buscarProductos = async (texto) => {
-    setBusquedaProducto(texto)
+  const limpiarBuscadorPedido = (pIndex) => {
+    setBusquedasProducto(prev => ({ ...prev, [pIndex]: '' }))
+    setResultadosPorPedido(prev => ({ ...prev, [pIndex]: [] }))
+  }
+
+  const buscarProductos = async (texto, pIndex) => {
+    setBusquedasProducto(prev => ({ ...prev, [pIndex]: texto }))
 
     if (!texto) {
-      setResultadosProductos([])
+      setResultadosPorPedido(prev => ({ ...prev, [pIndex]: [] }))
       return
     }
 
@@ -90,33 +96,32 @@ function ControlEnviosDetalle() {
       p.nombre.toLowerCase().includes(texto.toLowerCase())
     )
 
-    setResultadosProductos(filtrados)
+    setResultadosPorPedido(prev => ({ ...prev, [pIndex]: filtrados }))
   }
 
   const actualizarCampo = (pIndex, dIndex, campo, valor) => {
-  const copia = [...pedidos]
+    const copia = [...pedidos]
 
-  copia[pIndex].productos[dIndex][campo] = valor
+    copia[pIndex].productos[dIndex][campo] = valor
 
-  const prod = copia[pIndex].productos[dIndex]
+    const prod = copia[pIndex].productos[dIndex]
 
-   if (
-    campo === 'cantidad_final' &&
-    prod.tipo !== 'agregado'
-      )
-  {
- const entregado = Number(valor) || 0
-const embarcado = Number(prod.cantidad_entregada) || 0
+    if (
+      campo === 'cantidad_final' &&
+      prod.tipo !== 'agregado'
+    ) {
+      const entregado = Number(valor) || 0
+      const embarcado = Number(prod.cantidad_entregada) || 0
 
-if (entregado > embarcado) {
-  prod.tipo = 'con_incremento'
-} else if (prod.tipo === 'con_incremento') {
-  prod.tipo = ''
-}
+      if (entregado > embarcado) {
+        prod.tipo = 'con_incremento'
+      } else if (prod.tipo === 'con_incremento') {
+        prod.tipo = ''
+      }
+    }
+
+    setPedidos(copia)
   }
-
-  setPedidos(copia)
-}
 
   const actualizarFolio = (pIndex, value) => {
     const copia = [...pedidos]
@@ -125,38 +130,36 @@ if (entregado > embarcado) {
   }
 
   const agregarProducto = (pIndex, producto) => {
-  const copia = [...pedidos]
+    const copia = [...pedidos]
 
-  const existente = copia[pIndex].productos.find(
-    p => p.id_producto === producto.id_producto
-  )
-
-  if (existente) {
-    alert(
-      `El producto "${producto.nombre}" ya existe en el pedido.\n\nModifica la cantidad entregada directamente en ese renglón.`
+    const existente = copia[pIndex].productos.find(
+      p => p.id_producto === producto.id_producto
     )
 
-    setBusquedaProducto('')
-    setResultadosProductos([])
-    return
+    if (existente) {
+      alert(
+        `El producto "${producto.nombre}" ya existe en el pedido.\n\nModifica la cantidad entregada directamente en ese renglón.`
+      )
+
+      limpiarBuscadorPedido(pIndex)
+      return
+    }
+
+    copia[pIndex].productos.push({
+      id_producto: producto.id_producto,
+      nombre: producto.nombre,
+      precio_unitario: producto.precio_unitario,
+      cantidad_pedida: '',
+      cantidad_entregada: '',
+      cantidad_final: '',
+      tipo: 'agregado',
+      motivo: '',
+      id_cliente_destino: null
+    })
+
+    setPedidos(copia)
+    limpiarBuscadorPedido(pIndex)
   }
-
-   copia[pIndex].productos.push({
-   id_producto: producto.id_producto,
-   nombre: producto.nombre,
-  precio_unitario: producto.precio_unitario,
-  cantidad_pedida: '',
-  cantidad_entregada: '',
-  cantidad_final: '',
-  tipo: 'agregado',
-  motivo: '',
-  id_cliente_destino: null
-})
-
-  setPedidos(copia)
-  setBusquedaProducto('')
-  setResultadosProductos([])
-}
 
   const buscarClientes = async (texto, pIndex, dIndex) => {
     const key = `${pIndex}-${dIndex}`
@@ -181,34 +184,34 @@ if (entregado > embarcado) {
 
   const validarPedido = (pedido) => {
     for (let prod of pedido.productos) {
-   if (prod.tipo === 'agregado') {
-  if (!prod.cantidad_pedida)
-    return `Falta embarcado en ${prod.nombre}`
+      if (prod.tipo === 'agregado') {
+        if (!prod.cantidad_pedida)
+          return `Falta embarcado en ${prod.nombre}`
 
-  if (!prod.cantidad_final)
-    return `Falta entregado en ${prod.nombre}`
+        if (!prod.cantidad_final)
+          return `Falta entregado en ${prod.nombre}`
 
-  if (!prod.motivo)
-    return `Falta comentario en ${prod.nombre}`
+        if (!prod.motivo)
+          return `Falta comentario en ${prod.nombre}`
 
-  continue
-}
+        continue
+      }
 
-        if (prod.cantidad_final === '') {
+      if (prod.cantidad_final === '') {
         return `Falta cantidad entregada en ${prod.nombre}`
       }
 
-     const diferencia =
-      Number(prod.cantidad_final) -
-      Number(prod.cantidad_entregada)
+      const diferencia =
+        Number(prod.cantidad_final) -
+        Number(prod.cantidad_entregada)
 
       if (diferencia !== 0) {
         if (!prod.tipo) return `Falta tipo en ${prod.nombre}`
 
         if (prod.tipo === 'con_incremento' && !prod.motivo) {
-        return `Falta comentario en ${prod.nombre}`
+          return `Falta comentario en ${prod.nombre}`
         }
-        
+
         if (prod.tipo === 'roto' && !prod.motivo) {
           return `Falta motivo en ${prod.nombre}`
         }
@@ -246,21 +249,21 @@ if (entregado > embarcado) {
           id_entrega: pedido.id_entrega,
           folio: pedido.folio,
           productos: pedido.productos.map(p => {
-          const embarcado = Number(p.cantidad_entregada) || 0
-          const entregado = Number(p.cantidad_final) || 0
+            const embarcado = Number(p.cantidad_entregada) || 0
+            const entregado = Number(p.cantidad_final) || 0
 
- return {
-  ...p,
-  cantidad_final: Number(p.cantidad_final),
-  cantidad_entregada: Number(p.cantidad_entregada) || 0,
-  tipo:
-    p.tipo === 'agregado'
-      ? 'agregado'
-      : entregado > embarcado
-        ? 'con_incremento'
-        : p.tipo
-}
-})
+            return {
+              ...p,
+              cantidad_final: Number(p.cantidad_final),
+              cantidad_entregada: Number(p.cantidad_entregada) || 0,
+              tipo:
+                p.tipo === 'agregado'
+                  ? 'agregado'
+                  : entregado > embarcado
+                    ? 'con_incremento'
+                    : p.tipo
+            }
+          })
         })
       })
 
@@ -329,13 +332,13 @@ if (entregado > embarcado) {
           const embarcado = Number(prod.cantidad_entregada) || 0
           const entregado = Number(prod.cantidad_final) || 0
 
-         if (prod.tipo === 'agregado' || entregado > embarcado) {
-         totalPedido += entregado * precio
-         } else {
-         totalPedido += embarcado * precio
-         }
+          if (prod.tipo === 'agregado' || entregado > embarcado) {
+            totalPedido += entregado * precio
+          } else {
+            totalPedido += embarcado * precio
+          }
 
-         const diferencia = embarcado - entregado
+          const diferencia = embarcado - entregado
 
           if (diferencia > 0 && prod.tipo !== 'prestamo') {
             totalDescuento += diferencia * precio
@@ -343,6 +346,7 @@ if (entregado > embarcado) {
         })
 
         const totalFinal = totalPedido - totalDescuento
+        const sugerenciasPedido = resultadosPorPedido[i] || []
 
         return (
           <div key={i} style={{
@@ -369,11 +373,11 @@ if (entregado > embarcado) {
               <input
                 style={fieldResponsive}
                 placeholder="Buscar producto"
-                value={busquedaProducto}
-                onChange={e => buscarProductos(e.target.value)}
+                value={busquedasProducto[i] || ''}
+                onChange={e => buscarProductos(e.target.value, i)}
               />
 
-              {resultadosProductos.map(prod => (
+              {sugerenciasPedido.map(prod => (
                 <div
                   key={prod.id_producto}
                   onClick={() => agregarProducto(i, prod)}
@@ -400,16 +404,16 @@ if (entregado > embarcado) {
                 </thead>
                 <tbody>
                   {p.productos.map((prod, j) => {
-                   const precio = parseFloat(prod.precio_unitario) || 0
-                   const embarcado = Number(prod.cantidad_entregada) || 0
-                   const entregado = Number(prod.cantidad_final) || 0
+                    const precio = parseFloat(prod.precio_unitario) || 0
+                    const embarcado = Number(prod.cantidad_entregada) || 0
+                    const entregado = Number(prod.cantidad_final) || 0
 
-                   const diferencia = entregado - embarcado
-                   const subtotal = entregado * precio
+                    const diferencia = entregado - embarcado
+                    const subtotal = entregado * precio
                     return (
                       <tr key={j}>
                         <td>{prod.nombre}</td>
-                       <td>
+                        <td>
                           {prod.tipo === 'agregado' ? (
                             <input
                               type="number"
@@ -420,7 +424,6 @@ if (entregado > embarcado) {
                               }
                             />
                           ) : (
-                        
                             <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                               <span>${precio.toFixed(2)}</span>
                               <button
@@ -439,7 +442,6 @@ if (entregado > embarcado) {
                             </div>
                           )}
                         </td>
-                        
 
                         <td>
                           {prod.tipo === 'agregado' ? (
@@ -455,14 +457,14 @@ if (entregado > embarcado) {
                         </td>
 
                         <td>
-                         <input
-                         type="number"
-                         style={fieldResponsive}
-                         value={prod.cantidad_final ?? ''}
-                         onChange={e =>
-                        actualizarCampo(i, j, 'cantidad_final', e.target.value)
-                        }
-                         />
+                          <input
+                            type="number"
+                            style={fieldResponsive}
+                            value={prod.cantidad_final ?? ''}
+                            onChange={e =>
+                              actualizarCampo(i, j, 'cantidad_final', e.target.value)
+                            }
+                          />
                         </td>
 
                         <td>${subtotal.toFixed(2)}</td>
@@ -470,27 +472,27 @@ if (entregado > embarcado) {
                         {(diferencia !== 0 || prod.tipo === 'agregado') ? (
                           <>
                             <td>
-                             {prod.tipo === 'agregado'
-                             ? <div>Agregado</div>
-                             : prod.tipo === 'con_incremento'
-                           ? <div>Con incremento</div>
-                                : (
-                                  <select
-                                    style={fieldResponsive}
-                                    value={prod.tipo}
-                                    onChange={e =>
-                                      actualizarCampo(i, j, 'tipo', e.target.value)
-                                    }
-                                  >
-                                    <option value="">--</option>
-                                    <option value="prestamo">Préstamo</option>
-                                    <option value="roto">Roto</option>
-                                  </select>
-                                )}
+                              {prod.tipo === 'agregado'
+                                ? <div>Agregado</div>
+                                : prod.tipo === 'con_incremento'
+                                  ? <div>Con incremento</div>
+                                  : (
+                                    <select
+                                      style={fieldResponsive}
+                                      value={prod.tipo}
+                                      onChange={e =>
+                                        actualizarCampo(i, j, 'tipo', e.target.value)
+                                      }
+                                    >
+                                      <option value="">--</option>
+                                      <option value="prestamo">Préstamo</option>
+                                      <option value="roto">Roto</option>
+                                    </select>
+                                  )}
                             </td>
 
                             <td>
-                           {(prod.tipo === 'agregado' || prod.tipo === 'con_incremento') && (
+                              {(prod.tipo === 'agregado' || prod.tipo === 'con_incremento') && (
                                 <input
                                   style={fieldResponsive}
                                   placeholder="Comentario"
@@ -633,7 +635,7 @@ if (entregado > embarcado) {
                   Confirmar cancelación
                 </button>
               </div>
-           )}
+            )}
           </div>
         )
       })}
@@ -660,7 +662,7 @@ if (entregado > embarcado) {
             boxShadow: '0 4px 8px rgba(0,0,0,0.2)'
           }}>
             <h3 style={{ marginTop: 0, color: '#071849' }}>Editar Precio</h3>
-            
+
             <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Nuevo Precio:</label>
             <input
               type="number"
@@ -685,7 +687,7 @@ if (entregado > embarcado) {
               >
                 Cancelar
               </button>
-              
+
               <button
                 style={{ ...styles.guardar, marginTop: 0 }}
                 onClick={() => {
@@ -697,7 +699,7 @@ if (entregado > embarcado) {
                     alert('Ingrese un precio válido')
                     return
                   }
-                  
+
                   actualizarCampo(modalPrecio.pIndex, modalPrecio.dIndex, 'precio_unitario', nuevoPrecioTemp)
                   setModalPrecio({ visible: false, pIndex: null, dIndex: null })
                 }}
